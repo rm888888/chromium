@@ -9,13 +9,6 @@
 #include <string>
 #include <utility>
 
-#include "ash/components/arc/arc_prefs.h"
-#include "ash/components/arc/arc_util.h"
-#include "ash/components/arc/compat_mode/arc_resize_lock_manager.h"
-#include "ash/components/arc/mojom/compatibility_mode.mojom.h"
-#include "ash/components/arc/session/arc_bridge_service.h"
-#include "ash/components/arc/session/arc_service_manager.h"
-#include "ash/components/arc/session/connection_holder.h"
 #include "ash/constants/ash_features.h"
 #include "ash/constants/ash_switches.h"
 #include "base/bind.h"
@@ -46,6 +39,13 @@
 #include "chrome/browser/ui/ash/shelf/chrome_shelf_controller.h"
 #include "chrome/common/chrome_features.h"
 #include "chrome/grit/generated_resources.h"
+#include "components/arc/arc_prefs.h"
+#include "components/arc/arc_util.h"
+#include "components/arc/compat_mode/arc_resize_lock_manager.h"
+#include "components/arc/mojom/compatibility_mode.mojom.h"
+#include "components/arc/session/arc_bridge_service.h"
+#include "components/arc/session/arc_service_manager.h"
+#include "components/arc/session/connection_holder.h"
 #include "components/crx_file/id_util.h"
 #include "components/pref_registry/pref_registry_syncable.h"
 #include "components/prefs/scoped_user_pref_update.h"
@@ -108,20 +108,20 @@ class NotificationsEnabledDeferred {
   explicit NotificationsEnabledDeferred(PrefService* prefs) : prefs_(prefs) {}
 
   void Put(const std::string& app_id, bool enabled) {
-    DictionaryPrefUpdateDeprecated update(
+    DictionaryPrefUpdate update(
         prefs_, arc::prefs::kArcSetNotificationsEnabledDeferred);
     base::DictionaryValue* const dict = update.Get();
     dict->SetKey(app_id, base::Value(enabled));
   }
 
   bool Get(const std::string& app_id) {
-    const base::Value* dict =
+    const base::DictionaryValue* dict =
         prefs_->GetDictionary(arc::prefs::kArcSetNotificationsEnabledDeferred);
     return dict->FindBoolKey(app_id).value_or(false);
   }
 
   void Remove(const std::string& app_id) {
-    DictionaryPrefUpdateDeprecated update(
+    DictionaryPrefUpdate update(
         prefs_, arc::prefs::kArcSetNotificationsEnabledDeferred);
     base::DictionaryValue* const dict = update.Get();
     dict->RemoveKey(app_id);
@@ -215,10 +215,10 @@ bool IsArcAndroidEnabledForProfile(const Profile* profile) {
          arc::IsArcPlayStoreEnabledForProfile(profile);
 }
 
-bool GetInt64FromPref(const base::Value* dict,
+bool GetInt64FromPref(const base::DictionaryValue* dict,
                       const std::string& key,
                       int64_t* value) {
-  DCHECK(dict && dict->is_dict());
+  DCHECK(dict);
   const std::string* value_str = dict->FindStringKey(key);
   if (!value_str) {
     VLOG(2) << "Can't find key in local pref dictionary. Invalid key: " << key
@@ -339,7 +339,8 @@ void ArcAppListPrefs::UprevCurrentIconsVersionForTesting() {
 
 std::string ArcAppListPrefs::GetAppIdByPackageName(
     const std::string& package_name) const {
-  const base::Value* apps = prefs_->GetDictionary(arc::prefs::kArcApps);
+  const base::DictionaryValue* apps =
+      prefs_->GetDictionary(arc::prefs::kArcApps);
   if (!apps)
     return std::string();
 
@@ -653,12 +654,11 @@ std::unique_ptr<ArcAppListPrefs::PackageInfo> ArcAppListPrefs::GetPackage(
   if (!IsArcAlive() || !IsArcAndroidEnabledForProfile(profile_))
     return nullptr;
 
-  const base::Value* packages = prefs_->GetDictionary(arc::prefs::kArcPackages);
-  if (!packages)
-    return nullptr;
-
-  const base::Value* package = packages->FindDictKey(package_name);
-  if (!package)
+  const base::DictionaryValue* package = nullptr;
+  const base::DictionaryValue* packages =
+      prefs_->GetDictionary(arc::prefs::kArcPackages);
+  if (!packages ||
+      !packages->GetDictionaryWithoutPathExpansion(package_name, &package))
     return nullptr;
 
   if (package->FindBoolKey(kUninstalled).value_or(false))
@@ -740,15 +740,17 @@ std::vector<std::string> ArcAppListPrefs::GetAppIds() const {
 
 std::vector<std::string> ArcAppListPrefs::GetAppIdsNoArcEnabledCheck() const {
   std::vector<std::string> ids;
-  const base::Value* apps = prefs_->GetDictionary(arc::prefs::kArcApps);
+  const base::DictionaryValue* apps =
+      prefs_->GetDictionary(arc::prefs::kArcApps);
   DCHECK(apps);
 
   // crx_file::id_util is de-facto utility for id generation.
-  for (const auto app : apps->DictItems()) {
-    if (!crx_file::id_util::IdIsValid(app.first))
+  for (base::DictionaryValue::Iterator app_id(*apps); !app_id.IsAtEnd();
+       app_id.Advance()) {
+    if (!crx_file::id_util::IdIsValid(app_id.key()))
       continue;
 
-    ids.push_back(app.first);
+    ids.push_back(app_id.key());
   }
 
   return ids;
@@ -767,13 +769,17 @@ std::unique_ptr<ArcAppListPrefs::AppInfo> ArcAppListPrefs::GetApp(
 
 std::unique_ptr<ArcAppListPrefs::AppInfo> ArcAppListPrefs::GetAppFromPrefs(
     const std::string& app_id) const {
-  const base::Value* apps = prefs_->GetDictionary(arc::prefs::kArcApps);
-  if (!apps)
-    return nullptr;
-  const base::Value* app = apps->FindDictKey(app_id);
-  if (!app)
+  const base::DictionaryValue* app = nullptr;
+  const base::DictionaryValue* apps =
+      prefs_->GetDictionary(arc::prefs::kArcApps);
+  if (!apps || !apps->GetDictionaryWithoutPathExpansion(app_id, &app))
     return nullptr;
 
+  std::string name;
+  std::string package_name;
+  std::string activity;
+  std::string intent_uri;
+  std::string icon_resource_id;
   bool notifications_enabled =
       app->FindBoolKey(kNotificationsEnabled).value_or(true);
   auto resize_lock_state = static_cast<arc::mojom::ArcResizeLockState>(
@@ -783,20 +789,11 @@ std::unique_ptr<ArcAppListPrefs::AppInfo> ArcAppListPrefs::GetAppFromPrefs(
   const bool shortcut = app->FindBoolKey(kShortcut).value_or(false);
   const bool launchable = app->FindBoolKey(kLaunchable).value_or(true);
 
-  const std::string* maybe_name = app->FindStringKey(kName);
-  const std::string* maybe_package_name = app->FindStringKey(kPackageName);
-  const std::string* maybe_activity = app->FindStringKey(kActivity);
-  const std::string* maybe_intent_uri = app->FindStringKey(kIntentUri);
-  const std::string* maybe_icon_resource_id =
-      app->FindStringKey(kIconResourceId);
-
-  std::string name = maybe_name ? *maybe_name : std::string();
-  std::string package_name =
-      maybe_package_name ? *maybe_package_name : std::string();
-  std::string activity = maybe_activity ? *maybe_activity : std::string();
-  std::string intent_uri = maybe_intent_uri ? *maybe_intent_uri : std::string();
-  std::string icon_resource_id =
-      maybe_icon_resource_id ? *maybe_icon_resource_id : std::string();
+  app->GetString(kName, &name);
+  app->GetString(kPackageName, &package_name);
+  app->GetString(kActivity, &activity);
+  app->GetString(kIntentUri, &intent_uri);
+  app->GetString(kIconResourceId, &icon_resource_id);
 
   DCHECK(!name.empty());
   DCHECK(!shortcut || activity.empty());
@@ -828,8 +825,10 @@ bool ArcAppListPrefs::IsRegistered(const std::string& app_id) const {
       !default_apps_->HasApp(app_id))
     return false;
 
-  const base::Value* apps = prefs_->GetDictionary(arc::prefs::kArcApps);
-  return apps && apps->FindDictKey(app_id);
+  const base::DictionaryValue* app = nullptr;
+  const base::DictionaryValue* apps =
+      prefs_->GetDictionary(arc::prefs::kArcApps);
+  return apps && apps->GetDictionaryWithoutPathExpansion(app_id, &app);
 }
 
 bool ArcAppListPrefs::IsDefault(const std::string& app_id) const {
@@ -1391,7 +1390,7 @@ void ArcAppListPrefs::RemoveApp(const std::string& app_id) {
   ScheduleAppFolderDeletion(app_id);
 
   // Remove from prefs.
-  DictionaryPrefUpdateDeprecated update(prefs_, arc::prefs::kArcApps);
+  DictionaryPrefUpdate update(prefs_, arc::prefs::kArcApps);
   base::DictionaryValue* apps = update.Get();
   const bool removed = apps->RemoveKey(app_id);
   DCHECK(removed);
@@ -1504,7 +1503,7 @@ void ArcAppListPrefs::AddOrUpdatePackagePrefs(
 }
 
 void ArcAppListPrefs::RemovePackageFromPrefs(const std::string& package_name) {
-  DictionaryPrefUpdateDeprecated(prefs_, arc::prefs::kArcPackages)
+  DictionaryPrefUpdate(prefs_, arc::prefs::kArcPackages)
       .Get()
       ->RemoveKey(package_name);
 }
@@ -1693,28 +1692,27 @@ void ArcAppListPrefs::OnInstallShortcut(arc::mojom::ShortcutInfoPtr shortcut) {
 void ArcAppListPrefs::OnUninstallShortcut(const std::string& package_name,
                                           const std::string& intent_uri) {
   std::vector<std::string> shortcuts_to_remove;
-  const base::Value* apps = prefs_->GetDictionary(arc::prefs::kArcApps);
-  for (const auto app : apps->DictItems()) {
-    if (!app.second.is_dict()) {
-      VLOG(2) << "Failed to extract information for " << app.first << ".";
+  const base::DictionaryValue* apps =
+      prefs_->GetDictionary(arc::prefs::kArcApps);
+  for (base::DictionaryValue::Iterator app_it(*apps); !app_it.IsAtEnd();
+       app_it.Advance()) {
+    const base::Value* value = &app_it.value();
+    const base::DictionaryValue* app;
+    std::string installed_package_name;
+    std::string installed_intent_uri;
+    if (!value->GetAsDictionary(&app) ||
+        !app->GetString(kPackageName, &installed_package_name) ||
+        !app->GetString(kIntentUri, &installed_intent_uri)) {
+      VLOG(2) << "Failed to extract information for " << app_it.key() << ".";
+      continue;
+    }
+    const bool shortcut = app->FindBoolKey(kShortcut).value_or(false);
+    if (!shortcut || installed_package_name != package_name ||
+        installed_intent_uri != intent_uri) {
       continue;
     }
 
-    const std::string* installed_package_name =
-        app.second.FindStringKey(kPackageName);
-    const std::string* installed_intent_uri =
-        app.second.FindStringKey(kIntentUri);
-    if (!installed_package_name || !installed_intent_uri) {
-      VLOG(2) << "Failed to extract information for " << app.first << ".";
-      continue;
-    }
-    const bool shortcut = app.second.FindBoolKey(kShortcut).value_or(false);
-    if (!shortcut || *installed_package_name != package_name ||
-        *installed_intent_uri != intent_uri) {
-      continue;
-    }
-
-    shortcuts_to_remove.push_back(app.first);
+    shortcuts_to_remove.push_back(app_it.key());
   }
 
   for (const auto& shortcut_id : shortcuts_to_remove)
@@ -1733,37 +1731,41 @@ std::unordered_set<std::string> ArcAppListPrefs::GetAppsAndShortcutsForPackage(
     bool include_only_launchable_apps,
     bool include_shortcuts) const {
   std::unordered_set<std::string> app_set;
-  const base::Value* apps = prefs_->GetDictionary(arc::prefs::kArcApps);
-  for (const auto app : apps->DictItems()) {
-    if (!crx_file::id_util::IdIsValid(app.first))
+  const base::DictionaryValue* apps =
+      prefs_->GetDictionary(arc::prefs::kArcApps);
+  for (base::DictionaryValue::Iterator app_it(*apps); !app_it.IsAtEnd();
+       app_it.Advance()) {
+    if (!crx_file::id_util::IdIsValid(app_it.key()))
       continue;
 
-    if (!app.second.is_dict()) {
+    const base::Value* value = &app_it.value();
+    const base::DictionaryValue* app;
+    if (!value->GetAsDictionary(&app)) {
       NOTREACHED();
       continue;
     }
 
-    const std::string* app_package = app.second.FindStringKey(kPackageName);
-    if (!app_package) {
-      LOG(ERROR) << "App is malformed: " << app.first;
+    std::string app_package;
+    if (!app->GetString(kPackageName, &app_package)) {
+      LOG(ERROR) << "App is malformed: " << app_it.key();
       continue;
     }
 
-    if (package_name != *app_package)
+    if (package_name != app_package)
       continue;
 
     if (!include_shortcuts) {
-      if (app.second.FindBoolKey(kShortcut).value_or(false))
+      if (app->FindBoolKey(kShortcut).value_or(false))
         continue;
     }
 
     if (include_only_launchable_apps) {
       // Filter out non-lauchable apps.
-      if (!app.second.FindBoolKey(kLaunchable).value_or(false))
+      if (!app->FindBoolKey(kLaunchable).value_or(false))
         continue;
     }
 
-    app_set.insert(app.first);
+    app_set.insert(app_it.key());
   }
 
   return app_set;
@@ -1877,24 +1879,23 @@ void ArcAppListPrefs::OnTaskSetActive(int32_t task_id) {
 void ArcAppListPrefs::OnNotificationsEnabledChanged(
     const std::string& package_name,
     bool enabled) {
-  const base::Value* apps = prefs_->GetDictionary(arc::prefs::kArcApps);
-  for (const auto app : apps->DictItems()) {
-    if (!app.second.is_dict()) {
+  const base::DictionaryValue* apps =
+      prefs_->GetDictionary(arc::prefs::kArcApps);
+  for (base::DictionaryValue::Iterator app(*apps); !app.IsAtEnd();
+       app.Advance()) {
+    const base::DictionaryValue* app_dict;
+    std::string app_package_name;
+    if (!app.value().GetAsDictionary(&app_dict) ||
+        !app_dict->GetString(kPackageName, &app_package_name)) {
       NOTREACHED();
       continue;
     }
-    const std::string* app_package_name =
-        app.second.FindStringKey(kPackageName);
-    if (!app_package_name) {
-      NOTREACHED();
+    if (app_package_name != package_name) {
       continue;
     }
-    if (*app_package_name != package_name) {
-      continue;
-    }
-    arc::ArcAppScopedPrefUpdate update(prefs_, app.first, arc::prefs::kArcApps);
-    base::Value* updating_app_dict = update.Get();
-    updating_app_dict->SetBoolKey(kNotificationsEnabled, enabled);
+    arc::ArcAppScopedPrefUpdate update(prefs_, app.key(), arc::prefs::kArcApps);
+    base::DictionaryValue* updateing_app_dict = update.Get();
+    updateing_app_dict->SetBoolean(kNotificationsEnabled, enabled);
   }
   for (auto& observer : observer_list_)
     observer.OnNotificationsEnabledChanged(package_name, enabled);
@@ -1977,40 +1978,40 @@ std::vector<std::string> ArcAppListPrefs::GetPackagesFromPrefs(
     return packages;
   }
 
-  const base::Value* package_prefs =
+  const base::DictionaryValue* package_prefs =
       prefs_->GetDictionary(arc::prefs::kArcPackages);
-  for (const auto package : package_prefs->DictItems()) {
-    if (!package.second.is_dict()) {
+  for (base::DictionaryValue::Iterator package(*package_prefs);
+       !package.IsAtEnd(); package.Advance()) {
+    const base::DictionaryValue* package_info;
+    if (!package.value().GetAsDictionary(&package_info)) {
       NOTREACHED();
       continue;
     }
 
     const bool uninstalled =
-        package.second.FindBoolKey(kUninstalled).value_or(false);
+        package_info->FindBoolKey(kUninstalled).value_or(false);
     if (installed != !uninstalled)
       continue;
 
-    packages.push_back(package.first);
+    packages.push_back(package.key());
   }
 
   return packages;
 }
 
 base::Time ArcAppListPrefs::GetInstallTime(const std::string& app_id) const {
-  const base::Value* apps = prefs_->GetDictionary(arc::prefs::kArcApps);
-  if (!apps)
+  const base::DictionaryValue* app = nullptr;
+  const base::DictionaryValue* apps =
+      prefs_->GetDictionary(arc::prefs::kArcApps);
+  if (!apps || !apps->GetDictionaryWithoutPathExpansion(app_id, &app))
     return base::Time();
 
-  const base::Value* app = apps->FindDictKey(app_id);
-  if (!app)
-    return base::Time();
-
-  const std::string* install_time_str = app->FindStringKey(kInstallTime);
-  if (!install_time_str)
+  std::string install_time_str;
+  if (!app->GetString(kInstallTime, &install_time_str))
     return base::Time();
 
   int64_t install_time_i64;
-  if (!base::StringToInt64(*install_time_str, &install_time_i64))
+  if (!base::StringToInt64(install_time_str, &install_time_i64))
     return base::Time();
   return base::Time::FromInternalValue(install_time_i64);
 }

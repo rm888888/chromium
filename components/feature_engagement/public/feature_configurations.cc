@@ -210,110 +210,6 @@ absl::optional<FeatureConfig> GetClientSideFeatureConfig(
     return config;
   }
 
-  if (kIPHFeatureNotificationGuideIncognitoTabNotificationShownFeature.name ==
-      feature->name) {
-    // A config that allows the feature guide incognito tab notification to be
-    // shown.
-    absl::optional<FeatureConfig> config = FeatureConfig();
-    config->valid = true;
-    config->availability = Comparator(ANY, 0);
-    config->session_rate = Comparator(ANY, 0);
-    config->session_rate_impact.type = SessionRateImpact::Type::NONE;
-    config->blocked_by.type = BlockedBy::Type::NONE;
-    config->blocking.type = Blocking::Type::NONE;
-    config->trigger = EventConfig(
-        "feature_notification_guide_incognito_tab_notification_trigger",
-        Comparator(LESS_THAN, 1), 90, 90);
-    config->used = EventConfig(
-        "feature_notification_guide_incognito_tab_notification_used",
-        Comparator(EQUAL, 0), 90, 90);
-    return config;
-  }
-
-  if (kIPHFeatureNotificationGuideNTPSuggestionCardNotificationShownFeature
-          .name == feature->name) {
-    // A config that allows the feature guide NTP suggestions cards notification
-    // to be shown.
-    absl::optional<FeatureConfig> config = FeatureConfig();
-    config->valid = true;
-    config->availability = Comparator(ANY, 0);
-    config->session_rate = Comparator(ANY, 0);
-    SessionRateImpact session_rate_impact;
-    config->session_rate_impact.type = SessionRateImpact::Type::NONE;
-    config->blocked_by.type = BlockedBy::Type::NONE;
-    config->blocking.type = Blocking::Type::NONE;
-    config->trigger = EventConfig(
-        "feature_notification_guide_ntp_suggestion_card_notification_trigger",
-        Comparator(LESS_THAN, 1), 90, 90);
-    config->used = EventConfig(
-        "feature_notification_guide_ntp_suggestion_card_notification_used",
-        Comparator(EQUAL, 0), 90, 90);
-    return config;
-  }
-
-  if (kIPHFeatureNotificationGuideVoiceSearchNotificationShownFeature.name ==
-      feature->name) {
-    // A config that allows the feature guide voice search notification to be
-    // shown.
-    absl::optional<FeatureConfig> config = FeatureConfig();
-    config->valid = true;
-    config->availability = Comparator(ANY, 0);
-    config->session_rate = Comparator(ANY, 0);
-    SessionRateImpact session_rate_impact;
-    config->session_rate_impact.type = SessionRateImpact::Type::NONE;
-    config->blocked_by.type = BlockedBy::Type::NONE;
-    config->blocking.type = Blocking::Type::NONE;
-    config->trigger = EventConfig(
-        "feature_notification_guide_voice_search_notification_trigger",
-        Comparator(LESS_THAN, 1), 90, 90);
-    config->used =
-        EventConfig("feature_notification_guide_voice_search_notification_used",
-                    Comparator(EQUAL, 0), 90, 90);
-    return config;
-  }
-
-  if (kIPHFeatureNotificationGuideDefaultBrowserNotificationShownFeature.name ==
-      feature->name) {
-    // A config that allows the feature guide default browser notification to be
-    // shown.
-    absl::optional<FeatureConfig> config = FeatureConfig();
-    config->valid = true;
-    config->availability = Comparator(ANY, 0);
-    config->session_rate = Comparator(ANY, 0);
-    SessionRateImpact session_rate_impact;
-    config->session_rate_impact.type = SessionRateImpact::Type::NONE;
-    config->blocked_by.type = BlockedBy::Type::NONE;
-    config->blocking.type = Blocking::Type::NONE;
-    config->trigger = EventConfig(
-        "feature_notification_guide_default_browser_notification_trigger",
-        Comparator(LESS_THAN, 1), 90, 90);
-    config->used = EventConfig(
-        "feature_notification_guide_default_browser_notification_used",
-        Comparator(EQUAL, 0), 90, 90);
-    return config;
-  }
-
-  if (kIPHFeatureNotificationGuideSignInNotificationShownFeature.name ==
-      feature->name) {
-    // A config that allows the feature guide sign-in notification to be
-    // shown.
-    absl::optional<FeatureConfig> config = FeatureConfig();
-    config->valid = true;
-    config->availability = Comparator(ANY, 0);
-    config->session_rate = Comparator(ANY, 0);
-    SessionRateImpact session_rate_impact;
-    config->session_rate_impact.type = SessionRateImpact::Type::NONE;
-    config->blocked_by.type = BlockedBy::Type::NONE;
-    config->blocking.type = Blocking::Type::NONE;
-    config->trigger =
-        EventConfig("feature_notification_guide_sign_in_notification_trigger",
-                    Comparator(LESS_THAN, 1), 90, 90);
-    config->used =
-        EventConfig("feature_notification_sign_in_search_notification_used",
-                    Comparator(EQUAL, 0), 90, 90);
-    return config;
-  }
-
   if (kIPHFeedHeaderMenuFeature.name == feature->name) {
     // A config that allows the feed header menu IPH to be shown only once when
     // the user starts using a version of the feed that uploads click and view
@@ -418,8 +314,6 @@ absl::optional<FeatureConfig> GetClientSideFeatureConfig(
     SessionRateImpact session_rate_impact;
     session_rate_impact.type = SessionRateImpact::Type::NONE;
     config->session_rate_impact = session_rate_impact;
-    config->blocked_by.type = BlockedBy::Type::NONE;
-    config->blocking.type = Blocking::Type::NONE;
 
     return config;
   }
@@ -442,8 +336,6 @@ absl::optional<FeatureConfig> GetClientSideFeatureConfig(
     SessionRateImpact session_rate_impact;
     session_rate_impact.type = SessionRateImpact::Type::NONE;
     config->session_rate_impact = session_rate_impact;
-    config->blocked_by.type = BlockedBy::Type::NONE;
-    config->blocking.type = Blocking::Type::NONE;
 
     return config;
   }
@@ -466,8 +358,6 @@ absl::optional<FeatureConfig> GetClientSideFeatureConfig(
     SessionRateImpact session_rate_impact;
     session_rate_impact.type = SessionRateImpact::Type::NONE;
     config->session_rate_impact = session_rate_impact;
-    config->blocked_by.type = BlockedBy::Type::NONE;
-    config->blocking.type = Blocking::Type::NONE;
 
     return config;
   }
@@ -492,8 +382,6 @@ absl::optional<FeatureConfig> GetClientSideFeatureConfig(
     SessionRateImpact session_rate_impact;
     session_rate_impact.type = SessionRateImpact::Type::NONE;
     config->session_rate_impact = session_rate_impact;
-    config->blocked_by.type = BlockedBy::Type::NONE;
-    config->blocking.type = Blocking::Type::NONE;
 
     return config;
   }
@@ -514,8 +402,6 @@ absl::optional<FeatureConfig> GetClientSideFeatureConfig(
     SessionRateImpact session_rate_impact;
     session_rate_impact.type = SessionRateImpact::Type::NONE;
     config->session_rate_impact = session_rate_impact;
-    config->blocked_by.type = BlockedBy::Type::NONE;
-    config->blocking.type = Blocking::Type::NONE;
 
     return config;
   }
@@ -574,7 +460,7 @@ absl::optional<FeatureConfig> GetClientSideFeatureConfig(
     config->session_rate = Comparator(ANY, 0);
     config->trigger = EventConfig("iph_shared_highlighting_receiver_trigger",
                                   Comparator(LESS_THAN, 5), 360, 360);
-    config->used = EventConfig("iph_shared_highlighting_used",
+    config->used = EventConfig("iph_shared_highlighting_button_clicked",
                                Comparator(LESS_THAN, 2), 360, 360);
     config->event_configs.insert(
         EventConfig("iph_shared_highlighting_receiver_trigger",
@@ -634,26 +520,6 @@ absl::optional<FeatureConfig> GetClientSideFeatureConfig(
                                   Comparator(LESS_THAN, 2), 7, 360);
     config->event_configs.insert(
         EventConfig("auto_dark_user_education_message_trigger",
-                    Comparator(LESS_THAN, 6), 360, 360));
-    return config;
-  }
-
-  if (kIPHAutoDarkUserEducationMessageOptInFeature.name == feature->name) {
-    // A config that allows the auto dark message to be shown:
-    // * Until the user opens auto dark settings
-    // * 2 times per week
-    // * Up to 6 times (3 weeks)
-    absl::optional<FeatureConfig> config = FeatureConfig();
-    config->valid = true;
-    config->availability = Comparator(ANY, 0);
-    config->session_rate = Comparator(ANY, 0);
-    config->used = EventConfig("auto_dark_settings_opened",
-                               Comparator(EQUAL, 0), 360, 360);
-    config->trigger =
-        EventConfig("auto_dark_user_education_message_opt_in_trigger",
-                    Comparator(LESS_THAN, 2), 7, 360);
-    config->event_configs.insert(
-        EventConfig("auto_dark_user_education_message_opt_in_trigger",
                     Comparator(LESS_THAN, 6), 360, 360));
     return config;
   }

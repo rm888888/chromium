@@ -3,10 +3,10 @@
 // found in the LICENSE file.
 
 #include "ui/wm/core/transient_window_manager.h"
-#include "base/memory/raw_ptr.h"
 
 #include <utility>
 
+#include "base/macros.h"
 #include "ui/aura/client/window_parenting_client.h"
 #include "ui/aura/test/aura_test_base.h"
 #include "ui/aura/test/test_windows.h"
@@ -24,7 +24,8 @@ namespace wm {
 
 class TestTransientWindowObserver : public TransientWindowObserver {
  public:
-  TestTransientWindowObserver() = default;
+  TestTransientWindowObserver() : add_count_(0), remove_count_(0) {
+  }
 
   TestTransientWindowObserver(const TestTransientWindowObserver&) = delete;
   TestTransientWindowObserver& operator=(const TestTransientWindowObserver&) =
@@ -34,7 +35,6 @@ class TestTransientWindowObserver : public TransientWindowObserver {
 
   int add_count() const { return add_count_; }
   int remove_count() const { return remove_count_; }
-  int parent_change_count() const { return parent_change_count_; }
 
   // TransientWindowObserver overrides:
   void OnTransientChildAdded(Window* window, Window* transient) override {
@@ -43,14 +43,10 @@ class TestTransientWindowObserver : public TransientWindowObserver {
   void OnTransientChildRemoved(Window* window, Window* transient) override {
     remove_count_++;
   }
-  void OnTransientParentChanged(Window* window) override {
-    parent_change_count_++;
-  }
 
  private:
-  int add_count_ = 0;
-  int remove_count_ = 0;
-  int parent_change_count_ = 0;
+  int add_count_;
+  int remove_count_;
 };
 
 class WindowVisibilityObserver : public aura::WindowObserver {
@@ -73,7 +69,7 @@ class WindowVisibilityObserver : public aura::WindowObserver {
     owned_window_.reset();
   }
  private:
-  raw_ptr<Window> observed_window_;
+  Window* observed_window_;
   std::unique_ptr<Window> owned_window_;
 };
 
@@ -390,7 +386,7 @@ class DestroyedTrackingDelegate : public aura::test::TestWindowDelegate {
 
  private:
   const std::string name_;
-  raw_ptr<std::vector<std::string>> results_;
+  std::vector<std::string>* results_;
 };
 
 }  // namespace
@@ -447,26 +443,20 @@ TEST_F(TransientWindowManagerTest, TransientWindowObserverNotified) {
   std::unique_ptr<Window> parent(CreateTestWindowWithId(0, root_window()));
   std::unique_ptr<Window> w1(CreateTestWindowWithId(1, parent.get()));
 
-  TestTransientWindowObserver test_parent_observer, test_child_observer;
+  TestTransientWindowObserver test_observer;
   TransientWindowManager::GetOrCreate(parent.get())
-      ->AddObserver(&test_parent_observer);
-  TransientWindowManager::GetOrCreate(w1.get())->AddObserver(
-      &test_child_observer);
+      ->AddObserver(&test_observer);
 
   AddTransientChild(parent.get(), w1.get());
-  EXPECT_EQ(1, test_parent_observer.add_count());
-  EXPECT_EQ(0, test_parent_observer.remove_count());
-  EXPECT_EQ(1, test_child_observer.parent_change_count());
+  EXPECT_EQ(1, test_observer.add_count());
+  EXPECT_EQ(0, test_observer.remove_count());
 
   RemoveTransientChild(parent.get(), w1.get());
-  EXPECT_EQ(1, test_parent_observer.add_count());
-  EXPECT_EQ(1, test_parent_observer.remove_count());
-  EXPECT_EQ(2, test_child_observer.parent_change_count());
+  EXPECT_EQ(1, test_observer.add_count());
+  EXPECT_EQ(1, test_observer.remove_count());
 
   TransientWindowManager::GetOrCreate(parent.get())
-      ->RemoveObserver(&test_parent_observer);
-  TransientWindowManager::GetOrCreate(parent.get())
-      ->RemoveObserver(&test_child_observer);
+      ->RemoveObserver(&test_observer);
 }
 
 TEST_F(TransientWindowManagerTest, ChangeParent) {

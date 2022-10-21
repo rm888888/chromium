@@ -5,9 +5,10 @@
 #ifndef UI_BASE_IME_MOCK_INPUT_METHOD_H_
 #define UI_BASE_IME_MOCK_INPUT_METHOD_H_
 
+
 #include "base/compiler_specific.h"
 #include "base/component_export.h"
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/observer_list.h"
 #include "build/build_config.h"
 #include "ui/base/ime/input_method.h"
@@ -36,7 +37,6 @@ class COMPONENT_EXPORT(UI_BASE_IME) MockInputMethod : public InputMethod {
   void SetDelegate(internal::InputMethodDelegate* delegate) override;
   void OnFocus() override;
   void OnBlur() override;
-  void OnTouch(ui::EventPointerType pointerType) override;
 
 #if defined(OS_WIN)
   bool OnUntranslatedIMEMessage(const CHROME_MSG event,
@@ -54,15 +54,17 @@ class COMPONENT_EXPORT(UI_BASE_IME) MockInputMethod : public InputMethod {
   void CancelComposition(const TextInputClient* client) override;
   TextInputType GetTextInputType() const override;
   bool IsCandidatePopupOpen() const override;
+  void ShowVirtualKeyboardIfEnabled() override;
   void SetVirtualKeyboardVisibilityIfEnabled(bool should_show) override;
   void AddObserver(InputMethodObserver* observer) override;
   void RemoveObserver(InputMethodObserver* observer) override;
   VirtualKeyboardController* GetVirtualKeyboardController() override;
 
  private:
-  raw_ptr<TextInputClient> text_input_client_;
+
+  TextInputClient* text_input_client_;
   base::ObserverList<InputMethodObserver>::Unchecked observer_list_;
-  raw_ptr<internal::InputMethodDelegate> delegate_;
+  internal::InputMethodDelegate* delegate_;
 
   VirtualKeyboardControllerStub keyboard_controller_;
 };

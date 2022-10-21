@@ -8,7 +8,7 @@
 #include <map>
 #include <string>
 
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "components/translate/content/common/translate.mojom.h"
@@ -22,6 +22,7 @@
 #include "services/metrics/public/cpp/ukm_source_id.h"
 
 namespace content {
+class NavigationController;
 class WebContents;
 }  // namespace content
 
@@ -56,6 +57,7 @@ class ContentTranslateDriver : public TranslateDriver,
   };
 
   ContentTranslateDriver(content::WebContents& web_contents,
+                         content::NavigationController* nav_controller,
                          language::UrlLanguageHistogram* url_language_histogram,
                          TranslateModelService* translate_model_service);
 
@@ -150,7 +152,10 @@ class ContentTranslateDriver : public TranslateDriver,
       GetLanguageDetectionModelCallback callback,
       bool is_available);
 
-  raw_ptr<TranslateManager> translate_manager_;
+  // The navigation controller of the tab we are associated with.
+  content::NavigationController* navigation_controller_;
+
+  TranslateManager* translate_manager_;
 
   base::ObserverList<TranslationObserver, true> translation_observers_;
 
@@ -166,7 +171,7 @@ class ContentTranslateDriver : public TranslateDriver,
 
   // Histogram to be notified about detected language of every page visited. Not
   // owned here.
-  const raw_ptr<language::UrlLanguageHistogram> language_histogram_;
+  language::UrlLanguageHistogram* const language_histogram_;
 
   // ContentTranslateDriver is a singleton per web contents but multiple render
   // frames may be contained in a single web contents. TranslateAgents get the
@@ -180,7 +185,7 @@ class ContentTranslateDriver : public TranslateDriver,
 
   // The service that provides the model files needed for translate. Not owned
   // but guaranteed to outlive |this|.
-  const raw_ptr<TranslateModelService> translate_model_service_;
+  TranslateModelService* const translate_model_service_;
 
   base::WeakPtrFactory<ContentTranslateDriver> weak_pointer_factory_{this};
 };

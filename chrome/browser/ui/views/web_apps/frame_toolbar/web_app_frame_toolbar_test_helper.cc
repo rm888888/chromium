@@ -34,7 +34,7 @@ WebAppFrameToolbarTestHelper::~WebAppFrameToolbarTestHelper() = default;
 web_app::AppId WebAppFrameToolbarTestHelper::InstallAndLaunchWebApp(
     Browser* browser,
     const GURL& start_url) {
-  auto web_app_info = std::make_unique<WebAppInstallInfo>();
+  auto web_app_info = std::make_unique<WebApplicationInfo>();
   web_app_info->start_url = start_url;
   web_app_info->scope = start_url.GetWithoutFilename();
   web_app_info->title = u"A minimal-ui app";
@@ -61,7 +61,7 @@ web_app::AppId WebAppFrameToolbarTestHelper::InstallAndLaunchWebApp(
 
 web_app::AppId WebAppFrameToolbarTestHelper::InstallAndLaunchCustomWebApp(
     Browser* browser,
-    std::unique_ptr<WebAppInstallInfo> web_app_info,
+    std::unique_ptr<WebApplicationInfo> web_app_info,
     const GURL& start_url) {
   web_app::AppId app_id =
       web_app::test::InstallWebApp(browser->profile(), std::move(web_app_info));
@@ -105,8 +105,8 @@ GURL WebAppFrameToolbarTestHelper::
       "     position: relative;"
       "     top: 5px;"
       "     left: 5px;"
-      "     height: 2px;"
-      "     width: 2px;"
+      "     height: 1px;"
+      "     width: 1px;"
       "  }"
       "  #target {"
       "     padding-left: env(titlebar-area-x);"
@@ -157,7 +157,7 @@ void WebAppFrameToolbarTestHelper::SetupGeometryChangeCallback(
              "document.title = 'beforegeometrychange';"
              "navigator.windowControlsOverlay.ongeometrychange = (e) => {"
              "  geometrychangeCount++;"
-             "  overlay_rect_from_event = e.titlebarAreaRect;"
+             "  overlay_rect_from_event = e.boundingRect;"
              "  overlay_visible_from_event = e.visible;"
              "  document.title = 'ongeometrychange';"
              "}"));

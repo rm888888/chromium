@@ -7,7 +7,8 @@
 
 #include <stddef.h>
 
-#include "base/memory/raw_ptr.h"
+#include "base/compiler_specific.h"
+#include "base/macros.h"
 #include "ui/views/widget/widget_observer.h"
 
 namespace views {
@@ -29,7 +30,7 @@ class TestWidgetObserver : public WidgetObserver {
   // WidgetObserver overrides:
   void OnWidgetDestroying(Widget* widget) override;
 
-  raw_ptr<Widget> widget_;
+  Widget* widget_;
 };
 
 }  // namespace test

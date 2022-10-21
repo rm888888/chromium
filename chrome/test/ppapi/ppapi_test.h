@@ -7,6 +7,8 @@
 
 #include <string>
 
+#include "base/compiler_specific.h"
+#include "base/macros.h"
 #include "base/scoped_observation.h"
 #include "base/test/scoped_feature_list.h"
 #include "chrome/test/base/in_process_browser_test.h"
@@ -186,6 +188,21 @@ class PPAPIPrivateNaClPNaClTest : public PPAPINaClPNaClTest {
  protected:
   void SetUpCommandLine(base::CommandLine* command_line) override;
 };
+
+// Test Non-SFI Mode, using PNaCl toolchain to produce nexes.
+class PPAPINaClPNaClNonSfiTest : public PPAPINaClTest {
+ public:
+  void SetUpCommandLine(base::CommandLine* command_line) override;
+
+  std::string BuildQuery(const std::string& base,
+                         const std::string& test_case) override;
+};
+
+class PPAPIPrivateNaClPNaClNonSfiTest : public PPAPINaClPNaClNonSfiTest {
+ protected:
+  void SetUpCommandLine(base::CommandLine* command_line) override;
+};
+
 
 class PPAPINaClTestDisallowedSockets : public PPAPITestBase {
  public:

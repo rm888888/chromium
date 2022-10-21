@@ -7,9 +7,10 @@
 
 #include <memory>
 
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "content/public/browser/render_frame_host_receiver_set.h"
 #include "content/public/browser/touch_selection_controller_client_manager.h"
+#include "content/public/browser/web_contents_observer.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "mojo/public/cpp/bindings/associated_remote.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
@@ -30,7 +31,8 @@ class PDFWebContentsHelperTest;
 
 // Per-WebContents class to handle PDF messages.
 class PDFWebContentsHelper
-    : public content::WebContentsUserData<PDFWebContentsHelper>,
+    : public content::WebContentsObserver,
+      public content::WebContentsUserData<PDFWebContentsHelper>,
       public mojom::PdfService,
       public ui::TouchSelectionControllerClient,
       public ui::TouchSelectionMenuClient,
@@ -80,9 +82,9 @@ class PDFWebContentsHelper
                        std::unique_ptr<PDFWebContentsHelperClient> client);
 
   void InitTouchSelectionClientManager();
-  gfx::PointF ConvertFromRoot(const gfx::PointF& point_f);
-  gfx::PointF ConvertToRoot(const gfx::PointF& point_f);
-  gfx::PointF ConvertHelper(const gfx::PointF& point_f, float scale);
+  gfx::PointF ConvertFromRoot(const gfx::PointF& point_f) const;
+  gfx::PointF ConvertToRoot(const gfx::PointF& point_f) const;
+  gfx::PointF ConvertHelper(const gfx::PointF& point_f, float scale) const;
 
   // mojom::PdfService:
   void SetListener(mojo::PendingRemote<mojom::PdfListener> listener) override;
@@ -99,7 +101,7 @@ class PDFWebContentsHelper
 
   content::RenderFrameHostReceiverSet<mojom::PdfService> pdf_service_receivers_;
   std::unique_ptr<PDFWebContentsHelperClient> const client_;
-  raw_ptr<content::TouchSelectionControllerClientManager>
+  content::TouchSelectionControllerClientManager*
       touch_selection_controller_client_manager_ = nullptr;
 
   // Latest selection bounds received from PDFium.

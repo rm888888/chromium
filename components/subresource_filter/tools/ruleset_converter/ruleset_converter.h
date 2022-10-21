@@ -11,6 +11,7 @@
 
 #include "base/command_line.h"
 #include "base/files/file_path.h"
+#include "base/macros.h"
 #include "components/subresource_filter/tools/ruleset_converter/rule_stream.h"
 #include "components/subresource_filter/tools/ruleset_converter/ruleset_format.h"
 

@@ -41,7 +41,7 @@ public class PlayerFrameCoordinator {
      */
     public PlayerFrameCoordinator(Context context, PlayerCompositorDelegate compositorDelegate,
             UnguessableToken frameGuid, int contentWidth, int contentHeight, int initialScrollX,
-            int initialScrollY, float initialScaleFactor, boolean canDetectZoom,
+            int initialScrollY, boolean canDetectZoom,
             @Nullable OverscrollHandler overscrollHandler, PlayerGestureListener gestureHandler,
             @Nullable Runnable firstPaintListener,
             @Nullable Supplier<Boolean> isAccessibilityEnabled,
@@ -52,7 +52,7 @@ public class PlayerFrameCoordinator {
 
         mMediator = new PlayerFrameMediator(model, compositorDelegate, gestureHandler, frameGuid,
                 new Size(contentWidth, contentHeight), initialScrollX, initialScrollY,
-                initialScaleFactor, initialViewportSizeAvailable, shouldCompressBitmaps);
+                initialViewportSizeAvailable, shouldCompressBitmaps);
 
         if (canDetectZoom) {
             mScaleController =
@@ -91,11 +91,10 @@ public class PlayerFrameCoordinator {
 
     public Point getScrollPosition() {
         Rect viewPortRect = mMediator.getViewport().asRect();
-        return new Point(viewPortRect.left, viewPortRect.top);
-    }
-
-    public float getScale() {
-        return mMediator.getViewport().getScale();
+        float scaleFactor = mMediator.getViewport().getScale();
+        if (scaleFactor == 0) scaleFactor = 1;
+        return new Point(
+                (int) (viewPortRect.left / scaleFactor), (int) (viewPortRect.top / scaleFactor));
     }
 
     /**

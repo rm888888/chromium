@@ -140,7 +140,7 @@ TEST_P(BeaconTest, Location) {
   //   Software\Chromium, so it always exists.
 
   // Silence unused variable warnings.
-  std::ignore = wrong_root;
+  ignore_result(wrong_root);
 #endif
 
   // The right key should exist.

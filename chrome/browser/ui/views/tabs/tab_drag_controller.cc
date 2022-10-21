@@ -15,7 +15,6 @@
 #include "base/containers/contains.h"
 #include "base/cxx17_backports.h"
 #include "base/i18n/rtl.h"
-#include "base/memory/raw_ptr.h"
 #include "base/numerics/safe_conversions.h"
 #include "base/trace_event/trace_event.h"
 #include "build/build_config.h"
@@ -57,10 +56,6 @@
 #include "chromeos/ui/base/window_state_type.h"  // nogncheck
 #include "ui/aura/window_delegate.h"
 #include "ui/wm/core/coordinate_conversion.h"
-#endif
-
-#if BUILDFLAG(IS_CHROMEOS_LACROS)
-#include "chromeos/ui/base/window_properties.h"
 #endif
 
 #if defined(USE_AURA)
@@ -150,7 +145,7 @@ bool ShouldAttachOnEnd(TabDragContext* target_context) {
 // into another eligible browser window's context.
 bool CanDetachFromTabStrip(TabDragContext* context) {
   return context && GetWindowForTabDraggingProperties(context)->GetProperty(
-                        chromeos::kCanAttachToAnotherWindowKey);
+                        ash::kCanAttachToAnotherWindowKey);
 }
 
 #else
@@ -254,8 +249,8 @@ class TabDragController::SourceTabStripEmptinessTracker
     parent_->OnSourceTabStripEmpty();
   }
 
-  const raw_ptr<TabStripModel> tab_strip_;
-  const raw_ptr<TabDragController> parent_;
+  TabStripModel* const tab_strip_;
+  TabDragController* const parent_;
 };
 
 class TabDragController::DraggedTabsClosedTracker
@@ -286,7 +281,7 @@ class TabDragController::DraggedTabsClosedTracker
   }
 
  private:
-  const raw_ptr<TabDragController> parent_;
+  TabDragController* const parent_;
 };
 
 TabDragController::TabDragData::TabDragData()
@@ -302,7 +297,7 @@ TabDragController::TabDragData::TabDragData(TabDragData&&) = default;
 #if BUILDFLAG(IS_CHROMEOS_ASH)
 
 // The class to track the current deferred target tabstrip and also to observe
-// its native window's property chromeos::kIsDeferredTabDraggingTargetWindowKey.
+// its native window's property ash::kIsDeferredTabDraggingTargetWindowKey.
 // The reason we need to observe the window property is the property might be
 // cleared outside of TabDragController (i.e. by ash), and we should update the
 // tracked deferred target tabstrip in this case.
@@ -331,8 +326,7 @@ class TabDragController::DeferredTargetTabstripObserver
       aura::Window* old_window =
           GetWindowForTabDraggingProperties(deferred_target_context_);
       old_window->RemoveObserver(this);
-      old_window->ClearProperty(
-          chromeos::kIsDeferredTabDraggingTargetWindowKey);
+      old_window->ClearProperty(ash::kIsDeferredTabDraggingTargetWindowKey);
     }
 
     deferred_target_context_ = deferred_target_context;
@@ -341,8 +335,7 @@ class TabDragController::DeferredTargetTabstripObserver
     if (deferred_target_context_) {
       aura::Window* new_window =
           GetWindowForTabDraggingProperties(deferred_target_context_);
-      new_window->SetProperty(chromeos::kIsDeferredTabDraggingTargetWindowKey,
-                              true);
+      new_window->SetProperty(ash::kIsDeferredTabDraggingTargetWindowKey, true);
       new_window->AddObserver(this);
     }
   }
@@ -354,8 +347,8 @@ class TabDragController::DeferredTargetTabstripObserver
     DCHECK_EQ(window,
               GetWindowForTabDraggingProperties(deferred_target_context_));
 
-    if (key == chromeos::kIsDeferredTabDraggingTargetWindowKey &&
-        !window->GetProperty(chromeos::kIsDeferredTabDraggingTargetWindowKey)) {
+    if (key == ash::kIsDeferredTabDraggingTargetWindowKey &&
+        !window->GetProperty(ash::kIsDeferredTabDraggingTargetWindowKey)) {
       SetDeferredTargetTabstrip(nullptr);
     }
 
@@ -421,7 +414,7 @@ TabDragController::~TabDragController() {
 
   if (event_source_ == EVENT_SOURCE_TOUCH) {
     TabDragContext* capture_context =
-        attached_context_ ? attached_context_.get() : source_context_.get();
+        attached_context_ ? attached_context_ : source_context_;
     capture_context->AsView()->GetWidget()->ReleaseCapture();
   }
   CHECK(!IsInObserverList());
@@ -517,7 +510,7 @@ bool TabDragController::IsActive() {
 
 // static
 TabDragContext* TabDragController::GetSourceContext() {
-  return g_tab_drag_controller ? g_tab_drag_controller->source_context_.get()
+  return g_tab_drag_controller ? g_tab_drag_controller->source_context_
                                : nullptr;
 }
 
@@ -632,9 +625,9 @@ void TabDragController::EndDrag(EndDragReason reason) {
   // window.
   if (source_context_ &&
       GetWindowForTabDraggingProperties(source_context_)
-          ->GetProperty(chromeos::kIsDeferredTabDraggingTargetWindowKey)) {
+          ->GetProperty(ash::kIsDeferredTabDraggingTargetWindowKey)) {
     GetWindowForTabDraggingProperties(source_context_)
-        ->ClearProperty(chromeos::kIsDeferredTabDraggingTargetWindowKey);
+        ->ClearProperty(ash::kIsDeferredTabDraggingTargetWindowKey);
     reason = END_DRAG_CANCEL;
   }
 #endif
@@ -820,7 +813,7 @@ TabDragController::Liveness TabDragController::ContinueDragging(
   if (ShouldAttachOnEnd(target_context)) {
     SetDeferredTargetTabstrip(target_context);
     target_context = current_state_ == DragState::kDraggingWindow
-                         ? attached_context_.get()
+                         ? attached_context_
                          : nullptr;
   } else {
     SetDeferredTargetTabstrip(nullptr);
@@ -1092,9 +1085,8 @@ TabDragController::Liveness TabDragController::GetTargetTabStripForPoint(
     }
   }
 
-  *context = current_state_ == DragState::kDraggingWindow
-                 ? attached_context_.get()
-                 : nullptr;
+  *context = current_state_ == DragState::kDraggingWindow ? attached_context_
+                                                          : nullptr;
   return Liveness::ALIVE;
 }
 
@@ -1359,7 +1351,7 @@ void TabDragController::RunMoveLoop(const gfx::Vector2d& drag_offset) {
   // RunMoveLoop can be called reentrantly from within another RunMoveLoop,
   // in which case the observation is already established.
   widget_observation_.Reset();
-  widget_observation_.Observe(move_loop_widget_.get());
+  widget_observation_.Observe(move_loop_widget_);
   current_state_ = DragState::kDraggingWindow;
   base::WeakPtr<TabDragController> ref(weak_factory_.GetWeakPtr());
   if (can_release_capture_) {
@@ -1523,7 +1515,7 @@ void TabDragController::EndDragImpl(EndDragType type) {
   drag_data_.clear();
 
   TabDragContext* owning_context =
-      attached_context_ ? attached_context_.get() : source_context_.get();
+      attached_context_ ? attached_context_ : source_context_;
   owning_context->DestroyDragController();
 }
 
@@ -2083,7 +2075,7 @@ gfx::Point TabDragController::GetCursorScreenPoint() {
 gfx::Vector2d TabDragController::GetWindowOffset(
     const gfx::Point& point_in_screen) {
   TabDragContext* owning_context =
-      attached_context_ ? attached_context_.get() : source_context_.get();
+      attached_context_ ? attached_context_ : source_context_;
   views::View* toplevel_view =
       owning_context->AsView()->GetWidget()->GetContentsView();
 

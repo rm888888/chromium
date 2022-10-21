@@ -378,11 +378,11 @@ TEST(TextEliderTest, TestHostEliding) {
      kEllipsisStr + ".\xCE\xB5.\xCE\xB6.com"},
   };
 
-  for (const auto& testcase : testcases) {
-    const float available_width = GetWidth(testcase.output);
-    EXPECT_EQ(base::UTF8ToUTF16(testcase.output),
-              url_formatter::ElideHost(GURL(testcase.input), gfx::FontList(),
-                                       available_width));
+  for (size_t i = 0; i < base::size(testcases); ++i) {
+    const float available_width = GetWidth(testcases[i].output);
+    EXPECT_EQ(base::UTF8ToUTF16(testcases[i].output),
+              url_formatter::ElideHost(GURL(testcases[i].input),
+                                       gfx::FontList(), available_width));
   }
 
   // Trying to elide to a really short length will still keep the full TLD+1
@@ -400,173 +400,179 @@ TEST(TextEliderTest, TestHostEliding) {
 struct OriginTestData {
   const char* const description;
   const char* const input;
-  const char16_t* const output;
-  const char16_t* const output_omit_web_scheme;
-  const char16_t* const output_omit_cryptographic_scheme;
+  const wchar_t* const output;
+  const wchar_t* const output_omit_web_scheme;
+  const wchar_t* const output_omit_cryptographic_scheme;
 };
 
 // Common test data for both FormatUrlForSecurityDisplay() and
 // FormatOriginForSecurityDisplay()
 const OriginTestData common_tests[] = {
-    {"Empty URL", "", u"", u"", u""},
-    {"HTTP URL", "http://www.google.com/", u"http://www.google.com",
-     u"www.google.com", u"http://www.google.com"},
-    {"HTTPS URL", "https://www.google.com/", u"https://www.google.com",
-     u"www.google.com", u"www.google.com"},
+    {"Empty URL", "", L"", L"", L""},
+    {"HTTP URL", "http://www.google.com/", L"http://www.google.com",
+     L"www.google.com", L"http://www.google.com"},
+    {"HTTPS URL", "https://www.google.com/", L"https://www.google.com",
+     L"www.google.com", L"www.google.com"},
     {"Standard HTTP port", "http://www.google.com:80/",
-     u"http://www.google.com", u"www.google.com", u"http://www.google.com"},
+     L"http://www.google.com", L"www.google.com", L"http://www.google.com"},
     {"Standard HTTPS port", "https://www.google.com:443/",
-     u"https://www.google.com", u"www.google.com", u"www.google.com"},
+     L"https://www.google.com", L"www.google.com", L"www.google.com"},
     {"Standard HTTP port, IDN Chinese",
      "http://\xe4\xb8\xad\xe5\x9b\xbd.icom.museum:80",
-     u"http://中国.icom.museum", u"中国.icom.museum",
-     u"http://中国.icom.museum"},
+     L"http://\x4e2d\x56fd.icom.museum", L"\x4e2d\x56fd.icom.museum",
+     L"http://\x4e2d\x56fd.icom.museum"},
     {"HTTP URL, IDN Hebrew (RTL)",
      "http://"
      "\xd7\x90\xd7\x99\xd7\xa7\xd7\x95\xd7\xb4\xd7\x9d."
      "\xd7\x99\xd7\xa9\xd7\xa8\xd7\x90\xd7\x9c.museum/",
-     u"http://xn--4dbklr2c8d.xn--4dbrk0ce.museum",
-     u"xn--4dbklr2c8d.xn--4dbrk0ce.museum",
-     u"http://xn--4dbklr2c8d.xn--4dbrk0ce.museum"},
+     L"http://xn--4dbklr2c8d.xn--4dbrk0ce.museum",
+     L"xn--4dbklr2c8d.xn--4dbrk0ce.museum",
+     L"http://xn--4dbklr2c8d.xn--4dbrk0ce.museum"},
     {"HTTP URL with query string, IDN Arabic (RTL)",
      "http://\xd9\x85\xd8\xb5\xd8\xb1.icom.museum/foo.html?yes=no",
-     u"http://xn--wgbh1c.icom.museum", u"xn--wgbh1c.icom.museum",
-     u"http://xn--wgbh1c.icom.museum"},
+     L"http://xn--wgbh1c.icom.museum", L"xn--wgbh1c.icom.museum",
+     L"http://xn--wgbh1c.icom.museum"},
     {"Non-standard HTTP port", "http://www.google.com:9000/",
-     u"http://www.google.com:9000", u"www.google.com:9000",
-     u"http://www.google.com:9000"},
+     L"http://www.google.com:9000", L"www.google.com:9000",
+     L"http://www.google.com:9000"},
     {"Non-standard HTTPS port", "https://www.google.com:9000/",
-     u"https://www.google.com:9000", u"www.google.com:9000",
-     u"www.google.com:9000"},
+     L"https://www.google.com:9000", L"www.google.com:9000",
+     L"www.google.com:9000"},
     {"HTTP URL with path", "http://www.google.com/test.html",
-     u"http://www.google.com", u"www.google.com", u"http://www.google.com"},
+     L"http://www.google.com", L"www.google.com", L"http://www.google.com"},
     {"HTTPS URL with path", "https://www.google.com/test.html",
-     u"https://www.google.com", u"www.google.com", u"www.google.com"},
+     L"https://www.google.com", L"www.google.com", L"www.google.com"},
     {"Unusual secure scheme (wss)", "wss://www.google.com/",
-     u"wss://www.google.com", u"wss://www.google.com", u"www.google.com"},
+     L"wss://www.google.com", L"wss://www.google.com", L"www.google.com"},
     {"Unusual non-secure scheme (ftp)", "ftp://www.google.com/",
-     u"ftp://www.google.com", u"ftp://www.google.com", u"ftp://www.google.com"},
-    {"Unlisted scheme (chrome)", "chrome://version", u"chrome://version",
-     u"chrome://version", u"chrome://version"},
-    {"HTTP IP address", "http://173.194.65.103", u"http://173.194.65.103",
-     u"173.194.65.103", u"http://173.194.65.103"},
-    {"HTTPS IP address", "https://173.194.65.103", u"https://173.194.65.103",
-     u"173.194.65.103", u"173.194.65.103"},
+     L"ftp://www.google.com", L"ftp://www.google.com", L"ftp://www.google.com"},
+    {"Unlisted scheme (chrome)", "chrome://version", L"chrome://version",
+     L"chrome://version", L"chrome://version"},
+    {"HTTP IP address", "http://173.194.65.103", L"http://173.194.65.103",
+     L"173.194.65.103", L"http://173.194.65.103"},
+    {"HTTPS IP address", "https://173.194.65.103", L"https://173.194.65.103",
+     L"173.194.65.103", L"173.194.65.103"},
     {"HTTP IPv6 address", "http://[FE80:0000:0000:0000:0202:B3FF:FE1E:8329]/",
-     u"http://[fe80::202:b3ff:fe1e:8329]", u"[fe80::202:b3ff:fe1e:8329]",
-     u"http://[fe80::202:b3ff:fe1e:8329]"},
+     L"http://[fe80::202:b3ff:fe1e:8329]", L"[fe80::202:b3ff:fe1e:8329]",
+     L"http://[fe80::202:b3ff:fe1e:8329]"},
     {"HTTPs IPv6 address", "https://[FE80:0000:0000:0000:0202:B3FF:FE1E:8329]/",
-     u"https://[fe80::202:b3ff:fe1e:8329]", u"[fe80::202:b3ff:fe1e:8329]",
-     u"[fe80::202:b3ff:fe1e:8329]"},
+     L"https://[fe80::202:b3ff:fe1e:8329]", L"[fe80::202:b3ff:fe1e:8329]",
+     L"[fe80::202:b3ff:fe1e:8329]"},
     {"HTTP IPv6 address with port",
      "http://[FE80:0000:0000:0000:0202:B3FF:FE1E:8329]:80/",
-     u"http://[fe80::202:b3ff:fe1e:8329]", u"[fe80::202:b3ff:fe1e:8329]",
-     u"http://[fe80::202:b3ff:fe1e:8329]"},
+     L"http://[fe80::202:b3ff:fe1e:8329]", L"[fe80::202:b3ff:fe1e:8329]",
+     L"http://[fe80::202:b3ff:fe1e:8329]"},
     {"HTTPs IPv6 address with port",
      "https://[FE80:0000:0000:0000:0202:B3FF:FE1E:8329]:443/",
-     u"https://[fe80::202:b3ff:fe1e:8329]", u"[fe80::202:b3ff:fe1e:8329]",
-     u"[fe80::202:b3ff:fe1e:8329]"},
+     L"https://[fe80::202:b3ff:fe1e:8329]", L"[fe80::202:b3ff:fe1e:8329]",
+     L"[fe80::202:b3ff:fe1e:8329]"},
     {"HTTPS IP address, non-default port", "https://173.194.65.103:8443",
-     u"https://173.194.65.103:8443", u"173.194.65.103:8443",
-     u"173.194.65.103:8443"},
-    {"Invalid host 1", "https://www.cyber../wow.php", u"https://www.cyber..",
-     u"www.cyber..", u"www.cyber.."},
-    {"Invalid host 2", "https://www...cyber/wow.php", u"https://www...cyber",
-     u"www...cyber", u"www...cyber"},
+     L"https://173.194.65.103:8443", L"173.194.65.103:8443",
+     L"173.194.65.103:8443"},
+    {"Invalid host 1", "https://www.cyber../wow.php", L"https://www.cyber..",
+     L"www.cyber..", L"www.cyber.."},
+    {"Invalid host 2", "https://www...cyber/wow.php", L"https://www...cyber",
+     L"www...cyber", L"www...cyber"},
     {"Invalid port 3", "https://173.194.65.103:/hello.aspx",
-     u"https://173.194.65.103", u"173.194.65.103", u"173.194.65.103"},
+     L"https://173.194.65.103", L"173.194.65.103", L"173.194.65.103"},
     {"Trailing dot in DNS name", "https://www.example.com./get/goat",
-     u"https://www.example.com.", u"www.example.com.", u"www.example.com."}};
+     L"https://www.example.com.", L"www.example.com.", L"www.example.com."}};
 
 TEST(TextEliderTest, FormatUrlForSecurityDisplay) {
-  for (const auto& common_test : common_tests) {
+  for (size_t i = 0; i < base::size(common_tests); ++i) {
     std::u16string formatted =
-        url_formatter::FormatUrlForSecurityDisplay(GURL(common_test.input));
-    EXPECT_EQ(common_test.output, formatted) << common_test.description;
+        url_formatter::FormatUrlForSecurityDisplay(GURL(common_tests[i].input));
+    EXPECT_EQ(base::WideToUTF16(common_tests[i].output), formatted)
+        << common_tests[i].description;
 
     std::u16string formatted_omit_web_scheme =
         url_formatter::FormatUrlForSecurityDisplay(
-            GURL(common_test.input),
+            GURL(common_tests[i].input),
             url_formatter::SchemeDisplay::OMIT_HTTP_AND_HTTPS);
-    EXPECT_EQ(common_test.output_omit_web_scheme, formatted_omit_web_scheme)
-        << common_test.description;
+    EXPECT_EQ(base::WideToUTF16(common_tests[i].output_omit_web_scheme),
+              formatted_omit_web_scheme)
+        << common_tests[i].description;
 
     std::u16string formatted_omit_cryptographic_scheme =
         url_formatter::FormatUrlForSecurityDisplay(
-            GURL(common_test.input),
+            GURL(common_tests[i].input),
             url_formatter::SchemeDisplay::OMIT_CRYPTOGRAPHIC);
-    EXPECT_EQ(common_test.output_omit_cryptographic_scheme,
-              formatted_omit_cryptographic_scheme)
-        << common_test.description;
+    EXPECT_EQ(
+        base::WideToUTF16(common_tests[i].output_omit_cryptographic_scheme),
+        formatted_omit_cryptographic_scheme)
+        << common_tests[i].description;
   }
 
   const OriginTestData tests[] = {
       {"File URI", "file:///usr/example/file.html",
-       u"file:///usr/example/file.html", u"file:///usr/example/file.html",
-       u"file:///usr/example/file.html"},
+       L"file:///usr/example/file.html", L"file:///usr/example/file.html",
+       L"file:///usr/example/file.html"},
       {"File URI with hostname", "file://localhost/usr/example/file.html",
-       u"file:///usr/example/file.html", u"file:///usr/example/file.html",
-       u"file:///usr/example/file.html"},
+       L"file:///usr/example/file.html", L"file:///usr/example/file.html",
+       L"file:///usr/example/file.html"},
       {"UNC File URI 1", "file:///CONTOSO/accounting/money.xls",
-       u"file:///CONTOSO/accounting/money.xls",
-       u"file:///CONTOSO/accounting/money.xls",
-       u"file:///CONTOSO/accounting/money.xls"},
+       L"file:///CONTOSO/accounting/money.xls",
+       L"file:///CONTOSO/accounting/money.xls",
+       L"file:///CONTOSO/accounting/money.xls"},
       {"UNC File URI 2",
        "file:///C:/Program%20Files/Music/Web%20Sys/main.html?REQUEST=RADIO",
-       u"file:///C:/Program%20Files/Music/Web%20Sys/main.html",
-       u"file:///C:/Program%20Files/Music/Web%20Sys/main.html",
-       u"file:///C:/Program%20Files/Music/Web%20Sys/main.html"},
+       L"file:///C:/Program%20Files/Music/Web%20Sys/main.html",
+       L"file:///C:/Program%20Files/Music/Web%20Sys/main.html",
+       L"file:///C:/Program%20Files/Music/Web%20Sys/main.html"},
       {"Invalid IPv6 address", "https://[2001:db8:0:1]/",
-       u"https://[2001:db8:0:1]", u"https://[2001:db8:0:1]",
-       u"https://[2001:db8:0:1]"},
+       L"https://[2001:db8:0:1]", L"https://[2001:db8:0:1]",
+       L"https://[2001:db8:0:1]"},
       {"HTTP filesystem: URL with path",
        "filesystem:http://www.google.com/temporary/test.html",
-       u"filesystem:http://www.google.com", u"filesystem:http://www.google.com",
-       u"filesystem:http://www.google.com"},
+       L"filesystem:http://www.google.com", L"filesystem:http://www.google.com",
+       L"filesystem:http://www.google.com"},
       {"File filesystem: URL with path",
        "filesystem:file://localhost/temporary/stuff/"
        "test.html?z=fun&goat=billy",
-       u"filesystem:file:///temporary/stuff/test.html",
-       u"filesystem:file:///temporary/stuff/test.html",
-       u"filesystem:file:///temporary/stuff/test.html"},
+       L"filesystem:file:///temporary/stuff/test.html",
+       L"filesystem:file:///temporary/stuff/test.html",
+       L"filesystem:file:///temporary/stuff/test.html"},
       {"Invalid scheme 1", "twelve://www.cyber.org/wow.php",
-       u"twelve://www.cyber.org/wow.php", u"twelve://www.cyber.org/wow.php",
-       u"twelve://www.cyber.org/wow.php"},
+       L"twelve://www.cyber.org/wow.php", L"twelve://www.cyber.org/wow.php",
+       L"twelve://www.cyber.org/wow.php"},
       {"Invalid scheme 2", "://www.cyber.org/wow.php",
-       u"://www.cyber.org/wow.php", u"://www.cyber.org/wow.php",
-       u"://www.cyber.org/wow.php"},
+       L"://www.cyber.org/wow.php", L"://www.cyber.org/wow.php",
+       L"://www.cyber.org/wow.php"},
       {"Invalid port 1", "https://173.194.65.103:000",
-       u"https://173.194.65.103:0", u"173.194.65.103:0", u"173.194.65.103:0"},
+       L"https://173.194.65.103:0", L"173.194.65.103:0", L"173.194.65.103:0"},
       {"Invalid port 2", "https://173.194.65.103:gruffle",
-       u"https://173.194.65.103:gruffle", u"https://173.194.65.103:gruffle",
-       u"https://173.194.65.103:gruffle"},
+       L"https://173.194.65.103:gruffle", L"https://173.194.65.103:gruffle",
+       L"https://173.194.65.103:gruffle"},
       {"Blob URL",
        "blob:http://www.html5rocks.com/4d4ff040-6d61-4446-86d3-13ca07ec9ab9",
-       u"blob:http://www.html5rocks.com/"
-       u"4d4ff040-6d61-4446-86d3-13ca07ec9ab9",
-       u"blob:http://www.html5rocks.com/"
-       u"4d4ff040-6d61-4446-86d3-13ca07ec9ab9",
-       u"blob:http://www.html5rocks.com/"
-       u"4d4ff040-6d61-4446-86d3-13ca07ec9ab9"}};
+       L"blob:http://www.html5rocks.com/"
+       L"4d4ff040-6d61-4446-86d3-13ca07ec9ab9",
+       L"blob:http://www.html5rocks.com/"
+       L"4d4ff040-6d61-4446-86d3-13ca07ec9ab9",
+       L"blob:http://www.html5rocks.com/"
+       L"4d4ff040-6d61-4446-86d3-13ca07ec9ab9"}};
 
-  for (const auto& test : tests) {
+  for (size_t i = 0; i < base::size(tests); ++i) {
     std::u16string formatted =
-        url_formatter::FormatUrlForSecurityDisplay(GURL(test.input));
-    EXPECT_EQ(test.output, formatted) << test.description;
+        url_formatter::FormatUrlForSecurityDisplay(GURL(tests[i].input));
+    EXPECT_EQ(base::WideToUTF16(tests[i].output), formatted)
+        << tests[i].description;
 
     std::u16string formatted_omit_web_scheme =
         url_formatter::FormatUrlForSecurityDisplay(
-            GURL(test.input),
+            GURL(tests[i].input),
             url_formatter::SchemeDisplay::OMIT_HTTP_AND_HTTPS);
-    EXPECT_EQ(test.output_omit_web_scheme, formatted_omit_web_scheme)
-        << test.description;
+    EXPECT_EQ(base::WideToUTF16(tests[i].output_omit_web_scheme),
+              formatted_omit_web_scheme)
+        << tests[i].description;
 
     std::u16string formatted_omit_cryptographic_scheme =
         url_formatter::FormatUrlForSecurityDisplay(
-            GURL(test.input), url_formatter::SchemeDisplay::OMIT_CRYPTOGRAPHIC);
-    EXPECT_EQ(test.output_omit_cryptographic_scheme,
+            GURL(tests[i].input),
+            url_formatter::SchemeDisplay::OMIT_CRYPTOGRAPHIC);
+    EXPECT_EQ(base::WideToUTF16(tests[i].output_omit_cryptographic_scheme),
               formatted_omit_cryptographic_scheme)
-        << test.description;
+        << tests[i].description;
   }
 
   std::u16string formatted = url_formatter::FormatUrlForSecurityDisplay(GURL());
@@ -586,72 +592,77 @@ TEST(TextEliderTest, FormatUrlForSecurityDisplay) {
 }
 
 TEST(TextEliderTest, FormatOriginForSecurityDisplay) {
-  for (const auto& common_test : common_tests) {
+  for (size_t i = 0; i < base::size(common_tests); ++i) {
     std::u16string formatted = url_formatter::FormatOriginForSecurityDisplay(
-        url::Origin::Create(GURL(common_test.input)));
-    EXPECT_EQ(common_test.output, formatted) << common_test.description;
+        url::Origin::Create(GURL(common_tests[i].input)));
+    EXPECT_EQ(base::WideToUTF16(common_tests[i].output), formatted)
+        << common_tests[i].description;
 
     std::u16string formatted_omit_web_scheme =
         url_formatter::FormatOriginForSecurityDisplay(
-            url::Origin::Create(GURL(common_test.input)),
+            url::Origin::Create(GURL(common_tests[i].input)),
             url_formatter::SchemeDisplay::OMIT_HTTP_AND_HTTPS);
-    EXPECT_EQ(common_test.output_omit_web_scheme, formatted_omit_web_scheme)
-        << common_test.description;
+    EXPECT_EQ(base::WideToUTF16(common_tests[i].output_omit_web_scheme),
+              formatted_omit_web_scheme)
+        << common_tests[i].description;
 
     std::u16string formatted_omit_cryptographic_scheme =
         url_formatter::FormatOriginForSecurityDisplay(
-            url::Origin::Create(GURL(common_test.input)),
+            url::Origin::Create(GURL(common_tests[i].input)),
             url_formatter::SchemeDisplay::OMIT_CRYPTOGRAPHIC);
-    EXPECT_EQ(common_test.output_omit_cryptographic_scheme,
-              formatted_omit_cryptographic_scheme)
-        << common_test.description;
+    EXPECT_EQ(
+        base::WideToUTF16(common_tests[i].output_omit_cryptographic_scheme),
+        formatted_omit_cryptographic_scheme)
+        << common_tests[i].description;
   }
 
   const OriginTestData tests[] = {
-      {"File URI", "file:///usr/example/file.html", u"file://", u"file://",
-       u"file://"},
+      {"File URI", "file:///usr/example/file.html", L"file://", L"file://",
+       L"file://"},
       {"File URI with hostname", "file://localhost/usr/example/file.html",
-       u"file://localhost", u"file://localhost", u"file://localhost"},
-      {"UNC File URI 1", "file:///CONTOSO/accounting/money.xls", u"file://",
-       u"file://", u"file://"},
+       L"file://localhost", L"file://localhost", L"file://localhost"},
+      {"UNC File URI 1", "file:///CONTOSO/accounting/money.xls", L"file://",
+       L"file://", L"file://"},
       {"UNC File URI 2",
        "file:///C:/Program%20Files/Music/Web%20Sys/main.html?REQUEST=RADIO",
-       u"file://", u"file://", u"file://"},
-      {"Invalid IPv6 address", "https://[2001:db8:0:1]/", u"", u"", u""},
+       L"file://", L"file://", L"file://"},
+      {"Invalid IPv6 address", "https://[2001:db8:0:1]/", L"", L"", L""},
       {"HTTP filesystem: URL with path",
        "filesystem:http://www.google.com/temporary/test.html",
-       u"http://www.google.com", u"www.google.com", u"http://www.google.com"},
+       L"http://www.google.com", L"www.google.com", L"http://www.google.com"},
       {"File filesystem: URL with path",
        "filesystem:file://localhost/temporary/stuff/test.html?z=fun&goat=billy",
-       u"file://", u"file://", u"file://"},
-      {"Invalid scheme 1", "twelve://www.cyber.org/wow.php", u"", u"", u""},
-      {"Invalid scheme 2", "://www.cyber.org/wow.php", u"", u"", u""},
-      {"Invalid port 1", "https://173.194.65.103:99999", u"", u"", u""},
-      {"Invalid port 2", "https://173.194.65.103:gruffle", u"", u"", u""},
+       L"file://", L"file://", L"file://"},
+      {"Invalid scheme 1", "twelve://www.cyber.org/wow.php", L"", L"", L""},
+      {"Invalid scheme 2", "://www.cyber.org/wow.php", L"", L"", L""},
+      {"Invalid port 1", "https://173.194.65.103:99999", L"", L"", L""},
+      {"Invalid port 2", "https://173.194.65.103:gruffle", L"", L"", L""},
       {"Blob URL",
        "blob:http://www.html5rocks.com/4d4ff040-6d61-4446-86d3-13ca07ec9ab9",
-       u"http://www.html5rocks.com", u"www.html5rocks.com",
-       u"http://www.html5rocks.com"}};
+       L"http://www.html5rocks.com", L"www.html5rocks.com",
+       L"http://www.html5rocks.com"}};
 
-  for (const auto& test : tests) {
+  for (size_t i = 0; i < base::size(tests); ++i) {
     std::u16string formatted = url_formatter::FormatOriginForSecurityDisplay(
-        url::Origin::Create(GURL(test.input)));
-    EXPECT_EQ(test.output, formatted) << test.description;
+        url::Origin::Create(GURL(tests[i].input)));
+    EXPECT_EQ(base::WideToUTF16(tests[i].output), formatted)
+        << tests[i].description;
 
     std::u16string formatted_omit_web_scheme =
         url_formatter::FormatOriginForSecurityDisplay(
-            url::Origin::Create(GURL(test.input)),
+            url::Origin::Create(GURL(tests[i].input)),
             url_formatter::SchemeDisplay::OMIT_HTTP_AND_HTTPS);
-    EXPECT_EQ(test.output_omit_web_scheme, formatted_omit_web_scheme)
-        << test.description;
+    EXPECT_EQ(base::WideToUTF16(tests[i].output_omit_web_scheme),
+              formatted_omit_web_scheme)
+        << tests[i].description;
 
     std::u16string formatted_omit_cryptographic_scheme =
         url_formatter::FormatOriginForSecurityDisplay(
-            url::Origin::Create(GURL(test.input)),
+            url::Origin::Create(GURL(tests[i].input)),
             url_formatter::SchemeDisplay::OMIT_CRYPTOGRAPHIC);
-    EXPECT_EQ(test.output_omit_cryptographic_scheme,
+    EXPECT_EQ(base::WideToUTF16(tests[i].output_omit_cryptographic_scheme),
               formatted_omit_cryptographic_scheme)
-        << test.description;
+        << tests[i].description;
   }
 
   std::u16string formatted = url_formatter::FormatOriginForSecurityDisplay(

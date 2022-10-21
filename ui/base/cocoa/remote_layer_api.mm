@@ -4,21 +4,18 @@
 
 #include "ui/base/cocoa/remote_layer_api.h"
 
-#include "base/feature_list.h"
+#include "base/command_line.h"
+#include "ui/base/ui_base_switches.h"
 
 #include <objc/runtime.h>
 
 namespace ui {
 
-namespace {
-// Control use of cross-process CALayers to display content directly from the
-// GPU process on Mac.
-base::Feature kRemoteCoreAnimationAPI{"RemoteCoreAnimationAPI",
-                                      base::FEATURE_ENABLED_BY_DEFAULT};
-}  // namespace
-
 bool RemoteLayerAPISupported() {
-  if (!base::FeatureList::IsEnabled(kRemoteCoreAnimationAPI))
+  static bool disabled_at_command_line =
+      base::CommandLine::ForCurrentProcess()->HasSwitch(
+          switches::kDisableRemoteCoreAnimation);
+  if (disabled_at_command_line)
     return false;
 
   // Verify the GPU process interfaces are present.

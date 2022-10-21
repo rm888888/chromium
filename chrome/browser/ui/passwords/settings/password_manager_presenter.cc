@@ -13,7 +13,6 @@
 #include "base/callback_helpers.h"
 #include "base/command_line.h"
 #include "base/containers/span.h"
-#include "base/memory/raw_ptr.h"
 #include "base/metrics/histogram_macros.h"
 #include "base/metrics/user_metrics.h"
 #include "base/metrics/user_metrics_action.h"
@@ -137,7 +136,7 @@ class RemovePasswordOperation : public UndoOperation {
   int GetRedoLabelId() const override;
 
  private:
-  raw_ptr<PasswordManagerPresenter> page_;
+  PasswordManagerPresenter* page_;
   password_manager::PasswordForm form_;
 };
 
@@ -176,7 +175,7 @@ class AddPasswordOperation : public UndoOperation {
   int GetRedoLabelId() const override;
 
  private:
-  raw_ptr<PasswordManagerPresenter> page_;
+  PasswordManagerPresenter* page_;
   password_manager::PasswordForm form_;
 };
 
@@ -254,8 +253,7 @@ void PasswordManagerPresenter::UpdatePasswordLists() {
     PasswordStoreInterface* store =
         GetPasswordStore(password_view_->GetProfile(), use_account_store);
     if (store) {
-      store->GetAllLoginsWithAffiliationAndBrandingInformation(
-          weak_ptr_factory_.GetWeakPtr());
+      store->GetAllLoginsWithAffiliationAndBrandingInformation(this);
     }
   }
 }
@@ -514,11 +512,6 @@ void PasswordManagerPresenter::OnGetPasswordStoreResults(FormVector results) {
 
   SetPasswordList();
   SetPasswordExceptionList();
-}
-
-void PasswordManagerPresenter::CancelAllRequests() {
-  cancelable_task_tracker()->TryCancelAll();
-  weak_ptr_factory_.InvalidateWeakPtrs();
 }
 
 void PasswordManagerPresenter::SetPasswordList() {

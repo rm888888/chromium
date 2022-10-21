@@ -8,6 +8,7 @@
 #include <stddef.h>
 #include <memory>
 
+#include "base/macros.h"
 #include "base/memory/shared_memory_mapping.h"
 #include "base/memory/unsafe_shared_memory_region.h"
 #include "build/build_config.h"

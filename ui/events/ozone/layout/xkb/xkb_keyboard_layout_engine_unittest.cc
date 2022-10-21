@@ -7,8 +7,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include <tuple>
-
 #include "base/cxx17_backports.h"
 #include "testing/gtest/include/gtest/gtest.h"
 #include "ui/events/event_constants.h"
@@ -100,8 +98,8 @@ class VkTestXkbKeyboardLayoutEngine : public XkbKeyboardLayoutEngine {
     if (key_code == VKEY_UNKNOWN) {
       DomKey dummy_dom_key;
       // If this fails, key_code remains VKEY_UNKNOWN.
-      std::ignore =
-          DomCodeToUsLayoutDomKey(dom_code, EF_NONE, &dummy_dom_key, &key_code);
+      ignore_result(DomCodeToUsLayoutDomKey(dom_code, EF_NONE, &dummy_dom_key,
+                                             &key_code));
     }
     return key_code;
   }

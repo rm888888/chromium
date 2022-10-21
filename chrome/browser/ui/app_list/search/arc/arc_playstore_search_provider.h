@@ -7,9 +7,10 @@
 
 #include <vector>
 
-#include "ash/components/arc/mojom/app.mojom-forward.h"
+#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "chrome/browser/ui/app_list/search/search_provider.h"
+#include "components/arc/mojom/app.mojom-forward.h"
 
 class Profile;
 class AppListControllerDelegate;
@@ -34,7 +35,7 @@ class ArcPlayStoreSearchProvider : public SearchProvider {
 
   // SearchProvider:
   void Start(const std::u16string& query) override;
-  ash::AppListSearchResultType ResultType() const override;
+  ash::AppListSearchResultType ResultType() override;
 
  private:
   void OnResults(const std::u16string& query,

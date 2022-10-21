@@ -4,7 +4,6 @@
 
 #include "ui/gl/gl_image.h"
 
-#include "base/notreached.h"
 #include "ui/gl/gl_bindings.h"
 
 #if defined(OS_ANDROID)

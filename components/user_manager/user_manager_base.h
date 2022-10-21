@@ -12,7 +12,7 @@
 #include <vector>
 
 #include "base/feature_list.h"
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/memory/scoped_refptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
@@ -155,7 +155,6 @@ class USER_MANAGER_EXPORT UserManagerBase : public UserManager {
   // not full initialized yet" flag.
   virtual void SetIsCurrentUserNew(bool is_new);
 
-  // TODO(crbug.com/1187062): Refactor this to remove use of ListValue.
   // Helper function that converts users from |users_list| to |users_vector| and
   // |users_set|. Duplicates and users already present in |existing_users| are
   // skipped.
@@ -288,11 +287,11 @@ class USER_MANAGER_EXPORT UserManagerBase : public UserManager {
   // NULL until a user has logged in, then points to one
   // of the User instances in |users_|, the |guest_user_| instance or an
   // ephemeral user instance.
-  raw_ptr<User> active_user_ = nullptr;
+  User* active_user_ = nullptr;
 
   // The primary user of the current session. It is recorded for the first
   // signed-in user and does not change thereafter.
-  raw_ptr<User> primary_user_ = nullptr;
+  User* primary_user_ = nullptr;
 
   // List of all known users. User instances are owned by |this|. Regular users
   // are removed by |RemoveUserFromList|, device local accounts by

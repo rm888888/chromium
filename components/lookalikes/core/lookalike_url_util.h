@@ -171,8 +171,7 @@ bool IsTopDomain(const DomainInfo& domain_info);
 // which doesn't have a notion of private registries.
 std::string GetETLDPlusOne(const std::string& hostname);
 
-// Returns true if a lookalike interstitial should be shown for the given
-// match type.
+// Returns true if a lookalike interstitial should be shown.
 bool ShouldBlockLookalikeUrlNavigation(LookalikeUrlMatchType match_type);
 
 // Returns true if a domain is visually similar to the hostname of |url|. The

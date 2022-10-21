@@ -12,6 +12,7 @@
 #include "build/branding_buildflags.h"
 #include "build/build_config.h"
 #include "build/chromeos_buildflags.h"
+#include "chrome/browser/extensions/chrome_extension_web_contents_observer.h"
 #include "chrome/browser/extensions/tab_helper.h"
 #include "chrome/browser/profiles/profile.h"
 #include "chrome/browser/sessions/session_tab_helper_factory.h"
@@ -36,9 +37,9 @@
 #if BUILDFLAG(IS_CHROMEOS_ASH)
 #include "ash/constants/ash_features.h"
 #include "ash/constants/ash_pref_names.h"
-#include "chrome/browser/ash/account_manager/account_apps_availability.h"
 #include "chrome/browser/ash/profiles/profile_helper.h"
 #include "chrome/browser/prefs/incognito_mode_prefs.h"
+#include "chrome/browser/supervised_user/supervised_user_features/supervised_user_features.h"
 #include "chrome/browser/ui/chrome_pages.h"
 #include "chrome/browser/ui/webui/chromeos/edu_account_login_handler_chromeos.h"
 #include "chrome/browser/ui/webui/chromeos/edu_coexistence/edu_coexistence_login_handler_chromeos.h"
@@ -84,6 +85,19 @@ void AddEduStrings(content::WebUIDataSource* source,
   source->AddString("parentSigninAccountRecoveryUrl",
                     chrome::kAccountRecoveryURL);
 
+  source->AddLocalizedString("parentInfoTitle", IDS_EDU_LOGIN_INFO_TITLE);
+  source->AddLocalizedString("parentInfoParentSettingsText",
+                             IDS_EDU_LOGIN_INFO_PARENT_SETTINGS);
+  source->AddString(
+      "parentInfoBody",
+      l10n_util::GetStringFUTF16(
+          IDS_EDU_LOGIN_INFO_BODY,
+          base::ASCIIToUTF16(chrome::kGsuiteTermsEducationPrivacyURL)));
+  source->AddLocalizedString("coexistenceTitle",
+                             IDS_EDU_LOGIN_INFO_COEXISTENCE_TITLE);
+  source->AddLocalizedString("coexistenceBody",
+                             IDS_EDU_LOGIN_INFO_COEXISTENCE_BODY);
+
   // Strings for server based EDU Coexistence flow.
   source->AddLocalizedString("eduCoexistenceNetworkDownHeading",
                              IDS_EDU_COEXISTENCE_NETWORK_DOWN_HEADING);
@@ -99,7 +113,7 @@ void AddEduStrings(content::WebUIDataSource* source,
 
 content::WebUIDataSource* CreateWebUIDataSource(Profile* profile) {
   content::WebUIDataSource* source =
-      content::WebUIDataSource::Create(chrome::kChromeUIChromeSigninHost);
+        content::WebUIDataSource::Create(chrome::kChromeUIChromeSigninHost);
   webui::SetupWebUIDataSource(
       source,
       base::make_span(kGaiaAuthHostResources, kGaiaAuthHostResourcesSize),
@@ -123,6 +137,21 @@ content::WebUIDataSource* CreateWebUIDataSource(Profile* profile) {
     {"account_manager_shared_css.js", IDR_ACCOUNT_MANAGER_SHARED_CSS_JS},
     {"gaia_action_buttons.js", IDR_GAIA_ACTION_BUTTONS_JS},
     {"error_screen.js", IDR_ACCOUNT_MANAGER_COMPONENTS_ERROR_SCREEN_JS},
+    {"edu", IDR_EDU_LOGIN_EDU_LOGIN_HTML},
+    {"app.js", IDR_EDU_LOGIN_EDU_LOGIN_JS},
+    {"edu_login_button.js", IDR_EDU_LOGIN_EDU_LOGIN_BUTTON_JS},
+    {"edu_login_template.js", IDR_EDU_LOGIN_EDU_LOGIN_TEMPLATE_JS},
+    {"edu_login_css.js", IDR_EDU_LOGIN_EDU_LOGIN_CSS_JS},
+    {"icons.js", IDR_EDU_LOGIN_ICONS_JS},
+    {"browser_proxy.js", IDR_EDU_LOGIN_BROWSER_PROXY_JS},
+    {"edu_login_util.js", IDR_EDU_LOGIN_EDU_LOGIN_UTIL_JS},
+    {"edu_login_coexistence_info.js",
+     IDR_EDU_LOGIN_EDU_LOGIN_COEXISTENCE_INFO_JS},
+    {"edu_login_parents.js", IDR_EDU_LOGIN_EDU_LOGIN_PARENTS_JS},
+    {"edu_login_parent_signin.js", IDR_EDU_LOGIN_EDU_LOGIN_PARENT_SIGNIN_JS},
+    {"edu_login_parent_info.js", IDR_EDU_LOGIN_EDU_LOGIN_PARENT_INFO_JS},
+    {"edu_login_signin.js", IDR_EDU_LOGIN_EDU_LOGIN_SIGNIN_JS},
+    {"edu_login_error.js", IDR_EDU_LOGIN_EDU_LOGIN_ERROR_JS},
     // Resources for the server-based edu coexistence flow.
     {"edu-coexistence", IDR_EDU_COEXISTENCE_EDU_COEXISTENCE_HTML},
     {"edu_coexistence_app.js", IDR_EDU_COEXISTENCE_EDU_COEXISTENCE_APP_JS},
@@ -176,9 +205,6 @@ content::WebUIDataSource* CreateWebUIDataSource(Profile* profile) {
   source->AddLocalizedStrings(kLocalizedStrings);
 
 #if BUILDFLAG(IS_CHROMEOS_ASH)
-  source->AddBoolean(
-      "isArcAccountRestrictionsEnabled",
-      ash::AccountAppsAvailability::IsArcAccountRestrictionsEnabled());
   source->AddBoolean("shouldSkipWelcomePage",
                      profile->GetPrefs()->GetBoolean(
                          chromeos::prefs::kShouldSkipInlineLoginWelcomePage));
@@ -266,11 +292,20 @@ InlineLoginUI::InlineLoginUI(content::WebUI* web_ui) : WebDialogUI(web_ui) {
           base::BindRepeating(&WebDialogUIBase::CloseDialog,
                               weak_factory_.GetWeakPtr(), nullptr /* args */)));
   if (profile->IsChild()) {
-    web_ui->AddMessageHandler(
-        std::make_unique<chromeos::EduCoexistenceLoginHandler>(
-            base::BindRepeating(&WebDialogUIBase::CloseDialog,
-                                weak_factory_.GetWeakPtr(),
-                                nullptr /* args */)));
+    if (!base::FeatureList::IsEnabled(
+            ::supervised_users::kEduCoexistenceFlowV2)) {
+      web_ui->AddMessageHandler(
+          std::make_unique<chromeos::EduAccountLoginHandler>(
+              base::BindRepeating(&WebDialogUIBase::CloseDialog,
+                                  weak_factory_.GetWeakPtr(),
+                                  nullptr /* args */)));
+    } else {
+      web_ui->AddMessageHandler(
+          std::make_unique<chromeos::EduCoexistenceLoginHandler>(
+              base::BindRepeating(&WebDialogUIBase::CloseDialog,
+                                  weak_factory_.GetWeakPtr(),
+                                  nullptr /* args */)));
+    }
   }
 
 #else
@@ -280,6 +315,11 @@ InlineLoginUI::InlineLoginUI(content::WebUI* web_ui) : WebDialogUI(web_ui) {
   web_ui->AddMessageHandler(std::make_unique<MetricsHandler>());
 
   content::WebContents* contents = web_ui->GetWebContents();
+  // Required for intercepting extension function calls when the page is loaded
+  // in a bubble (not a full tab, thus tab helpers are not registered
+  // automatically).
+  extensions::ChromeExtensionWebContentsObserver::CreateForWebContents(
+      contents);
   extensions::TabHelper::CreateForWebContents(contents);
   // Ensure that the login UI has a tab ID, which will allow the GAIA auth
   // extension's background script to tell it apart from iframes injected by

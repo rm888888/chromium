@@ -21,6 +21,9 @@ source_set("android") {
   sources = [
     "ar_compositor_delegate_provider.cc",
     "ar_compositor_delegate_provider.h",
+    "xr_install_helper_delegate.h",
+    "xr_install_infobar.cc",
+    "xr_install_infobar.h",
   ]
 
   if (enable_arcore) {
@@ -37,7 +40,8 @@ source_set("android") {
   deps = [
     ":android_utils",
     "//base",
-    "//components/messages/android",
+    "//components/infobars/android",
+    "//components/infobars/core",
     "//components/resources:android_resources",
     "//components/strings",
     "//components/webxr:webxr",

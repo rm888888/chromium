@@ -5,6 +5,7 @@
 #ifndef UI_GFX_ANIMATION_TWEEN_H_
 #define UI_GFX_ANIMATION_TWEEN_H_
 
+#include "base/macros.h"
 #include "third_party/skia/include/core/SkColor.h"
 #include "ui/gfx/animation/animation_export.h"
 #include "ui/gfx/geometry/rect.h"
@@ -74,9 +75,6 @@ class ANIMATION_EXPORT Tween {
     ACCEL_0_80_DECEL_80,   // Variant of ACCEL_0_40_DECEL_100 which drops in
                            // value faster, but flattens out into the drift
                            // sooner.
-
-    ACCEL_0_100_DECEL_80,  // Variant of ACCEL_0_80_DECEL_80 which drops in
-                           // value even faster.
   };
 
   Tween(const Tween&) = delete;

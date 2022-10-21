@@ -36,12 +36,12 @@ CryptohomeWebUIHandler::CryptohomeWebUIHandler() {}
 CryptohomeWebUIHandler::~CryptohomeWebUIHandler() {}
 
 void CryptohomeWebUIHandler::RegisterMessages() {
-  web_ui()->RegisterMessageCallback(
+  web_ui()->RegisterDeprecatedMessageCallback(
       "pageLoaded", base::BindRepeating(&CryptohomeWebUIHandler::OnPageLoaded,
                                         weak_ptr_factory_.GetWeakPtr()));
 }
 
-void CryptohomeWebUIHandler::OnPageLoaded(base::Value::ConstListView args) {
+void CryptohomeWebUIHandler::OnPageLoaded(const base::ListValue* args) {
   UserDataAuthClient* userdataauth_client = UserDataAuthClient::Get();
   CryptohomePkcs11Client* cryptohome_pkcs11_client =
       CryptohomePkcs11Client::Get();

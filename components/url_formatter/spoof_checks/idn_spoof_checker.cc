@@ -4,7 +4,6 @@
 
 #include "components/url_formatter/spoof_checks/idn_spoof_checker.h"
 
-#include "base/bits.h"
 #include "base/check_op.h"
 #include "base/containers/contains.h"
 #include "base/logging.h"
@@ -27,10 +26,19 @@ namespace url_formatter {
 
 namespace {
 
+uint8_t BitLength(uint32_t input) {
+  uint8_t number_of_bits = 0;
+  while (input != 0) {
+    number_of_bits++;
+    input >>= 1;
+  }
+  return number_of_bits;
+}
+
 class TopDomainPreloadDecoder : public net::extras::PreloadDecoder {
  public:
   using net::extras::PreloadDecoder::PreloadDecoder;
-  ~TopDomainPreloadDecoder() override = default;
+  ~TopDomainPreloadDecoder() override {}
 
   bool ReadEntry(net::extras::PreloadDecoder::BitReader* reader,
                  const std::string& search,
@@ -38,9 +46,8 @@ class TopDomainPreloadDecoder : public net::extras::PreloadDecoder {
                  bool* out_found) override {
     // Make sure the assigned bit length is enough to encode all SkeletonType
     // values.
-    DCHECK_EQ(
-        kSkeletonTypeBitLength,
-        base::bits::Log2Floor(url_formatter::SkeletonType::kMaxValue) + 1);
+    DCHECK_EQ(kSkeletonTypeBitLength,
+              BitLength(url_formatter::SkeletonType::kMaxValue));
 
     bool is_same_skeleton;
 
@@ -433,8 +440,7 @@ IDNSpoofChecker::Result IDNSpoofChecker::SafeToDisplayAsUnicode(
   // label is made of Latin. Checking with lgc_letters set here should be fine
   // because script mixing of LGC is already rejected.
   if (non_ascii_latin_letters_.containsSome(label_string) &&
-      !(skeleton_generator_ &&
-        skeleton_generator_->ShouldRemoveDiacriticsFromLabel(label_string))) {
+      !skeleton_generator_->ShouldRemoveDiacriticsFromLabel(label_string)) {
     return Result::kNonAsciiLatinCharMixedWithNonLatin;
   }
 
@@ -555,6 +561,8 @@ TopDomainEntry IDNSpoofChecker::GetSimilarTopDomain(
 }
 
 Skeletons IDNSpoofChecker::GetSkeletons(base::StringPiece16 hostname) const {
+  // skeleton_generator_ may be null if uspoof_open fails. It's unclear why this
+  // happens, see crbug.com/1169079.
   return skeleton_generator_ ? skeleton_generator_->GetSkeletons(hostname)
                              : Skeletons();
 }
@@ -599,9 +607,7 @@ TopDomainEntry IDNSpoofChecker::LookupSkeletonInTopDomains(
 
 std::u16string IDNSpoofChecker::MaybeRemoveDiacritics(
     const std::u16string& hostname) {
-  return skeleton_generator_
-             ? skeleton_generator_->MaybeRemoveDiacritics(hostname)
-             : hostname;
+  return skeleton_generator_->MaybeRemoveDiacritics(hostname);
 }
 
 void IDNSpoofChecker::SetAllowedUnicodeSet(UErrorCode* status) {

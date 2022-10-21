@@ -108,7 +108,7 @@ ExternalInstallOptions GetConfigForGoogleSheets() {
   options.load_and_await_service_worker_registration = false;
   options.only_use_app_info_factory = true;
   options.app_info_factory = base::BindRepeating([]() {
-    auto info = std::make_unique<WebAppInstallInfo>();
+    auto info = std::make_unique<WebApplicationInfo>();
     info->title =
         base::UTF8ToUTF16(GetTranslatedName("Sheets", kNameTranslations));
 

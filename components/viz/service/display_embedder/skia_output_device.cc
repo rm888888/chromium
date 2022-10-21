@@ -138,11 +138,6 @@ void SkiaOutputDevice::PostSubBuffer(const gfx::Rect& rect,
   NOTREACHED();
 }
 
-bool SkiaOutputDevice::AllocateFrameBuffers(size_t n) {
-  NOTREACHED();
-  return false;
-}
-
 void SkiaOutputDevice::ReleaseOneFrameBuffer() {
   NOTREACHED();
 }
@@ -191,7 +186,8 @@ void SkiaOutputDevice::SetDependencyTimings(base::TimeTicks task_ready) {
 
 void SkiaOutputDevice::StartSwapBuffers(BufferPresentedCallback feedback) {
   DCHECK_LT(static_cast<int>(pending_swaps_.size()),
-            capabilities_.pending_swap_params.GetMax());
+            std::max(capabilities_.max_frames_pending,
+                     capabilities_.max_frames_pending_120hz.value_or(0)));
 
   pending_swaps_.emplace(++swap_id_, std::move(feedback), viz_scheduled_draw_,
                          gpu_started_draw_, gpu_task_ready_);

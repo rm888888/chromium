@@ -78,8 +78,6 @@ COMPONENTS_DOWNLOAD_EXPORT extern const base::Feature kAllowSavePackageScanning;
 COMPONENTS_DOWNLOAD_EXPORT extern const base::Feature
     kIncognitoDownloadsWarning;
 
-// Arbitrary range request support for download system.
-COMPONENTS_DOWNLOAD_EXPORT extern const base::Feature kDownloadRange;
 }  // namespace features
 
 namespace switches {

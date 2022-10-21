@@ -6,8 +6,6 @@
 
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
-#include "build/buildflag.h"
-#include "build/chromeos_buildflags.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/profiles/profile.h"
 #include "chrome/browser/profiles/profile_avatar_icon_util.h"
@@ -79,7 +77,8 @@ void SyncConfirmationUI::Initialize(
 
   content::WebUIDataSource* source =
       content::WebUIDataSource::Create(chrome::kChromeUISyncConfirmationHost);
-  webui::SetJSModuleDefaults(source);
+  source->UseStringsJs();
+  source->EnableReplaceI18nInJS();
 
   static constexpr webui::ResourcePath kResources[] = {
       {"signin_shared_css.js", IDR_SIGNIN_SIGNIN_SHARED_CSS_JS},
@@ -103,6 +102,8 @@ void SyncConfirmationUI::Initialize(
     InitializeForSyncDisabled(source);
   }
 
+  source->DisableTrustedTypesCSP();
+
   base::DictionaryValue strings;
   webui::SetLoadTimeDataDefaults(
       g_browser_process->GetApplicationLocale(), &strings);
@@ -121,31 +122,28 @@ void SyncConfirmationUI::InitializeForSyncConfirmation(
     absl::optional<SkColor> profile_creation_flow_color,
     DesignVersion design,
     bool is_modal_dialog) {
+  // Resources for testing.
+  source->AddResourcePath("test_loader.js", IDR_WEBUI_JS_TEST_LOADER_JS);
+  source->AddResourcePath("test_loader_util.js",
+                          IDR_WEBUI_JS_TEST_LOADER_UTIL_JS);
+  source->AddResourcePath("test_loader.html", IDR_WEBUI_HTML_TEST_LOADER_HTML);
+
+  source->OverrideContentSecurityPolicy(
+      network::mojom::CSPDirectiveName::ScriptSrc,
+      "script-src chrome://resources chrome://test 'self';");
+
   AddStringResource(source, "syncConfirmationTitle",
-#if BUILDFLAG(IS_CHROMEOS_LACROS)
-                    IDS_SYNC_CONFIRMATION_TITLE_LACROS
-#else
-                    IDS_SYNC_CONFIRMATION_TITLE
-#endif
-  );
+                    IDS_SYNC_CONFIRMATION_TITLE);
   AddStringResource(source, "syncConfirmationSyncInfoTitle",
-#if BUILDFLAG(IS_CHROMEOS_LACROS)
-                    IDS_SYNC_CONFIRMATION_SYNC_INFO_TITLE_LACROS
-#else
-                    IDS_SYNC_CONFIRMATION_SYNC_INFO_TITLE
-#endif
-  );
-  AddStringResource(source, "syncConfirmationConfirmLabel",
-#if BUILDFLAG(IS_CHROMEOS_LACROS)
-                    IDS_DONE
-#else
-                    IDS_SYNC_CONFIRMATION_CONFIRM_BUTTON_LABEL
-#endif
-  );
+                    IDS_SYNC_CONFIRMATION_SYNC_INFO_TITLE);
   AddStringResource(source, "syncConfirmationSyncInfoDesc",
                     IDS_SYNC_CONFIRMATION_SYNC_INFO_DESC);
   AddStringResource(source, "syncConfirmationSettingsInfo",
                     IDS_SYNC_CONFIRMATION_SETTINGS_INFO);
+  AddStringResource(source, "syncConfirmationSettingsLabel",
+                    IDS_SYNC_CONFIRMATION_SETTINGS_BUTTON_LABEL);
+  AddStringResource(source, "syncConfirmationConfirmLabel",
+                    IDS_SYNC_CONFIRMATION_CONFIRM_BUTTON_LABEL);
 
   source->AddResourcePath(
       "sync_confirmation_app.js",
@@ -162,8 +160,6 @@ void SyncConfirmationUI::InitializeForSyncConfirmation(
       source->AddString("accountPictureUrl",
                         profiles::GetPlaceholderAvatarIconUrl());
       AddStringResource(source, "syncConfirmationUndoLabel", IDS_CANCEL);
-      AddStringResource(source, "syncConfirmationSettingsLabel",
-                        IDS_SYNC_CONFIRMATION_SETTINGS_BUTTON_LABEL);
 
       source->AddResourcePath(
           "images/sync_confirmation_illustration.svg",
@@ -187,8 +183,6 @@ void SyncConfirmationUI::InitializeForSyncConfirmation(
       source->AddString("accountPictureUrl", avatar_picture_url);
 
       AddStringResource(source, "syncConfirmationUndoLabel", IDS_NO_THANKS);
-      AddStringResource(source, "syncConfirmationSettingsLabel",
-                        IDS_SYNC_CONFIRMATION_REFRESHED_SETTINGS_BUTTON_LABEL);
       source->AddString("highlightColor", color_utils::SkColorToRgbaString(
                                               colors.profile_highlight_color));
 

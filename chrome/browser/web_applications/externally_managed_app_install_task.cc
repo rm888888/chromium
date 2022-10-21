@@ -16,7 +16,6 @@
 #include "build/chromeos_buildflags.h"
 #include "chrome/browser/profiles/profile.h"
 #include "chrome/browser/ssl/security_state_tab_helper.h"
-#include "chrome/browser/web_applications/web_app.h"
 #include "chrome/browser/web_applications/web_app_constants.h"
 #include "chrome/browser/web_applications/web_app_install_finalizer.h"
 #include "chrome/browser/web_applications/web_app_install_manager.h"
@@ -143,8 +142,8 @@ void ExternallyManagedAppInstallTask::OnUrlLoaded(
 
   base::ThreadTaskRunnerHandle::Get()->PostTask(
       FROM_HERE,
-      base::BindOnce(std::move(retry_on_failure),
-                     ExternallyManagedAppManager::InstallResult(code)));
+      base::BindOnce(std::move(retry_on_failure), /*app_id=*/absl::nullopt,
+                     ExternallyManagedAppManager::InstallResult{.code = code}));
 }
 
 void ExternallyManagedAppInstallTask::InstallFromInfo(
@@ -196,8 +195,8 @@ void ExternallyManagedAppInstallTask::OnPlaceholderUninstalled(
     LOG(ERROR) << "Failed to uninstall placeholder for: "
                << install_options_.install_url;
     std::move(result_callback)
-        .Run(ExternallyManagedAppManager::InstallResult(
-            InstallResultCode::kFailedPlaceholderUninstall));
+        .Run(/*app_id=*/absl::nullopt,
+             {.code = InstallResultCode::kFailedPlaceholderUninstall});
     return;
   }
   ContinueWebAppInstall(web_contents, std::move(result_callback));
@@ -228,13 +227,13 @@ void ExternallyManagedAppInstallTask::InstallPlaceholder(
     // No need to install a placeholder app again.
     base::ThreadTaskRunnerHandle::Get()->PostTask(
         FROM_HERE,
-        base::BindOnce(std::move(callback),
-                       ExternallyManagedAppManager::InstallResult(
-                           InstallResultCode::kSuccessNewInstall, app_id)));
+        base::BindOnce(std::move(callback), app_id,
+                       ExternallyManagedAppManager::InstallResult{
+                           .code = InstallResultCode::kSuccessNewInstall}));
     return;
   }
 
-  WebAppInstallInfo web_app_info;
+  WebApplicationInfo web_app_info;
   web_app_info.title =
       install_options_.placeholder_name
           ? base::UTF8ToUTF16(install_options_.placeholder_name.value())
@@ -264,8 +263,7 @@ void ExternallyManagedAppInstallTask::OnWebAppInstalled(
     const AppId& app_id,
     InstallResultCode code) {
   if (!IsNewInstall(code)) {
-    std::move(result_callback)
-        .Run(ExternallyManagedAppManager::InstallResult(code));
+    std::move(result_callback).Run(/*app_id=*/absl::nullopt, {.code = code});
     return;
   }
 
@@ -283,10 +281,11 @@ void ExternallyManagedAppInstallTask::OnWebAppInstalled(
                ? InstallResultCode::kSuccessOfflineOnlyInstall
                : InstallResultCode::kSuccessOfflineFallbackInstall;
   }
-  base::ScopedClosureRunner scoped_closure(
-      base::BindOnce(std::move(result_callback),
-                     ExternallyManagedAppManager::InstallResult(
-                         code, app_id, uninstall_and_replace_triggered)));
+  base::ScopedClosureRunner scoped_closure(base::BindOnce(
+      std::move(result_callback), app_id,
+      ExternallyManagedAppManager::InstallResult{
+          .code = code,
+          .did_uninstall_and_replace = uninstall_and_replace_triggered}));
 
   if (!is_placeholder) {
     registrar_->NotifyWebAppInstalledWithOsHooks(app_id);
@@ -306,10 +305,7 @@ void ExternallyManagedAppInstallTask::OnWebAppInstalled(
   // configured from somewhere else rather than always true.
   options.os_hooks[OsHookType::kFileHandlers] = true;
   options.os_hooks[OsHookType::kProtocolHandlers] = true;
-
-  const WebApp* web_app = registrar_->GetAppById(app_id);
-  options.os_hooks[OsHookType::kUninstallationViaOsSettings] =
-      web_app->CanUserUninstallWebApp();
+  options.os_hooks[OsHookType::kUninstallationViaOsSettings] = true;
 #if defined(OS_WIN) || defined(OS_MAC) || \
     (defined(OS_LINUX) && !BUILDFLAG(IS_CHROMEOS_LACROS))
   options.os_hooks[OsHookType::kUrlHandlers] = true;
@@ -337,12 +333,13 @@ void ExternallyManagedAppInstallTask::OnOsHooksCreated(
 
 void ExternallyManagedAppInstallTask::TryAppInfoFactoryOnFailure(
     ResultCallback result_callback,
+    absl::optional<AppId> app_id,
     ExternallyManagedAppManager::InstallResult result) {
   if (!IsSuccess(result.code) && install_options().app_info_factory) {
     InstallFromInfo(std::move(result_callback));
     return;
   }
-  std::move(result_callback).Run(std::move(result));
+  std::move(result_callback).Run(std::move(app_id), std::move(result));
 }
 
 }  // namespace web_app

@@ -8,14 +8,10 @@
 #include <memory>
 #include <string>
 
-#include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "components/content_settings/core/common/content_settings_types.h"
 #include "components/infobars/core/infobar_manager.h"
-#include "components/messages/android/message_wrapper.h"
 #include "components/permissions/permission_prompt.h"
-#include "components/permissions/permission_uma_util.h"
-#include "components/permissions/permissions_client.h"
 
 namespace content {
 class WebContents;
@@ -35,12 +31,6 @@ class PermissionPromptAndroid : public permissions::PermissionPrompt,
   PermissionPromptAndroid(const PermissionPromptAndroid&) = delete;
   PermissionPromptAndroid& operator=(const PermissionPromptAndroid&) = delete;
 
-  // Expect to be destroyed (and the UI needs to go) when:
-  // 1. A navigation happens, tab/webcontents is being closed; with the current
-  //    GetTabSwitchingBehavior() implementation, this instance survives the tab
-  //    being backgrounded.
-  // 2. The permission request is resolved (accept, deny, dismiss).
-  // 3. A higher priority request comes in.
   ~PermissionPromptAndroid() override;
 
   // permissions::PermissionPrompt:
@@ -52,7 +42,6 @@ class PermissionPromptAndroid : public permissions::PermissionPrompt,
   void Closing();
   void Accept();
   void Deny();
-  bool ShouldCurrentRequestUseQuietUI();
 
   // We show one permission at a time except for grouped mic+camera, for which
   // we still have a single icon and message text.
@@ -72,22 +61,13 @@ class PermissionPromptAndroid : public permissions::PermissionPrompt,
   // PermissionPromptAndroid is owned by PermissionRequestManager, so it should
   // be safe to hold a raw WebContents pointer here because this class is
   // destroyed before the WebContents.
-  const raw_ptr<content::WebContents> web_contents_;
+  content::WebContents* const web_contents_;
   // |delegate_| is the PermissionRequestManager, which owns this object.
-  const raw_ptr<Delegate> delegate_;
+  Delegate* const delegate_;
 
   // The infobar used to display the permission request, if displayed in that
   // format. Never assume that this pointer is currently alive.
-  raw_ptr<infobars::InfoBar> permission_infobar_;
-
-  // Message UI is alternative to infobars. So it should be impossible that
-  // both |message_delegate_| and |permission_infobar_| are non-null at the
-  // same moment.
-  std::unique_ptr<PermissionsClient::PermissionMessageDelegate>
-      message_delegate_;
-
-  permissions::PermissionPromptDisposition prompt_disposition_ =
-      permissions::PermissionPromptDisposition::NOT_APPLICABLE;
+  infobars::InfoBar* permission_infobar_;
 
   base::WeakPtrFactory<PermissionPromptAndroid> weak_factory_{this};
 };

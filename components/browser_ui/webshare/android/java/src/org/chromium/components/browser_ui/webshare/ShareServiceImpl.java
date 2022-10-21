@@ -176,7 +176,7 @@ public class ShareServiceImpl implements ShareService {
 
     @Override
     public void share(String title, String text, Url url, final SharedFile[] files,
-            final Share_Response callback) {
+            final ShareResponse callback) {
         RecordHistogram.recordEnumeratedHistogram(
                 "WebShare.ApiCount", WEBSHARE_METHOD_SHARE, WEBSHARE_METHOD_COUNT);
 

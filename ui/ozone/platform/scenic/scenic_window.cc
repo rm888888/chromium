@@ -9,7 +9,6 @@
 #include <algorithm>
 #include <memory>
 #include <string>
-#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -345,7 +344,7 @@ void ScenicWindow::OnInputEvent(const fuchsia::ui::input::InputEvent& event) {
   } else {
     // Scenic doesn't care if the input event was handled, so ignore the
     // "handled" status.
-    std::ignore = event_dispatcher_.ProcessEvent(event);
+    ignore_result(event_dispatcher_.ProcessEvent(event));
   }
 }
 

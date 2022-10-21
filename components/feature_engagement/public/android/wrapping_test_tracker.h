@@ -10,6 +10,7 @@
 
 #include "base/android/jni_android.h"
 #include "base/callback.h"
+#include "base/macros.h"
 #include "components/feature_engagement/public/tracker.h"
 
 namespace feature_engagement {

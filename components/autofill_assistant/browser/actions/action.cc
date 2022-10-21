@@ -121,6 +121,9 @@ std::ostream& operator<<(std::ostream& out,
     case ActionProto::ActionInfoCase::kShowProgressBar:
       out << "ShowProgressBar";
       break;
+    case ActionProto::ActionInfoCase::kHighlightElement:
+      out << "HighlightElement";
+      break;
     case ActionProto::ActionInfoCase::kShowDetails:
       out << "ShowDetails";
       break;

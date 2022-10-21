@@ -16,6 +16,7 @@
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/logging.h"
+#include "base/macros.h"
 #include "base/metrics/histogram_macros.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/threading/thread_checker.h"
@@ -24,15 +25,11 @@
 #include "base/timer/timer.h"
 #include "components/component_updater/component_updater_service_internal.h"
 #include "components/component_updater/component_updater_utils.h"
-#include "components/component_updater/pref_names.h"
-#include "components/prefs/pref_registry_simple.h"
-#include "components/prefs/pref_service.h"
 #include "components/update_client/configurator.h"
 #include "components/update_client/crx_update_item.h"
 #include "components/update_client/update_client.h"
 #include "components/update_client/update_client_errors.h"
 #include "components/update_client/utils.h"
-#include "third_party/abseil-cpp/absl/types/optional.h"
 #include "url/gurl.h"
 
 using CrxInstaller = update_client::CrxInstaller;
@@ -61,46 +58,12 @@ ComponentInfo::ComponentInfo(ComponentInfo&& other) = default;
 ComponentInfo& ComponentInfo::operator=(ComponentInfo&& other) = default;
 ComponentInfo::~ComponentInfo() = default;
 
-ComponentRegistration::ComponentRegistration(
-    const std::string& app_id,
-    const std::string& name,
-    std::vector<uint8_t> public_key_hash,
-    const base::Version& version,
-    const std::string& fingerprint,
-    std::map<std::string, std::string> installer_attributes,
-    scoped_refptr<update_client::ActionHandler> action_handler,
-    scoped_refptr<update_client::CrxInstaller> installer,
-    bool requires_network_encryption,
-    bool supports_group_policy_enable_component_updates)
-    : app_id(app_id),
-      name(name),
-      public_key_hash(public_key_hash),
-      version(version),
-      fingerprint(fingerprint),
-      installer_attributes(installer_attributes),
-      action_handler(action_handler),
-      installer(installer),
-      requires_network_encryption(requires_network_encryption),
-      supports_group_policy_enable_component_updates(
-          supports_group_policy_enable_component_updates) {}
-ComponentRegistration::ComponentRegistration(
-    const ComponentRegistration& other) = default;
-ComponentRegistration& ComponentRegistration::operator=(
-    const ComponentRegistration& other) = default;
-ComponentRegistration::ComponentRegistration(ComponentRegistration&& other) =
-    default;
-ComponentRegistration& ComponentRegistration::operator=(
-    ComponentRegistration&& other) = default;
-ComponentRegistration::~ComponentRegistration() = default;
-
 CrxUpdateService::CrxUpdateService(scoped_refptr<Configurator> config,
                                    std::unique_ptr<UpdateScheduler> scheduler,
-                                   scoped_refptr<UpdateClient> update_client,
-                                   const std::string& brand)
+                                   scoped_refptr<UpdateClient> update_client)
     : config_(config),
       scheduler_(std::move(scheduler)),
-      update_client_(update_client),
-      brand_(brand) {
+      update_client_(update_client) {
   AddObserver(this);
 }
 
@@ -153,8 +116,7 @@ void CrxUpdateService::Stop() {
 
 // Adds a component to be checked for upgrades. If the component exists it
 // it will be replaced.
-bool CrxUpdateService::RegisterComponent(
-    const ComponentRegistration& component) {
+bool CrxUpdateService::RegisterComponent(const CrxComponent& component) {
   DCHECK(thread_checker_.CalledOnValidThread());
   if (component.app_id.empty() || !component.version.IsValid() ||
       !component.installer) {
@@ -175,7 +137,7 @@ bool CrxUpdateService::RegisterComponent(
   // response to events from the UpdateClient instance.
   CrxUpdateItem item;
   item.id = component.app_id;
-  item.component = ToCrxComponent(component);
+  item.component = component;
   const auto inserted =
       component_states_.insert(std::make_pair(component.app_id, item));
   DCHECK(inserted.second);
@@ -204,15 +166,16 @@ bool CrxUpdateService::UnregisterComponent(const std::string& id) {
     return true;
   }
 
-  return DoUnregisterComponent(id);
+  return DoUnregisterComponent(it->second);
 }
 
-bool CrxUpdateService::DoUnregisterComponent(const std::string& id) {
+bool CrxUpdateService::DoUnregisterComponent(const CrxComponent& component) {
   DCHECK(thread_checker_.CalledOnValidThread());
 
+  const auto id = GetCrxComponentID(component);
   DCHECK(ready_callbacks_.find(id) == ready_callbacks_.end());
 
-  const bool result = components_.find(id)->second.installer->Uninstall();
+  const bool result = component.installer->Uninstall();
 
   const auto pos =
       std::find(components_order_.begin(), components_order_.end(), id);
@@ -249,30 +212,7 @@ OnDemandUpdater& CrxUpdateService::GetOnDemandUpdater() {
   return *this;
 }
 
-update_client::CrxComponent CrxUpdateService::ToCrxComponent(
-    const ComponentRegistration& component) const {
-  update_client::CrxComponent crx;
-  crx.pk_hash = component.public_key_hash;
-  crx.app_id = component.app_id;
-  crx.installer = component.installer;
-  crx.action_handler = component.action_handler;
-  crx.version = component.version;
-  crx.fingerprint = component.fingerprint;
-  crx.name = component.name;
-  crx.installer_attributes = component.installer_attributes;
-  crx.requires_network_encryption = component.requires_network_encryption;
-
-  crx.brand = brand_;
-  crx.crx_format_requirement =
-      crx_file::VerifierFormat::CRX3_WITH_PUBLISHER_PROOF;
-  crx.updates_enabled =
-      !component.supports_group_policy_enable_component_updates ||
-      config_->GetPrefService()->GetBoolean(prefs::kComponentUpdatesEnabled);
-
-  return crx;
-}
-
-absl::optional<ComponentRegistration> CrxUpdateService::GetComponent(
+absl::optional<CrxComponent> CrxUpdateService::GetComponent(
     const std::string& id) const {
   DCHECK(thread_checker_.CalledOnValidThread());
   return component_updater::GetComponent(components_, id);
@@ -439,13 +379,7 @@ bool CrxUpdateService::GetComponentDetails(const std::string& id,
 std::vector<absl::optional<CrxComponent>> CrxUpdateService::GetCrxComponents(
     const std::vector<std::string>& ids) {
   DCHECK(thread_checker_.CalledOnValidThread());
-  std::vector<absl::optional<CrxComponent>> crxs;
-  for (absl::optional<ComponentRegistration> item :
-       component_updater::GetCrxComponents(components_, ids)) {
-    crxs.push_back(item ? absl::optional<CrxComponent>{ToCrxComponent(*item)}
-                        : absl::nullopt);
-  }
-  return crxs;
+  return component_updater::GetCrxComponents(components_, ids);
 }
 
 void CrxUpdateService::OnUpdateComplete(Callback callback,
@@ -465,7 +399,7 @@ void CrxUpdateService::OnUpdateComplete(Callback callback,
     if (!update_client_->IsUpdating(id)) {
       const auto component = GetComponent(id);
       if (component)
-        DoUnregisterComponent(id);
+        DoUnregisterComponent(*component);
     }
   }
 
@@ -515,19 +449,12 @@ void CrxUpdateService::OnEvent(Events event, const std::string& id) {
 // TODO(sorin): consider making this a singleton.
 std::unique_ptr<ComponentUpdateService> ComponentUpdateServiceFactory(
     scoped_refptr<Configurator> config,
-    std::unique_ptr<UpdateScheduler> scheduler,
-    const std::string& brand) {
+    std::unique_ptr<UpdateScheduler> scheduler) {
   DCHECK(config);
   DCHECK(scheduler);
   auto update_client = update_client::UpdateClientFactory(config);
   return std::make_unique<CrxUpdateService>(config, std::move(scheduler),
-                                            std::move(update_client), brand);
-}
-
-// Register prefs required by the component update service.
-void RegisterComponentUpdateServicePrefs(PrefRegistrySimple* registry) {
-  // The component updates are enabled by default, if the preference is not set.
-  registry->RegisterBooleanPref(prefs::kComponentUpdatesEnabled, true);
+                                            std::move(update_client));
 }
 
 }  // namespace component_updater

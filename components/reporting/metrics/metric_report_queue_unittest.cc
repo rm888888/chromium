@@ -15,28 +15,27 @@
 #include "base/time/time.h"
 #include "components/reporting/client/mock_report_queue.h"
 #include "components/reporting/metrics/fake_reporting_settings.h"
-#include "components/reporting/proto/synced/metric_data.pb.h"
+#include "components/reporting/proto/metric_data.pb.h"
 #include "components/reporting/proto/synced/record_constants.pb.h"
 #include "components/reporting/util/status.h"
 #include "testing/gmock/include/gmock/gmock.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
-using ::testing::_;
-
 namespace reporting {
-namespace {
+
+using ::testing::_;
 
 class MetricReportQueueTest : public ::testing::Test {
  public:
   void SetUp() override {
     priority_ = Priority::SLOW_BATCH;
-    settings_ = std::make_unique<test::FakeReportingSettings>();
+    settings_ = std::make_unique<FakeReportingSettings>();
   }
 
  protected:
   const std::string kRateSettingPath = "rate_path";
 
-  std::unique_ptr<test::FakeReportingSettings> settings_;
+  std::unique_ptr<FakeReportingSettings> settings_;
 
   Priority priority_;
 
@@ -153,5 +152,4 @@ TEST_F(MetricReportQueueTest, RateControlledFlush_TimeElapsed) {
   EXPECT_CALL(*mock_queue_ptr, Flush(priority_, _)).Times(1);
   task_environment_.FastForwardBy(base::Milliseconds(rate_ms));
 }
-}  // namespace
 }  // namespace reporting

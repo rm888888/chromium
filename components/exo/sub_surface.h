@@ -7,12 +7,10 @@
 
 #include <memory>
 
-#include "base/observer_list.h"
+#include "base/macros.h"
 #include "components/exo/surface_delegate.h"
 #include "components/exo/surface_observer.h"
-#include "ui/base/class_property.h"
 #include "ui/gfx/geometry/point.h"
-#include "ui/gfx/geometry/point_f.h"
 #include "ui/gfx/geometry/size_f.h"
 
 namespace base {
@@ -23,13 +21,10 @@ class TracedValue;
 
 namespace exo {
 class Surface;
-class SubSurfaceObserver;
 
 // This class provides functions for treating a surface as a sub-surface. A
 // sub-surface has one parent surface.
-class SubSurface : public SurfaceDelegate,
-                   public SurfaceObserver,
-                   public ui::PropertyHandler {
+class SubSurface : public SurfaceDelegate, public SurfaceObserver {
  public:
   SubSurface(Surface* surface, Surface* parent);
 
@@ -41,7 +36,7 @@ class SubSurface : public SurfaceDelegate,
   // This schedules a sub-surface position change. The sub-surface will be
   // moved so, that its origin (top-left corner pixel) will be at the |position|
   // of the parent surface coordinate system.
-  void SetPosition(const gfx::PointF& position);
+  void SetPosition(const gfx::Point& position);
 
   // This removes sub-surface from the stack, and puts it back just above the
   // reference surface, changing the z-order of the sub-surfaces. The reference
@@ -92,17 +87,10 @@ class SubSurface : public SurfaceDelegate,
   // Overridden from SurfaceObserver:
   void OnSurfaceDestroying(Surface* surface) override;
 
-  // SubSurface Observers
-  void AddSubSurfaceObserver(SubSurfaceObserver* observer);
-  void RemoveSubSurfaceObserver(SubSurfaceObserver* observer);
-
  private:
   Surface* surface_;
   Surface* parent_;
   bool is_synchronized_ = true;
-
-  // Surface observer list. Surface does not own the observers.
-  base::ObserverList<SubSurfaceObserver> observers_;
 };
 
 }  // namespace exo

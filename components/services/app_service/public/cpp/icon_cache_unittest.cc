@@ -6,15 +6,12 @@
 
 #include "base/callback.h"
 #include "base/callback_helpers.h"
-#include "components/services/app_service/public/cpp/app_types.h"
 #include "components/services/app_service/public/cpp/icon_cache.h"
-#include "components/services/app_service/public/cpp/icon_types.h"
 #include "testing/gtest/include/gtest/gtest.h"
 #include "ui/gfx/geometry/size.h"
 #include "ui/gfx/image/image_skia_rep.h"
 
-class AppsIconCacheTest : public testing::Test,
-                          public ::testing::WithParamInterface<bool> {
+class AppsIconCacheTest : public testing::Test {
  protected:
   enum class HitOrMiss {
     kHit,
@@ -32,19 +29,23 @@ class AppsIconCacheTest : public testing::Test,
     void SetReturnPlaceholderIcons(bool b) { return_placeholder_icons_ = b; }
 
    private:
+    apps::mojom::IconKeyPtr GetIconKey(const std::string& app_id) override {
+      return apps::mojom::IconKey::New(0, 0, 0);
+    }
+
     std::unique_ptr<Releaser> LoadIconFromIconKey(
-        apps::AppType app_type,
+        apps::mojom::AppType app_type,
         const std::string& app_id,
-        const apps::IconKey& icon_key,
-        apps::IconType icon_type,
+        apps::mojom::IconKeyPtr icon_key,
+        apps::mojom::IconType icon_Type,
         int32_t size_hint_in_dip,
         bool allow_placeholder_icon,
-        apps::LoadIconCallback callback) override {
+        apps::mojom::Publisher::LoadIconCallback callback) override {
       num_load_calls_++;
 
-      auto iv = std::make_unique<apps::IconValue>();
-      if (icon_type == apps::IconType::kUncompressed) {
-        iv->icon_type = apps::IconType::kUncompressed;
+      auto iv = apps::mojom::IconValue::New();
+      if (icon_Type == apps::mojom::IconType::kUncompressed) {
+        iv->icon_type = apps::mojom::IconType::kUncompressed;
         iv->uncompressed =
             gfx::ImageSkia(gfx::ImageSkiaRep(gfx::Size(1, 1), 1.0f));
         iv->is_placeholder_icon = return_placeholder_icons_;
@@ -54,49 +55,24 @@ class AppsIconCacheTest : public testing::Test,
       return nullptr;
     }
 
-    std::unique_ptr<Releaser> LoadIconFromIconKey(
-        apps::mojom::AppType app_type,
-        const std::string& app_id,
-        apps::mojom::IconKeyPtr mojom_icon_key,
-        apps::mojom::IconType icon_type,
-        int32_t size_hint_in_dip,
-        bool allow_placeholder_icon,
-        apps::mojom::Publisher::LoadIconCallback callback) override {
-      auto icon_key = apps::ConvertMojomIconKeyToIconKey(mojom_icon_key);
-      return LoadIconFromIconKey(
-          apps::ConvertMojomAppTypToAppType(app_type), app_id, *icon_key,
-          apps::ConvertMojomIconTypeToIconType(icon_type), size_hint_in_dip,
-          allow_placeholder_icon,
-          apps::IconValueToMojomIconValueCallback(std::move(callback)));
-    }
-
     int num_load_calls_ = 0;
     bool return_placeholder_icons_ = false;
   };
-
-  bool IsLoadIconWithoutMojomEnabled() const { return GetParam(); }
 
   UniqueReleaser LoadIcon(apps::IconLoader* loader,
                           FakeIconLoader* fake,
                           const std::string& app_id,
                           HitOrMiss expect_hom,
                           bool allow_placeholder_icon = false) {
+    static constexpr auto app_type = apps::mojom::AppType::kWeb;
+    static constexpr auto icon_type = apps::mojom::IconType::kUncompressed;
     static constexpr int32_t size_hint_in_dip = 1;
 
     int before = fake->NumLoadIconFromIconKeyCalls();
 
-    UniqueReleaser releaser;
-    if (IsLoadIconWithoutMojomEnabled()) {
-      static constexpr auto app_type = apps::AppType::kWeb;
-      static constexpr auto icon_type = apps::IconType::kUncompressed;
-      releaser = loader->LoadIcon(app_type, app_id, icon_type, size_hint_in_dip,
-                                  allow_placeholder_icon, base::DoNothing());
-    } else {
-      static constexpr auto app_type = apps::mojom::AppType::kWeb;
-      static constexpr auto icon_type = apps::mojom::IconType::kUncompressed;
-      releaser = loader->LoadIcon(app_type, app_id, icon_type, size_hint_in_dip,
-                                  allow_placeholder_icon, base::DoNothing());
-    }
+    UniqueReleaser releaser =
+        loader->LoadIcon(app_type, app_id, icon_type, size_hint_in_dip,
+                         allow_placeholder_icon, base::DoNothing());
 
     int after = fake->NumLoadIconFromIconKeyCalls();
     HitOrMiss actual_hom = (after == before) ? kHit : kMiss;
@@ -234,7 +210,7 @@ class AppsIconCacheTest : public testing::Test,
   }
 };
 
-TEST_P(AppsIconCacheTest, Eager) {
+TEST_F(AppsIconCacheTest, Eager) {
   static constexpr apps::IconCache::GarbageCollectionPolicy gc_policy =
       apps::IconCache::GarbageCollectionPolicy::kEager;
 
@@ -243,7 +219,7 @@ TEST_P(AppsIconCacheTest, Eager) {
   TestAfterZeroRefcount(gc_policy);
 }
 
-TEST_P(AppsIconCacheTest, ExplicitSweepReleasedIcons) {
+TEST_F(AppsIconCacheTest, ExplicitSweepReleasedIcons) {
   static constexpr apps::IconCache::GarbageCollectionPolicy gc_policy =
       apps::IconCache::GarbageCollectionPolicy::kExplicit;
 
@@ -252,7 +228,7 @@ TEST_P(AppsIconCacheTest, ExplicitSweepReleasedIcons) {
   TestAfterZeroRefcount(gc_policy);
 }
 
-TEST_P(AppsIconCacheTest, ExplicitRemoveIcons) {
+TEST_F(AppsIconCacheTest, ExplicitRemoveIcons) {
   static constexpr apps::IconCache::GarbageCollectionPolicy gc_policy =
       apps::IconCache::GarbageCollectionPolicy::kExplicit;
 
@@ -260,9 +236,3 @@ TEST_P(AppsIconCacheTest, ExplicitRemoveIcons) {
   TestPlaceholder(gc_policy);
   TestAfterZeroRefcount(gc_policy, true /* remove_icon */);
 }
-
-// The parameter indicates whether the kAppServiceLoadIconWithoutMojom feature
-// is enabled.
-INSTANTIATE_TEST_SUITE_P(All,
-                         AppsIconCacheTest,
-                         ::testing::Values(true, false));

@@ -459,12 +459,9 @@ TEST(AXNodeTest, GetValueForControlTextField) {
                   rich_text_field_line_break,
                   rich_text_field_line_2};
 
-  auto tree = std::make_unique<AXTree>(update);
-  TestAXTreeManager manager(std::move(tree));
-
+  AXTree tree(update);
   {
-    const AXNode* text_field_node =
-        manager.GetTree()->GetFromId(rich_text_field.id);
+    const AXNode* text_field_node = tree.GetFromId(rich_text_field.id);
     ASSERT_NE(nullptr, text_field_node);
     EXPECT_EQ("Line 1\nLine 2", text_field_node->GetValueForControl());
   }
@@ -478,11 +475,9 @@ TEST(AXNodeTest, GetValueForControlTextField) {
   AXTreeUpdate update_2;
   update_2.nodes = {rich_text_field};
 
-  ASSERT_TRUE(manager.GetTree()->Unserialize(update_2))
-      << manager.GetTree()->error();
+  ASSERT_TRUE(tree.Unserialize(update_2)) << tree.error();
   {
-    const AXNode* text_field_node =
-        manager.GetTree()->GetFromId(rich_text_field.id);
+    const AXNode* text_field_node = tree.GetFromId(rich_text_field.id);
     ASSERT_NE(nullptr, text_field_node);
     EXPECT_EQ("", text_field_node->GetValueForControl());
   }
@@ -496,11 +491,9 @@ TEST(AXNodeTest, GetValueForControlTextField) {
   AXTreeUpdate update_3;
   update_3.nodes = {rich_text_field};
 
-  ASSERT_TRUE(manager.GetTree()->Unserialize(update_3))
-      << manager.GetTree()->error();
+  ASSERT_TRUE(tree.Unserialize(update_3)) << tree.error();
   {
-    const AXNode* text_field_node =
-        manager.GetTree()->GetFromId(rich_text_field.id);
+    const AXNode* text_field_node = tree.GetFromId(rich_text_field.id);
     ASSERT_NE(nullptr, text_field_node);
     EXPECT_EQ("Other value", text_field_node->GetValueForControl());
   }

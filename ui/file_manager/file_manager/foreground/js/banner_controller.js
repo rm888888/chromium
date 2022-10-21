@@ -4,7 +4,6 @@
 
 import {NativeEventTarget as EventTarget} from 'chrome://resources/js/cr/event_target.m.js';
 
-import {AsyncUtil} from '../../common/js/async_util.js';
 import {VolumeManagerCommon} from '../../common/js/volume_manager_types.js';
 import {xfm} from '../../common/js/xfm.js';
 import {Crostini} from '../../externs/background/crostini.js';
@@ -15,7 +14,6 @@ import {VolumeManager} from '../../externs/volume_manager.js';
 
 import {constants} from './constants.js';
 import {DirectoryModel} from './directory_model.js';
-import {TAG_NAME as DriveLowSpaceBanner} from './ui/banners/drive_low_space_banner.js';
 import {TAG_NAME as DriveOfflinePinningBannerTagName} from './ui/banners/drive_offline_pinning_banner.js';
 import {TAG_NAME as DriveWelcomeBannerTagName} from './ui/banners/drive_welcome_banner.js';
 import {TAG_NAME as HoldingSpaceWelcomeBannerTagName} from './ui/banners/holding_space_welcome_banner.js';
@@ -61,12 +59,6 @@ const DISMISSED_FOREVER_SUFFIX = '_DISMISSED_FOREVER';
  * @private {string}
  */
 const _BANNER_FORCE_SHOW_ATTRIBUTE = 'force-show-for-testing';
-
-/**
- * Allowed duration between onDirectorySizeChanged events in milliseconds.
- * @type {number}
- */
-const MIN_INTERVAL_BETWEEN_DIRECTORY_SIZE_CHANGED_EVENTS = 5000;
 
 /**
  * The central component to the Banners Framework. The controller maintains the
@@ -215,28 +207,11 @@ export class BannerController extends EventTarget {
     this.customBannerFilters_ = {};
 
     /**
-     * The volumeId that is pending a volume size update, updateVolumeSizeStats_
-     * will remove the volumeId once updated. This is cleared when the debounced
-     * version of updateVolumeSizeStats_ executes.
-     * @private {!Set<string>}
-     */
-    this.pendingVolumeSizeUpdates_ = new Set();
-
-    /**
      * Bind the onDirectorySizeChanged_ method to this instance once.
      * @private {!function(!chrome.fileManagerPrivate.FileWatchEvent)}
      */
     this.onDirectorySizeChangedBound_ = async event =>
         this.onDirectorySizeChanged_(event);
-
-    /**
-     * Debounced version of updateVolumeSizeStats_ to stop overly aggressive
-     * calls coming from onDirectoryChanged_.
-     * @private {AsyncUtil.RateLimiter}
-     */
-    this.updateVolumeSizeStatsDebounced_ = new AsyncUtil.RateLimiter(
-        async () => this.updateVolumeSizeStats_(),
-        MIN_INTERVAL_BETWEEN_DIRECTORY_SIZE_CHANGED_EVENTS);
 
     // Only attach event listeners if the controller is enabled. Used to disable
     // all banners from being loaded.
@@ -257,10 +232,7 @@ export class BannerController extends EventTarget {
     if (!this.disableBannerLoading_) {
       // Banners are initialized in their priority order. The order of the array
       // denotes the priority of the banner, 0th index is highest priority.
-      this.setWarningBannersInOrder([
-        LocalDiskLowSpaceBannerTagName,
-        DriveLowSpaceBanner,
-      ]);
+      this.setWarningBannersInOrder([LocalDiskLowSpaceBannerTagName]);
       this.setEducationalBannersInOrder([
         DriveWelcomeBannerTagName,
         HoldingSpaceWelcomeBannerTagName,
@@ -293,18 +265,6 @@ export class BannerController extends EventTarget {
         shouldShow: () => isPathSharedWithVm(
             this.crostini_, this.currentEntry_, constants.PLUGIN_VM),
         context: () => ({type: constants.PLUGIN_VM}),
-      });
-
-      // Register a custom filter that passes the current size stats down to the
-      // the Drive banner only if the volume stats are available. The general
-      // volume available handler will run before this ensuring the minimum
-      // ratio has been met.
-      this.registerCustomBannerFilter_(DriveLowSpaceBanner, {
-        shouldShow: () => !!this.volumeSizeStats_[this.currentVolume_.volumeId],
-        context: () => ({
-          remainingSize:
-              this.volumeSizeStats_[this.currentVolume_.volumeId].remainingSize
-        })
       });
     }
 
@@ -359,11 +319,9 @@ export class BannerController extends EventTarget {
 
     // When navigating to a different volume, refresh the volume size stats
     // when first navigating. A listener will keep this in sync.
-    if (this.currentVolume_ && previousVolume &&
-        previousVolume.volumeId !== this.currentVolume_.volumeId &&
+    if (previousVolume !== this.currentVolume_ && this.currentVolume_ &&
         this.volumeSizeObservers_[this.currentVolume_.volumeType]) {
-      this.pendingVolumeSizeUpdates_.add(this.currentVolume_.volumeId);
-      this.updateVolumeSizeStatsDebounced_.runImmediately();
+      await this.updateVolumeSizeStats_(this.currentVolume_);
     }
 
     /** @type {?Banner} */
@@ -767,11 +725,8 @@ export class BannerController extends EventTarget {
     }
     const eventVolumeInfo =
         this.volumeManager_.getVolumeInfo(/** @type{!Entry} */ (event.entry));
-    if (!eventVolumeInfo || !eventVolumeInfo.volumeId) {
-      return;
-    }
-    this.pendingVolumeSizeUpdates_.add(eventVolumeInfo.volumeId);
-    this.updateVolumeSizeStatsDebounced_.run();
+    await this.updateVolumeSizeStats_(eventVolumeInfo);
+    await this.reconcile();
   }
 
   /**
@@ -801,23 +756,19 @@ export class BannerController extends EventTarget {
   }
 
   /**
-   * Refresh the volume size stats for all volumeIds in
-   * |pendingVolumeSizeUpdate_|.
+   * Refresh the volume size stats for the specific volumeInfo.
+   * @param {?VolumeInfo} volumeInfo
    * @private
    */
-  async updateVolumeSizeStats_() {
-    if (this.pendingVolumeSizeUpdates_.size === 0) {
+  async updateVolumeSizeStats_(volumeInfo) {
+    if (!volumeInfo || !volumeInfo.volumeId) {
       return;
     }
-    for (const volumeId of this.pendingVolumeSizeUpdates_) {
-      const sizeStats = await getSizeStats(volumeId);
-      if (!sizeStats || sizeStats.totalSize === 0) {
-        continue;
-      }
-      this.volumeSizeStats_[volumeId] = sizeStats;
+    const sizeStats = await getSizeStats(volumeInfo.volumeId);
+    if (!sizeStats || sizeStats.totalSize === 0) {
+      return;
     }
-    this.pendingVolumeSizeUpdates_.clear();
-    await this.reconcile();
+    this.volumeSizeStats_[volumeInfo.volumeId] = sizeStats;
   }
 
   /**

@@ -244,7 +244,6 @@ void PasswordManager::RegisterProfilePrefs(
 #if defined(OS_ANDROID)
   registry->RegisterIntegerPref(
       prefs::kCurrentMigrationVersionToGoogleMobileServices, 0);
-  registry->RegisterDoublePref(prefs::kTimeOfLastMigrationAttempt, 0.0);
 #endif
 }
 
@@ -531,7 +530,7 @@ void PasswordManager::OnInformAboutUserInput(PasswordManagerDriver* driver,
       manager ? PasswordManagerMetricsRecorder::FormManagerAvailable::kSuccess
               : PasswordManagerMetricsRecorder::FormManagerAvailable::
                     kMissingManual;
-  if (client_->GetMetricsRecorder())
+  if (client_ && client_->GetMetricsRecorder())
     client_->GetMetricsRecorder()->RecordFormManagerAvailable(availability);
 
   ShowManualFallbackForSaving(manager, form_data);
@@ -670,7 +669,7 @@ PasswordFormManager* PasswordManager::ProvisionallySaveForm(
           ? PasswordManagerMetricsRecorder::FormManagerAvailable::kSuccess
           : PasswordManagerMetricsRecorder::FormManagerAvailable::
                 kMissingProvisionallySave;
-  if (client_->GetMetricsRecorder())
+  if (client_ && client_->GetMetricsRecorder())
     client_->GetMetricsRecorder()->RecordFormManagerAvailable(availability);
 
   if (!matched_manager) {
@@ -1148,12 +1147,6 @@ void PasswordManager::ProcessAutofillPredictions(
 
   for (auto& manager : form_managers_)
     manager->ProcessServerPredictions(predictions_);
-
-  PasswordGenerationFrameHelper* password_generation_manager =
-      driver ? driver->GetPasswordGenerationHelper() : nullptr;
-  if (password_generation_manager) {
-    password_generation_manager->ProcessPasswordRequirements(forms);
-  }
 }
 
 PasswordFormManager* PasswordManager::GetSubmittedManager() const {
@@ -1212,7 +1205,7 @@ void PasswordManager::RecordProvisionalSaveFailure(
     logger = std::make_unique<BrowserSavePasswordProgressLogger>(
         client_->GetLogManager());
   }
-  if (client_->GetMetricsRecorder()) {
+  if (client_ && client_->GetMetricsRecorder()) {
     client_->GetMetricsRecorder()->RecordProvisionalSaveFailure(
         failure, submitted_form_url_, form_origin, logger.get());
   }

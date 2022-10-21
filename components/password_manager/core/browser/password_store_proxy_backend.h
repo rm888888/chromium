@@ -8,11 +8,7 @@
 #include <memory>
 
 #include "base/callback_forward.h"
-#include "base/memory/raw_ptr.h"
-#include "base/memory/weak_ptr.h"
 #include "components/password_manager/core/browser/password_store_backend.h"
-
-class PrefService;
 
 namespace password_manager {
 
@@ -23,11 +19,8 @@ class PasswordStoreProxyBackend : public PasswordStoreBackend {
  public:
   // `main_backend` and `shadow_backend` must not be null and must outlive this
   // object as long as Shutdown() is not called.
-  PasswordStoreProxyBackend(
-      PasswordStoreBackend* main_backend,
-      PasswordStoreBackend* shadow_backend,
-      PrefService* prefs,
-      base::RepeatingCallback<bool()> is_syncing_passwords_callback);
+  PasswordStoreProxyBackend(PasswordStoreBackend* main_backend,
+                            PasswordStoreBackend* shadow_backend);
   PasswordStoreProxyBackend(const PasswordStoreProxyBackend&) = delete;
   PasswordStoreProxyBackend(PasswordStoreProxyBackend&&) = delete;
   PasswordStoreProxyBackend& operator=(const PasswordStoreProxyBackend&) =
@@ -37,13 +30,12 @@ class PasswordStoreProxyBackend : public PasswordStoreBackend {
 
  private:
   // Implements PasswordStoreBackend interface.
-  base::WeakPtr<PasswordStoreBackend> GetWeakPtr() override;
   void InitBackend(RemoteChangesReceived remote_form_changes_received,
                    base::RepeatingClosure sync_enabled_or_disabled_cb,
                    base::OnceCallback<void(bool)> completion) override;
   void Shutdown(base::OnceClosure shutdown_completed) override;
-  void GetAllLoginsAsync(LoginsOrErrorReply callback) override;
-  void GetAutofillableLoginsAsync(LoginsOrErrorReply callback) override;
+  void GetAllLoginsAsync(LoginsReply callback) override;
+  void GetAutofillableLoginsAsync(LoginsReply callback) override;
   void FillMatchingLoginsAsync(
       LoginsReply callback,
       bool include_psl,
@@ -71,13 +63,11 @@ class PasswordStoreProxyBackend : public PasswordStoreBackend {
   FieldInfoStore* GetFieldInfoStore() override;
   std::unique_ptr<syncer::ProxyModelTypeControllerDelegate>
   CreateSyncControllerDelegate() override;
-  void ClearAllLocalPasswords() override;
 
-  const raw_ptr<PasswordStoreBackend> main_backend_;
-  const raw_ptr<PasswordStoreBackend> shadow_backend_;
-  raw_ptr<PrefService> const prefs_ = nullptr;
-  base::RepeatingCallback<bool()> is_syncing_passwords_callback_;
-  base::WeakPtrFactory<PasswordStoreProxyBackend> weak_ptr_factory_{this};
+  void GetSyncStatus(base::OnceCallback<void(bool)> callback) override;
+
+  PasswordStoreBackend* const main_backend_;
+  PasswordStoreBackend* const shadow_backend_;
 };
 
 }  // namespace password_manager

@@ -265,20 +265,20 @@ TEST_F('PrintPreviewSettingsSelectTest', 'All', function() {
   mocha.run();
 });
 
-var PrintPreviewSelectMixinTest = class extends PrintPreviewTest {
+var PrintPreviewSelectBehaviorTest = class extends PrintPreviewTest {
   /** @override */
   get browsePreload() {
-    return 'chrome://print/test_loader.html?module=print_preview/select_mixin_test.js&host=webui-test';
+    return 'chrome://print/test_loader.html?module=print_preview/select_behavior_test.js&host=webui-test';
   }
 
   /** @override */
   get suiteName() {
-    return select_mixin_test.suiteName;
+    return select_behavior_test.suiteName;
   }
 };
 
-TEST_F('PrintPreviewSelectMixinTest', 'CallProcessSelectChange', function() {
-  this.runMochaTest(select_mixin_test.TestNames.CallProcessSelectChange);
+TEST_F('PrintPreviewSelectBehaviorTest', 'CallProcessSelectChange', function() {
+  this.runMochaTest(select_behavior_test.TestNames.CallProcessSelectChange);
 });
 
 var PrintPreviewNumberSettingsSectionTest = class extends PrintPreviewTest {
@@ -1497,13 +1497,29 @@ TEST_F(
     });
 
 GEN('#if defined(OS_CHROMEOS)');
-TEST_F('PrintPreviewDestinationSettingsTest', 'EulaIsRetrieved', function() {
-  this.runMochaTest(destination_settings_test.TestNames.EulaIsRetrieved);
-});
+var PrintPreviewDestinationSettingsTestCros = class extends PrintPreviewTest {
+  /** @override */
+  get browsePreload() {
+    return 'chrome://print/test_loader.html?module=print_preview/destination_settings_test_cros.js&host=webui-test';
+  }
 
-TEST_F('PrintPreviewDestinationSettingsTest', 'DriveIsNotMounted', function() {
-  this.runMochaTest(destination_settings_test.TestNames.DriveIsNotMounted);
-});
+  /** @override */
+  get suiteName() {
+    return destination_settings_test_cros.suiteName;
+  }
+};
+
+TEST_F(
+    'PrintPreviewDestinationSettingsTestCros', 'EulaIsRetrieved', function() {
+      this.runMochaTest(
+          destination_settings_test_cros.TestNames.EulaIsRetrieved);
+    });
+
+TEST_F(
+    'PrintPreviewDestinationSettingsTestCros', 'DriveIsNotMounted', function() {
+      this.runMochaTest(
+          destination_settings_test_cros.TestNames.DriveIsNotMounted);
+    });
 GEN('#endif');
 
 var PrintPreviewScalingSettingsTest = class extends PrintPreviewTest {

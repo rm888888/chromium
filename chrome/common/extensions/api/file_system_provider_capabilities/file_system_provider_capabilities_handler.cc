@@ -61,7 +61,8 @@ bool FileSystemProviderCapabilitiesHandler::Parse(Extension* extension,
       manifest_keys::kFileSystemProviderCapabilities, &section);
 
   if (has_permission && !section) {
-    *error = manifest_errors::kInvalidFileSystemProviderMissingCapabilities;
+    *error = base::ASCIIToUTF16(
+        manifest_errors::kInvalidFileSystemProviderMissingCapabilities);
     return false;
   }
 

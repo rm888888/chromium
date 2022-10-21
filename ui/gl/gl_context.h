@@ -11,7 +11,7 @@
 
 #include "base/atomicops.h"
 #include "base/cancelable_callback.h"
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/memory/ref_counted.h"
 #include "base/memory/weak_ptr.h"
 #include "base/synchronization/atomic_flag.h"
@@ -133,6 +133,12 @@ class GL_EXPORT GLContext : public base::RefCounted<GLContext>,
   // This should be called at most once at GPU process startup time.
   // By default, GPU switching is not supported unless this is called.
   static void SetSwitchableGPUsSupported();
+
+  // This should be called at most once at GPU process startup time.
+  static void SetForcedGpuPreference(GpuPreference gpu_preference);
+  // If a gpu preference is forced (by GPU driver bug workaround, etc), return
+  // it. Otherwise, return the original input preference.
+  static GpuPreference AdjustGpuPreference(GpuPreference gpu_preference);
 
   // Initializes the GL context to be compatible with the given surface. The GL
   // context can be made with other surface's of the same type. The compatible
@@ -316,6 +322,8 @@ class GL_EXPORT GLContext : public base::RefCounted<GLContext>,
 
   static bool switchable_gpus_supported_;
 
+  static GpuPreference forced_gpu_preference_;
+
   GLWorkarounds gl_workarounds_;
   std::string disabled_gl_extensions_;
 
@@ -327,10 +335,10 @@ class GL_EXPORT GLContext : public base::RefCounted<GLContext>,
   std::unique_ptr<CurrentGL> current_gl_;
 
   // Copy of the real API (if one was created) for dynamic initialization
-  raw_ptr<RealGLApi> real_gl_api_ = nullptr;
+  RealGLApi* real_gl_api_ = nullptr;
 
   scoped_refptr<GLShareGroup> share_group_;
-  raw_ptr<GLContext> current_virtual_context_ = nullptr;
+  GLContext* current_virtual_context_ = nullptr;
   bool state_dirtied_externally_ = false;
   std::unique_ptr<GLStateRestorer> state_restorer_;
   std::unique_ptr<GLVersionInfo> version_info_;

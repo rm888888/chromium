@@ -7,6 +7,10 @@
 #include "base/test/task_environment.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
+#if defined(USE_X11)
+#include "ui/events/platform/platform_event_source.h"
+#endif
+
 namespace ui {
 
 namespace {
@@ -16,6 +20,12 @@ base::test::TaskEnvironment* g_task_environment = nullptr;
 }  // namespace
 
 struct PlatformClipboardTraits {
+#if defined(USE_X11)
+  static std::unique_ptr<PlatformEventSource> GetEventSource() {
+    return PlatformEventSource::CreateDefault();
+  }
+#endif
+
   static Clipboard* Create() {
     DCHECK(!g_task_environment);
     g_task_environment = new base::test::TaskEnvironment(

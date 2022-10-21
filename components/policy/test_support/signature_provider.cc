@@ -153,19 +153,12 @@ SignatureProvider::SigningKey::~SigningKey() = default;
 bool SignatureProvider::SigningKey::GetSignatureForDomain(
     const std::string& domain,
     std::string* signature) const {
-  auto domain_signature = signatures_.find(domain);
-  if (domain_signature != signatures_.end()) {
-    signature->assign(domain_signature->second);
-    return true;
-  }
+  auto it = signatures_.find(domain);
+  if (it == signatures_.end())
+    return false;
 
-  auto wildcard_signature = signatures_.find("*");
-  if (wildcard_signature != signatures_.end()) {
-    signature->assign(wildcard_signature->second);
-    return true;
-  }
-
-  return false;
+  signature->assign(it->second);
+  return true;
 }
 
 bool SignatureProvider::SigningKey::Sign(const std::string& str,

@@ -3,7 +3,6 @@
 // found in the LICENSE file.
 
 #include "chrome/browser/ui/views/toolbar/chrome_labs_item_view.h"
-#include "base/memory/raw_ptr.h"
 #include "base/time/time.h"
 #include "base/values.h"
 #include "build/build_config.h"
@@ -108,7 +107,7 @@ class LabsComboboxModel : public ui::ComboboxModel {
 
  private:
   const LabInfo& lab_;
-  raw_ptr<const flags_ui::FeatureEntry> feature_entry_;
+  const flags_ui::FeatureEntry* feature_entry_;
   int default_index_;
 };
 
@@ -247,12 +246,11 @@ bool ChromeLabsItemView::ShouldShowNewBadge(Profile* profile,
   }
 
 #if BUILDFLAG(IS_CHROMEOS_ASH)
-  DictionaryPrefUpdateDeprecated update(
+  DictionaryPrefUpdate update(
       profile->GetPrefs(), chrome_labs_prefs::kChromeLabsNewBadgeDictAshChrome);
 #else
-  DictionaryPrefUpdateDeprecated update(
-      g_browser_process->local_state(),
-      chrome_labs_prefs::kChromeLabsNewBadgeDict);
+  DictionaryPrefUpdate update(g_browser_process->local_state(),
+                              chrome_labs_prefs::kChromeLabsNewBadgeDict);
 #endif
 
   base::DictionaryValue* new_badge_prefs = update.Get();

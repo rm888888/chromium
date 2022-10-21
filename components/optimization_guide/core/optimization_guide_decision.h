@@ -6,9 +6,7 @@
 #define COMPONENTS_OPTIMIZATION_GUIDE_CORE_OPTIMIZATION_GUIDE_DECISION_H_
 
 #include "base/callback_forward.h"
-#include "base/containers/flat_map.h"
 #include "components/optimization_guide/core/optimization_metadata.h"
-#include "url/gurl.h"
 
 namespace optimization_guide {
 
@@ -30,21 +28,8 @@ enum class OptimizationGuideDecision {
 };
 
 using OptimizationGuideDecisionCallback =
-    base::OnceCallback<void(OptimizationGuideDecision,
-                            const OptimizationMetadata&)>;
-
-struct OptimizationGuideDecisionWithMetadata {
-  // The decision made by the optimization guide.
-  OptimizationGuideDecision decision;
-  // The metadata for the optimization type, if applicable.
-  OptimizationMetadata metadata;
-};
-
-using OnDemandOptimizationGuideDecisionRepeatingCallback =
-    base::RepeatingCallback<void(
-        const GURL&,
-        const base::flat_map<proto::OptimizationType,
-                             OptimizationGuideDecisionWithMetadata>&)>;
+    base::OnceCallback<void(optimization_guide::OptimizationGuideDecision,
+                            const optimization_guide::OptimizationMetadata&)>;
 
 }  // namespace optimization_guide
 

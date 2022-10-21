@@ -12,6 +12,7 @@
 #include "ui/gl/test/gl_surface_test_support.h"
 
 #if defined(USE_OZONE)
+#include "ui/base/ui_base_features.h"
 #include "ui/ozone/public/ozone_platform.h"
 #endif
 
@@ -42,9 +43,11 @@ void CompositorTestSuite::Initialize() {
   gl::GLSurfaceTestSupport::InitializeOneOff();
 
 #if defined(USE_OZONE)
-  OzonePlatform::InitParams params;
-  params.single_process = true;
-  OzonePlatform::InitializeForUI(params);
+  if (features::IsUsingOzonePlatform()) {
+    OzonePlatform::InitParams params;
+    params.single_process = true;
+    OzonePlatform::InitializeForUI(params);
+  }
 #endif
 
 #if defined(OS_WIN)

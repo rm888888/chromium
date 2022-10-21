@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "base/lazy_instance.h"
+#include "base/macros.h"
 #include "base/memory/ref_counted.h"
 
 namespace device {

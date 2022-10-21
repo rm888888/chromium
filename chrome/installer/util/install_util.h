@@ -18,6 +18,7 @@
 #include "base/command_line.h"
 #include "base/files/file.h"
 #include "base/files/file_path.h"
+#include "base/macros.h"
 #include "base/strings/string_piece.h"
 #include "base/types/strong_alias.h"
 #include "base/version.h"

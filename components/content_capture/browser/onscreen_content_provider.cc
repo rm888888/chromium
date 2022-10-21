@@ -231,7 +231,10 @@ void OnscreenContentProvider::DidUpdateFaviconURL(
 void OnscreenContentProvider::NotifyFaviconURLUpdated(
     content::RenderFrameHost* render_frame_host,
     const std::vector<blink::mojom::FaviconURLPtr>& candidates) {
-  DCHECK(render_frame_host->IsInPrimaryMainFrame());
+  // Only set the favicons for the mainframe.
+  if (render_frame_host != web_contents()->GetMainFrame())
+    return;
+
   if (auto* receiver = ContentCaptureReceiverForFrame(render_frame_host)) {
     receiver->UpdateFaviconURL(candidates);
   }
@@ -256,8 +259,7 @@ void OnscreenContentProvider::BuildContentCaptureSession(
   if (!ancestor_only)
     session->push_back(content_capture_receiver->GetContentCaptureFrame());
 
-  content::RenderFrameHost* rfh =
-      content_capture_receiver->rfh()->GetParentOrOuterDocument();
+  content::RenderFrameHost* rfh = content_capture_receiver->rfh()->GetParent();
   while (rfh) {
     ContentCaptureReceiver* receiver = ContentCaptureReceiverForFrame(rfh);
     // TODO(michaelbai): Only creates ContentCaptureReceiver here, clean up the
@@ -268,7 +270,7 @@ void OnscreenContentProvider::BuildContentCaptureSession(
       DCHECK(receiver);
     }
     session->push_back(receiver->GetContentCaptureFrame());
-    rfh = receiver->rfh()->GetParentOrOuterDocument();
+    rfh = receiver->rfh()->GetParent();
   }
 }
 
@@ -277,14 +279,13 @@ bool OnscreenContentProvider::BuildContentCaptureSessionLastSeen(
     ContentCaptureSession* session) {
   session->push_back(
       content_capture_receiver->GetContentCaptureFrameLastSeen());
-  content::RenderFrameHost* rfh =
-      content_capture_receiver->rfh()->GetParentOrOuterDocument();
+  content::RenderFrameHost* rfh = content_capture_receiver->rfh()->GetParent();
   while (rfh) {
     ContentCaptureReceiver* receiver = ContentCaptureReceiverForFrame(rfh);
     if (!receiver)
       return false;
     session->push_back(receiver->GetContentCaptureFrameLastSeen());
-    rfh = receiver->rfh()->GetParentOrOuterDocument();
+    rfh = receiver->rfh()->GetParent();
   }
   return true;
 }

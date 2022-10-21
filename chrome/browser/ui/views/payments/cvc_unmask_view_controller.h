@@ -7,7 +7,7 @@
 
 #include <string>
 
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "chrome/browser/ui/autofill/payments/autofill_dialog_models.h"
 #include "chrome/browser/ui/views/payments/payment_request_sheet_controller.h"
 #include "components/autofill/core/browser/payments/full_card_request.h"
@@ -18,6 +18,10 @@
 
 namespace autofill {
 class AutofillClient;
+}
+
+namespace content {
+class WebContents;
 }
 
 namespace views {
@@ -45,7 +49,7 @@ class CvcUnmaskViewController
       const autofill::CreditCard& credit_card,
       base::WeakPtr<autofill::payments::FullCardRequest::ResultDelegate>
           result_delegate,
-      content::RenderFrameHost* render_frame_host);
+      content::WebContents* web_contents);
 
   CvcUnmaskViewController(const CvcUnmaskViewController&) = delete;
   CvcUnmaskViewController& operator=(const CvcUnmaskViewController&) = delete;
@@ -100,10 +104,9 @@ class CvcUnmaskViewController
 
   autofill::MonthComboboxModel month_combobox_model_;
   autofill::YearComboboxModel year_combobox_model_;
-  raw_ptr<views::Combobox> month_combobox_ = nullptr;
-  raw_ptr<views::Combobox> year_combobox_ = nullptr;
-  raw_ptr<views::Textfield>
-      cvc_field_;  // owned by the view hierarchy, outlives this.
+  views::Combobox* month_combobox_ = nullptr;
+  views::Combobox* year_combobox_ = nullptr;
+  views::Textfield* cvc_field_;  // owned by the view hierarchy, outlives this.
   autofill::CreditCard credit_card_;
   const content::GlobalRenderFrameHostId frame_routing_id_;
   autofill::payments::PaymentsClient payments_client_;

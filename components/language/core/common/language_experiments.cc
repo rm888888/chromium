@@ -7,7 +7,6 @@
 #include <map>
 #include <string>
 
-#include "base/feature_list.h"
 #include "base/metrics/field_trial_params.h"
 #include "base/metrics/histogram_macros.h"
 #include "base/strings/string_number_conversions.h"
@@ -23,8 +22,14 @@ const base::Feature kAppLanguagePrompt{"AppLanguagePrompt",
                                        base::FEATURE_DISABLED_BY_DEFAULT};
 const base::Feature kForceAppLanguagePrompt{"ForceAppLanguagePrompt",
                                             base::FEATURE_DISABLED_BY_DEFAULT};
-const base::Feature kUseFluentLanguageModel{"UseFluentLanguageModel",
-                                            base::FEATURE_ENABLED_BY_DEFAULT};
+const base::Feature kUseFluentLanguageModel {
+  "UseFluentLanguageModel",
+#if defined(OS_IOS)
+      base::FEATURE_DISABLED_BY_DEFAULT
+#else
+      base::FEATURE_ENABLED_BY_DEFAULT
+#endif
+};
 const base::Feature kNotifySyncOnLanguageDetermined{
     "NotifySyncOnLanguageDetermined", base::FEATURE_ENABLED_BY_DEFAULT};
 const base::Feature kDetailedLanguageSettings{
@@ -41,8 +46,6 @@ const base::Feature kDetectedSourceLanguageOption{
     "DetectedSourceLanguageOption", base::FEATURE_ENABLED_BY_DEFAULT};
 const base::Feature kContentLanguagesInLanguagePicker{
     "ContentLanguagesInLanguagePicker", base::FEATURE_DISABLED_BY_DEFAULT};
-const base::Feature kUseULPLanguagesInChrome{"UseULPLanguagesInChrome",
-                                             base::FEATURE_ENABLED_BY_DEFAULT};
 
 // Params:
 const char kBackoffThresholdKey[] = "backoff_threshold";

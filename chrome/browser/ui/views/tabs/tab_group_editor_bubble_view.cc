@@ -13,9 +13,9 @@
 #include "base/containers/span.h"
 #include "base/feature_list.h"
 #include "base/logging.h"
-#include "base/memory/raw_ptr.h"
 #include "base/metrics/user_metrics.h"
 #include "base/metrics/user_metrics_action.h"
+#include "base/no_destructor.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/app/vector_icons/vector_icons.h"
 #include "chrome/browser/ui/browser.h"
@@ -118,7 +118,7 @@ class MenuItemFactory : public views::BubbleDialogModelHost::CustomViewFactory {
  private:
   const std::u16string name_;
   const views::Button::PressedCallback callback_;
-  const raw_ptr<const gfx::VectorIcon> icon_;
+  const gfx::VectorIcon* const icon_;
 };
 
 class TabGroupEditorBubbleDelegate : public ui::DialogModelDelegate {
@@ -195,7 +195,7 @@ class TabGroupEditorBubbleDelegate : public ui::DialogModelDelegate {
   }
 
  private:
-  const raw_ptr<const Browser> browser_;
+  const Browser* const browser_;
   const tab_groups::TabGroupId group_;
 };
 
@@ -400,8 +400,6 @@ TabGroupEditorBubbleView::TabGroupEditorBubbleView(
         std::make_unique<views::ToggleButton>(
             base::BindRepeating(&TabGroupEditorBubbleView::OnSaveTogglePressed,
                                 base::Unretained(this))));
-    save_group_toggle_->SetAccessibleName(
-        l10n_util::GetStringUTF16(IDS_TAB_GROUP_HEADER_CXMENU_SAVE_GROUP));
 
     bool is_saved =
         tab_strip_model->group_model()->GetTabGroup(group_)->IsSaved();

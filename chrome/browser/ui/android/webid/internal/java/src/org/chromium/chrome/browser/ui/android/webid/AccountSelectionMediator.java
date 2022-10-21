@@ -19,6 +19,7 @@ import org.chromium.chrome.browser.ui.android.webid.AccountSelectionProperties.I
 import org.chromium.chrome.browser.ui.android.webid.data.Account;
 import org.chromium.chrome.browser.ui.android.webid.data.ClientIdMetadata;
 import org.chromium.chrome.browser.ui.android.webid.data.IdentityProviderMetadata;
+import org.chromium.components.browser_ui.bottomsheet.BottomSheetContent;
 import org.chromium.components.browser_ui.bottomsheet.BottomSheetController;
 import org.chromium.components.browser_ui.bottomsheet.BottomSheetController.StateChangeReason;
 import org.chromium.components.browser_ui.bottomsheet.BottomSheetObserver;
@@ -33,7 +34,6 @@ import org.chromium.ui.modelutil.MVCListAdapter.ModelList;
 import org.chromium.ui.modelutil.PropertyModel;
 import org.chromium.url.GURL;
 
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -50,28 +50,17 @@ class AccountSelectionMediator {
     private final @Px int mDesiredIconSize;
 
     private final BottomSheetController mBottomSheetController;
-    private final AccountSelectionBottomSheetContent mBottomSheetContent;
+    private final BottomSheetContent mBottomSheetContent;
     private final BottomSheetObserver mBottomSheetObserver;
     private final Handler mAutoSignInTaskHandler = new Handler();
     // TODO(yigu): Increase the time after adding a continue button for users to
     // proceed. Eventually this should be specified by IDPs.
     private static final int AUTO_SIGN_IN_CANCELLATION_TIMER_MS = 5000;
 
-    private GURL mRpUrl;
-    private GURL mIdpUrl;
-    private IdentityProviderMetadata mIdpMetadata;
-    private ClientIdMetadata mClientMetadata;
-
-    // All of the user's accounts.
-    private List<Account> mAccounts;
-
-    // The account that the user has selected.
-    private Account mSelectedAccount;
-
     AccountSelectionMediator(AccountSelectionComponent.Delegate delegate, ModelList sheetItems,
-            BottomSheetController bottomSheetController,
-            AccountSelectionBottomSheetContent bottomSheetContent, ImageFetcher imageFetcher,
-            @Px int desiredAvatarSize, LargeIconBridge largeIconBridge, @Px int desiredIconSize) {
+            BottomSheetController bottomSheetController, BottomSheetContent bottomSheetContent,
+            ImageFetcher imageFetcher, @Px int desiredAvatarSize, LargeIconBridge largeIconBridge,
+            @Px int desiredIconSize) {
         assert delegate != null;
         mVisible = false;
         mDelegate = delegate;
@@ -82,8 +71,6 @@ class AccountSelectionMediator {
         mDesiredIconSize = desiredIconSize;
         mBottomSheetController = bottomSheetController;
         mBottomSheetContent = bottomSheetContent;
-
-        mBottomSheetContent.setBackPressHandler(() -> { return handleBackPress(); });
 
         mBottomSheetObserver = new EmptyBottomSheetObserver() {
             // TODO(majidvp): We should override #onSheetStateChanged() and react to HIDDEN state
@@ -100,17 +87,7 @@ class AccountSelectionMediator {
         };
     }
 
-    private boolean handleBackPress() {
-        if (mVisible && mSelectedAccount != null && mAccounts.size() != 1) {
-            showAccountsInternal(mRpUrl, mIdpUrl, mAccounts, /*selectedAccount=*/null, mIdpMetadata,
-                    mClientMetadata, /*isAutoSignIn=*/false);
-            return true;
-        }
-        return false;
-    }
-
-    // This method should not be used when the VERIFY header is needed.
-    private void addHeader(GURL rpUrl, GURL idpUrl, List<Account> accounts) {
+    void addHeader(GURL rpUrl, GURL idpUrl, List<Account> accounts) {
         boolean useSignInHeader = false;
         for (Account account : accounts) {
             if (!account.isSignIn()) continue;
@@ -129,22 +106,17 @@ class AccountSelectionMediator {
         String formattedIdpUrl =
                 UrlFormatter.formatUrlForSecurityDisplay(idpUrl, SchemeDisplay.OMIT_HTTP_AND_HTTPS);
 
-        Runnable closeOnClickRunnable = () -> {
-            onDismissed(BottomSheetController.StateChangeReason.NONE);
-        };
-
         // We remove the HTTPS from URL since it is the only protocol that is
         // allowed with WebID.
         mSheetItems.add(new ListItem(ItemType.HEADER,
                 new PropertyModel.Builder(HeaderProperties.ALL_KEYS)
-                        .with(HeaderProperties.CLOSE_ON_CLICK_LISTENER, closeOnClickRunnable)
-                        .with(HeaderProperties.FORMATTED_IDP_URL, formattedIdpUrl)
-                        .with(HeaderProperties.FORMATTED_RP_URL, formattedRpUrl)
                         .with(HeaderProperties.TYPE, headerType)
+                        .with(HeaderProperties.FORMATTED_RP_URL, formattedRpUrl)
+                        .with(HeaderProperties.FORMATTED_IDP_URL, formattedIdpUrl)
                         .build()));
     }
 
-    private void addAccounts(GURL idpUrl, List<Account> accounts, boolean areAccountsClickable) {
+    void addAccounts(GURL idpUrl, List<Account> accounts, boolean areAccountsClickable) {
         for (Account account : accounts) {
             final PropertyModel model = createAccountItem(account, areAccountsClickable);
             mSheetItems.add(new ListItem(ItemType.ACCOUNT, model));
@@ -153,13 +125,18 @@ class AccountSelectionMediator {
         }
     }
 
-    private void addAutoSignInCancelButton(Account account) {
-        final PropertyModel cancelBtnModel = createAutoSignInCancelBtnItem();
-        mSheetItems.add(new ListItem(ItemType.AUTO_SIGN_IN_CANCEL_BUTTON, cancelBtnModel));
-    }
+    void addButton(GURL rpUrl, GURL idpUrl, Account account, IdentityProviderMetadata idpMetadata,
+            ClientIdMetadata clientMetadata, boolean isAutoSignIn) {
+        if (isAutoSignIn) {
+            assert account.isSignIn();
+            final PropertyModel cancelBtnModel = createAutoSignInCancelBtnItem();
+            mSheetItems.add(new ListItem(ItemType.AUTO_SIGN_IN_CANCEL_BUTTON, cancelBtnModel));
 
-    private void addContinueButton(Account account, GURL rpUrl, GURL idpUrl,
-            IdentityProviderMetadata idpMetadata, ClientIdMetadata clientMetadata) {
+            mAutoSignInTaskHandler.postDelayed(
+                    () -> onAccountSelected(account), AUTO_SIGN_IN_CANCELLATION_TIMER_MS);
+            return;
+        }
+
         // Shows the continue button for both sign-up and non auto-sign-in.
         final PropertyModel continueBtnModel = createContinueBtnItem(account, idpMetadata);
         mSheetItems.add(new ListItem(ItemType.CONTINUE_BUTTON, continueBtnModel));
@@ -171,61 +148,15 @@ class AccountSelectionMediator {
         }
     }
 
-    void showVerifySheet(Account account) {
-        mSheetItems.clear();
-
-        Runnable closeOnClickRunnable = () -> {
-            onDismissed(BottomSheetController.StateChangeReason.NONE);
-        };
-        mSheetItems.add(new ListItem(ItemType.HEADER,
-                new PropertyModel.Builder(HeaderProperties.ALL_KEYS)
-                        .with(HeaderProperties.CLOSE_ON_CLICK_LISTENER, closeOnClickRunnable)
-                        .with(HeaderProperties.TYPE, HeaderType.VERIFY)
-                        .build()));
-
-        addAccounts(mIdpUrl, Arrays.asList(account), /*areAccountsClickable=*/false);
-        showContent();
-    }
-
-    void hideBottomSheet() {
-        if (mVisible) hideContent();
-    }
-
     void showAccounts(GURL rpUrl, GURL idpUrl, List<Account> accounts,
             IdentityProviderMetadata idpMetadata, ClientIdMetadata clientMetadata,
             boolean isAutoSignIn) {
-        Account selectedAccount = accounts.size() == 1 ? accounts.get(0) : null;
-        showAccountsInternal(rpUrl, idpUrl, accounts, selectedAccount, idpMetadata, clientMetadata,
-                isAutoSignIn);
-    }
-
-    private void showAccountsInternal(GURL rpUrl, GURL idpUrl, List<Account> accounts,
-            Account selectedAccount, IdentityProviderMetadata idpMetadata,
-            ClientIdMetadata clientMetadata, boolean isAutoSignIn) {
         mSheetItems.clear();
-
-        mRpUrl = rpUrl;
-        mIdpUrl = idpUrl;
-        mAccounts = accounts;
-        mIdpMetadata = idpMetadata;
-        mClientMetadata = clientMetadata;
-        mSelectedAccount = selectedAccount;
-
-        if (mSelectedAccount != null) {
-            accounts = Arrays.asList(selectedAccount);
-        }
-
         addHeader(rpUrl, idpUrl, accounts);
-        addAccounts(idpUrl, accounts, /*areAccountsClickable=*/mSelectedAccount == null);
-
-        if (isAutoSignIn) {
-            assert mSelectedAccount != null;
-            assert mSelectedAccount.isSignIn();
-            addAutoSignInCancelButton(mSelectedAccount);
-            mAutoSignInTaskHandler.postDelayed(
-                    () -> onAccountSelected(mSelectedAccount), AUTO_SIGN_IN_CANCELLATION_TIMER_MS);
-        } else if (mSelectedAccount != null) {
-            addContinueButton(mSelectedAccount, rpUrl, idpUrl, idpMetadata, clientMetadata);
+        boolean hasSingleAccount = (accounts.size() == 1);
+        addAccounts(idpUrl, accounts, /*areAccountsClickable=*/!hasSingleAccount);
+        if (hasSingleAccount) {
+            addButton(rpUrl, idpUrl, accounts.get(0), idpMetadata, clientMetadata, isAutoSignIn);
         }
 
         showContent();
@@ -239,8 +170,6 @@ class AccountSelectionMediator {
     @VisibleForTesting
     void showContent() {
         if (mBottomSheetController.requestShowContent(mBottomSheetContent, true)) {
-            if (mVisible) return;
-
             mVisible = true;
             mBottomSheetController.addObserver(mBottomSheetObserver);
         } else {
@@ -290,17 +219,10 @@ class AccountSelectionMediator {
         return mVisible;
     }
 
-    void onAccountSelected(Account selectedAccount) {
+    void onAccountSelected(Account account) {
         if (!mVisible) return;
-
-        if (mSelectedAccount == null && !selectedAccount.isSignIn()) {
-            showAccountsInternal(mRpUrl, mIdpUrl, mAccounts, selectedAccount, mIdpMetadata,
-                    mClientMetadata, /*isAutoSignIn=*/false);
-            return;
-        }
-
-        mDelegate.onAccountSelected(selectedAccount);
-        showVerifySheet(selectedAccount);
+        hideContent();
+        mDelegate.onAccountSelected(account);
     }
 
     void onDismissed(@StateChangeReason int reason) {

@@ -22,7 +22,7 @@ AppListClientImpl* GetAppListClient();
 Profile* CreateSecondProfileAsync();
 
 // Creates |n| app items with dummy data and adds to the current app-list
-// client. New app items are appended to the end of the app list.
+// client.
 void PopulateDummyAppListItems(int n);
 
 }  // namespace test

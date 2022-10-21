@@ -102,7 +102,7 @@ bool FakeTextInputClient::HasCompositionText() const {
 }
 
 ui::TextInputClient::FocusReason FakeTextInputClient::GetFocusReason() const {
-  return ui::TextInputClient::FOCUS_REASON_MOUSE;
+  return ui::TextInputClient::FOCUS_REASON_NONE;
 }
 
 bool FakeTextInputClient::GetTextRange(gfx::Range* range) const {

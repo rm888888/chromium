@@ -164,6 +164,10 @@ std::vector<gfx::Rect> CalculateTabBounds(
     const int tab_width = tab_sizer.CalculateTabWidth(tab);
     bounds.push_back(
         gfx::Rect(next_x, 0, tab_width, layout_constants.tab_height));
+//update on 20220518
+//      bounds.push_back(
+//              gfx::Rect(next_x, 0, tab_width, layout_constants.tab_height+20));
+//
     next_x += tab_width - layout_constants.tab_overlap;
   }
 

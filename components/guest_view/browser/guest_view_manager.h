@@ -11,10 +11,12 @@
 #include <vector>
 
 #include "base/bind.h"
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "content/public/browser/browser_plugin_guest_manager.h"
 #include "content/public/browser/web_contents.h"
+
+class GURL;
 
 namespace base {
 class DictionaryValue;
@@ -23,7 +25,6 @@ class DictionaryValue;
 namespace content {
 class BrowserContext;
 class SiteInstance;
-class StoragePartitionConfig;
 }
 
 namespace guest_view {
@@ -122,7 +123,7 @@ class GuestViewManager : public content::BrowserPluginGuestManager,
       const content::WebContents::CreateParams& create_params);
 
   content::SiteInstance* GetGuestSiteInstance(
-      const content::StoragePartitionConfig& storage_partition_config);
+      const GURL& guest_site);
 
   content::WebContents* GetGuestByInstanceID(int owner_process_id,
                                              int element_instance_id);
@@ -256,7 +257,7 @@ class GuestViewManager : public content::BrowserPluginGuestManager,
   // |last_instance_id_removed_| are kept here.
   std::set<int> removed_instance_ids_;
 
-  const raw_ptr<content::BrowserContext> context_;
+  content::BrowserContext* const context_;
 
   std::unique_ptr<GuestViewManagerDelegate> delegate_;
 

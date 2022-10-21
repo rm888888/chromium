@@ -374,10 +374,9 @@ PasswordForm MakeNormalizedBlocklistedForm(
   return result;
 }
 
-bool CanUseBiometricAuth(device_reauth::BiometricAuthenticator* authenticator,
-                         device_reauth::BiometricAuthRequester requester) {
+bool CanUseBiometricAuth(device_reauth::BiometricAuthenticator* authenticator) {
   return authenticator &&
-         authenticator->CanAuthenticate(requester) ==
+         authenticator->CanAuthenticate() ==
              device_reauth::BiometricsAvailability::kAvailable &&
          base::FeatureList::IsEnabled(
              password_manager::features::kBiometricTouchToFill);

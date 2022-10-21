@@ -106,7 +106,7 @@ public class MockTabModel extends EmptyTabModel implements IncognitoTabModel {
     }
 
     @Override
-    public void setIndex(int i, @TabSelectionType int type, boolean skipLoadingTab) {
+    public void setIndex(int i, @TabSelectionType int type) {
         mIndex = i;
     }
 

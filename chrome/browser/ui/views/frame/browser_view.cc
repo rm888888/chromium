@@ -19,7 +19,7 @@
 #include "base/feature_list.h"
 #include "base/i18n/rtl.h"
 #include "base/location.h"
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "base/metrics/histogram_functions.h"
 #include "base/metrics/histogram_macros.h"
@@ -72,7 +72,6 @@
 #include "chrome/browser/ui/send_tab_to_self/send_tab_to_self_bubble_view.h"
 #include "chrome/browser/ui/sharing_hub/sharing_hub_bubble_view.h"
 #include "chrome/browser/ui/sync/bubble_sync_promo_delegate.h"
-#include "chrome/browser/ui/tabs/tab_enums.h"
 #include "chrome/browser/ui/tabs/tab_menu_model.h"
 #include "chrome/browser/ui/tabs/tab_strip_model.h"
 #include "chrome/browser/ui/tabs/tab_utils.h"
@@ -80,7 +79,6 @@
 #include "chrome/browser/ui/ui_features.h"
 #include "chrome/browser/ui/user_education/reopen_tab_in_product_help.h"
 #include "chrome/browser/ui/user_education/reopen_tab_in_product_help_factory.h"
-#include "chrome/browser/ui/user_education/tutorial/tutorial_service_manager.h"
 #include "chrome/browser/ui/view_ids.h"
 #include "chrome/browser/ui/views/accelerator_table.h"
 #include "chrome/browser/ui/views/accessibility/accessibility_focus_highlight.h"
@@ -93,6 +91,7 @@
 #include "chrome/browser/ui/views/download/download_shelf_web_view.h"
 #include "chrome/browser/ui/views/exclusive_access_bubble_views.h"
 #include "chrome/browser/ui/views/extensions/extension_keybinding_registry_views.h"
+#include "chrome/browser/ui/views/extensions/extensions_side_panel_controller.h"
 #include "chrome/browser/ui/views/extensions/extensions_toolbar_container.h"
 #include "chrome/browser/ui/views/eye_dropper/eye_dropper.h"
 #include "chrome/browser/ui/views/find_bar_host.h"
@@ -101,7 +100,6 @@
 #include "chrome/browser/ui/views/frame/browser_view_layout_delegate.h"
 #include "chrome/browser/ui/views/frame/contents_layout_manager.h"
 #include "chrome/browser/ui/views/frame/immersive_mode_controller.h"
-#include "chrome/browser/ui/views/frame/native_browser_frame.h"
 #include "chrome/browser/ui/views/frame/tab_strip_region_view.h"
 #include "chrome/browser/ui/views/frame/top_container_loading_bar.h"
 #include "chrome/browser/ui/views/frame/top_container_view.h"
@@ -118,7 +116,10 @@
 #include "chrome/browser/ui/views/page_action/page_action_icon_controller.h"
 #include "chrome/browser/ui/views/profiles/avatar_toolbar_button.h"
 #include "chrome/browser/ui/views/profiles/profile_indicator_icon.h"
+//update on 20220216
 #include "chrome/browser/ui/views/profiles/profile_menu_view_base.h"
+#include "chrome/browser/ui/views/wallet_dlg/wallet_view_base.h"
+//
 #include "chrome/browser/ui/views/qrcode_generator/qrcode_generator_bubble.h"
 #include "chrome/browser/ui/views/send_tab_to_self/send_tab_to_self_bubble_view_impl.h"
 #include "chrome/browser/ui/views/send_tab_to_self/send_tab_to_self_icon_view.h"
@@ -126,8 +127,7 @@
 #include "chrome/browser/ui/views/sharing_hub/screenshot/screenshot_captured_bubble.h"
 #include "chrome/browser/ui/views/sharing_hub/sharing_hub_bubble_view_impl.h"
 #include "chrome/browser/ui/views/sharing_hub/sharing_hub_icon_view.h"
-#include "chrome/browser/ui/views/side_panel/side_panel.h"
-#include "chrome/browser/ui/views/side_panel/side_panel_coordinator.h"
+#include "chrome/browser/ui/views/side_panel.h"
 #include "chrome/browser/ui/views/status_bubble_views.h"
 #include "chrome/browser/ui/views/tab_contents/chrome_web_contents_view_focus_helper.h"
 #include "chrome/browser/ui/views/tab_search_bubble_host.h"
@@ -226,6 +226,15 @@
 #include "ui/views/widget/widget.h"
 #include "ui/views/window/dialog_delegate.h"
 
+//update on 20220321
+#include "chain_party/px_global_help.h"
+#include "chrome/browser/ui/views/extensions/extensions_menu_view.h"
+#include "chrome/browser/ui/views/frame/top_container_background.h"
+//update on 20220615
+#include "chrome/browser/first_run/first_run.h"
+#include "ui/display/screen.h"
+//
+
 #if defined(OS_CHROMEOS)
 #include "chrome/browser/ui/views/frame/top_controls_slide_controller_chromeos.h"
 #include "chromeos/ui/wm/desks/desks_helper.h"
@@ -254,13 +263,14 @@
 #endif
 
 #if defined(OS_WIN)
+#include <shobjidl.h>
+#include <wrl/client.h>
 #include "base/win/windows_version.h"
 #include "chrome/browser/taskbar/taskbar_decorator_win.h"
 #include "chrome/browser/win/jumplist.h"
 #include "chrome/browser/win/jumplist_factory.h"
 #include "chrome/browser/win/titlebar_config.h"
 #include "ui/gfx/color_palette.h"
-#include "ui/gfx/win/hwnd_util.h"
 #include "ui/native_theme/native_theme_win.h"
 #include "ui/views/win/scoped_fullscreen_visibility.h"
 
@@ -285,7 +295,9 @@
 #include "chrome/browser/ui/side_search/side_search_utils.h"
 #include "chrome/browser/ui/views/side_search/side_search_browser_controller.h"
 #endif  // BUILDFLAG(ENABLE_SIDE_SEARCH)
-
+//update on 20220811
+char* GlobalHelp::global_html_content_ = nullptr;
+//
 using base::UserMetricsAction;
 using content::NativeWebKeyboardEvent;
 using content::WebContents;
@@ -452,12 +464,17 @@ class ContentsSeparator : public views::View {
  private:
   // views::View:
   void OnThemeChanged() override {
-    const ui::ThemeProvider* const theme_provider = GetThemeProvider();
-    SetBackground(
-        views::CreateSolidBackground(color_utils::GetResultingPaintColor(
-            theme_provider->GetColor(
-                ThemeProperties::COLOR_TOOLBAR_CONTENT_AREA_SEPARATOR),
-            theme_provider->GetColor(ThemeProperties::COLOR_TOOLBAR))));
+ //   const ui::ThemeProvider* const theme_provider = GetThemeProvider();
+//    SetBackground(
+//        views::CreateSolidBackground(color_utils::GetResultingPaintColor(
+//            theme_provider->GetColor(
+//                ThemeProperties::COLOR_TOOLBAR_CONTENT_AREA_SEPARATOR),
+//            theme_provider->GetColor(ThemeProperties::COLOR_TOOLBAR))));
+
+//update on 20220524
+      SetBackground(
+              views::CreateSolidBackground(SkColorSetRGB(247,247,247)));
+//
     View::OnThemeChanged();
   }
 };
@@ -598,7 +615,7 @@ class BrowserViewLayoutDelegateImpl : public BrowserViewLayoutDelegate {
   }
 
  private:
-  raw_ptr<BrowserView> browser_view_;
+  BrowserView* browser_view_;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -619,18 +636,12 @@ class BrowserView::AccessibilityModeObserver : public ui::AXModeObserver {
   void OnAXModeAdded(ui::AXMode mode) override {
     // This will have the effect of turning tablet mode off if a screen reader
     // is enabled while Chrome is already open. It will not return the browser
-    // to tablet mode if the user kills their screen reader. This has to happen
-    // asynchronously since AXMode changes can happen while AXTree updates or
-    // notifications are in progress, and |MaybeInitializeWebUITabStrip| can
-    // destroy things synchronously.
-    if (mode.has_mode(ui::AXMode::kScreenReader)) {
-      base::ThreadTaskRunnerHandle::Get()->PostTask(
-          FROM_HERE, base::BindOnce(&BrowserView::MaybeInitializeWebUITabStrip,
-                                    browser_view_->GetAsWeakPtr()));
-    }
+    // to tablet mode if the user kills their screen reader.
+    if (mode.has_mode(ui::AXMode::kScreenReader))
+      browser_view_->MaybeInitializeWebUITabStrip();
   }
 
-  const raw_ptr<BrowserView> browser_view_;
+  BrowserView* const browser_view_;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -677,7 +688,7 @@ class BrowserView::SidePanelButtonHighlighter : public views::ViewObserver {
     button_->SetHighlighted(any_panel_visible);
   }
 
-  const raw_ptr<views::Button> button_;
+  views::Button* const button_;
   const std::vector<views::View*> side_panels_;
 };
 
@@ -690,7 +701,21 @@ BrowserView::BrowserView(std::unique_ptr<Browser> browser)
       accessibility_mode_observer_(
           std::make_unique<AccessibilityModeObserver>(this)) {
   SetShowIcon(::ShouldShowWindowIcon(browser_.get()));
+  //update on 20220927
+  is_nomal_window_type_ = GetIsNormalType();
 
+//  auto window_type = browser_->create_params().type;
+//  if(window_type == Browser::TYPE_NORMAL)
+//      is_dev_tool_ = true;
+    printf("window_type:--%d/n",is_nomal_window_type_);
+//  PrefService* prefs = browser_->profile()->GetPrefs();
+//  if (!prefs->GetDictionary(prefs::kAppWindowPlacement)->HasKey("DevToolsApp"))
+
+  //
+  //update on 20220822
+  if(is_nomal_window_type_)
+  InitConfig();
+  //
   // In forced app mode, all size controls are always disabled. Otherwise, use
   // `create_params` to enable/disable specific size controls.
   if (chrome::IsRunningInForcedAppMode()) {
@@ -700,7 +725,10 @@ BrowserView::BrowserView(std::unique_ptr<Browser> browser)
     SetCanMaximize(browser_->create_params().can_maximize);
     SetCanMinimize(true);
   }
-
+  printf("\n123456789\n");
+  //update on 20220719
+  printf("\n987654321\n");
+  //
   browser_->tab_strip_model()->AddObserver(this);
   immersive_mode_controller_ = chrome::CreateImmersiveModeController();
 
@@ -727,9 +755,7 @@ BrowserView::BrowserView(std::unique_ptr<Browser> browser)
       std::make_unique<TabStripRegionView>(std::move(tabstrip)));
 
   feature_promo_controller_ = std::make_unique<FeaturePromoControllerViews>(
-      this, FeaturePromoBubbleOwnerImpl::GetInstance(),
-      TutorialServiceManager::GetInstance()->GetTutorialServiceForProfile(
-          GetProfile()));
+      this, FeaturePromoBubbleOwnerImpl::GetInstance());
 
   // Create WebViews early so |webui_tab_strip_| can observe their size.
   auto devtools_web_view =
@@ -749,12 +775,26 @@ BrowserView::BrowserView(std::unique_ptr<Browser> browser)
   contents_web_view_->set_is_primary_web_contents_for_window(true);
   contents_container->SetLayoutManager(std::make_unique<ContentsLayoutManager>(
       devtools_web_view_, contents_web_view_));
+    //update on 20220316
+    if(is_nomal_window_type_) {
+        auto temp = std::make_unique<LeftPanel>(browser_.get(), this);
+        suspendbar_ = AddChildView(std::move(temp));
 
+        for (int i = 0; i < 2; i++) {
+            auto temp = std::make_unique<views::View>();
+            temp->SetLayoutManager(std::make_unique<views::FillLayout>());
+            //temp->SetBackground(views::CreateSolidBackground(SkColorSetARGB(255,255,255,255)));
+            temp->SetBackground(std::make_unique<TopContainerBackground>(this));
+            temp->SetID(i);
+            space_view_[i] = AddChildView(std::move(temp));
+        }
+    }
+    //
   toolbar_ = top_container_->AddChildView(
       std::make_unique<ToolbarView>(browser_.get(), this));
-
-  contents_separator_ =
-      top_container_->AddChildView(std::make_unique<ContentsSeparator>());
+    //update on 20220524
+//  contents_separator_ =
+//      top_container_->AddChildView(std::make_unique<ContentsSeparator>());
 
   web_contents_close_handler_ =
       std::make_unique<WebContentsCloseHandler>(contents_web_view_);
@@ -766,8 +806,6 @@ BrowserView::BrowserView(std::unique_ptr<Browser> browser)
     right_aligned_side_panel_ = AddChildView(std::make_unique<SidePanel>(this));
     right_aligned_side_panel_separator_ =
         AddChildView(std::make_unique<ContentsSeparator>());
-    if (base::FeatureList::IsEnabled(features::kUnifiedSidePanel))
-      side_panel_coordinator_ = std::make_unique<SidePanelCoordinator>(this);
   }
 
 #if BUILDFLAG(GOOGLE_CHROME_BRANDING)
@@ -783,16 +821,34 @@ BrowserView::BrowserView(std::unique_ptr<Browser> browser)
   }
 #endif
 
+  // Only either Side Search or the extensions side panel experiment should be
+  // occupying the left aligned side panel at a given time.
+  const bool side_search_enabled =
 #if BUILDFLAG(ENABLE_SIDE_SEARCH)
-  if (browser_->is_type_normal() && IsSideSearchEnabled(browser_->profile())) {
+      IsSideSearchEnabled(browser_->profile());
+#else
+      false;
+#endif  // BUILDFLAG(ENABLE_SIDE_SEARCH)
+
+  if (browser_->is_type_normal() &&
+      (side_search_enabled ||
+       base::FeatureList::IsEnabled(features::kExtensionsSidePanel))) {
     left_aligned_side_panel_ = AddChildView(std::make_unique<SidePanel>(this));
     left_aligned_side_panel_separator_ =
         AddChildView(std::make_unique<ContentsSeparator>());
 
-    side_search_controller_ = std::make_unique<SideSearchBrowserController>(
-        left_aligned_side_panel_, this);
-  }
+#if BUILDFLAG(ENABLE_SIDE_SEARCH)
+    if (side_search_enabled) {
+      side_search_controller_ = std::make_unique<SideSearchBrowserController>(
+          left_aligned_side_panel_, this);
+    }
 #endif  // BUILDFLAG(ENABLE_SIDE_SEARCH)
+    if (!side_search_enabled) {
+      extensions_side_panel_controller_ =
+          std::make_unique<ExtensionsSidePanelController>(
+              left_aligned_side_panel_, this);
+    }
+  }
 
   // InfoBarContainer needs to be added as a child here for drop-shadow, but
   // needs to come after toolbar in focus order (see EnsureFocusOrder()).
@@ -800,7 +856,7 @@ BrowserView::BrowserView(std::unique_ptr<Browser> browser)
       AddChildView(std::make_unique<InfoBarContainerView>(this));
 
   InitStatusBubble();
-
+  
   // Create do-nothing view for the sake of controlling the z-order of the find
   // bar widget.
   find_bar_host_view_ = AddChildView(std::make_unique<View>());
@@ -817,6 +873,15 @@ BrowserView::BrowserView(std::unique_ptr<Browser> browser)
                        weak_ptr_factory_.GetWeakPtr()));
   }
 #endif
+  //update on 20220316
+  //auto sz = GetContentsSize();
+  //SetContentsSize(gfx::Size(sz.width()+30,sz.height()));
+  //update on 20220406
+//  SetBackground(views::CreateSolidBackground(ThemeProperties::GetDefaultColor(ThemeProperties::COLOR_TAB_BACKGROUND_INACTIVE_FRAME_ACTIVE,false)));
+    //SetBackground(views::CreateSolidBackground(SkColorSetARGB(255,235,226,238)));
+//if(GetIncognito()){
+//    SetPreferredSize(gfx::Size(1600,1000));
+//}
 }
 
 BrowserView::~BrowserView() {
@@ -849,7 +914,7 @@ BrowserView::~BrowserView() {
   // The TabStrip attaches a listener to the model. Make sure we shut down the
   // TabStrip first so that it can cleanly remove the listener.
   if (tabstrip_)
-    tabstrip_->parent()->RemoveChildViewT(tabstrip_.get());
+    tabstrip_->parent()->RemoveChildViewT(tabstrip_);
 
   // This highlighter refers to side-panel objects (children of this) and to
   // children inside ToolbarView and of this, remove this observer before those
@@ -1013,6 +1078,11 @@ bool BrowserView::GetIsNormalType() const {
   return browser_->is_type_normal();
 }
 
+//update on 20220927
+bool BrowserView::GetIsDevToolType(){
+    return browser_->is_type_devtools();
+}
+
 bool BrowserView::GetIsWebAppType() const {
   return web_app::AppBrowserController::IsWebApp(browser_.get());
 }
@@ -1042,13 +1112,17 @@ void BrowserView::Show() {
   // explicitly set it here.
   BrowserList::SetLastActive(browser());
 #endif
-
   // If the window is already visible, just activate it.
-  if (frame_->IsVisible()) {
-    frame_->Activate();
-    return;
+  if(is_nomal_window_type_) {
+      if (frame_->IsVisible()) {
+          frame_->Activate();
+          //update on 20220426
+          if (!GetGuestSession() || GetIncognito()) {
+              printf("frame_->IsVisible()->GetExtensionsContainer()->ToggleExtensionsMenu():%s", "start\n");
+          }
+          return;
+      }
   }
-
   // Only set |restore_focus_on_activation_| when it is not set so that restore
   // focus on activation only happen once for the very first Show() call.
   if (!restore_focus_on_activation_.has_value())
@@ -1074,8 +1148,95 @@ void BrowserView::Show() {
         std::make_unique<AccessibilityFocusHighlight>(this);
   }
 #endif  // !BUILDFLAG(IS_CHROMEOS_ASH)
+  //update on 20220426
+  if(is_nomal_window_type_) {
+      if (!GetGuestSession() || GetIncognito()) {
+          //GetExtensionsContainer()->ToggleExtensionsMenu();
+          //suspendbar_->ToggleExtensionsMenu();
+          printf("BrowserView::Show()->GetExtensionsContainer()->ToggleExtensionsMenu():%s", "suc\n");
+          SetBrowserViewBounds();
+          //update on 20220712
+          auto rect = GetScreenRect();
+          if (rect.width() >= 1400) {
+              suspendbar_->FoldButtonClick();
+          }
+      }
+  }
+  //
 }
 
+//update on 20220615
+void BrowserView::SetBrowserViewBounds(){
+    if(frame_ != nullptr){
+        if(left_panel_setting_param_->first_run) {
+            auto rect = GetScreenRect();
+            frame_->SetBounds(gfx::Rect((rect.width() - 1440) / 2,
+                                        (rect.height() - 900) / 2,
+                                        1440, 900));
+            printf("SetBrowserViewBounds x:%d\n", (rect.width() - 1440) / 2);
+            printf("SetBrowserViewBounds y:%d\n", (rect.height() - 900) / 2);
+        }
+        else{
+            frame_->SetBounds(gfx::Rect(left_panel_setting_param_->client_x,
+                              left_panel_setting_param_->client_y,
+                              left_panel_setting_param_->client_width,
+                              left_panel_setting_param_->client_height));
+        }
+    }
+}
+//update on 20220621
+void BrowserView::UpdateRect(){
+     auto rect = frame_->GetWindowBoundsInScreen();
+     frame_->SetBounds(gfx::Rect(rect.x(),
+                                 rect.y(),
+                                 rect.width(),
+                                 rect.height()+1));
+    printf("UpdateRect width:%d\n",rect.width());
+    printf("UpdateRect height:%d\n",rect.height());
+     frame_->SetBounds(rect);
+}
+//update on 20220712
+gfx::Rect BrowserView::GetScreenRect(){
+    auto* screen = display::Screen::GetScreen();
+    auto displayparam = screen->GetDisplayNearestWindow(this->GetNativeWindow());
+    display::ScreenInfos info = screen->GetScreenInfosNearestDisplay(displayparam.id());
+    auto rect = info.current().available_rect;
+    printf("\nScreen Available Width:%d\n",rect.width());
+    printf("\nScreen Available Height:%d\n",rect.height());
+    return rect;
+}
+void BrowserView::InitConfig(){
+    left_panel_setting_param_ = new pundix::LeftSettingParam();
+    std::string userpath = GlobalHelp::GetUsersPath();
+    config_path_ = userpath + "/chainparty";
+    GlobalHelp::CreateDir((char*)config_path_.data());
+    std::string config_name = "config.ini";
+    config_path_ += "/"+config_name;
+    auto info = GlobalHelp::GetInfoFromFile((char*)config_path_.c_str());
+    if(info == "-1" || info == "") {
+        GlobalHelp::WriteInfoToFile((char *) config_path_.c_str(), (char*)"-1", 0);
+    }
+    else{
+        auto suc = json_help_.PerseLeftPanelParamJson(info,*left_panel_setting_param_);
+        //GetProfile()->GetPrefs()->SetBoolean(prefs::kMessengerShow,left_panel_setting_param_->messerger_show);
+        //GetProfile()->GetPrefs()->SetBoolean(prefs::kWhatsAppShow,left_panel_setting_param_->whatsapp_show);
+        printf("\njson_help_.PerseLeftPanelParamJson::%d\n",suc);
+    }
+}
+void BrowserView::SaveConfig(){
+    left_panel_setting_param_->first_run = false;
+    gfx::Rect temp = GetWidget()->GetWindowBoundsInScreen();
+    left_panel_setting_param_->client_x = temp.x();
+    left_panel_setting_param_->client_y = temp.y();
+    left_panel_setting_param_->client_width = temp.width();
+    left_panel_setting_param_->client_height = temp.height();
+    left_panel_setting_param_->messerger_top = suspendbar_->GetSocialIconIndex(0);
+    left_panel_setting_param_->whatsapp_top = suspendbar_->GetSocialIconIndex(1);
+    left_panel_setting_param_->discord_top = suspendbar_->GetSocialIconIndex(2);
+    auto info = json_help_.LeftPanelParamToJson(*left_panel_setting_param_);
+    GlobalHelp::WriteInfoToFile((char*)config_path_.c_str(),(char*)info.c_str(),0);
+}
+//
 void BrowserView::ShowInactive() {
   if (!frame_->IsVisible())
     frame_->ShowInactive();
@@ -1095,6 +1256,10 @@ void BrowserView::SetBounds(const gfx::Rect& bounds) {
 }
 
 void BrowserView::Close() {
+    //update on 20220822
+    if(is_nomal_window_type_)
+    SaveConfig();
+    //
   frame_->Close();
 }
 
@@ -1141,17 +1306,30 @@ bool BrowserView::IsOnCurrentWorkspace() const {
 #elif defined(OS_WIN)
   if (base::win::GetVersion() < base::win::Version::WIN10)
     return true;
+
   Microsoft::WRL::ComPtr<IVirtualDesktopManager> virtual_desktop_manager;
-  if (!SUCCEEDED(::CoCreateInstance(_uuidof(VirtualDesktopManager), nullptr,
+  if (!SUCCEEDED(::CoCreateInstance(__uuidof(VirtualDesktopManager), nullptr,
                                     CLSCTX_ALL,
                                     IID_PPV_ARGS(&virtual_desktop_manager)))) {
     return true;
   }
-  // If a IVirtualDesktopManager method failed, we assume the window is on
-  // the current virtual desktop.
-  return gfx::IsWindowOnCurrentVirtualDesktop(
-             native_win->GetHost()->GetAcceleratedWidget(),
-             virtual_desktop_manager) != false;
+
+  BOOL on_current_desktop;
+  if (FAILED(virtual_desktop_manager->IsWindowOnCurrentVirtualDesktop(
+          native_win->GetHost()->GetAcceleratedWidget(),
+          &on_current_desktop)) ||
+      on_current_desktop) {
+    return true;
+  }
+
+  // IsWindowOnCurrentVirtualDesktop() is flaky for newly opened windows,
+  // which causes test flakiness. Occasionally, it incorrectly says a window
+  // is not on the current virtual desktop when it is. In this situation,
+  // it also returns GUID_NULL for the desktop id.
+  GUID workspace_guid;
+  return !SUCCEEDED(virtual_desktop_manager->GetWindowDesktopId(
+             native_win->GetHost()->GetAcceleratedWidget(), &workspace_guid)) ||
+         workspace_guid == GUID_NULL;
 #else
   return true;
 #endif  // defined(OS_CHROMEOS)
@@ -1172,10 +1350,6 @@ bool BrowserView::DoBrowserControlsShrinkRendererSize(
 
 ui::NativeTheme* BrowserView::GetNativeTheme() {
   return views::ClientView::GetNativeTheme();
-}
-
-const ui::ColorProvider* BrowserView::GetColorProvider() const {
-  return views::ClientView::GetColorProvider();
 }
 
 int BrowserView::GetTopControlsHeight() const {
@@ -1802,20 +1976,12 @@ void BrowserView::UpdateWindowControlsOverlayEnabled() {
   if (frame_ && frame_->GetFrameView())
     frame_->GetFrameView()->WindowControlsOverlayEnabledChanged();
 
-  const std::u16string& state_change_text =
+  GetViewAccessibility().AnnounceText(
       IsWindowControlsOverlayEnabled()
           ? l10n_util::GetStringUTF16(
                 IDS_WEB_APP_WINDOW_CONTROLS_OVERLAY_ENABLED_ALERT)
           : l10n_util::GetStringUTF16(
-                IDS_WEB_APP_WINDOW_CONTROLS_OVERLAY_DISABLED_ALERT);
-#if defined(OS_MAC)
-  if (frame_) {
-    frame_->native_browser_frame()->AnnounceTextInInProcessWindow(
-        state_change_text);
-  }
-#else
-  GetViewAccessibility().AnnounceText(state_change_text);
-#endif
+                IDS_WEB_APP_WINDOW_CONTROLS_OVERLAY_DISABLED_ALERT));
 }
 
 void BrowserView::UpdateWindowControlsOverlayToggleVisible() {
@@ -3066,23 +3232,6 @@ void BrowserView::CloseTabSearchBubble() {
     tab_search_host->CloseTabSearchBubble();
 }
 
-#if BUILDFLAG(ENABLE_SIDE_SEARCH)
-bool BrowserView::IsSideSearchPanelVisible() const {
-  if (side_search_controller_)
-    return side_search_controller_->GetSidePanelToggledOpen();
-
-  return false;
-}
-
-void BrowserView::MaybeRestoreSideSearchStatePerWindow(
-    const std::map<std::string, std::string>& extra_data) {
-  if (side_search_controller_) {
-    side_search::MaybeRestoreSideSearchWindowState(
-        side_search_controller_.get(), extra_data);
-  }
-}
-#endif
-
 void BrowserView::RevealTabStripIfNeeded() {
   if (!immersive_mode_controller_->IsEnabled())
     return;
@@ -3175,19 +3324,6 @@ views::CloseRequestResult BrowserView::OnWindowCloseRequested() {
     frame_->Hide();
     result = views::CloseRequestResult::kCannotClose;
   }
-
-#if BUILDFLAG(ENABLE_SIDE_SEARCH)
-  // Persist the side search browser controller's window side panel state for
-  // use during session restoration. Since the side panel is closed by default,
-  // we only want to persist the state if the side panel is currently open.
-  if (side_search_controller_ &&
-      side_search_controller_->GetSidePanelToggledOpen()) {
-    side_search::MaybeSaveSideSearchWindowSessionData(
-        GetProfile(), browser()->session_id(),
-        side_search_controller_->GetSidePanelToggledOpen());
-  }
-#endif
-
   browser_->OnWindowClosing();
   return result;
 }
@@ -3286,15 +3422,19 @@ void BrowserView::AddedToWidget() {
   // that windows will be styled with the appropriate NativeTheme.
   SetThemeProfileForWindow(GetNativeWindow(), browser_->profile());
 #endif
-
+//update on 20220315
+ if(is_nomal_window_type_)
+    suspendbar_->Init();
+    //suspendbar_->Show(GURL("http://192.168.20.44:4224/"),gfx::Rect(0,0,200,800));
+    //
   toolbar_->Init();
-
   // TODO(pbos): Manage this either inside SidePanel or the corresponding button
   // when SidePanel is singular, at least per button/side.
   // TODO(pbos): Investigate whether the side panels should be creatable when
   // the ToolbarView does not create a button for them. This specifically seems
   // to hit web apps. See https://crbug.com/1267781.
-  if (toolbar_->side_panel_button() &&
+  if (base::FeatureList::IsEnabled(features::kSidePanelBorder) &&
+      toolbar_->read_later_button() &&
       (lens_side_panel_ || right_aligned_side_panel_)) {
     std::vector<View*> panels;
     if (lens_side_panel_)
@@ -3303,7 +3443,7 @@ void BrowserView::AddedToWidget() {
       panels.push_back(right_aligned_side_panel_);
     side_panel_button_highlighter_ =
         std::make_unique<SidePanelButtonHighlighter>(
-            toolbar_->side_panel_button(), panels);
+            toolbar_->read_later_button(), panels);
   }
 
 #if BUILDFLAG(IS_CHROMEOS_ASH) || BUILDFLAG(IS_CHROMEOS_LACROS)
@@ -3328,14 +3468,16 @@ void BrowserView::AddedToWidget() {
 
   // TODO(https://crbug.com/1036519): Remove BrowserViewLayout dependence on
   // Widget and move to the constructor.
-  SetLayoutManager(std::make_unique<BrowserViewLayout>(
+    browser_view_layout_ = SetLayoutManager(std::make_unique<BrowserViewLayout>(
       std::make_unique<BrowserViewLayoutDelegateImpl>(this),
       GetWidget()->GetNativeView(), this, top_container_,
-      tab_strip_region_view_, tabstrip_, toolbar_, infobar_container_,
+      tab_strip_region_view_, tabstrip_, toolbar_,
+      /*update on 20220211*/suspendbar_,infobar_container_,
       contents_container_, left_aligned_side_panel_,
       left_aligned_side_panel_separator_, right_aligned_side_panel_,
       right_aligned_side_panel_separator_, lens_side_panel_,
-      immersive_mode_controller_.get(), contents_separator_));
+      immersive_mode_controller_.get(), contents_separator_,space_view_[0],
+      space_view_[1]));
 
   EnsureFocusOrder();
 
@@ -3354,10 +3496,16 @@ void BrowserView::AddedToWidget() {
       ->AddOnInitializedCallback(
           base::BindOnce(&BrowserView::OnFeatureEngagementTrackerInitialized,
                          weak_ptr_factory_.GetWeakPtr()));
-
   initialized_ = true;
 }
-
+//update on 20220714
+void BrowserView::UpdateLayout(){
+    browser_view_layout_->UpdateLayout();
+}
+pundix::LeftSettingParam* BrowserView::GetSettingParam(){
+    return left_panel_setting_param_;
+}
+//
 void BrowserView::PaintChildren(const views::PaintInfo& paint_info) {
   views::ClientView::PaintChildren(paint_info);
   static bool did_first_paint = false;
@@ -3913,8 +4061,7 @@ void BrowserView::ShowAvatarBubbleFromAvatarButton(
   profiles::BubbleViewMode bubble_view_mode;
   profiles::BubbleViewModeFromAvatarBubbleMode(mode, GetProfile(),
                                                &bubble_view_mode);
-// TODO(https://crbug.com/1260291): Add support for Lacros.
-#if !BUILDFLAG(IS_CHROMEOS_ASH) && !BUILDFLAG(IS_CHROMEOS_LACROS)
+#if !BUILDFLAG(IS_CHROMEOS_ASH)
   if (SigninViewController::ShouldShowSigninForMode(bubble_view_mode)) {
     browser_->signin_view_controller()->ShowSignin(bubble_view_mode,
                                                    access_point);
@@ -3924,7 +4071,38 @@ void BrowserView::ShowAvatarBubbleFromAvatarButton(
   ProfileMenuViewBase::ShowBubble(bubble_view_mode, avatar_button, browser(),
                                   is_source_accelerator);
 }
+//update on 20220215
+void BrowserView::ShowWalletBubbleFromWalletButton(
+    AvatarBubbleMode mode,
+    signin_metrics::AccessPoint access_point,
+    bool is_source_accelerator) {
+  // Do not show avatar bubble if there is no avatar menu button.
+  views::Button* wallet_button =
+      toolbar_button_provider_->GetWalletToolbarButton();
+  if (!wallet_button)
+    return;
 
+  profiles::BubbleViewMode bubble_view_mode;
+  profiles::BubbleViewModeFromAvatarBubbleMode(mode, GetProfile(),
+                                               &bubble_view_mode);
+  WalletViewBase::ShowWalletBubble(bubble_view_mode, wallet_button, browser(),
+                                  is_source_accelerator);
+  //update on 20220216
+//  std::unique_ptr<views::Widget> widget(new views::Widget);
+//  views::Widget::InitParams params(views::Widget::InitParams::TYPE_POPUP);
+//  params.ownership = views::Widget::InitParams::WIDGET_OWNS_NATIVE_WIDGET;
+//  params.bounds = gfx::Rect(50, 50, 650, 650);
+//  widget->Init(std::move(params));
+//  widget->Show();
+    
+//    views::Widget* window = views::Widget::CreateWindow(new WindowView);
+//    window->Show();
+}
+//update on 20220412
+LeftPanel*/*ProfileSuspendView**/ BrowserView::GetSuspendbarView(){
+    return suspendbar_;
+}
+//
 void BrowserView::MaybeShowProfileSwitchIPH() {
   if (GetGuestSession() || GetIncognito())
     return;

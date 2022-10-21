@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "components/sessions/core/session_id.h"
 #include "components/sync_sessions/synced_tab_delegate.h"
 
@@ -46,7 +46,7 @@ class TabContentsSyncedTabDelegate : public sync_sessions::SyncedTabDelegate {
   void GetSerializedNavigationAtIndex(
       int i,
       sessions::SerializedNavigationEntry* serialized_entry) const override;
-  bool ProfileHasChildAccount() const override;
+  bool ProfileIsSupervised() const override;
   const std::vector<std::unique_ptr<const sessions::SerializedNavigationEntry>>*
   GetBlockedNavigations() const override;
   bool ShouldSync(sync_sessions::SyncSessionsClient* sessions_client) override;
@@ -62,7 +62,7 @@ class TabContentsSyncedTabDelegate : public sync_sessions::SyncedTabDelegate {
  private:
   const tasks::TaskTabHelper* task_tab_helper() const;
 
-  raw_ptr<content::WebContents> web_contents_;
+  content::WebContents* web_contents_;
 };
 
 #endif  // CHROME_BROWSER_UI_SYNC_TAB_CONTENTS_SYNCED_TAB_DELEGATE_H_

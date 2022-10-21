@@ -5,6 +5,7 @@
 #ifndef CHROME_BROWSER_UI_WEBUI_OMNIBOX_OMNIBOX_UI_H_
 #define CHROME_BROWSER_UI_WEBUI_OMNIBOX_OMNIBOX_UI_H_
 
+#include "base/macros.h"
 #include "build/build_config.h"
 #include "chrome/browser/ui/webui/omnibox/omnibox.mojom-forward.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"

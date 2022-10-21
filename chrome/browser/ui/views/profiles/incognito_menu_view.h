@@ -9,6 +9,7 @@
 
 #include <memory>
 
+#include "base/macros.h"
 #include "build/build_config.h"
 #include "chrome/browser/ui/views/profiles/profile_menu_view_base.h"
 

@@ -7,6 +7,8 @@
 
 #include <stdint.h>
 
+#include "base/compiler_specific.h"
+#include "base/macros.h"
 #include "ppapi/host/resource_host.h"
 
 namespace content {

@@ -11,12 +11,13 @@
 #include "base/logging.h"
 #include "base/run_loop.h"
 #include "chrome/browser/ui/app_list/chrome_app_list_item.h"
+#include "chrome/browser/ui/app_list/reorder/app_list_reorder_delegate.h"
 #include "extensions/common/constants.h"
 
 FakeAppListModelUpdater::FakeAppListModelUpdater(
     Profile* profile,
-    app_list::reorder::AppListReorderDelegate* order_delegate)
-    : profile_(profile) {}
+    app_list::AppListReorderDelegate* order_delegate)
+    : profile_(profile), order_delegate_(order_delegate) {}
 
 FakeAppListModelUpdater::~FakeAppListModelUpdater() = default;
 
@@ -24,17 +25,15 @@ void FakeAppListModelUpdater::AddItem(std::unique_ptr<ChromeAppListItem> item) {
   items_.push_back(std::move(item));
 }
 
-void FakeAppListModelUpdater::AddAppItemToFolder(
+void FakeAppListModelUpdater::AddItemToFolder(
     std::unique_ptr<ChromeAppListItem> item,
-    const std::string& folder_id,
-    bool add_from_local) {
+    const std::string& folder_id) {
   ChromeAppListItem::TestApi test_api(item.get());
   test_api.SetFolderId(folder_id);
   items_.push_back(std::move(item));
 }
 
-void FakeAppListModelUpdater::RemoveItem(const std::string& id,
-                                         bool is_uninstall) {
+void FakeAppListModelUpdater::RemoveItem(const std::string& id) {
   size_t index;
   if (FindItemIndexForTest(id, &index)) {
     const std::string folder_id = items_[index]->folder_id();
@@ -50,8 +49,12 @@ void FakeAppListModelUpdater::RemoveItem(const std::string& id,
         ++folder_item_count;
     }
     if (!folder_item_count)
-      RemoveItem(folder_id, is_uninstall);
+      RemoveItem(folder_id);
   }
+}
+
+void FakeAppListModelUpdater::RemoveUninstalledItem(const std::string& id) {
+  RemoveItem(id);
 }
 
 void FakeAppListModelUpdater::SetItemIcon(const std::string& id,
@@ -129,15 +132,6 @@ std::vector<ChromeAppListItem*> FakeAppListModelUpdater::GetTopLevelItems()
   return top_level_items;
 }
 
-std::set<std::string> FakeAppListModelUpdater::GetTopLevelItemIds() const {
-  std::set<std::string> item_ids;
-  for (auto& item : items_) {
-    if (item->folder_id().empty())
-      item_ids.insert(item->id());
-  }
-  return item_ids;
-}
-
 ChromeAppListItem* FakeAppListModelUpdater::ItemAtForTest(size_t index) {
   return index < items_.size() ? items_[index].get() : nullptr;
 }
@@ -174,9 +168,18 @@ syncer::StringOrdinal FakeAppListModelUpdater::GetPositionBeforeFirstItem()
 
 void FakeAppListModelUpdater::GetContextMenuModel(
     const std::string& id,
-    bool add_sort_options,
     GetMenuModelCallback callback) {
   std::move(callback).Run(nullptr);
+}
+
+syncer::StringOrdinal FakeAppListModelUpdater::CalculatePositionForNewItem(
+    const ChromeAppListItem& new_item) {
+  // TODO(https://crbug.com/1260875): handle the case that `new_item` is a
+  // folder.
+  if (!ash::features::IsLauncherAppSortEnabled() || new_item.is_folder())
+    return GetFirstAvailablePosition();
+
+  return order_delegate_->CalculatePositionForNewItem(new_item, GetItems());
 }
 
 void FakeAppListModelUpdater::ActivateChromeItem(const std::string& id,
@@ -201,10 +204,6 @@ void FakeAppListModelUpdater::PublishSearchResults(
     const std::vector<ChromeSearchResult*>& results,
     const std::vector<ash::AppListSearchResultCategory>& categories) {
   search_results_ = results;
-}
-
-void FakeAppListModelUpdater::ClearSearchResults() {
-  search_results_.clear();
 }
 
 void FakeAppListModelUpdater::UpdateAppItemFromSyncItem(

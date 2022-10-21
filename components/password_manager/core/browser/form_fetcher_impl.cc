@@ -119,11 +119,9 @@ void FormFetcherImpl::Fetch() {
     wait_counter_++;
 
   state_ = State::WAITING;
-  profile_password_store->GetLogins(form_digest_,
-                                    weak_ptr_factory_.GetWeakPtr());
+  profile_password_store->GetLogins(form_digest_, this);
   if (account_password_store)
-    account_password_store->GetLogins(form_digest_,
-                                      weak_ptr_factory_.GetWeakPtr());
+    account_password_store->GetLogins(form_digest_, this);
 
 // The statistics isn't needed on mobile, only on desktop. Let's save some
 // processor cycles.
@@ -134,7 +132,7 @@ void FormFetcherImpl::Fetch() {
   // `stats_store` can be null in tests.
   if (stats_store)
     stats_store->GetSiteStats(form_digest_.url.DeprecatedGetOriginAsURL(),
-                              weak_ptr_factory_.GetWeakPtr());
+                              this);
 #endif
 }
 

@@ -11,7 +11,7 @@
 #include <string>
 
 #include "base/compiler_specific.h"
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/observer_list.h"
 #include "base/sequence_checker.h"
 #include "build/build_config.h"
@@ -90,6 +90,8 @@ class SyncPrefs {
   void SetSelectedOsTypes(bool sync_all_os_types,
                           UserSelectableOsTypeSet registered_types,
                           UserSelectableOsTypeSet selected_types);
+  bool IsOsSyncFeatureEnabled() const;
+  void SetOsSyncFeatureEnabled(bool enabled);
 
   // Maps |type| to its corresponding preference name. Returns nullptr if |type|
   // isn't an OS type.
@@ -142,7 +144,7 @@ class SyncPrefs {
   void OnSyncRequestedPrefChange();
 
   // Never null.
-  const raw_ptr<PrefService> pref_service_;
+  PrefService* const pref_service_;
 
   base::ObserverList<SyncPrefObserver>::Unchecked sync_pref_observers_;
 

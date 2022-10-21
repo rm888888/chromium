@@ -8,7 +8,6 @@
 #include <memory>
 #include <string>
 
-#include "base/memory/raw_ptr.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/browser/ui/passwords/password_generation_popup_controller.h"
 #include "chrome/browser/ui/views/chrome_layout_provider.h"
@@ -47,7 +46,7 @@ class PasswordGenerationPopupViewViews::GeneratedPasswordBox
   ~GeneratedPasswordBox() override = default;
 
   // Fills the view with strings provided by |controller|.
-  void Init(base::WeakPtr<PasswordGenerationPopupController> controller);
+  void Init(PasswordGenerationPopupController* controller);
 
   void UpdatePassword(const std::u16string& password) {
     password_label_->SetText(password);
@@ -74,13 +73,13 @@ class PasswordGenerationPopupViewViews::GeneratedPasswordBox
   // Construct a ColumnSet with one view on the left and another on the right.
   static void BuildColumnSet(views::GridLayout* layout);
 
-  raw_ptr<views::Label> suggestion_label_ = nullptr;
-  raw_ptr<views::Label> password_label_ = nullptr;
-  base::WeakPtr<PasswordGenerationPopupController> controller_ = nullptr;
+  views::Label* suggestion_label_ = nullptr;
+  views::Label* password_label_ = nullptr;
+  PasswordGenerationPopupController* controller_ = nullptr;
 };
 
 void PasswordGenerationPopupViewViews::GeneratedPasswordBox::Init(
-    base::WeakPtr<PasswordGenerationPopupController> controller) {
+    PasswordGenerationPopupController* controller) {
   controller_ = controller;
   views::GridLayout* layout =
       SetLayoutManager(std::make_unique<views::GridLayout>());
@@ -165,7 +164,7 @@ BEGIN_METADATA(PasswordGenerationPopupViewViews,
 END_METADATA
 
 PasswordGenerationPopupViewViews::PasswordGenerationPopupViewViews(
-    base::WeakPtr<PasswordGenerationPopupController> controller,
+    PasswordGenerationPopupController* controller,
     views::Widget* parent_widget)
     : AutofillPopupBaseView(controller, parent_widget),
       controller_(controller) {
@@ -234,7 +233,7 @@ void PasswordGenerationPopupViewViews::CreateLayoutAndChildren() {
       views::CreateEmptyBorder(kVerticalPadding, kHorizontalMargin,
                                kVerticalPadding, kHorizontalMargin));
   password_view_->Init(controller_);
-  AddChildView(password_view_.get());
+  AddChildView(password_view_);
   PasswordSelectionUpdated();
 
   help_label_ = new views::Label(controller_->HelpText(),
@@ -245,7 +244,7 @@ void PasswordGenerationPopupViewViews::CreateLayoutAndChildren() {
   help_label_->SetBorder(
       views::CreateEmptyBorder(kVerticalPadding, kHorizontalMargin,
                                kVerticalPadding, kHorizontalMargin));
-  AddChildView(help_label_.get());
+  AddChildView(help_label_);
 }
 
 void PasswordGenerationPopupViewViews::OnThemeChanged() {
@@ -288,7 +287,7 @@ gfx::Size PasswordGenerationPopupViewViews::CalculatePreferredSize() const {
 }
 
 PasswordGenerationPopupView* PasswordGenerationPopupView::Create(
-    base::WeakPtr<PasswordGenerationPopupController> controller) {
+    PasswordGenerationPopupController* controller) {
   if (!controller->container_view())
     return nullptr;
 

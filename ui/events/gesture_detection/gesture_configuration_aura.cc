@@ -5,6 +5,7 @@
 #include "ui/events/gesture_detection/gesture_configuration.h"
 
 #include "base/command_line.h"
+#include "base/macros.h"
 #include "base/memory/singleton.h"
 #include "build/chromeos_buildflags.h"
 #include "ui/events/event_switches.h"

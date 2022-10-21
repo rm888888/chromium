@@ -10,13 +10,12 @@
 
 #include "base/callback.h"
 #include "base/callback_helpers.h"
-#include "base/feature_list.h"
+#include "base/macros.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/browser/ash/profiles/profile_helper.h"
 #include "chrome/browser/media/router/media_router_feature.h"
 #include "chrome/browser/profiles/profile.h"
-#include "chrome/browser/ui/ui_features.h"
 #include "chrome/common/url_constants.h"
 #include "components/media_router/browser/media_router.h"
 #include "components/media_router/browser/media_router_factory.h"
@@ -92,7 +91,8 @@ class CastDeviceCache : public media_router::MediaRoutesObserver,
   void OnSinksReceived(const MediaSinks& sinks) override;
 
   // media_router::MediaRoutesObserver:
-  void OnRoutesUpdated(const MediaRoutes& routes) override;
+  void OnRoutesUpdated(const MediaRoutes& routes,
+                       const MediaRouteIds& unused_joinable_route_ids) override;
 
   MediaSinks sinks_;
   MediaRoutes routes_;
@@ -137,7 +137,9 @@ void CastDeviceCache::OnSinksReceived(const MediaSinks& sinks) {
   update_devices_callback_.Run();
 }
 
-void CastDeviceCache::OnRoutesUpdated(const MediaRoutes& routes) {
+void CastDeviceCache::OnRoutesUpdated(
+    const MediaRoutes& routes,
+    const MediaRouteIds& unused_joinable_route_ids) {
   routes_ = routes;
   update_devices_callback_.Run();
 }
@@ -193,13 +195,6 @@ bool CastConfigControllerMediaRouter::HasActiveRoute() const {
   return false;
 }
 
-bool CastConfigControllerMediaRouter::AccessCodeCastingEnabled() const {
-  Profile* profile = GetProfile();
-  return base::FeatureList::IsEnabled(::features::kAccessCodeCastUI) &&
-         profile &&
-         media_router::GetAccessCodeCastEnabledPref(profile->GetPrefs());
-}
-
 void CastConfigControllerMediaRouter::RequestDeviceRefresh() {
   // The media router component isn't ready yet.
   if (!device_cache())
@@ -221,6 +216,9 @@ void CastConfigControllerMediaRouter::RequestDeviceRefresh() {
   }
 
   for (const media_router::MediaRoute& route : device_cache()->routes()) {
+    if (!route.for_display())
+      continue;
+
     for (ash::SinkAndRoute& device : devices_) {
       if (device.sink.id == route.media_sink_id()) {
         device.route.id = route.media_route_id();

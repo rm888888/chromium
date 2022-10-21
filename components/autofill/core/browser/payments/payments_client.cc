@@ -30,7 +30,6 @@
 #include "components/autofill/core/browser/payments/payments_requests/payments_request.h"
 #include "components/autofill/core/browser/payments/payments_requests/select_challenge_option_request.h"
 #include "components/autofill/core/browser/payments/payments_requests/unmask_card_request.h"
-#include "components/autofill/core/browser/payments/payments_requests/update_virtual_card_enrollment_request.h"
 #include "components/autofill/core/browser/payments/payments_service_url.h"
 #include "components/autofill/core/common/autofill_features.h"
 #include "components/autofill/core/common/autofill_payments_features.h"
@@ -594,12 +593,10 @@ class GetUploadDetailsRequest : public PaymentsRequest {
 
 class UploadCardRequest : public PaymentsRequest {
  public:
-  UploadCardRequest(
-      const PaymentsClient::UploadRequestDetails& request_details,
-      const bool full_sync_enabled,
-      base::OnceCallback<void(AutofillClient::PaymentsRpcResult,
-                              const PaymentsClient::UploadCardResponseDetails&)>
-          callback)
+  UploadCardRequest(const PaymentsClient::UploadRequestDetails& request_details,
+                    const bool full_sync_enabled,
+                    base::OnceCallback<void(AutofillClient::PaymentsRpcResult,
+                                            const std::string&)> callback)
       : request_details_(request_details),
         full_sync_enabled_(full_sync_enabled),
         callback_(std::move(callback)) {}
@@ -695,23 +692,22 @@ class UploadCardRequest : public PaymentsRequest {
   void ParseResponse(const base::Value& response) override {
     const std::string* credit_card_id =
         response.FindStringKey("credit_card_id");
-    upload_card_response_details_.server_id =
-        credit_card_id ? *credit_card_id : std::string();
+    server_id_ = credit_card_id ? *credit_card_id : std::string();
   }
 
   bool IsResponseComplete() override { return true; }
 
   void RespondToDelegate(AutofillClient::PaymentsRpcResult result) override {
-    std::move(callback_).Run(result, upload_card_response_details_);
+    std::move(callback_).Run(result, server_id_);
   }
 
  private:
   const PaymentsClient::UploadRequestDetails request_details_;
   const bool full_sync_enabled_;
   base::OnceCallback<void(AutofillClient::PaymentsRpcResult,
-                          const PaymentsClient::UploadCardResponseDetails&)>
+                          const std::string&)>
       callback_;
-  PaymentsClient::UploadCardResponseDetails upload_card_response_details_;
+  std::string server_id_;
 };
 
 class MigrateCardsRequest : public PaymentsRequest {
@@ -964,19 +960,6 @@ PaymentsClient::SelectChallengeOptionRequestDetails::
 PaymentsClient::SelectChallengeOptionRequestDetails::
     ~SelectChallengeOptionRequestDetails() = default;
 
-PaymentsClient::GetDetailsForEnrollmentResponseDetails::
-    GetDetailsForEnrollmentResponseDetails() = default;
-PaymentsClient::GetDetailsForEnrollmentResponseDetails::
-    ~GetDetailsForEnrollmentResponseDetails() = default;
-
-PaymentsClient::UpdateVirtualCardEnrollmentRequestDetails::
-    UpdateVirtualCardEnrollmentRequestDetails() = default;
-PaymentsClient::UpdateVirtualCardEnrollmentRequestDetails::
-    UpdateVirtualCardEnrollmentRequestDetails(
-        const UpdateVirtualCardEnrollmentRequestDetails&) = default;
-PaymentsClient::UpdateVirtualCardEnrollmentRequestDetails::
-    ~UpdateVirtualCardEnrollmentRequestDetails() = default;
-
 PaymentsClient::PaymentsClient(
     scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory,
     signin::IdentityManager* identity_manager,
@@ -1049,7 +1032,7 @@ void PaymentsClient::GetUploadDetails(
 void PaymentsClient::UploadCard(
     const PaymentsClient::UploadRequestDetails& request_details,
     base::OnceCallback<void(AutofillClient::PaymentsRpcResult,
-                            const UploadCardResponseDetails&)> callback) {
+                            const std::string&)> callback) {
   IssueRequest(
       std::make_unique<UploadCardRequest>(
           request_details, account_info_getter_->IsSyncFeatureEnabled(),
@@ -1073,14 +1056,6 @@ void PaymentsClient::SelectChallengeOption(
     base::OnceCallback<void(AutofillClient::PaymentsRpcResult,
                             const std::string&)> callback) {
   IssueRequest(std::make_unique<SelectChallengeOptionRequest>(
-                   request_details, std::move(callback)),
-               /*authenticate=*/true);
-}
-
-void PaymentsClient::UpdateVirtualCardEnrollment(
-    const UpdateVirtualCardEnrollmentRequestDetails& request_details,
-    base::OnceCallback<void(AutofillClient::PaymentsRpcResult)> callback) {
-  IssueRequest(std::make_unique<UpdateVirtualCardEnrollmentRequest>(
                    request_details, std::move(callback)),
                /*authenticate=*/true);
 }

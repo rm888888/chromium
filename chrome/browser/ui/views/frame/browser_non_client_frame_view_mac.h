@@ -9,6 +9,7 @@
 
 #include "base/gtest_prod_util.h"
 #include "base/mac/scoped_nsobject.h"
+#include "base/macros.h"
 #include "chrome/browser/ui/views/frame/browser_non_client_frame_view.h"
 #include "components/prefs/pref_member.h"
 

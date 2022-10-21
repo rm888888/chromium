@@ -22,7 +22,6 @@
 #include "chrome/browser/command_updater.h"
 #include "chrome/browser/media/router/media_router_feature.h"
 #include "chrome/browser/profiles/profile.h"
-#include "chrome/browser/profiles/profiles_state.h"
 #include "chrome/browser/share/share_features.h"
 #include "chrome/browser/themes/theme_properties.h"
 #include "chrome/browser/ui/browser.h"
@@ -40,8 +39,8 @@
 #include "chrome/browser/ui/ui_features.h"
 #include "chrome/browser/ui/view_ids.h"
 #include "chrome/browser/ui/views/bookmarks/bookmark_bubble_view.h"
-#include "chrome/browser/ui/views/download/bubble/download_toolbar_button_view.h"
 #include "chrome/browser/ui/views/extensions/extension_popup.h"
+#include "chrome/browser/ui/views/extensions/extensions_side_panel_controller.h"
 #include "chrome/browser/ui/views/extensions/extensions_toolbar_button.h"
 #include "chrome/browser/ui/views/extensions/extensions_toolbar_container.h"
 #include "chrome/browser/ui/views/frame/browser_non_client_frame_view.h"
@@ -62,8 +61,8 @@
 #include "chrome/browser/ui/views/toolbar/chrome_labs_button.h"
 #include "chrome/browser/ui/views/toolbar/chrome_labs_utils.h"
 #include "chrome/browser/ui/views/toolbar/home_button.h"
+#include "chrome/browser/ui/views/toolbar/read_later_toolbar_button.h"
 #include "chrome/browser/ui/views/toolbar/reload_button.h"
-#include "chrome/browser/ui/views/toolbar/side_panel_toolbar_button.h"
 #include "chrome/browser/ui/views/toolbar/toolbar_account_icon_container_view.h"
 #include "chrome/browser/ui/views/toolbar/toolbar_button.h"
 #include "chrome/browser/ui/web_applications/app_browser_controller.h"
@@ -180,6 +179,8 @@ ToolbarView::ToolbarView(Browser* browser, BrowserView* browser_view)
 
   if (display_mode_ == DisplayMode::NORMAL) {
     SetBackground(std::make_unique<TopContainerBackground>(browser_view));
+    //update on 20220406
+    //  SetBackground(views::CreateSolidBackground(ThemeProperties::GetDefaultColor(ThemeProperties::COLOR_FEATURE_PROMO_BUBBLE_TEXT,false)));
 
     for (const auto& view_and_command : GetViewCommandMap())
       chrome::AddCommandObserver(browser_, view_and_command.second, this);
@@ -196,6 +197,9 @@ ToolbarView::~ToolbarView() {
 
   for (const auto& view_and_command : GetViewCommandMap())
     chrome::RemoveCommandObserver(browser_, view_and_command.second, this);
+  //update on 20220315
+  if(!left_side_button_)
+  delete left_side_button_;
 }
 
 void ToolbarView::Init() {
@@ -264,15 +268,11 @@ void ToolbarView::Init() {
         browser_view_, MediaToolbarButtonContextualMenu::Create(browser_));
   }
 
-  std::unique_ptr<DownloadToolbarButtonView> download_button;
-  if (base::FeatureList::IsEnabled(features::kDownloadBubble)) {
-    download_button =
-        std::make_unique<DownloadToolbarButtonView>(browser_view_);
-  }
-
   std::unique_ptr<send_tab_to_self::SendTabToSelfToolbarIconView>
       send_tab_to_self_button;
-  if (!browser_->profile()->IsOffTheRecord()) {
+  if ((base::FeatureList::IsEnabled(send_tab_to_self::kSendTabToSelfV2) ||
+       share::AreUpcomingSharingFeaturesEnabled()) &&
+      !browser_->profile()->IsOffTheRecord()) {
     send_tab_to_self_button =
         std::make_unique<send_tab_to_self::SendTabToSelfToolbarIconView>(
             browser_view_);
@@ -285,8 +285,6 @@ void ToolbarView::Init() {
   // ChromeOS only badges Incognito and Guest icons in the browser window.
   show_avatar_toolbar_button = browser_->profile()->IsOffTheRecord() ||
                                browser_->profile()->IsGuestSession();
-#elif BUILDFLAG(IS_CHROMEOS_LACROS)
-  show_avatar_toolbar_button = !profiles::IsPublicSession();
 #endif
   if (base::FeatureList::IsEnabled(
           autofill::features::kAutofillEnableToolbarStatusChip)) {
@@ -297,13 +295,18 @@ void ToolbarView::Init() {
         std::make_unique<ToolbarAccountIconContainerView>(browser_view_);
   }
 
-  std::unique_ptr<SidePanelToolbarButton> side_panel_button;
+  std::unique_ptr<ReadLaterToolbarButton> read_later_button;
   if (browser_view_->right_aligned_side_panel() &&
       reading_list::switches::IsReadingListEnabled()) {
-    side_panel_button = std::make_unique<SidePanelToolbarButton>(browser_);
+    read_later_button = std::make_unique<ReadLaterToolbarButton>(browser_);
   }
 
   // Always add children in order from left to right, for accessibility.
+  if (browser_view_->extensions_side_panel_controller()) {
+    left_side_panel_button_ =
+        AddChildView(browser_view_->extensions_side_panel_controller()
+                         ->CreateToolbarButton());
+  }
   back_ = AddChildView(std::move(back));
   forward_ = AddChildView(std::move(forward));
   reload_ = AddChildView(std::move(reload));
@@ -343,22 +346,35 @@ void ToolbarView::Init() {
       chrome_labs_button_->SetVisible(show_chrome_labs_button_.GetValue());
     }
   }
-
+  //update on 20220215
+  chrome_labs_button_->SetVisible(false);
+  //
   if (cast)
     cast_ = AddChildView(std::move(cast));
-
+  
   if (media_button)
     media_button_ = AddChildView(std::move(media_button));
-
-  if (download_button)
-    download_button_ = AddChildView(std::move(download_button));
 
   if (send_tab_to_self_button)
     send_tab_to_self_button_ = AddChildView(std::move(send_tab_to_self_button));
 
-  if (side_panel_button)
-    side_panel_button_ = AddChildView(std::move(side_panel_button));
-
+  if (read_later_button)
+  {
+    read_later_button_ = AddChildView(std::move(read_later_button));
+    //update on 20220531
+    read_later_button_->SetVisible(false);
+  }
+  //update on 20220315
+  std::unique_ptr<LeftSideToolbarButton> left_side_button;
+  left_side_button = std::make_unique<LeftSideToolbarButton>(browser_);
+  left_side_button_ = AddChildView(std::move(left_side_button));
+  left_side_button_->SetVisible(false);
+  //
+  //update on 20220214
+  //pundix_wallet_ =
+  //    AddChildView(std::make_unique<AvatarToolbarButton>(browser_view_,1));
+  //pundix_wallet_->SetVisible(false);
+  //
   if (toolbar_account_icon_container) {
     toolbar_account_icon_container_ =
         AddChildView(std::move(toolbar_account_icon_container));
@@ -367,9 +383,13 @@ void ToolbarView::Init() {
     // TODO(crbug.com/932818): Remove this once the
     // |kAutofillEnableToolbarStatusChip| is fully launched.
     avatar_ =
-        AddChildView(std::make_unique<AvatarToolbarButton>(browser_view_));
+        AddChildView(std::make_unique<AvatarToolbarButton>(browser_view_,/*update on 20220214*/0));
     avatar_->SetVisible(show_avatar_toolbar_button);
   }
+  //update on 20220531
+    avatar_->SetVisible(true);
+    //AddChildView(GetSpaceView(gfx::Size(20,30)));
+  //
 
   auto app_menu_button = std::make_unique<BrowserAppMenuButton>(this);
   app_menu_button->SetFlipCanvasOnPaintForRTLUI(true);
@@ -380,6 +400,9 @@ void ToolbarView::Init() {
   app_menu_button->SetID(VIEW_ID_APP_MENU);
   app_menu_button_ = AddChildView(std::move(app_menu_button));
 
+    //update on 20220531
+    //AddChildView(GetSpaceView(gfx::Size(20,30)));
+    //
   LoadImages();
 
   // Start global error services now so we set the icon on the menu correctly.
@@ -401,7 +424,10 @@ void ToolbarView::Init() {
       prefs::kShowHomeButton, browser_->profile()->GetPrefs(),
       base::BindRepeating(&ToolbarView::OnShowHomeButtonChanged,
                           base::Unretained(this)));
-
+//update on 20220712
+//if(!show_home_button_.GetValue())
+//    home_->SetVisible(true);
+//else
   home_->SetVisible(show_home_button_.GetValue());
 
   InitLayout();
@@ -411,8 +437,17 @@ void ToolbarView::Init() {
     if (button)
       button->set_tag(GetViewCommandMap().at(button->GetID()));
   }
-
   initialized_ = true;
+}
+
+//update on 20220531
+views::View* ToolbarView::GetSpaceView(gfx::Size size){
+    auto* view = new views::View();
+    view->SetID(1);
+    view->SetPreferredSize(size);
+    view->SetBounds(0,0,size.width(),size.height());
+    view->SetVisible(true);
+    return view;
 }
 
 void ToolbarView::AnimationEnded(const gfx::Animation* animation) {
@@ -429,9 +464,12 @@ void ToolbarView::Update(WebContents* tab) {
   if (location_bar_)
     location_bar_->Update(tab);
 
-  if (extensions_container_)
-    extensions_container_->UpdateAllIcons();
-
+  if (extensions_container_) {
+      extensions_container_->UpdateAllIcons();
+      //update on 20220510
+      //BrowserView::GetBrowserViewForBrowser(browser_)->GetSuspendbarView()->Update(tab);
+      //
+  }
   if (reload_)
     reload_->SetMenuEnabled(chrome::IsDebuggerAttachedToCurrentTab(browser_));
 
@@ -583,8 +621,7 @@ void ToolbarView::OnCriticalUpgradeInstalled() {
 ////////////////////////////////////////////////////////////////////////////////
 // ToolbarView, ui::AcceleratorProvider implementation:
 
-bool ToolbarView::GetAcceleratorForCommandId(
-    int command_id,
+bool ToolbarView::GetAcceleratorForCommandId(int command_id,
     ui::Accelerator* accelerator) const {
   return GetWidget()->GetAccelerator(command_id, accelerator);
 }
@@ -887,8 +924,8 @@ void ToolbarView::ZoomChangedForActiveTab(bool can_show_bubble) {
       can_show_bubble);
 }
 
-SidePanelToolbarButton* ToolbarView::GetSidePanelButton() {
-  return side_panel_button_;
+ReadLaterToolbarButton* ToolbarView::GetSidePanelButton() {
+  return read_later_button_;
 }
 
 AvatarToolbarButton* ToolbarView::GetAvatarToolbarButton() {
@@ -902,7 +939,11 @@ AvatarToolbarButton* ToolbarView::GetAvatarToolbarButton() {
 
   return nullptr;
 }
-
+//update on 20220215
+AvatarToolbarButton* ToolbarView::GetWalletToolbarButton() {
+    return nullptr/*pundix_wallet_*/;
+}
+//
 ToolbarButton* ToolbarView::GetBackButton() {
   return back_;
 }
@@ -931,9 +972,12 @@ void ToolbarView::OnChromeLabsPrefChanged() {
 void ToolbarView::LoadImages() {
   DCHECK_EQ(display_mode_, DisplayMode::NORMAL);
 
-  if (extensions_container_)
-    extensions_container_->UpdateAllIcons();
-
+  if (extensions_container_) {
+      extensions_container_->UpdateAllIcons();
+      //update on 20220510
+      //BrowserView::GetBrowserViewForBrowser(browser_)->GetSuspendbarView()->Update(nullptr);
+      //
+  }
   if (toolbar_account_icon_container_)
     toolbar_account_icon_container_->UpdateAllIcons();
 }
@@ -941,8 +985,7 @@ void ToolbarView::LoadImages() {
 void ToolbarView::ShowCriticalNotification() {
 #if defined(OS_WIN)
   views::BubbleDialogDelegateView::CreateBubble(
-      new CriticalNotificationBubbleView(app_menu_button_))
-      ->Show();
+      new CriticalNotificationBubbleView(app_menu_button_))->Show();
 #endif
 }
 

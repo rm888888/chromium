@@ -11,7 +11,6 @@
 #include "base/metrics/histogram_macros.h"
 #include "base/strings/string_piece.h"
 #include "base/strings/string_util.h"
-#include "chrome/browser/bad_message.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/safe_browsing/safe_browsing_service.h"
 #include "chrome/common/chrome_features.h"
@@ -32,17 +31,13 @@
 // //third_party/blink/renderer/modules/webshare/FILE_TYPES.md
 // //components/browser_ui/webshare/android/java/src/org/chromium/components/browser_ui/webshare/ShareServiceImpl.java
 
-ShareServiceImpl::ShareServiceImpl(
-    content::RenderFrameHost* render_frame_host,
-    mojo::PendingReceiver<blink::mojom::ShareService> receiver)
-    : content::DocumentService<blink::mojom::ShareService>(render_frame_host,
-                                                           std::move(receiver))
+ShareServiceImpl::ShareServiceImpl(content::RenderFrameHost& render_frame_host)
+    : content::WebContentsObserver(
+          content::WebContents::FromRenderFrameHost(&render_frame_host)),
 #if defined(OS_CHROMEOS)
-      ,
-      sharesheet_client_(
-          content::WebContents::FromRenderFrameHost(render_frame_host))
+      sharesheet_client_(web_contents()),
 #endif
-{
+      render_frame_host_(&render_frame_host) {
   DCHECK(base::FeatureList::IsEnabled(features::kWebShare));
 }
 
@@ -52,17 +47,9 @@ ShareServiceImpl::~ShareServiceImpl() = default;
 void ShareServiceImpl::Create(
     content::RenderFrameHost* render_frame_host,
     mojo::PendingReceiver<blink::mojom::ShareService> receiver) {
-  DCHECK(render_frame_host);
-  if (render_frame_host->IsNestedWithinFencedFrame()) {
-    // The renderer should have checked and disallowed the request for fenced
-    // frames in NavigatorShare and thrown a DOMException. Ignore the request
-    // and mark it as bad if it didn't happen for some reason.
-    bad_message::ReceivedBadMessage(render_frame_host->GetProcess(),
-                                    bad_message::SSI_CREATE_FENCED_FRAME);
-    return;
-  }
-
-  new ShareServiceImpl(render_frame_host, std::move(receiver));
+  mojo::MakeSelfOwnedReceiver(
+      std::make_unique<ShareServiceImpl>(*render_frame_host),
+      std::move(receiver));
 }
 
 // static
@@ -164,7 +151,7 @@ void ShareServiceImpl::Share(const std::string& title,
   UMA_HISTOGRAM_ENUMERATION(kWebShareApiCountMetric, WebShareMethod::kShare);
 
   content::WebContents* const web_contents =
-      content::WebContents::FromRenderFrameHost(render_frame_host());
+      content::WebContents::FromRenderFrameHost(render_frame_host_);
   if (!web_contents) {
     VLOG(1) << "Cannot share after navigating away";
     std::move(callback).Run(blink::mojom::ShareError::PERMISSION_DENIED);
@@ -234,7 +221,7 @@ void ShareServiceImpl::OnSafeBrowsingResultReceived(
   safe_browsing_request_.reset();
 
   content::WebContents* const web_contents =
-      content::WebContents::FromRenderFrameHost(render_frame_host());
+      content::WebContents::FromRenderFrameHost(render_frame_host_);
   if (!web_contents) {
     VLOG(1) << "Cannot share after navigating away";
     std::move(callback).Run(blink::mojom::ShareError::PERMISSION_DENIED);
@@ -281,4 +268,10 @@ void ShareServiceImpl::OnSafeBrowsingResultReceived(
   NOTREACHED();
   std::move(callback).Run(blink::mojom::ShareError::INTERNAL_ERROR);
 #endif
+}
+
+void ShareServiceImpl::RenderFrameDeleted(
+    content::RenderFrameHost* render_frame_host) {
+  if (render_frame_host == render_frame_host_)
+    render_frame_host_ = nullptr;
 }

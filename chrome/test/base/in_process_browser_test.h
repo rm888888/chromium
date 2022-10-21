@@ -10,7 +10,6 @@
 
 #include "base/files/file_path.h"
 #include "base/files/scoped_temp_dir.h"
-#include "base/memory/raw_ptr.h"
 #include "base/memory/ref_counted.h"
 #include "base/run_loop.h"
 #include "base/test/scoped_feature_list.h"
@@ -53,9 +52,6 @@ class ViewsDelegate;
 #endif  // defined(TOOLKIT_VIEWS)
 
 class Browser;
-#if BUILDFLAG(IS_CHROMEOS_LACROS)
-class FakeAccountManagerUI;
-#endif  // BUILDFLAG(IS_CHROMEOS_LACROS)
 class MainThreadStackSamplingProfiler;
 class Profile;
 #if defined(OS_MAC)
@@ -223,7 +219,9 @@ class InProcessBrowserTest : public content::BrowserTestBase {
   // BrowserTestBase:
   void PreRunTestOnMainThread() override;
   void PostRunTestOnMainThread() override;
+#if defined(OS_MAC)
   void CreatedBrowserMainParts(content::BrowserMainParts* parts) override;
+#endif
 
   // Ensures that no devtools are open, and then opens the devtools.
   void OpenDevToolsWindow(content::WebContents* web_contents);
@@ -303,10 +301,6 @@ class InProcessBrowserTest : public content::BrowserTestBase {
   // Widget::LayoutRootViewIfNecessary(). No-op outside of Views.
   void RunScheduledLayouts();
 
-#if BUILDFLAG(IS_CHROMEOS_LACROS)
-  FakeAccountManagerUI* GetFakeAccountManagerUI() const;
-#endif  // BUILDFLAG(IS_CHROMEOS_LACROS)
-
  private:
   void Initialize();
 
@@ -319,7 +313,7 @@ class InProcessBrowserTest : public content::BrowserTestBase {
   // If no browser is created in BrowserMain(), then |browser_| will remain
   // nullptr unless SelectFirstBrowser() is called after the creation of the
   // first browser instance at a later time.
-  raw_ptr<Browser> browser_ = nullptr;
+  Browser* browser_ = nullptr;
 
   // Used to run the process until the BrowserProcess signals the test to quit.
   std::unique_ptr<base::RunLoop> run_loop_;

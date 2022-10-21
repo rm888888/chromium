@@ -8,8 +8,9 @@
 #include <stddef.h>
 #include <vector>
 
+#include "base/compiler_specific.h"
 #include "base/containers/flat_set.h"
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/observer_list.h"
 #include "base/scoped_observation.h"
 #include "chrome/browser/extensions/api/extension_action/extension_action_api.h"
@@ -112,9 +113,6 @@ class ToolbarActionsModel : public extensions::ExtensionActionAPI::Observer,
   std::unique_ptr<extensions::ExtensionMessageBubbleController>
   GetExtensionMessageBubbleController(Browser* browser);
 
-  // Returns the extension name corresponding to the `action_id`.
-  const std::u16string GetExtensionName(const ActionId& action_id) const;
-
   // Returns true if the action is pinned to the toolbar.
   bool IsActionPinned(const ActionId& action_id) const;
 
@@ -129,6 +127,9 @@ class ToolbarActionsModel : public extensions::ExtensionActionAPI::Observer,
     return pinned_action_ids_;
   }
 
+  //update on 20220507
+  const extensions::Extension* GetExtensionById(const ActionId& id) const;
+  //
  private:
   // Callback when actions are ready.
   void OnReady();
@@ -184,7 +185,8 @@ class ToolbarActionsModel : public extensions::ExtensionActionAPI::Observer,
 
   // Looks up and returns the extension with the given |id| in the set of
   // enabled extensions.
-  const extensions::Extension* GetExtensionById(const ActionId& id) const;
+  //update on 20220507 change the private to public
+  //const extensions::Extension* GetExtensionById(const ActionId& id) const;
 
   // Updates |pinned_action_ids_| per GetFilteredPinnedActionIds() and notifies
   // observers if they have changed.
@@ -198,19 +200,19 @@ class ToolbarActionsModel : public extensions::ExtensionActionAPI::Observer,
   base::ObserverList<Observer>::Unchecked observers_;
 
   // The Profile this toolbar model is for.
-  raw_ptr<Profile> profile_;
+  Profile* profile_;
 
-  raw_ptr<extensions::ExtensionPrefs> extension_prefs_;
-  raw_ptr<PrefService> prefs_;
+  extensions::ExtensionPrefs* extension_prefs_;
+  PrefService* prefs_;
 
   // The ExtensionActionAPI object, cached for convenience.
-  raw_ptr<extensions::ExtensionActionAPI> extension_action_api_;
+  extensions::ExtensionActionAPI* extension_action_api_;
 
   // The ExtensionRegistry object, cached for convenience.
-  raw_ptr<extensions::ExtensionRegistry> extension_registry_;
+  extensions::ExtensionRegistry* extension_registry_;
 
   // The ExtensionActionManager, cached for convenience.
-  raw_ptr<extensions::ExtensionActionManager> extension_action_manager_;
+  extensions::ExtensionActionManager* extension_action_manager_;
 
   // True if we've handled the initial EXTENSIONS_READY notification.
   bool actions_initialized_;

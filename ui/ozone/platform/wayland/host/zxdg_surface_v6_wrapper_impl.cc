@@ -75,7 +75,6 @@ void ZXDGSurfaceV6WrapperImpl::Configure(
   DCHECK(surface);
 
   surface->wayland_window_->HandleSurfaceConfigure(serial);
-  surface->wayland_window_->OnSurfaceConfigureEvent();
 }
 
 zxdg_surface_v6* ZXDGSurfaceV6WrapperImpl::zxdg_surface() const {

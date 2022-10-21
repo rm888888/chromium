@@ -13,7 +13,7 @@
 	<key>CFBundleName</key>
 	<string>${PRODUCT_NAME}</string>
 	<key>CFBundlePackageType</key>
-	<string>${PACKAGE_TYPE}</string>
+	<string>BNDL</string>
 	<key>CFBundleVersion</key>
 	<string>2.0</string>
 	<key>LSUIElement</key>

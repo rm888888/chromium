@@ -11,7 +11,6 @@
 #include "base/command_line.h"
 #include "base/compiler_specific.h"
 #include "base/files/file_path.h"
-#include "base/memory/raw_ptr.h"
 #include "base/run_loop.h"
 #include "base/strings/string_split.h"
 #include "base/strings/stringprintf.h"
@@ -91,10 +90,6 @@
 #include "third_party/blink/public/common/switches.h"
 #include "third_party/blink/public/mojom/manifest/display_mode.mojom.h"
 #include "ui/views/image_model_utils.h"
-
-#if BUILDFLAG(IS_CHROMEOS_ASH)
-#include "ash/constants/ash_features.h"
-#endif
 
 using content::RenderFrameHost;
 using content::WebContents;
@@ -182,12 +177,8 @@ class HostedOrWebAppTest : public extensions::ExtensionBrowserTest,
   HostedOrWebAppTest()
       : app_browser_(nullptr),
         https_server_(net::EmbeddedTestServer::TYPE_HTTPS) {
-    scoped_feature_list_.InitWithFeatures({}, {
-#if BUILDFLAG(IS_CHROMEOS_ASH)
-      features::kWebAppsCrosapi, chromeos::features::kLacrosPrimary,
-#endif
-          predictors::kSpeculativePreconnectFeature
-    });
+    scoped_feature_list_.InitAndDisableFeature(
+        predictors::kSpeculativePreconnectFeature);
   }
 
   HostedOrWebAppTest(const HostedOrWebAppTest&) = delete;
@@ -211,7 +202,7 @@ class HostedOrWebAppTest : public extensions::ExtensionBrowserTest,
           base::StringPrintf(kAppDotComManifest, start_url.spec().c_str()));
       SetupApp(test_app_dir.UnpackedPath());
     } else {
-      auto web_app_info = std::make_unique<WebAppInstallInfo>();
+      auto web_app_info = std::make_unique<WebApplicationInfo>();
       web_app_info->start_url = start_url;
       web_app_info->scope = start_url.GetWithoutFilename();
       web_app_info->user_display_mode = blink::mojom::DisplayMode::kStandalone;
@@ -239,6 +230,7 @@ class HostedOrWebAppTest : public extensions::ExtensionBrowserTest,
             ? extensions::Extension::NO_FLAGS
             : extensions::Extension::FROM_BOOKMARK);
     ASSERT_TRUE(app);
+    ASSERT_FALSE(app->from_bookmark());
     app_id_ = app->id();
 
     // Launch app in a window.
@@ -288,6 +280,9 @@ class HostedOrWebAppTest : public extensions::ExtensionBrowserTest,
     // By default, all SSL cert checks are valid. Can be overridden in tests.
     cert_verifier_.mock_cert_verifier()->set_default_result(net::OK);
 
+    os_hooks_suppress_ =
+        web_app::OsIntegrationManager::ScopedSuppressOsHooksForTesting();
+
     app_service_test_.SetUp(profile());
   }
 
@@ -323,7 +318,7 @@ class HostedOrWebAppTest : public extensions::ExtensionBrowserTest,
   apps::AppServiceTest& app_service_test() { return app_service_test_; }
 
   std::string app_id_;
-  raw_ptr<Browser> app_browser_;
+  Browser* app_browser_;
 
   AppType app_type() const { return app_type_; }
 
@@ -343,7 +338,7 @@ class HostedOrWebAppTest : public extensions::ExtensionBrowserTest,
   // used by the NetworkService.
   content::ContentMockCertVerifier cert_verifier_;
 
-  web_app::OsIntegrationManager::ScopedSuppressForTesting os_hooks_suppress_;
+  web_app::ScopedOsHooksSuppress os_hooks_suppress_;
 };
 
 // Tests that "Open link in new tab" opens a link in a foreground tab.
@@ -484,6 +479,7 @@ IN_PROC_BROWSER_TEST_P(HostedAppTest, NotWebApp) {
   const Extension* app = ExtensionRegistry::Get(profile())->GetExtensionById(
       app_id_, ExtensionRegistry::ENABLED);
   EXPECT_TRUE(app->is_hosted_app());
+  EXPECT_FALSE(app->from_bookmark());
 }
 
 IN_PROC_BROWSER_TEST_P(HostedAppTest, HasReloadButton) {
@@ -502,7 +498,7 @@ IN_PROC_BROWSER_TEST_P(HostedAppTest, LoadIcon) {
 
   EXPECT_TRUE(app_service_test().AreIconImageEqual(
       app_service_test().LoadAppIconBlocking(
-          apps::mojom::AppType::kChromeApp, app_id_,
+          apps::mojom::AppType::kExtension, app_id_,
           extension_misc::EXTENSION_ICON_SMALL),
       views::GetImageSkiaFromImageModel(
           app_browser_->app_controller()->GetWindowAppIcon(), nullptr)));
@@ -895,7 +891,7 @@ class HostedAppProcessModelTest : public HostedOrWebAppTest {
  protected:
   bool should_swap_for_cross_site_;
 
-  raw_ptr<extensions::ProcessMap> process_map_;
+  extensions::ProcessMap* process_map_;
 
   GURL same_dir_url_;
   GURL diff_dir_url_;
@@ -1681,7 +1677,7 @@ class HostedAppJitTestBase : public HostedAppProcessModelTest {
 
    private:
     std::unique_ptr<JitChromeContentBrowserClient> overriden_client_;
-    raw_ptr<content::ContentBrowserClient> original_client_;
+    content::ContentBrowserClient* original_client_;
   };
 
   void JitTestInternal() {

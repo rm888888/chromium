@@ -30,10 +30,6 @@ gfx::Point EventTarget::GetScreenLocation(const ui::LocatedEvent& event) const {
   return gfx::ToFlooredPoint(GetScreenLocationF(event));
 }
 
-void EventTarget::AddPreTargetHandler(EventHandler* handler) {
-  AddPreTargetHandler(handler, Priority::kDefault);
-}
-
 void EventTarget::AddPreTargetHandler(EventHandler* handler,
                                       Priority priority) {
   CHECK(handler);

@@ -16,9 +16,9 @@
 #include "build/build_config.h"
 #include "components/autofill/core/browser/autofill_experiments.h"
 #include "components/autofill/core/browser/autofill_external_delegate.h"
+#include "components/autofill/core/browser/autofill_metrics.h"
 #include "components/autofill/core/browser/autofill_test_utils.h"
 #include "components/autofill/core/browser/browser_autofill_manager.h"
-#include "components/autofill/core/browser/metrics/autofill_metrics.h"
 #include "components/autofill/core/browser/test_autofill_client.h"
 #include "components/autofill/core/browser/test_autofill_driver.h"
 #include "components/autofill/core/browser/ui/popup_item_ids.h"
@@ -126,9 +126,8 @@ class MockBrowserAutofillManager : public BrowserAutofillManager {
               (const FormData& form, const FormFieldData& field),
               (override));
   MOCK_METHOD(void,
-              FillOrPreviewVirtualCardInformation,
-              (mojom::RendererFormDataAction action,
-               const std::string& guid,
+              FillVirtualCardInformation,
+              (const std::string& guid,
                int query_id,
                const FormData& form,
                const FormFieldData& field),
@@ -599,7 +598,7 @@ TEST_F(AutofillExternalDelegateUnitTest, ExternalDelegateInvalidUniqueId) {
   EXPECT_CALL(*browser_autofill_manager_, FillOrPreviewForm(_, _, _, _, _))
       .Times(0);
   EXPECT_CALL(*autofill_driver_, RendererShouldClearPreviewedForm()).Times(1);
-  external_delegate_->DidSelectSuggestion(std::u16string(), -1, std::string());
+  external_delegate_->DidSelectSuggestion(std::u16string(), -1);
 
   // Ensure it doesn't try to fill the form in with the negative id.
   EXPECT_CALL(autofill_client_,
@@ -617,30 +616,21 @@ TEST_F(AutofillExternalDelegateUnitTest, ExternalDelegateClearPreviewedForm) {
   // cause any previews to get cleared.
   IssueOnQuery(123);
   EXPECT_CALL(*autofill_driver_, RendererShouldClearPreviewedForm()).Times(1);
-  external_delegate_->DidSelectSuggestion(
-      u"baz foo", POPUP_ITEM_ID_PASSWORD_ENTRY, std::string());
+  external_delegate_->DidSelectSuggestion(u"baz foo",
+                                          POPUP_ITEM_ID_PASSWORD_ENTRY);
   EXPECT_CALL(*autofill_driver_, RendererShouldClearPreviewedForm()).Times(1);
   EXPECT_CALL(
       *browser_autofill_manager_,
       FillOrPreviewForm(mojom::RendererFormDataAction::kPreview, _, _, _, _));
-  external_delegate_->DidSelectSuggestion(u"baz foo", 1, std::string());
+  external_delegate_->DidSelectSuggestion(u"baz foo", 1);
 
   // Ensure selecting an autocomplete entry will cause any previews to
   // get cleared.
   EXPECT_CALL(*autofill_driver_, RendererShouldClearPreviewedForm()).Times(1);
   EXPECT_CALL(*autofill_driver_, RendererShouldPreviewFieldWithValue(
                                      field_id_, std::u16string(u"baz foo")));
-  external_delegate_->DidSelectSuggestion(
-      u"baz foo", POPUP_ITEM_ID_AUTOCOMPLETE_ENTRY, std::string());
-
-  // Ensure selecting a virtual card entry will cause any previews to
-  // get cleared.
-  EXPECT_CALL(*autofill_driver_, RendererShouldClearPreviewedForm()).Times(1);
-  EXPECT_CALL(*browser_autofill_manager_,
-              FillOrPreviewVirtualCardInformation(
-                  mojom::RendererFormDataAction::kPreview, _, _, _, _));
-  external_delegate_->DidSelectSuggestion(
-      std::u16string(), POPUP_ITEM_ID_VIRTUAL_CREDIT_CARD_ENTRY, std::string());
+  external_delegate_->DidSelectSuggestion(u"baz foo",
+                                          POPUP_ITEM_ID_AUTOCOMPLETE_ENTRY);
 }
 
 // Test that the popup is hidden once we are done editing the autofill field.
@@ -915,22 +905,12 @@ TEST_F(AutofillExternalDelegateUnitTest, ShouldUseNewSettingName) {
 
 // Test that browser autofill manager will handle the unmasking request for the
 // virtual card after users accept the suggestion to use a virtual card.
-TEST_F(AutofillExternalDelegateUnitTest, AcceptVirtualCardOptionItem) {
-  FormData form;
+TEST_F(AutofillExternalDelegateUnitTest, VirtualCardOptionItem) {
   EXPECT_CALL(*browser_autofill_manager_,
-              FillOrPreviewVirtualCardInformation(
-                  mojom::RendererFormDataAction::kFill, _, _, _, _));
+              FillVirtualCardInformation(_, _, _, _));
   external_delegate_->DidAcceptSuggestion(
       std::u16string(), POPUP_ITEM_ID_VIRTUAL_CREDIT_CARD_ENTRY, std::string(),
       0);
-}
-
-TEST_F(AutofillExternalDelegateUnitTest, SelectVirtualCardOptionItem) {
-  EXPECT_CALL(*browser_autofill_manager_,
-              FillOrPreviewVirtualCardInformation(
-                  mojom::RendererFormDataAction::kPreview, _, _, _, _));
-  external_delegate_->DidSelectSuggestion(
-      std::u16string(), POPUP_ITEM_ID_VIRTUAL_CREDIT_CARD_ENTRY, std::string());
 }
 
 // Tests that the prompt to show account cards shows up when the corresponding

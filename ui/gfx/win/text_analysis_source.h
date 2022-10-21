@@ -10,6 +10,7 @@
 
 #include <string>
 
+#include "base/macros.h"
 #include "ui/gfx/gfx_export.h"
 
 namespace gfx {

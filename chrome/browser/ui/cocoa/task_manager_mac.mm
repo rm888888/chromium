@@ -11,6 +11,7 @@
 
 #include "base/feature_list.h"
 #include "base/mac/bundle_locations.h"
+#include "base/macros.h"
 #include "base/strings/sys_string_conversions.h"
 #include "build/buildflag.h"
 #include "chrome/browser/browser_process.h"

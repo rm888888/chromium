@@ -7,7 +7,6 @@
 
 // #import {Router, routes} from 'chrome://os-settings/chromeos/os_settings.js';
 // #import {assertEquals, assertFalse, assertTrue} from '../../chai_assert.js';
-// #import {eventToPromise} from 'chrome://webui-test/test_util.js';
 // #import {assert} from 'chrome://resources/js/assert.m.js';
 // #import {flush} from 'chrome://resources/polymer/v3_0/polymer/polymer_bundled.min.js';
 // clang-format on
@@ -46,13 +45,11 @@ suite('Multidevice', function() {
 
   test('ChromeSyncLink navigates to appropriate route', async () => {
     const chromeSyncLink = localizedLink.$$('#chromeSyncLink');
+    chromeSyncLink.click();
+
     if (loadTimeData.getBoolean('syncSettingsCategorizationEnabled')) {
-      const advancedSyncOpenedPromise = eventToPromise(
-          'opened-browser-advanced-sync-settings', localizedLink);
-
-      chromeSyncLink.click();
-
-      await advancedSyncOpenedPromise;
+      await test_util.eventToPromise(
+          'opened-browser-advanced-sync-setting', localizedLink);
       assertNotEquals(
           settings.Router.getInstance().getCurrentRoute(),
           settings.routes.OS_SYNC);
@@ -60,7 +57,6 @@ suite('Multidevice', function() {
           settings.Router.getInstance().getCurrentRoute(),
           settings.routes.SYNC_ADVANCED);
     } else {
-      chromeSyncLink.click();
       Polymer.dom.flush();
       assertEquals(
           settings.Router.getInstance().getCurrentRoute(),

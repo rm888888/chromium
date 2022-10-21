@@ -6,6 +6,7 @@
 
 #include "base/bind.h"
 #include "base/feature_list.h"
+#include "base/no_destructor.h"
 #include "base/numerics/safe_conversions.h"
 #include "chromeos/dbus/dlcservice/dlcservice_client.h"
 #include "components/live_caption/pref_names.h"
@@ -40,8 +41,6 @@ base::FilePath SodaInstallerImplChromeOS::GetLanguagePath(
 }
 
 void SodaInstallerImplChromeOS::InstallSoda(PrefService* global_prefs) {
-  if (never_download_soda_for_testing_)
-    return;
   // Clear cached path in case this is a reinstallation (path could
   // change).
   SetSodaBinaryPath(base::FilePath());
@@ -61,8 +60,6 @@ void SodaInstallerImplChromeOS::InstallSoda(PrefService* global_prefs) {
 
 void SodaInstallerImplChromeOS::InstallLanguage(const std::string& language,
                                                 PrefService* global_prefs) {
-  if (never_download_soda_for_testing_)
-    return;
   // TODO(crbug.com/1161569): SODA is only available for en-US right now.
   DCHECK_EQ(language, kUsEnglishLocale);
   SodaInstaller::RegisterLanguage(language, global_prefs);

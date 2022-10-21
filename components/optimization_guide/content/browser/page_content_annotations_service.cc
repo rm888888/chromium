@@ -8,8 +8,6 @@
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "components/history/core/browser/history_service.h"
-#include "components/leveldb_proto/public/proto_database_provider.h"
-#include "components/optimization_guide/core/local_page_entities_metadata_provider.h"
 #include "components/optimization_guide/core/noisy_metrics_recorder.h"
 #include "components/optimization_guide/core/optimization_guide_enums.h"
 #include "components/optimization_guide/core/optimization_guide_features.h"
@@ -76,12 +74,8 @@ void MaybeRecordVisibilityUKM(
 }  // namespace
 
 PageContentAnnotationsService::PageContentAnnotationsService(
-    const std::string& application_locale,
     OptimizationGuideModelProvider* optimization_guide_model_provider,
-    history::HistoryService* history_service,
-    leveldb_proto::ProtoDatabaseProvider* database_provider,
-    const base::FilePath& database_dir,
-    scoped_refptr<base::SequencedTaskRunner> background_task_runner)
+    history::HistoryService* history_service)
     : last_annotated_history_visits_(
           features::MaxContentAnnotationRequestsCached()) {
   DCHECK(optimization_guide_model_provider);
@@ -89,16 +83,8 @@ PageContentAnnotationsService::PageContentAnnotationsService(
   history_service_ = history_service;
 #if BUILDFLAG(BUILD_WITH_TFLITE_LIB)
   model_manager_ = std::make_unique<PageContentAnnotationsModelManager>(
-      application_locale, optimization_guide_model_provider);
-  annotator_ = model_manager_.get();
+      optimization_guide_model_provider);
 #endif
-
-  if (features::UseLocalPageEntitiesMetadataProvider()) {
-    local_page_entities_metadata_provider_ =
-        std::make_unique<LocalPageEntitiesMetadataProvider>();
-    local_page_entities_metadata_provider_->Initialize(
-        database_provider, database_dir, background_task_runner);
-  }
 }
 
 PageContentAnnotationsService::~PageContentAnnotationsService() = default;
@@ -122,8 +108,8 @@ void PageContentAnnotationsService::Annotate(const HistoryVisit& visit,
 }
 
 void PageContentAnnotationsService::OverridePageContentAnnotatorForTesting(
-    PageContentAnnotator* annotator) {
-  annotator_ = annotator;
+    std::unique_ptr<PageContentAnnotator> annotator) {
+  annotator_ = std::move(annotator);
 }
 
 void PageContentAnnotationsService::BatchAnnotate(
@@ -131,31 +117,11 @@ void PageContentAnnotationsService::BatchAnnotate(
     const std::vector<std::string>& inputs,
     AnnotationType annotation_type) {
   if (!annotator_) {
-    std::move(callback).Run(CreateEmptyBatchAnnotationResults(inputs));
+    std::move(callback).Run(CreateEmptyBatchAnnotationResultsWithStatus(
+        inputs, ExecutionStatus::kErrorInternalError));
     return;
   }
   annotator_->Annotate(std::move(callback), inputs, annotation_type);
-}
-
-absl::optional<ModelInfo> PageContentAnnotationsService::GetModelInfoForType(
-    AnnotationType type) const {
-#if BUILDFLAG(BUILD_WITH_TFLITE_LIB)
-  DCHECK(model_manager_);
-  return model_manager_->GetModelInfoForType(type);
-#else
-  return absl::nullopt;
-#endif
-}
-
-void PageContentAnnotationsService::NotifyWhenModelAvailable(
-    AnnotationType type,
-    base::OnceCallback<void(bool)> callback) {
-#if BUILDFLAG(BUILD_WITH_TFLITE_LIB)
-  DCHECK(model_manager_);
-  model_manager_->NotifyWhenModelAvailable(type, std::move(callback));
-#else
-  std::move(callback).Run(false);
-#endif
 }
 
 void PageContentAnnotationsService::ExtractRelatedSearches(
@@ -267,33 +233,23 @@ void PageContentAnnotationsService::OnURLQueried(
       did_store_content_annotations ? kSuccess : kSpecificVisitForUrlNotFound);
 }
 
+absl::optional<int64_t>
+PageContentAnnotationsService::GetPageTopicsModelVersion() const {
+#if BUILDFLAG(BUILD_WITH_TFLITE_LIB)
+  return model_manager_->GetPageTopicsModelVersion();
+#else
+  return absl::nullopt;
+#endif
+}
+
 void PageContentAnnotationsService::GetMetadataForEntityId(
     const std::string& entity_id,
     EntityMetadataRetrievedCallback callback) {
-  if (features::UseLocalPageEntitiesMetadataProvider()) {
-    DCHECK(local_page_entities_metadata_provider_);
-    local_page_entities_metadata_provider_->GetMetadataForEntityId(
-        entity_id, std::move(callback));
-    return;
-  }
-
 #if BUILDFLAG(BUILD_WITH_TFLITE_LIB)
   model_manager_->GetMetadataForEntityId(entity_id, std::move(callback));
 #else
   std::move(callback).Run(absl::nullopt);
 #endif
-}
-
-void PageContentAnnotationsService::PersistRemotePageEntities(
-    const HistoryVisit& history_visit,
-    const std::vector<history::VisitContentModelAnnotations::Category>&
-        entities) {
-  history::VisitContentModelAnnotations annotations;
-  annotations.entities = entities;
-  QueryURL(history_visit,
-           base::BindOnce(
-               &history::HistoryService::AddContentModelAnnotationsForVisit,
-               history_service_->AsWeakPtr(), annotations));
 }
 
 // static

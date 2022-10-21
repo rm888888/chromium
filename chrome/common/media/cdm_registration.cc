@@ -11,9 +11,7 @@
 #include "base/path_service.h"
 #include "build/build_config.h"
 #include "build/chromeos_buildflags.h"
-#include "content/public/common/cdm_info.h"
 #include "media/cdm/cdm_capability.h"
-#include "media/cdm/cdm_type.h"
 #include "third_party/widevine/cdm/buildflags.h"
 
 #if BUILDFLAG(ENABLE_LIBRARY_CDMS)
@@ -59,7 +57,7 @@ std::unique_ptr<content::CdmInfo> CreateWidevineCdmInfo(
   return std::make_unique<content::CdmInfo>(
       kWidevineKeySystem, Robustness::kSoftwareSecure, std::move(capability),
       /*supports_sub_key_systems=*/false, kWidevineCdmDisplayName,
-      kWidevineCdmType, version, cdm_library_path);
+      kWidevineCdmGuid, version, cdm_library_path, kWidevineCdmFileSystemId);
 }
 
 #if !BUILDFLAG(IS_CHROMEOS_ASH)
@@ -284,9 +282,11 @@ void AddHardwareSecureWidevine(std::vector<content::CdmInfo>* cdms) {
   capability.session_types.insert(media::CdmSessionType::kTemporary);
   capability.session_types.insert(media::CdmSessionType::kPersistentLicense);
 
-  cdms->push_back(
-      content::CdmInfo(kWidevineKeySystem, Robustness::kHardwareSecure,
-                       std::move(capability), content::kChromeOsCdmType));
+  // TODO(xhwang): Specify kChromeOsCdmFileSystemId here and update
+  // MediaInterfaceProxy to use it.
+
+  cdms->push_back(content::CdmInfo(
+      kWidevineKeySystem, Robustness::kHardwareSecure, std::move(capability)));
 #endif  // BUILDFLAG(USE_CHROMEOS_PROTECTED_MEDIA)
 }
 
@@ -309,9 +309,9 @@ void AddExternalClearKey(std::vector<content::CdmInfo>* cdms) {
   // External Clear Key (ECK) related information.
   // Normal External Clear Key key system.
   const char kExternalClearKeyKeySystem[] = "org.chromium.externalclearkey";
-  // A variant of ECK key system that has a different CDM type.
-  const char kkExternalClearKeyDifferentCdmTypeTestKeySystem[] =
-      "org.chromium.externalclearkey.differentcdmtype";
+  // A variant of ECK key system that has a different GUID.
+  const char kExternalClearKeyDifferentGuidTestKeySystem[] =
+      "org.chromium.externalclearkey.differentguid";
 
   // Supported codecs are hard-coded in ExternalClearKeyProperties.
   media::CdmCapability capability(
@@ -319,21 +319,22 @@ void AddExternalClearKey(std::vector<content::CdmInfo>* cdms) {
       {media::CdmSessionType::kTemporary,
        media::CdmSessionType::kPersistentLicense});
 
-  // Register kkExternalClearKeyDifferentCdmTypeTestKeySystem first separately.
+  // Register kExternalClearKeyDifferentGuidTestKeySystem first separately.
   // Otherwise, it'll be treated as a sub-key-system of normal
   // kExternalClearKeyKeySystem. See MultipleCdmTypes test in
   // ECKEncryptedMediaTest.
   cdms->push_back(content::CdmInfo(
-      kkExternalClearKeyDifferentCdmTypeTestKeySystem,
-      Robustness::kSoftwareSecure, capability,
+      kExternalClearKeyDifferentGuidTestKeySystem, Robustness::kSoftwareSecure,
+      capability,
       /*supports_sub_key_systems=*/false, media::kClearKeyCdmDisplayName,
-      media::kClearKeyCdmDifferentCdmType, base::Version("0.1.0.0"),
-      clear_key_cdm_path));
+      media::kClearKeyCdmDifferentGuid, base::Version("0.1.0.0"),
+      clear_key_cdm_path, media::kClearKeyCdmFileSystemId));
 
   cdms->push_back(content::CdmInfo(
       kExternalClearKeyKeySystem, Robustness::kSoftwareSecure, capability,
       /*supports_sub_key_systems=*/true, media::kClearKeyCdmDisplayName,
-      media::kClearKeyCdmType, base::Version("0.1.0.0"), clear_key_cdm_path));
+      media::kClearKeyCdmGuid, base::Version("0.1.0.0"), clear_key_cdm_path,
+      media::kClearKeyCdmFileSystemId));
 }
 #endif  // BUILDFLAG(ENABLE_LIBRARY_CDMS)
 

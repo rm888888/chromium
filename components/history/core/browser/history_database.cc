@@ -9,7 +9,6 @@
 #include <algorithm>
 #include <set>
 #include <string>
-#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -27,8 +26,8 @@
 #include "sql/statement.h"
 #include "sql/transaction.h"
 
-#if defined(OS_APPLE)
-#include "base/mac/backup_util.h"
+#if defined(OS_MAC)
+#include "base/mac/mac_util.h"
 #endif
 
 namespace history {
@@ -108,9 +107,9 @@ sql::InitStatus HistoryDatabase::Init(const base::FilePath& history_name) {
   if (!committer.Begin())
     return LogInitFailure(InitStep::TRANSACTION_BEGIN);
 
-#if defined(OS_APPLE)
+#if defined(OS_MAC)
   // Exclude the history file from backups.
-  base::mac::SetBackupExclusion(history_name);
+  base::mac::SetFileBackupExclusion(history_name);
 #endif
 
   // Prime the cache.
@@ -262,7 +261,7 @@ int HistoryDatabase::CountUniqueDomainsVisited(base::Time begin_time,
 
 void HistoryDatabase::BeginExclusiveMode() {
   // We need to use a PRAGMA statement here as the DB has already been created.
-  std::ignore = db_.Execute("PRAGMA locking_mode=EXCLUSIVE");
+  ignore_result(db_.Execute("PRAGMA locking_mode=EXCLUSIVE"));
 }
 
 // static
@@ -315,7 +314,7 @@ bool HistoryDatabase::RecreateAllTablesButURL() {
 void HistoryDatabase::Vacuum() {
   DCHECK_EQ(0, db_.transaction_nesting()) <<
       "Can not have a transaction when vacuuming.";
-  std::ignore = db_.Execute("VACUUM");
+  ignore_result(db_.Execute("VACUUM"));
 }
 
 void HistoryDatabase::TrimMemory() {
@@ -694,18 +693,18 @@ sql::InitStatus HistoryDatabase::EnsureCurrentVersion() {
 #if !defined(OS_WIN)
 void HistoryDatabase::MigrateTimeEpoch() {
   // Update all the times in the URLs and visits table in the main database.
-  std::ignore = db_.Execute(
+  ignore_result(db_.Execute(
       "UPDATE urls "
       "SET last_visit_time = last_visit_time + 11644473600000000 "
-      "WHERE id IN (SELECT id FROM urls WHERE last_visit_time > 0);");
-  std::ignore = db_.Execute(
+      "WHERE id IN (SELECT id FROM urls WHERE last_visit_time > 0);"));
+  ignore_result(db_.Execute(
       "UPDATE visits "
       "SET visit_time = visit_time + 11644473600000000 "
-      "WHERE id IN (SELECT id FROM visits WHERE visit_time > 0);");
-  std::ignore = db_.Execute(
+      "WHERE id IN (SELECT id FROM visits WHERE visit_time > 0);"));
+  ignore_result(db_.Execute(
       "UPDATE segment_usage "
       "SET time_slot = time_slot + 11644473600000000 "
-      "WHERE id IN (SELECT id FROM segment_usage WHERE time_slot > 0);");
+      "WHERE id IN (SELECT id FROM segment_usage WHERE time_slot > 0);"));
 }
 #endif
 

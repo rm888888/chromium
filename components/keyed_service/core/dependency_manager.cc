@@ -4,8 +4,6 @@
 
 #include "components/keyed_service/core/dependency_manager.h"
 
-#include <ostream>
-
 #include "base/bind.h"
 #include "base/check.h"
 #include "base/debug/dump_without_crashing.h"
@@ -159,11 +157,15 @@ void DependencyManager::DestroyFactoriesInOrder(
 
 void DependencyManager::AssertContextWasntDestroyed(void* context) const {
   if (dead_context_pointers_.find(context) != dead_context_pointers_.end()) {
-    // We want to see all possible use-after-destroy in production environment.
-    CHECK(false) << "Attempted to access a context that was ShutDown(). "
+#if DCHECK_IS_ON()
+    NOTREACHED() << "Attempted to access a context that was ShutDown(). "
                  << "This is most likely a heap smasher in progress. After "
                  << "KeyedService::Shutdown() completes, your service MUST "
                  << "NOT refer to depended services again.";
+#else   // DCHECK_IS_ON()
+    // We want to see all possible use-after-destroy in production environment.
+    base::debug::DumpWithoutCrashing();
+#endif  // DCHECK_IS_ON()
   }
 }
 

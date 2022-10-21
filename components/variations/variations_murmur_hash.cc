@@ -61,10 +61,10 @@ uint32_t VariationsMurmurHash::Hash(const std::vector<uint32_t>& data,
   switch (length & 3) {
     case 3:
       k1 |= data[num_full_blocks] & 0xFF0000;
-      [[fallthrough]];
+      FALLTHROUGH;
     case 2:
       k1 |= data[num_full_blocks] & 0xFF00;
-      [[fallthrough]];
+      FALLTHROUGH;
     case 1:
       k1 |= data[num_full_blocks] & 0xFF;
   }

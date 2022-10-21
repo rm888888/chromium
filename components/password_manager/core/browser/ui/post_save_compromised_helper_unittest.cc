@@ -68,14 +68,13 @@ class PostSaveCompromisedHelperTest : public testing::Test {
 
   void ExpectGetLoginsCall(std::vector<PasswordForm> password_forms) {
     EXPECT_CALL(*profile_store(), GetAutofillableLogins)
-        .WillOnce(testing::WithArg<0>(
-            [password_forms](base::WeakPtr<PasswordStoreConsumer> consumer) {
-              std::vector<std::unique_ptr<PasswordForm>> results;
-              for (auto& form : password_forms)
-                results.push_back(
-                    std::make_unique<PasswordForm>(std::move(form)));
-              consumer->OnGetPasswordStoreResults(std::move(results));
-            }));
+        .WillOnce(testing::WithArg<0>([password_forms](
+                                          PasswordStoreConsumer* consumer) {
+          std::vector<std::unique_ptr<PasswordForm>> results;
+          for (auto& form : password_forms)
+            results.push_back(std::make_unique<PasswordForm>(std::move(form)));
+          consumer->OnGetPasswordStoreResults(std::move(results));
+        }));
   }
 
   void WaitForPasswordStore() { task_environment_.RunUntilIdle(); }
@@ -287,8 +286,7 @@ TEST_F(PostSaveCompromisedHelperWithTwoStoreTest,
 
   PostSaveCompromisedHelper helper({compromised_credentials}, kUsername);
   EXPECT_CALL(*profile_store(), GetAutofillableLogins)
-      .WillOnce(testing::WithArg<0>([](base::WeakPtr<PasswordStoreConsumer>
-                                           consumer) {
+      .WillOnce(testing::WithArg<0>([](PasswordStoreConsumer* consumer) {
         std::vector<std::unique_ptr<PasswordForm>> results;
         results.push_back(std::make_unique<PasswordForm>(
             CreateForm(kSignonRealm, kUsername)));
@@ -297,8 +295,7 @@ TEST_F(PostSaveCompromisedHelperWithTwoStoreTest,
         consumer->OnGetPasswordStoreResults(std::move(results));
       }));
   EXPECT_CALL(*account_store(), GetAutofillableLogins)
-      .WillOnce(testing::WithArg<0>([](base::WeakPtr<PasswordStoreConsumer>
-                                           consumer) {
+      .WillOnce(testing::WithArg<0>([](PasswordStoreConsumer* consumer) {
         std::vector<std::unique_ptr<PasswordForm>> results;
         results.push_back(std::make_unique<PasswordForm>(CreateForm(
             kSignonRealm, kUsername, PasswordForm::Store::kAccountStore)));

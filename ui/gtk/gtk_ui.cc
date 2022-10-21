@@ -29,7 +29,6 @@
 #include "third_party/skia/include/core/SkShader.h"
 #include "ui/base/cursor/cursor_theme_manager_observer.h"
 #include "ui/base/glib/glib_cast.h"
-#include "ui/base/ime/input_method.h"
 #include "ui/base/ime/linux/fake_input_method_context.h"
 #include "ui/base/ime/linux/linux_input_method_context.h"
 #include "ui/base/ime/linux/linux_input_method_context_factory.h"
@@ -62,8 +61,6 @@
 #include "ui/gtk/settings_provider_gtk.h"
 #include "ui/gtk/window_frame_provider_gtk.h"
 #include "ui/native_theme/native_theme.h"
-#include "ui/ozone/buildflags.h"
-#include "ui/ozone/public/ozone_platform.h"
 #include "ui/shell_dialogs/select_file_policy.h"
 #include "ui/views/controls/button/button.h"
 #include "ui/views/controls/button/label_button.h"
@@ -76,11 +73,17 @@
 #include "ui/gtk/settings_provider_gsettings.h"
 #endif
 
+#if defined(USE_OZONE)
+#include "ui/base/ime/input_method.h"
+#include "ui/base/ui_base_features.h"
+#include "ui/ozone/buildflags.h"
+#include "ui/ozone/public/ozone_platform.h"
 #if BUILDFLAG(OZONE_PLATFORM_WAYLAND)
 #define USE_WAYLAND
 #endif
-#if BUILDFLAG(OZONE_PLATFORM_X11)
+#if BUILDFLAG(OZONE_PLATFORM_X11) && !defined(USE_X11)
 #define USE_X11
+#endif
 #endif
 
 #if BUILDFLAG(ENABLE_PRINTING)
@@ -363,16 +366,18 @@ GtkUiPlatform* GtkUi::GetPlatform() {
 }
 
 void GtkUi::Initialize() {
+#if defined(USE_OZONE)
   // Linux ozone platforms may want to set LinuxInputMethodContextFactory
   // instance instead of using GtkUi context factory. This step is made upon
   // CreateInputMethod call. If the factory is not set, use the GtkUi context
   // factory.
-  if (GetPlatform()->PreferGtkIme() ||
+  if (!features::IsUsingOzonePlatform() || GetPlatform()->PreferGtkIme() ||
       !ui::OzonePlatform::GetInstance()->CreateInputMethod(
           nullptr, gfx::kNullAcceleratedWidget)) {
     if (!ui::LinuxInputMethodContextFactory::instance())
       ui::LinuxInputMethodContextFactory::SetInstance(this);
   }
+#endif
 
   GtkSettings* settings = gtk_settings_get_default();
   g_signal_connect_after(settings, "notify::gtk-theme-name",
@@ -933,7 +938,11 @@ void GtkUi::UpdateColors() {
   colors_[ThemeProperties::COLOR_TOOLBAR_BUTTON_ICON] = tab_text_color;
   colors_[ThemeProperties::COLOR_TOOLBAR_BUTTON_ICON_HOVERED] = tab_text_color;
   colors_[ThemeProperties::COLOR_TOOLBAR_BUTTON_ICON_PRESSED] = tab_text_color;
-  colors_[ThemeProperties::COLOR_TOOLBAR_TEXT] = tab_text_color;
+  colors_[ThemeProperties::COLOR_TAB_FOREGROUND_ACTIVE_FRAME_ACTIVE] =
+      tab_text_color;
+  colors_[ThemeProperties::COLOR_TAB_FOREGROUND_ACTIVE_FRAME_INACTIVE] =
+      tab_text_color;
+  colors_[ThemeProperties::COLOR_BOOKMARK_TEXT] = tab_text_color;
 
   colors_[ThemeProperties::COLOR_NTP_LINK] =
       color_provider->GetColor(ui::kColorTextfieldSelectionBackground);

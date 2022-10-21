@@ -7,6 +7,7 @@
 
 #include <string>
 
+#include "base/macros.h"
 #include "ui/views/examples/example_base.h"
 #include "ui/views/widget/widget.h"
 

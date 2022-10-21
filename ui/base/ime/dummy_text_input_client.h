@@ -8,6 +8,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "base/macros.h"
 #include "build/build_config.h"
 #include "build/chromeos_buildflags.h"
 #include "ui/base/ime/text_input_client.h"
@@ -15,7 +16,7 @@
 namespace ui {
 
 // Dummy implementation of TextInputClient. All functions do nothing.
-// TODO(crbug.com/1277388): Replace this class with FakeTextInputClient.
+// TODO(crbug.com/1148157): Replace this class with FakeTextInputClient.
 class DummyTextInputClient : public TextInputClient {
  public:
   DummyTextInputClient();

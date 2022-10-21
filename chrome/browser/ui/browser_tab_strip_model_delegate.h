@@ -5,7 +5,8 @@
 #ifndef CHROME_BROWSER_UI_BROWSER_TAB_STRIP_MODEL_DELEGATE_H_
 #define CHROME_BROWSER_UI_BROWSER_TAB_STRIP_MODEL_DELEGATE_H_
 
-#include "base/memory/raw_ptr.h"
+#include "base/compiler_specific.h"
+#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "chrome/browser/ui/tabs/tab_strip_model_delegate.h"
 
@@ -66,7 +67,7 @@ class BrowserTabStripModelDelegate : public TabStripModelDelegate {
   // historical tabs or groups.
   bool BrowserSupportsHistoricalEntries();
 
-  const raw_ptr<Browser> browser_;
+  Browser* const browser_;
 
   // The following factory is used to close the frame at a later time.
   base::WeakPtrFactory<BrowserTabStripModelDelegate> weak_factory_{this};

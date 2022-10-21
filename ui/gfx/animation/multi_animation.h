@@ -9,6 +9,7 @@
 
 #include <vector>
 
+#include "base/macros.h"
 #include "base/time/time.h"
 #include "ui/gfx/animation/animation.h"
 #include "ui/gfx/animation/tween.h"

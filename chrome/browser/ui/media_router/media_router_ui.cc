@@ -14,6 +14,7 @@
 #include "base/bind.h"
 #include "base/containers/contains.h"
 #include "base/containers/cxx20_erase.h"
+#include "base/macros.h"
 #include "base/metrics/histogram_functions.h"
 #include "base/strings/strcat.h"
 #include "base/strings/string_util.h"
@@ -82,6 +83,16 @@ std::u16string GetSinkFriendlyName(const MediaSink& sink) {
   return base::UTF8ToUTF16(sink.description() ? sink.name() + separator +
                                                     sink.description().value()
                                               : sink.name());
+}
+
+// Returns the first source in |sources| that can be connected to, or an empty
+// source if there is none.  This is used by the Media Router to find such a
+// matching route if it exists.
+MediaSource GetSourceForRouteObserver(const std::vector<MediaSource>& sources) {
+  auto source_it = std::find_if(
+      sources.begin(), sources.end(),
+      [](const auto& source) { return source.IsCastPresentationUrl(); });
+  return source_it != sources.end() ? *source_it : MediaSource(std::string());
 }
 
 void MaybeReportCastingSource(MediaCastMode cast_mode,
@@ -335,8 +346,9 @@ void MediaRouterUI::InitWithDefaultMediaSource() {
   } else {
     // Register for MediaRoute updates without a media source.
     routes_observer_ = std::make_unique<UIMediaRoutesObserver>(
-        GetMediaRouter(), base::BindRepeating(&MediaRouterUI::OnRoutesUpdated,
-                                              base::Unretained(this)));
+        GetMediaRouter(), MediaSource::Id(),
+        base::BindRepeating(&MediaRouterUI::OnRoutesUpdated,
+                            base::Unretained(this)));
   }
 }
 
@@ -554,16 +566,18 @@ void MediaRouterUI::UiIssuesObserver::OnIssuesCleared() {
 
 MediaRouterUI::UIMediaRoutesObserver::UIMediaRoutesObserver(
     MediaRouter* router,
+    const MediaSource::Id& source_id,
     const RoutesUpdatedCallback& callback)
-    : MediaRoutesObserver(router), callback_(callback) {
+    : MediaRoutesObserver(router, source_id), callback_(callback) {
   DCHECK(!callback_.is_null());
 }
 
 MediaRouterUI::UIMediaRoutesObserver::~UIMediaRoutesObserver() = default;
 
 void MediaRouterUI::UIMediaRoutesObserver::OnRoutesUpdated(
-    const std::vector<MediaRoute>& routes) {
-  callback_.Run(routes);
+    const std::vector<MediaRoute>& routes,
+    const std::vector<MediaRoute::Id>& joinable_route_ids) {
+  callback_.Run(routes, joinable_route_ids);
 }
 
 std::vector<MediaSource> MediaRouterUI::GetSourcesForCastMode(
@@ -596,7 +610,8 @@ void MediaRouterUI::InitCommon() {
 
   // Get the current list of media routes, so that the WebUI will have routes
   // information at initialization.
-  OnRoutesUpdated(GetMediaRouter()->GetCurrentRoutes());
+  OnRoutesUpdated(GetMediaRouter()->GetCurrentRoutes(),
+                  std::vector<MediaRoute::Id>());
   display_observer_ = WebContentsDisplayObserver::Create(
       initiator_,
       base::BindRepeating(&MediaRouterUI::UpdateSinks, base::Unretained(this)));
@@ -641,10 +656,17 @@ void MediaRouterUI::OnDefaultPresentationChanged(
   query_result_manager_->SetSourcesForCastMode(
       MediaCastMode::PRESENTATION, sources,
       presentation_request_->frame_origin);
-  // Register for MediaRoute updates.
+  // Register for MediaRoute updates.  NOTE(mfoltz): If there are multiple
+  // sources that can be connected to via the dialog, this will break.  We will
+  // need to observe multiple sources (keyed by sinks) in that case.  As this is
+  // Cast-specific for the foreseeable future, it may be simpler to plumb a new
+  // observer API for this case.
+  const MediaSource source_for_route_observer =
+      GetSourceForRouteObserver(sources);
   routes_observer_ = std::make_unique<UIMediaRoutesObserver>(
-      GetMediaRouter(), base::BindRepeating(&MediaRouterUI::OnRoutesUpdated,
-                                            base::Unretained(this)));
+      GetMediaRouter(), source_for_route_observer.id(),
+      base::BindRepeating(&MediaRouterUI::OnRoutesUpdated,
+                          base::Unretained(this)));
   UpdateModelHeader();
 }
 
@@ -652,10 +674,11 @@ void MediaRouterUI::OnDefaultPresentationRemoved() {
   presentation_request_.reset();
   query_result_manager_->RemoveSourcesForCastMode(MediaCastMode::PRESENTATION);
 
-  // Register for MediaRoute updates.
+  // Register for MediaRoute updates without a media source.
   routes_observer_ = std::make_unique<UIMediaRoutesObserver>(
-      GetMediaRouter(), base::BindRepeating(&MediaRouterUI::OnRoutesUpdated,
-                                            base::Unretained(this)));
+      GetMediaRouter(), MediaSource::Id(),
+      base::BindRepeating(&MediaRouterUI::OnRoutesUpdated,
+                          base::Unretained(this)));
 
   UpdateModelHeader();
 }
@@ -851,21 +874,25 @@ void MediaRouterUI::OnIssueCleared() {
   UpdateSinks();
 }
 
-void MediaRouterUI::OnRoutesUpdated(const std::vector<MediaRoute>& routes) {
+void MediaRouterUI::OnRoutesUpdated(
+    const std::vector<MediaRoute>& routes,
+    const std::vector<MediaRoute::Id>& joinable_route_ids) {
   routes_.clear();
 
   for (const MediaRoute& route : routes) {
+    if (route.for_display()) {
 #ifndef NDEBUG
-    for (const MediaRoute& existing_route : routes_) {
-      if (existing_route.media_sink_id() == route.media_sink_id()) {
-        DVLOG(2) << "Received another route for display with the same sink"
-                 << " id as an existing route. " << route.media_route_id()
-                 << " has the same sink id as "
-                 << existing_route.media_sink_id() << ".";
+      for (const MediaRoute& existing_route : routes_) {
+        if (existing_route.media_sink_id() == route.media_sink_id()) {
+          DVLOG(2) << "Received another route for display with the same sink"
+                   << " id as an existing route. " << route.media_route_id()
+                   << " has the same sink id as "
+                   << existing_route.media_sink_id() << ".";
+        }
       }
-    }
 #endif
-    routes_.push_back(route);
+      routes_.push_back(route);
+    }
   }
 
   if (terminating_route_id_ &&

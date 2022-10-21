@@ -11,8 +11,6 @@
 #include "chrome/browser/ui/app_list/app_list_syncable_service.h"
 #include "chrome/browser/ui/app_list/app_list_test_util.h"
 
-class ChromeAppListModelUpdater;
-
 namespace test {
 
 class AppListSyncableServiceTestBase : public AppListTestBase {
@@ -28,19 +26,18 @@ class AppListSyncableServiceTestBase : public AppListTestBase {
   void SetUp() override;
 
  protected:
+  // Used by subclasses to set up the fake model updater. If this method is not
+  // overridden, `ChromeAppListModelUpdater` is used.
+  virtual void SetUpFakeModelUpdaterFactoryIfNecessary() {}
+
   // Remove all existing sync items.
   void RemoveAllExistingItems();
 
   void InstallExtension(extensions::Extension* extension);
 
-  void RemoveExtension(const std::string& id);
-
   // Gets the ids of the items in model updater ordered by item's ordinal
   // position.
   std::vector<std::string> GetOrderedItemIdsFromModelUpdater();
-
-  // Gets the names of the items in model updater ordered by item's ordinal.
-  std::vector<std::string> GetOrderedNamesFromModelUpdater();
 
   // Similar to `GetOrderedItemIdsFromModelUpdater()`. But items are from
   // `AppListSyncableService` and they are ordered by positions in sync data.
@@ -49,18 +46,9 @@ class AppListSyncableServiceTestBase : public AppListTestBase {
   std::vector<std::string> GetOrderedItemIdsFromSyncableService();
 
   // Gets the names of the items ordered by the positions stored in sync data.
-  std::vector<std::string> GetOrderedNamesFromSyncableService();
+  std::vector<std::string> GetNamesOfSortedItemsFromSyncableService();
 
-  // Gets the names of items ordered by the positions stored in sync data,
-  // grouped in pages (as defined by page break items). Lists themselves will
-  // not contain page breaks.
-  std::vector<std::vector<std::string>>
-  GetNamesOfSortedItemsPerPageFromSyncableService();
-
-  // Gets the specified item's position from sync data.
-  syncer::StringOrdinal GetPositionFromSyncData(const std::string& id) const;
-
-  ChromeAppListModelUpdater* GetModelUpdater();
+  AppListModelUpdater* GetModelUpdater();
 
   const app_list::AppListSyncableService::SyncItem* GetSyncItem(
       const std::string& id) const;

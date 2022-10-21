@@ -9,14 +9,11 @@
 
 #include "base/callback_forward.h"
 #include "base/containers/lru_cache.h"
-#include "base/files/file_path.h"
 #include "base/hash/hash.h"
-#include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/strings/strcat.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/task/cancelable_task_tracker.h"
-#include "base/task/sequenced_task_runner.h"
 #include "components/continuous_search/browser/search_result_extractor_client.h"
 #include "components/continuous_search/browser/search_result_extractor_client_status.h"
 #include "components/continuous_search/common/public/mojom/continuous_search.mojom.h"
@@ -25,7 +22,6 @@
 #include "components/keyed_service/core/keyed_service.h"
 #include "components/optimization_guide/content/browser/page_content_annotator.h"
 #include "components/optimization_guide/core/entity_metadata_provider.h"
-#include "components/optimization_guide/core/model_info.h"
 #include "components/optimization_guide/core/page_content_annotations_common.h"
 #include "components/optimization_guide/machine_learning_tflite_buildflags.h"
 #include "url/gurl.h"
@@ -38,13 +34,8 @@ namespace history {
 class HistoryService;
 }  // namespace history
 
-namespace leveldb_proto {
-class ProtoDatabaseProvider;
-}  // namespace leveldb_proto
-
 namespace optimization_guide {
 
-class LocalPageEntitiesMetadataProvider;
 class OptimizationGuideModelProvider;
 class PageContentAnnotationsModelManager;
 class PageContentAnnotationsServiceBrowserTest;
@@ -69,13 +60,9 @@ struct HistoryVisit {
 class PageContentAnnotationsService : public KeyedService,
                                       public EntityMetadataProvider {
  public:
-  PageContentAnnotationsService(
-      const std::string& application_locale,
+  explicit PageContentAnnotationsService(
       OptimizationGuideModelProvider* optimization_guide_model_provider,
-      history::HistoryService* history_service,
-      leveldb_proto::ProtoDatabaseProvider* database_provider,
-      const base::FilePath& database_dir,
-      scoped_refptr<base::SequencedTaskRunner> background_task_runner);
+      history::HistoryService* history_service);
   ~PageContentAnnotationsService() override;
   PageContentAnnotationsService(const PageContentAnnotationsService&) = delete;
   PageContentAnnotationsService& operator=(
@@ -83,24 +70,22 @@ class PageContentAnnotationsService : public KeyedService,
 
   // This is the main entry point for page content annotations by external
   // callers.
+  //
+  // TODO(crbug/1249632): Flesh out description more as implementation
+  // progresses and we see what is most important to write here.
   void BatchAnnotate(BatchAnnotationCallback callback,
                      const std::vector<std::string>& inputs,
                      AnnotationType annotation_type);
 
   // Overrides the PageContentAnnotator for testing. See
   // test_page_content_annotator.h for an implementation designed for testing.
-  void OverridePageContentAnnotatorForTesting(PageContentAnnotator* annotator);
+  void OverridePageContentAnnotatorForTesting(
+      std::unique_ptr<PageContentAnnotator> annotator);
 
-  // Returns the model info for the given annotation type, if the model file is
-  // available.
-  absl::optional<ModelInfo> GetModelInfoForType(AnnotationType type) const;
-
-  // Runs |callback| with true when the model that powers |BatchAnnotate| for
-  // the given annotation type is ready to execute. If the model is ready now,
-  // the callback is run immediately. If the model file will never be available,
-  // the callback is run with false.
-  void NotifyWhenModelAvailable(AnnotationType type,
-                                base::OnceCallback<void(bool)> callback);
+  // Returns the version of the page topics model that is currently being used
+  // to annotate page content. Will return |absl::nullopt| if no model is being
+  // used to annotate page topics for received page content.
+  absl::optional<int64_t> GetPageTopicsModelVersion() const;
 
   // EntityMetadataProvider:
   void GetMetadataForEntityId(
@@ -118,10 +103,12 @@ class PageContentAnnotationsService : public KeyedService,
   std::unique_ptr<PageContentAnnotationsModelManager> model_manager_;
 #endif
 
-  // The annotator to use for requests to |BatchAnnotate|. In prod, this is
-  // simply |model_manager_.get()| but is set as a separate pointer here in
-  // order to be override-able for testing.
-  raw_ptr<PageContentAnnotator> annotator_;
+  // TODO(crbug/1249632): This will take the place of |model_manager_| where
+  // |PageContentAnnotationsModelManager| implements the virtual interface.
+  //
+  // The annotator to use for requests to |BatchAnnotate|. Override-able for
+  // testing.
+  std::unique_ptr<PageContentAnnotator> annotator_;
 
   // Requests to annotate |text|, which is associated with |web_contents|.
   //
@@ -155,14 +142,6 @@ class PageContentAnnotationsService : public KeyedService,
       continuous_search::SearchResultExtractorClientStatus status,
       continuous_search::mojom::CategoryResultsPtr results);
 
-  // Persist |entities| for |visit| in |history_service_|.
-  //
-  // Virtualized for testing.
-  virtual void PersistRemotePageEntities(
-      const HistoryVisit& visit,
-      const std::vector<history::VisitContentModelAnnotations::Category>&
-          entities);
-
   using PersistAnnotationsCallback = base::OnceCallback<void(history::VisitID)>;
   // Queries |history_service| for all the visits to the visited URL of |visit|.
   // |callback| will be invoked to write the bound content annotations to
@@ -175,16 +154,9 @@ class PageContentAnnotationsService : public KeyedService,
                     PersistAnnotationsCallback callback,
                     history::QueryURLResult url_result);
 
-  // A metadata-only provider for page entities (as opposed to |model_manager_|
-  // which does both entity model execution and metadata providing) that uses a
-  // local database to provide the metadata for a given entity id. This is only
-  // non-null and initialized when its feature flag is enabled.
-  std::unique_ptr<LocalPageEntitiesMetadataProvider>
-      local_page_entities_metadata_provider_;
-
   // The history service to write content annotations to. Not owned. Guaranteed
   // to outlive |this|.
-  raw_ptr<history::HistoryService> history_service_;
+  history::HistoryService* history_service_;
   // The task tracker to keep track of tasks to query |history_service|.
   base::CancelableTaskTracker history_service_task_tracker_;
   // The client of continuous_search::mojom::SearchResultExtractor interface

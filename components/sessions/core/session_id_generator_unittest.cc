@@ -6,6 +6,7 @@
 
 #include <limits>
 
+#include "base/macros.h"
 #include "base/test/mock_callback.h"
 #include "components/prefs/testing_pref_service.h"
 #include "testing/gmock/include/gmock/gmock.h"

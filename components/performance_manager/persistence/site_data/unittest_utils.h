@@ -8,6 +8,7 @@
 #include <memory>
 #include <vector>
 
+#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "components/performance_manager/performance_manager_impl.h"
 #include "components/performance_manager/persistence/site_data/site_data_impl.h"

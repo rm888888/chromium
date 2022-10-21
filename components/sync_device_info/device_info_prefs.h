@@ -7,7 +7,7 @@
 
 #include <string>
 
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 
 class PrefService;
 class PrefRegistrySimple;
@@ -45,8 +45,8 @@ class DeviceInfoPrefs {
   void GarbageCollectExpiredCacheGuids();
 
  private:
-  const raw_ptr<PrefService> pref_service_;
-  const raw_ptr<const base::Clock> clock_;
+  PrefService* const pref_service_;
+  const base::Clock* const clock_;
 };
 
 }  // namespace syncer

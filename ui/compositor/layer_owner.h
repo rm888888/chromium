@@ -7,7 +7,8 @@
 
 #include <memory>
 
-#include "base/memory/raw_ptr.h"
+#include "base/compiler_specific.h"
+#include "base/macros.h"
 #include "base/observer_list.h"
 #include "ui/compositor/compositor_export.h"
 
@@ -77,7 +78,7 @@ class COMPOSITOR_EXPORT LayerOwner {
   // the client may wish to animate the layer beyond the lifetime of the owner,
   // e.g. fading it out when it is destroyed.
   std::unique_ptr<Layer> layer_owner_;
-  raw_ptr<Layer> layer_ = nullptr;
+  Layer* layer_ = nullptr;
 
   base::ObserverList<Observer>::Unchecked observers_;
 };

@@ -13,6 +13,7 @@
 
 #include "base/component_export.h"
 #include "base/containers/flat_map.h"
+#include "base/macros.h"
 #include "base/threading/thread_checker.h"
 #include "ui/base/ime/ash/input_method_descriptor.h"
 
@@ -43,7 +44,7 @@ class COMPONENT_EXPORT(UI_BASE_IME_ASH) InputMethodUtil {
   std::u16string GetInputMethodLongName(
       const InputMethodDescriptor& input_method) const;
 
-  // Converts an input method ID to an input method descriptor. Returns nullptr
+  // Converts an input method ID to an input method descriptor. Returns NULL
   // when |input_method_id| is unknown.
   // Example: "pinyin" => { id: "pinyin", display_name: "Pinyin",
   //                        keyboard_layout: "us", language_code: "zh" }

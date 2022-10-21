@@ -6,7 +6,6 @@
 
 #include "base/check_op.h"
 #include "ui/ozone/platform/wayland/host/wayland_buffer_handle.h"
-#include "ui/ozone/platform/wayland/host/wayland_connection.h"
 
 namespace ui {
 
@@ -20,22 +19,17 @@ WaylandBufferBacking::WaylandBufferBacking(const WaylandConnection* connection,
 
 WaylandBufferBacking::~WaylandBufferBacking() = default;
 
-bool WaylandBufferBacking::UseExplicitSyncRelease() const {
-  return connection_->linux_explicit_synchronization_v1();
-}
-
-WaylandBufferHandle* WaylandBufferBacking::EnsureBufferHandle(
-    WaylandSurface* requestor) {
+bool WaylandBufferBacking::EnsureBufferHandle(WaylandSurface* requestor) {
   auto& buffer_handle = buffer_handles_[requestor];
 
   if (buffer_handle)
-    return buffer_handle.get();
+    return buffer_handle->wl_buffer_.get();
 
   // Assign the anonymous handle to the |requestor|.
   auto& anonymous_handle = buffer_handles_[nullptr];
   if (anonymous_handle) {
     buffer_handle.swap(anonymous_handle);
-    return buffer_handle.get();
+    return buffer_handle->wl_buffer_.get();
   }
 
   // The requested wl_buffer object is not requested.
@@ -45,7 +39,7 @@ WaylandBufferHandle* WaylandBufferBacking::EnsureBufferHandle(
   RequestBufferHandle(base::BindOnce(&WaylandBufferHandle::OnWlBufferCreated,
                                      buffer_handle->AsWeakPtr()));
 
-  return buffer_handle.get();
+  return buffer_handle->wl_buffer_.get();
 }
 
 WaylandBufferHandle* WaylandBufferBacking::GetBufferHandle(

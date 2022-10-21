@@ -15,6 +15,7 @@
 #include "base/containers/adapters.h"
 #include "base/containers/contains.h"
 #include "base/i18n/case_conversion.h"
+#include "base/macros.h"
 #include "base/strings/utf_string_conversions.h"
 #include "ui/accessibility/ax_action_data.h"
 #include "ui/accessibility/ax_enums.mojom.h"
@@ -555,7 +556,7 @@ void MenuItemView::SetIcon(const ui::ImageModel& icon) {
 
 void MenuItemView::SetIconView(std::unique_ptr<ImageView> icon_view) {
   if (icon_view_) {
-    RemoveChildViewT(icon_view_.get());
+    RemoveChildViewT(icon_view_);
     icon_view_ = nullptr;
   }
 

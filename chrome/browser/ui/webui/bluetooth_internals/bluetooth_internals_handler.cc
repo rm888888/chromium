@@ -7,6 +7,7 @@
 #include <string>
 
 #include "base/bind.h"
+#include "base/macros.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "build/chromeos_buildflags.h"
@@ -55,7 +56,7 @@ void BluetoothInternalsHandler::GetDebugLogsChangeHandler(
       break;
     case DebugLogsManager::DebugLogsState::kSupportedAndEnabled:
       initial_toggle_value = true;
-      [[fallthrough]];
+      FALLTHROUGH;
     case DebugLogsManager::DebugLogsState::kSupportedButDisabled:
       handler_remote = debug_logs_manager_->GenerateRemote();
       break;

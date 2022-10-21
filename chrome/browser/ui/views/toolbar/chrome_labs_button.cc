@@ -120,13 +120,12 @@ void ChromeLabsButton::ButtonPressed() {
 
 void ChromeLabsButton::UpdateDotIndicator() {
 #if BUILDFLAG(IS_CHROMEOS_ASH)
-  DictionaryPrefUpdateDeprecated update(
+  DictionaryPrefUpdate update(
       browser_view_->browser()->profile()->GetPrefs(),
       chrome_labs_prefs::kChromeLabsNewBadgeDictAshChrome);
 #else
-  DictionaryPrefUpdateDeprecated update(
-      g_browser_process->local_state(),
-      chrome_labs_prefs::kChromeLabsNewBadgeDict);
+  DictionaryPrefUpdate update(g_browser_process->local_state(),
+                              chrome_labs_prefs::kChromeLabsNewBadgeDict);
 #endif
 
   base::DictionaryValue* new_badge_prefs = update.Get();

@@ -27,9 +27,7 @@
 #include "chrome/browser/ui/ash/shelf/chrome_shelf_controller.h"
 #include "chrome/browser/ui/web_applications/system_web_app_ui_utils.h"
 #include "chrome/browser/web_applications/system_web_apps/system_web_app_manager.h"
-#include "chrome/common/chrome_features.h"
 #include "components/favicon/core/large_icon_service.h"
-#include "components/services/app_service/public/cpp/app_types.h"
 #include "components/services/app_service/public/cpp/app_update.h"
 #include "components/services/app_service/public/mojom/types.mojom.h"
 #include "extensions/common/extension.h"
@@ -84,7 +82,7 @@ AppServiceAppResult::AppServiceAppResult(Profile* profile,
       SetResultType(ResultType::kInternalApp);
       apps::RecordBuiltInAppSearchResult(app_id);
       break;
-    case apps::mojom::AppType::kChromeApp:
+    case apps::mojom::AppType::kExtension:
       // TODO(crbug.com/826982): why do we pass the URL and not the app_id??
       // Can we replace this by the simpler "set_id(app_id)", and therefore
       // pull that out of the switch?
@@ -117,7 +115,7 @@ void AppServiceAppResult::GetContextMenuModel(GetMenuModelCallback callback) {
   }
 
   context_menu_ = std::make_unique<AppServiceContextMenu>(
-      this, profile(), app_id(), controller(), /*add_sort_options=*/false);
+      this, profile(), app_id(), controller());
   context_menu_->GetMenuModel(std::move(callback));
 }
 
@@ -131,10 +129,10 @@ ash::SearchResultType AppServiceAppResult::GetSearchResultType() const {
       return ash::PLUGIN_VM_APP;
     case apps::mojom::AppType::kCrostini:
       return ash::CROSTINI_APP;
-    case apps::mojom::AppType::kChromeApp:
+    case apps::mojom::AppType::kExtension:
     case apps::mojom::AppType::kWeb:
     case apps::mojom::AppType::kSystemWeb:
-    case apps::mojom::AppType::kStandaloneBrowserChromeApp:
+    case apps::mojom::AppType::kStandaloneBrowserExtension:
       return ash::EXTENSION_APP;
     case apps::mojom::AppType::kStandaloneBrowser:
       return ash::LACROS;
@@ -142,7 +140,6 @@ ash::SearchResultType AppServiceAppResult::GetSearchResultType() const {
       return ash::REMOTE_APP;
     case apps::mojom::AppType::kBorealis:
       return ash::BOREALIS_APP;
-    case apps::mojom::AppType::kExtension:
     case apps::mojom::AppType::kMacOs:
     case apps::mojom::AppType::kUnknown:
       NOTREACHED();
@@ -186,7 +183,7 @@ void AppServiceAppResult::Launch(int event_flags,
         if (update.AppType() == apps::mojom::AppType::kCrostini ||
             update.AppType() == apps::mojom::AppType::kWeb ||
             update.AppType() == apps::mojom::AppType::kSystemWeb ||
-            (update.AppType() == apps::mojom::AppType::kChromeApp &&
+            (update.AppType() == apps::mojom::AppType::kExtension &&
              update.IsPlatformApp() == apps::mojom::OptionalBool::kFalse)) {
           is_active_app = true;
         }
@@ -212,17 +209,13 @@ void AppServiceAppResult::Launch(int event_flags,
 }
 
 void AppServiceAppResult::CallLoadIcon(bool chip, bool allow_placeholder_icon) {
-  if (!icon_loader_) {
-    return;
-  }
-
-  // If |icon_loader_releaser_| is non-null, assigning to it will signal to
-  // |icon_loader_| that the previous icon is no longer being used, as a hint
-  // that it could be flushed from any caches.
-  if (base::FeatureList::IsEnabled(features::kAppServiceLoadIconWithoutMojom)) {
+  if (icon_loader_) {
+    // If |icon_loader_releaser_| is non-null, assigning to it will signal to
+    // |icon_loader_| that the previous icon is no longer being used, as a hint
+    // that it could be flushed from any caches.
+    auto icon_type = apps::mojom::IconType::kStandard;
     icon_loader_releaser_ = icon_loader_->LoadIcon(
-        apps::ConvertMojomAppTypToAppType(app_type_), app_id(),
-        apps::IconType::kStandard,
+        app_type_, app_id(), icon_type,
         chip ? ash::SharedAppListConfig::instance()
                    .suggestion_chip_icon_dimension()
              : ash::SharedAppListConfig::instance().GetPreferredIconDimension(
@@ -230,22 +223,13 @@ void AppServiceAppResult::CallLoadIcon(bool chip, bool allow_placeholder_icon) {
         allow_placeholder_icon,
         base::BindOnce(&AppServiceAppResult::OnLoadIcon,
                        weak_ptr_factory_.GetWeakPtr(), chip));
-  } else {
-    icon_loader_releaser_ = icon_loader_->LoadIcon(
-        app_type_, app_id(), apps::mojom::IconType::kStandard,
-        chip ? ash::SharedAppListConfig::instance()
-                   .suggestion_chip_icon_dimension()
-             : ash::SharedAppListConfig::instance().GetPreferredIconDimension(
-                   display_type()),
-        allow_placeholder_icon,
-        apps::MojomIconValueToIconValueCallback(
-            base::BindOnce(&AppServiceAppResult::OnLoadIcon,
-                           weak_ptr_factory_.GetWeakPtr(), chip)));
   }
 }
 
-void AppServiceAppResult::OnLoadIcon(bool chip, apps::IconValuePtr icon_value) {
-  if (!icon_value || icon_value->icon_type != apps::IconType::kStandard) {
+void AppServiceAppResult::OnLoadIcon(bool chip,
+                                     apps::mojom::IconValuePtr icon_value) {
+  auto icon_type = apps::mojom::IconType::kStandard;
+  if (icon_value->icon_type != icon_type) {
     return;
   }
 

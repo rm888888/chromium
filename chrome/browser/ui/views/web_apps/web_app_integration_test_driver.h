@@ -12,15 +12,12 @@
 
 #include "base/containers/flat_map.h"
 #include "base/containers/flat_set.h"
-#include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
-#include "base/test/scoped_feature_list.h"
 #include "chrome/browser/web_applications/os_integration_manager.h"
 #include "chrome/browser/web_applications/test/web_app_test_observers.h"
 #include "chrome/browser/web_applications/web_app_id.h"
 #include "chrome/browser/web_applications/web_app_provider.h"
 #include "chrome/test/base/in_process_browser_test.h"
-#include "components/services/app_service/public/mojom/types.mojom.h"
 #include "net/test/embedded_test_server/embedded_test_server.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 #include "url/gurl.h"
@@ -71,11 +68,9 @@ struct AppState {
   AppState(AppId app_id,
            const std::string app_name,
            const GURL app_scope,
-           const apps::mojom::WindowMode& window_mode,
            const blink::mojom::DisplayMode& effective_display_mode,
            const blink::mojom::DisplayMode& user_display_mode,
-           bool is_installed_locally,
-           bool is_shortcut_created);
+           bool is_installed_locally);
   ~AppState();
   AppState(const AppState&);
   bool operator==(const AppState& other) const;
@@ -83,11 +78,9 @@ struct AppState {
   AppId id;
   std::string name;
   GURL scope;
-  apps::mojom::WindowMode window_mode;
   blink::mojom::DisplayMode effective_display_mode;
   blink::mojom::DisplayMode user_display_mode;
   bool is_installed_locally;
-  bool is_shortcut_created;
 };
 
 struct ProfileState {
@@ -143,8 +136,6 @@ class WebAppIntegrationTestDriver : AppRegistrarObserver {
   // https://docs.google.com/spreadsheets/d/1d3iAOAnojp4_WrPky9exz1-mjkeulOJVUav5QYG99MQ/edit#gid=2008870403
 
   // State change actions:
-  void ChangeAppSettingsWindowMode(const std::string& site_mode,
-                                   apps::mojom::WindowMode window_mode);
   void CloseCustomToolbar();
   void ClosePwa();
   void InstallCreateShortcutTabbed(const std::string& site_mode);
@@ -163,7 +154,6 @@ class WebAppIntegrationTestDriver : AppRegistrarObserver {
   void NavigateNotfoundUrl();
   void NavigateTabbedBrowserToSite(const GURL& url);
   void ManifestUpdateDisplayMinimal(const std::string& site_mode);
-  void ManifestUpdateScopeSiteAFooTo(const std::string& scope_mode);
   void SetOpenInTab(const std::string& site_mode);
   void SetOpenInWindow(const std::string& site_mode);
   void SwitchProfileClients(const std::string& client_mode);
@@ -180,10 +170,6 @@ class WebAppIntegrationTestDriver : AppRegistrarObserver {
   void CheckAppInListTabbed(const std::string& site_mode);
   void CheckAppNavigationIsStartUrl();
   void CheckAppNotInList(const std::string& site_mode);
-  void CheckAppShortcutExists(const std::string& site_mode);
-  void CheckAppShortcutNotExists(const std::string& site_mode);
-  void CheckAppWindowMode(const std::string& site_mode,
-                          apps::mojom::WindowMode window_mode);
   void CheckInstallable();
   void CheckInstallIconShown();
   void CheckInstallIconNotShown();
@@ -221,17 +207,17 @@ class WebAppIntegrationTestDriver : AppRegistrarObserver {
 
   std::unique_ptr<StateSnapshot> ConstructStateSnapshot();
 
+  GURL GetAppURLForManifest(const std::string& site_mode,
+                            DisplayMode display_mode);
   content::WebContents* GetCurrentTab(Browser* browser);
   GURL GetInScopeURL(const std::string& site_mode);
   GURL GetScopeForSiteMode(const std::string& site_mode);
-  GURL GetURLForSiteMode(const std::string& site_mode);
   void InstallCreateShortcut(bool open_in_window);
 
   void InstallPolicyAppInternal(const std::string& site_mode,
                                 base::Value default_launch_container,
                                 const bool create_shortcut);
 
-  void UninstallPolicyAppById(const AppId& id);
   // This action only works if no navigations to the given app_url occur
   // between app installation and calls to this action.
   bool AreNoAppWindowsOpen(Profile* profile, const AppId& app_id);
@@ -246,10 +232,6 @@ class WebAppIntegrationTestDriver : AppRegistrarObserver {
   Browser* GetAppBrowserForSite(const std::string& site_mode,
                                 bool launch_if_not_open = true);
 
-  bool IsShortcutCreated(Profile* profile,
-                         const std::string& name,
-                         const AppId& id);
-
   Browser* browser();
   const net::EmbeddedTestServer* embedded_test_server();
   Profile* profile() {
@@ -263,6 +245,8 @@ class WebAppIntegrationTestDriver : AppRegistrarObserver {
   PageActionIconView* pwa_install_view();
   PageActionIconView* intent_picker_view();
 
+  ScopedOsHooksSuppress os_hooks_suppress_;
+
   // Variables used to facilitate waiting for manifest updates, as there isn't
   // a formal 'action' that a user can take to wait for this, as it happens
   // behind the scenes.
@@ -273,7 +257,7 @@ class WebAppIntegrationTestDriver : AppRegistrarObserver {
   absl::optional<AppId> waiting_for_update_id_;
   std::unique_ptr<base::RunLoop> waiting_for_update_run_loop_;
 
-  raw_ptr<TestDelegate> delegate_;
+  TestDelegate* delegate_;
   // State snapshots, captured before and after "state change" actions are
   // executed, and inspected by "state check" actions to verify behavior.
   std::unique_ptr<StateSnapshot> before_state_change_action_state_;
@@ -286,15 +270,14 @@ class WebAppIntegrationTestDriver : AppRegistrarObserver {
   // can often call another action).
   int executing_action_level_ = 0;
 
-  raw_ptr<Browser> active_browser_ = nullptr;
-  raw_ptr<Profile> active_profile_ = nullptr;
+  Browser* active_browser_ = nullptr;
+  Profile* active_profile_ = nullptr;
   AppId active_app_id_;
-  raw_ptr<Browser> app_browser_ = nullptr;
+  Browser* app_browser_ = nullptr;
 
   base::ScopedObservation<web_app::WebAppRegistrar,
                           web_app::AppRegistrarObserver>
       observation_{this};
-  std::unique_ptr<ScopedShortcutOverrideForTesting> shortcut_override_;
 };
 
 // Simple base browsertest class usable by all non-sync web app integration
@@ -329,9 +312,6 @@ class WebAppIntegrationBrowserTest
 
  protected:
   WebAppIntegrationTestDriver helper_;
-
- private:
-  base::test::ScopedFeatureList scoped_feature_list_;
 };
 
 }  // namespace web_app

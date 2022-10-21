@@ -5,6 +5,7 @@
 #ifndef CHROME_BROWSER_VR_TEST_MOCK_UI_BROWSER_INTERFACE_H_
 #define CHROME_BROWSER_VR_TEST_MOCK_UI_BROWSER_INTERFACE_H_
 
+#include "base/macros.h"
 #include "chrome/browser/vr/ui_browser_interface.h"
 #include "testing/gmock/include/gmock/gmock.h"
 

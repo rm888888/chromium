@@ -132,6 +132,7 @@ source_set("gbm") {
     "//third_party/minigbm",
     "//ui/base",
     "//ui/base/cursor",
+    "//ui/base/cursor:cursor_base",
     "//ui/base/cursor/mojom:cursor_type",
     "//ui/base/ime",
     "//ui/display",
@@ -150,7 +151,7 @@ source_set("gbm") {
     "//ui/gl",
     "//ui/ozone:ozone_base",
     "//ui/ozone/common",
-    "//ui/ozone/platform/drm/mojom",
+    "//ui/ozone/public/mojom",
     "//ui/platform_window",
   ]
 

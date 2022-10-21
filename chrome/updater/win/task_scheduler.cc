@@ -12,9 +12,7 @@
 
 #include <string>
 #include <utility>
-#include <vector>
 
-#include "base/check_op.h"
 #include "base/command_line.h"
 #include "base/files/file_path.h"
 #include "base/logging.h"
@@ -22,7 +20,6 @@
 #include "base/notreached.h"
 #include "base/path_service.h"
 #include "base/strings/strcat.h"
-#include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
 #include "base/time/time.h"
 #include "base/win/scoped_bstr.h"
@@ -46,7 +43,7 @@ const wchar_t kOneHourText[] = L"PT1H";
 const wchar_t kFiveHoursText[] = L"PT5H";
 const wchar_t kZeroMinuteText[] = L"PT0M";
 const wchar_t kFifteenMinutesText[] = L"PT15M";
-const wchar_t kOneDayText[] = L"P1D";
+const wchar_t kTwentyFourHoursText[] = L"PT24H";
 
 // Names of the folders used to group the scheduled tasks in.
 const wchar_t kTaskCompanyFolder[] = L"\\" COMPANY_SHORTNAME_STRING;
@@ -68,6 +65,19 @@ std::wstring GetTimestampString(const base::Time& timestamp) {
                             exploded_time.year, exploded_time.month,
                             exploded_time.day_of_month, exploded_time.hour,
                             exploded_time.minute, exploded_time.second);
+}
+
+bool LocalSystemTimeToUTCFileTime(const SYSTEMTIME& system_time_local,
+                                  FILETIME* file_time_utc) {
+  DCHECK(file_time_utc);
+  SYSTEMTIME system_time_utc = {};
+  if (!::TzSpecificLocalTimeToSystemTime(nullptr, &system_time_local,
+                                         &system_time_utc) ||
+      !::SystemTimeToFileTime(&system_time_utc, file_time_utc)) {
+    PLOG(ERROR) << "Failed to convert local system time to UTC file time.";
+    return false;
+  }
+  return true;
 }
 
 bool UTCFileTimeToLocalSystemTime(const FILETIME& file_time_utc,
@@ -203,11 +213,10 @@ class TaskSchedulerV2 final : public TaskScheduler {
     run_times.Reset(raw_run_times);
     // Again, although unclear from MSDN, IRegisteredTask::GetRunTimes returns
     // local times.
-    // The returned local times are already adjusted for DST.
-    FILETIME local_file_time = {};
-    if (!::SystemTimeToFileTime(&run_times[0], &local_file_time))
+    FILETIME file_time = {};
+    if (!LocalSystemTimeToUTCFileTime(run_times[0], &file_time))
       return false;
-    *next_run_time = base::Time::FromFileTime(local_file_time);
+    *next_run_time = base::Time::FromFileTime(file_time);
     return true;
   }
 
@@ -263,21 +272,6 @@ class TaskSchedulerV2 final : public TaskScheduler {
     for (TaskIterator it(task_folder_.Get()); !it.done(); it.Next())
       task_names->push_back(it.name());
     return true;
-  }
-
-  std::wstring FindFirstTaskName(const std::wstring& task_prefix) override {
-    DCHECK(!task_prefix.empty());
-
-    std::vector<std::wstring> task_names;
-    if (!GetTaskNameList(&task_names))
-      return std::wstring();
-
-    for (const std::wstring& task_name : task_names) {
-      if (base::StartsWith(task_name, task_prefix))
-        return task_name;
-    }
-
-    return std::wstring();
   }
 
   bool GetTaskInfo(const wchar_t* task_name, TaskInfo* info) override {
@@ -377,6 +371,8 @@ class TaskSchedulerV2 final : public TaskScheduler {
                     bool hidden) override {
     DCHECK(task_name);
     DCHECK(task_description);
+    if (!DeleteTask(task_name))
+      return false;
 
     // Create the task definition object to create the task.
     Microsoft::WRL::ComPtr<ITaskDefinition> task;
@@ -538,20 +534,20 @@ class TaskSchedulerV2 final : public TaskScheduler {
         return false;
       }
 
-      hr = repetition_pattern->put_Interval(repetition_interval.Get());
+      // The duration is the time to keep repeating until the next daily
+      // trigger.
+      hr = repetition_pattern->put_Duration(
+          base::win::ScopedBstr(kTwentyFourHoursText).Get());
       if (FAILED(hr)) {
-        PLOG(ERROR) << "Can't put 'Interval' to " << repetition_interval.Get()
+        PLOG(ERROR) << "Can't put 'Duration' to " << kTwentyFourHoursText
                     << ". " << std::hex << hr;
         return false;
       }
 
-      // The duration is the time to keep repeating intervals until the next
-      // daily trigger.
-      hr = repetition_pattern->put_Duration(
-          base::win::ScopedBstr(kOneDayText).Get());
+      hr = repetition_pattern->put_Interval(repetition_interval.Get());
       if (FAILED(hr)) {
-        PLOG(ERROR) << "Can't put 'Duration' to " << kOneDayText << ". "
-                    << std::hex << hr;
+        PLOG(ERROR) << "Can't put 'Interval' to " << repetition_interval.Get()
+                    << ". " << std::hex << hr;
         return false;
       }
 
@@ -634,8 +630,7 @@ class TaskSchedulerV2 final : public TaskScheduler {
 
     DCHECK(task_folder_);
     hr = task_folder_->RegisterTaskDefinition(
-        base::win::ScopedBstr(task_name).Get(), task.Get(),
-        TASK_CREATE_OR_UPDATE,
+        base::win::ScopedBstr(task_name).Get(), task.Get(), TASK_CREATE,
         *user.AsInput(),  // Not really input, but API expect non-const.
         base::win::ScopedVariant::kEmptyVariant,
         scope == UpdaterScope::kSystem ? TASK_LOGON_SERVICE_ACCOUNT

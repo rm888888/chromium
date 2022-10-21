@@ -19,7 +19,16 @@ ArCoreDeviceProvider::ArCoreDeviceProvider(
 
 ArCoreDeviceProvider::~ArCoreDeviceProvider() = default;
 
-void ArCoreDeviceProvider::Initialize(device::VRDeviceProviderClient* client) {
+void ArCoreDeviceProvider::Initialize(
+    base::RepeatingCallback<void(device::mojom::XRDeviceId,
+                                 device::mojom::VRDisplayInfoPtr,
+                                 device::mojom::XRDeviceDataPtr,
+                                 mojo::PendingRemote<device::mojom::XRRuntime>)>
+        add_device_callback,
+    base::RepeatingCallback<void(device::mojom::XRDeviceId)>
+        remove_device_callback,
+    base::OnceClosure initialization_complete,
+    device::XrFrameSinkClientFactory xr_frame_sink_client_factory) {
   if (device::IsArCoreSupported()) {
     DVLOG(2) << __func__ << ": ARCore is supported, creating device";
 
@@ -28,14 +37,14 @@ void ArCoreDeviceProvider::Initialize(device::VRDeviceProviderClient* client) {
         std::make_unique<device::ArImageTransportFactory>(),
         std::make_unique<webxr::MailboxToSurfaceBridgeFactoryImpl>(),
         std::make_unique<webxr::ArCoreJavaUtils>(compositor_delegate_provider_),
-        client->GetXrFrameSinkClientFactory());
+        std::move(xr_frame_sink_client_factory));
 
-    client->AddRuntime(
+    add_device_callback.Run(
         arcore_device_->GetId(), arcore_device_->GetVRDisplayInfo(),
         arcore_device_->GetDeviceData(), arcore_device_->BindXRRuntime());
   }
   initialized_ = true;
-  client->OnProviderInitialized();
+  std::move(initialization_complete).Run();
 }
 
 bool ArCoreDeviceProvider::Initialized() {

@@ -10,14 +10,11 @@
 #include "chrome/browser/web_applications/web_app.h"
 #include "chrome/browser/web_applications/web_app_install_params.h"
 #include "chrome/browser/web_applications/web_app_install_utils.h"
-#include "content/public/browser/service_worker_context.h"
 
-struct WebAppInstallInfo;
-class Browser;
+struct WebApplicationInfo;
 class GURL;
 
 namespace content {
-class StoragePartition;
 class WebContents;
 }  // namespace content
 
@@ -33,21 +30,15 @@ std::unique_ptr<WebApp> CreateRandomWebApp(const GURL& base_url,
 
 void TestAcceptDialogCallback(
     content::WebContents* initiator_web_contents,
-    std::unique_ptr<WebAppInstallInfo> web_app_info,
+    std::unique_ptr<WebApplicationInfo> web_app_info,
     ForInstallableSite for_installable_site,
     WebAppInstallationAcceptanceCallback acceptance_callback);
 
 void TestDeclineDialogCallback(
     content::WebContents* initiator_web_contents,
-    std::unique_ptr<WebAppInstallInfo> web_app_info,
+    std::unique_ptr<WebApplicationInfo> web_app_info,
     ForInstallableSite for_installable_site,
     WebAppInstallationAcceptanceCallback acceptance_callback);
-
-AppId InstallPwaForCurrentUrl(Browser* browser);
-
-void CheckServiceWorkerStatus(const GURL& url,
-                              content::StoragePartition* storage_partition,
-                              content::ServiceWorkerCapability status);
 
 }  // namespace test
 }  // namespace web_app

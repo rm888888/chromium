@@ -13,6 +13,6 @@ class Event;
 
 typedef base::RepeatingCallback<void(Event*)> EventDispatchCallback;
 
-}  // namespace ui
+}  // namspace ui
 
 #endif  // UI_EVENTS_OZONE_EVDEV_EVENT_DISPATCH_CALLBACK_H_

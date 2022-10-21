@@ -37,7 +37,7 @@ class DataReductionProxyPrefsTest : public testing::Test {
   void InitializeList(const char* pref_name,
                       int64_t starting_value,
                       PrefService* pref_service) {
-    ListPrefUpdateDeprecated list(local_state_prefs(), pref_name);
+    ListPrefUpdate list(local_state_prefs(), pref_name);
     for (int64_t i = 0; i < 10L; ++i) {
       list->Append(base::NumberToString(i + starting_value));
     }
@@ -49,15 +49,11 @@ class DataReductionProxyPrefsTest : public testing::Test {
   void VerifyList(const char* pref_name,
                   int64_t starting_value,
                   PrefService* pref_service) {
-    const base::Value* list_value = pref_service->GetList(pref_name);
-    base::Value::ConstListView list_view = list_value->GetList();
+    const base::ListValue* list_value = pref_service->GetList(pref_name);
     for (int64_t i = 0; i < 10L; ++i) {
       std::string string_value;
       int64_t value;
-      if (static_cast<size_t>(i) < list_view.size() &&
-          list_view[i].is_string()) {
-        string_value = list_view[i].GetString();
-      }
+      list_value->GetString(i, &string_value);
       base::StringToInt64(string_value, &value);
       EXPECT_EQ(i + starting_value, value);
     }

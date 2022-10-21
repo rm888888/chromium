@@ -20,7 +20,6 @@
 
 #include <algorithm>
 #include <memory>
-#include <tuple>
 
 #include "base/logging.h"
 #include "base/numerics/safe_conversions.h"
@@ -258,7 +257,7 @@ string GetCMSString(const net::ScopedCERTCertificateList& cert_chain,
   NSSCMSContentInfo *cinfo = NSS_CMSMessage_GetContentInfo(message.get());
   if (NSS_CMSContentInfo_SetContent_SignedData(
       message.get(), cinfo, signed_data.get()) == SECSuccess) {
-    std::ignore = signed_data.release();
+    ignore_result(signed_data.release());
   } else {
     DLOG(ERROR) << "NSS_CMSMessage_GetContentInfo failed";
     return std::string();

@@ -12,6 +12,7 @@
 #include <string>
 
 #include "base/i18n/char_iterator.h"
+#include "base/macros.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/test/bind.h"
 #include "base/test/task_environment.h"
@@ -219,6 +220,8 @@ class InputMethodAshTest : public internal::InputMethodDelegate,
   ~InputMethodAshTest() override = default;
 
   void SetUp() override {
+    IMEBridge::Initialize();
+
     mock_ime_engine_handler_ = std::make_unique<ash::MockIMEEngineHandler>();
     IMEBridge::Get()->SetCurrentEngineHandler(mock_ime_engine_handler_.get());
 
@@ -243,6 +246,7 @@ class InputMethodAshTest : public internal::InputMethodDelegate,
     IMEBridge::Get()->SetCandidateWindowHandler(nullptr);
     mock_ime_engine_handler_.reset();
     mock_ime_candidate_window_handler_.reset();
+    IMEBridge::Shutdown();
     ash::input_method::InputMethodManager::Shutdown();
 
     ResetFlags();
@@ -314,9 +318,9 @@ class InputMethodAshTest : public internal::InputMethodDelegate,
     return true;
   }
   bool SetAutocorrectRange(const gfx::Range& range) override {
-    // TODO(crbug.com/1277388): This is a workaround to ensure that the range is
-    // valid in the text. Change to use FakeTextInputClient instead of
-    // DummyTextInputClient so that the text contents can be queried accurately.
+    // TODO(crbug.com/1148157): This is a workaround to ensure that the range is
+    // valid in the text. Change this class to a proper fake so that the text
+    // contents can be queried accurately.
     if (!inserted_text_.empty() || inserted_char_ != 0) {
       DummyTextInputClient::SetAutocorrectRange(range);
       return true;

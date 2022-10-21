@@ -8,6 +8,7 @@
 #include <memory>
 #include <string>
 
+#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "components/dom_distiller/core/distiller_page.h"
 #include "ios/web/public/web_state_observer.h"

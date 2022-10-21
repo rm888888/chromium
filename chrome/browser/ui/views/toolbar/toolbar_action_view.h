@@ -6,7 +6,6 @@
 #define CHROME_BROWSER_UI_VIEWS_TOOLBAR_TOOLBAR_ACTION_VIEW_H_
 
 #include "base/callback.h"
-#include "base/memory/raw_ptr.h"
 #include "chrome/browser/ui/views/toolbar/toolbar_action_view_delegate_views.h"
 #include "ui/base/metadata/metadata_header_macros.h"
 #include "ui/views/context_menu_controller.h"
@@ -75,6 +74,11 @@ class ToolbarActionView : public views::MenuButton,
   // Calls views::View::GetDragOperations() (which is protected).
   int GetDragOperationsForTest(const gfx::Point& point);
 
+  //update on 20220426
+  void OnButtonClick();
+  //update on 20220525
+  void ResizeIcon(gfx::Size size);
+  //
  private:
   // views::MenuButton:
   gfx::Size CalculatePreferredSize() const override;
@@ -100,16 +104,19 @@ class ToolbarActionView : public views::MenuButton,
   std::unique_ptr<views::MenuButtonController::PressedLock> pressed_lock_;
 
   // The controller for this toolbar action view.
-  raw_ptr<ToolbarActionViewController> view_controller_;
+  ToolbarActionViewController* view_controller_;
 
   // Delegate that usually represents a container for ToolbarActionView.
-  raw_ptr<Delegate> delegate_;
+  Delegate* delegate_;
 
   // Set to true by a mouse press that will hide a popup due to deactivation.
   // In this case, the next click should not trigger an action, so the popup
   // doesn't hide on mouse press and immediately reshow on mouse release.
   bool suppress_next_release_ = false;
 
+  //update on 20220525
+  gfx::ImageSkia image_;
+  //
 
   // This controller is responsible for showing the context menu for an
   // extension.

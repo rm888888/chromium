@@ -60,7 +60,8 @@ void NtpBackgroundHandler::HandleClearBackground(const base::ListValue* args) {
 void NtpBackgroundHandler::HandleGetBackgrounds(const base::ListValue* args) {
   AllowJavascript();
   CHECK_EQ(1U, args->GetList().size());
-  const base::Value& callback_id = args->GetList()[0];
+  const base::Value* callback_id;
+  CHECK(args->Get(0, &callback_id));
 
   base::ListValue list_value;
   std::array<GURL, kNtpBackgroundsCount> NtpBackgrounds = GetNtpBackgrounds();
@@ -112,7 +113,7 @@ void NtpBackgroundHandler::HandleGetBackgrounds(const base::ListValue* args) {
   element->SetString("thumbnailClass", "geometric-shapes");
   list_value.Append(std::move(element));
 
-  ResolveJavascriptCallback(callback_id, list_value);
+  ResolveJavascriptCallback(*callback_id, list_value);
 }
 
 void NtpBackgroundHandler::HandleSetBackground(const base::ListValue* args) {

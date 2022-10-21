@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<grit-part>
+  <include name="IDR_LEFTPANELSETTING_UI_CSS" file="../pundix_leftpanel_setting/resources/leftpanel_setting.css" type="BINDATA" />
+  <include name="IDR_LEFTPANELSETTING_UI_HTML" file="../pundix_leftpanel_setting/resources/leftpanel_setting.html" preprocess="true" type="BINDATA" />
+  <include name="IDR_LEFTPANELSETTING_UI_JS" file="../pundix_leftpanel_setting/resources/leftpanel_setting.js" preprocess="true" type="BINDATA" />
+   <include name="IDR_LEFTPANELSETTING_UI_JQUERY_JS" file="../pundix_leftpanel_setting/resources/jquery.min.js" preprocess="true" type="BINDATA" />
+</grit-part>

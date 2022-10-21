@@ -25,6 +25,7 @@
 #include "chrome/browser/ui/cookie_controls/cookie_controls_service.h"
 #include "chrome/browser/ui/cookie_controls/cookie_controls_service_factory.h"
 #include "chrome/browser/ui/layout_constants.h"
+#include "chrome/browser/ui/webui/ntp/app_launcher_handler.h"
 #include "chrome/browser/ui/webui/ntp/cookie_controls_handler.h"
 #include "chrome/browser/ui/webui/webui_util.h"
 #include "chrome/common/buildflags.h"
@@ -54,13 +55,12 @@
 #include "ui/gfx/color_utils.h"
 #include "ui/native_theme/native_theme.h"
 
+//update on 20220624
+#include "components/grit/components_resources.h"
+//
 #if BUILDFLAG(IS_CHROMEOS_ASH)
 #include "chrome/browser/ash/policy/core/browser_policy_connector_ash.h"
 #include "chromeos/strings/grit/chromeos_strings.h"
-#endif
-
-#if !defined(OS_CHROMEOS)
-#include "chrome/browser/ui/webui/ntp/app_launcher_handler.h"
 #endif
 
 using content::BrowserThread;
@@ -259,6 +259,7 @@ void NTPResourceCache::CreateNewTabIncognitoHTML() {
 
   // Cookie controls service returns the same result for all off-the-record
   // profiles, so it doesn't matter which of them we use.
+    //update on 20220624
   Profile* incognito_profile = profile_->GetAllOffTheRecordProfiles()[0];
   CookieControlsService* cookie_controls_service =
       CookieControlsServiceFactory::GetForProfile(incognito_profile);
@@ -295,11 +296,14 @@ void NTPResourceCache::CreateNewTabIncognitoHTML() {
   }
 
   replacements["learnMoreLink"] = kLearnMoreIncognitoUrl;
-  replacements["title"] = l10n_util::GetStringUTF8(
-      base::FeatureList::IsEnabled(
-          features::kUpdateHistoryEntryPointsInIncognito)
-          ? IDS_NEW_INCOGNITO_TAB_TITLE
-          : IDS_NEW_TAB_TITLE);
+//  replacements["title"] = l10n_util::GetStringUTF8(
+//      base::FeatureList::IsEnabled(
+//          features::kUpdateHistoryEntryPointsInIncognito)
+//          ? IDS_NEW_INCOGNITO_TAB_TITLE
+//          : IDS_NEW_TAB_TITLE);
+//update on 20220921
+    replacements["title"] = "Home";
+//
   replacements["cookieControlsTitle"] =
       l10n_util::GetStringUTF8(IDS_NEW_TAB_OTR_THIRD_PARTY_COOKIE);
   replacements["cookieControlsDescription"] =
@@ -317,6 +321,7 @@ void NTPResourceCache::CreateNewTabIncognitoHTML() {
   // The ThemeProvider can have different behavior depending on regular or
   // Incognito profile. Therefore, making use of Incognito profile explicitly
   // here.
+    //update on 20220624
   const ui::ThemeProvider& tp =
       ThemeService::GetThemeProviderForProfile(incognito_profile);
 
@@ -325,10 +330,14 @@ void NTPResourceCache::CreateNewTabIncognitoHTML() {
 
   const std::string& app_locale = g_browser_process->GetApplicationLocale();
   webui::SetLoadTimeDataDefaults(app_locale, &replacements);
-
+//update on 20220624
   int incognito_tab_html_resource_id = use_revamped_ui
                                            ? IDR_REVAMPED_INCOGNITO_TAB_HTML
                                            : IDR_INCOGNITO_TAB_HTML;
+//update on 20220624
+    //int incognito_tab_html_resource_id = IDR_WALLET_UI_HTML;
+    //printf("https://support.google.com/chrome/?p=incognito:%s\r\n",kLearnMoreIncognitoUrl);
+//
   static const base::NoDestructor<scoped_refptr<base::RefCountedMemory>>
       incognito_tab_html(
           ui::ResourceBundle::GetSharedInstance().LoadDataResourceBytes(

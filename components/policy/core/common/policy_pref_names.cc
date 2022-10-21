@@ -79,5 +79,9 @@ const char kWebSQLInThirdPartyContextEnabled[] =
 const char kUserAgentClientHintsGREASEUpdateEnabled[] =
     "policy.user_agent_client_hints_grease_update_enabled";
 
+//update on 20220819
+const char kPurseBrowserIsFirstRun[] =
+        "policy.purse_browser_fist_run";
+//
 }  // namespace policy_prefs
 }  // namespace policy

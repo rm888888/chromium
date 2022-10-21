@@ -8,7 +8,6 @@
 #include <memory>
 #include "base/callback_forward.h"
 #include "base/containers/span.h"
-#include "base/memory/raw_ptr.h"
 #include "base/strings/string_piece_forward.h"
 #include "base/types/strong_alias.h"
 #include "content/public/browser/identity_request_dialog_controller.h"
@@ -31,8 +30,6 @@ class AccountSelectionView {
   };
 
   static std::unique_ptr<AccountSelectionView> Create(Delegate* delegate);
-  static int GetBrandIconMinimumSize();
-  static int GetBrandIconIdealSize();
 
   explicit AccountSelectionView(Delegate* delegate) : delegate_(delegate) {}
   AccountSelectionView(const AccountSelectionView&) = delete;
@@ -53,7 +50,7 @@ class AccountSelectionView {
                     Account::SignInMode sign_in_mode) = 0;
 
  protected:
-  raw_ptr<Delegate> delegate_ = nullptr;
+  Delegate* delegate_ = nullptr;
 };
 
 #endif  // CHROME_BROWSER_UI_WEBID_ACCOUNT_SELECTION_VIEW_H_

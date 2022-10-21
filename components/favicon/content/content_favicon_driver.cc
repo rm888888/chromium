@@ -59,7 +59,6 @@ GURL ContentFaviconDriver::GetManifestURL(content::RenderFrameHost* rfh) {
 ContentFaviconDriver::ContentFaviconDriver(content::WebContents* web_contents,
                                            CoreFaviconService* favicon_service)
     : content::WebContentsObserver(web_contents),
-      content::WebContentsUserData<ContentFaviconDriver>(*web_contents),
       FaviconDriverImpl(favicon_service) {}
 
 ContentFaviconDriver::~ContentFaviconDriver() = default;
@@ -173,7 +172,7 @@ void ContentFaviconDriver::DidUpdateFaviconURL(
   if (!entry)
     return;
 
-  if (!rfh->IsDocumentOnLoadCompletedInPrimaryMainFrame())
+  if (!rfh->IsDocumentOnLoadCompletedInMainFrame())
     return;
 
   OnUpdateCandidates(rfh->GetLastCommittedURL(),
@@ -188,7 +187,7 @@ void ContentFaviconDriver::DidUpdateWebManifestURL(
   // occur when loading an initially blank page.
   content::NavigationEntry* entry =
       web_contents()->GetController().GetLastCommittedEntry();
-  if (!entry || !rfh->IsDocumentOnLoadCompletedInPrimaryMainFrame())
+  if (!entry || !rfh->IsDocumentOnLoadCompletedInMainFrame())
     return;
 
   DocumentManifestData* document_data =

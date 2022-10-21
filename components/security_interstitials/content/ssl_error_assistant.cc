@@ -6,6 +6,7 @@
 
 #include <memory>
 
+#include "base/macros.h"
 #include "build/build_config.h"
 #include "components/grit/components_resources.h"
 #include "content/public/browser/browser_thread.h"

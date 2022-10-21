@@ -197,6 +197,9 @@ UkmService::UkmService(PrefService* pref_service,
                        std::unique_ptr<metrics::UkmDemographicMetricsProvider>
                            demographics_provider)
     : pref_service_(pref_service),
+      // We only need to restrict to whitelisted Entries if metrics reporting is
+      // not forced.
+      restrict_to_whitelist_entries_(!client->IsMetricsReportingForceEnabled()),
       client_(client),
       demographics_provider_(std::move(demographics_provider)),
       reporting_service_(client, pref_service) {
@@ -216,7 +219,7 @@ UkmService::UkmService(PrefService* pref_service,
   bool fast_startup_for_testing = client_->ShouldStartUpFastForTesting();
   scheduler_ = std::make_unique<UkmRotationScheduler>(
       rotate_callback, fast_startup_for_testing, get_upload_interval_callback);
-  InitDecodeMap();
+  StoreWhitelistedEntries();
 
   DelegatingUkmRecorder::Get()->AddDelegate(self_ptr_factory_.GetWeakPtr());
 }
@@ -466,6 +469,10 @@ void UkmService::BuildAndStoreLog() {
       UkmService::SerializeReportProtoToString(&report);
   metrics::LogMetadata log_metadata;
   reporting_service_.ukm_log_store()->StoreLog(serialized_log, log_metadata);
+}
+
+bool UkmService::ShouldRestrictToWhitelistedEntries() const {
+  return restrict_to_whitelist_entries_;
 }
 
 void UkmService::SetInitializationCompleteCallbackForTesting(

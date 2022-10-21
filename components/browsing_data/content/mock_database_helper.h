@@ -10,6 +10,7 @@
 #include <string>
 
 #include "base/callback.h"
+#include "base/macros.h"
 #include "components/browsing_data/content/database_helper.h"
 #include "content/public/browser/storage_usage_info.h"
 

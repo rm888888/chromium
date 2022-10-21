@@ -16,8 +16,7 @@
 namespace ui {
 
 namespace {
-// TODO(crbug.com/1279681): support newer versions.
-constexpr uint32_t kMinVersion = 2;
+constexpr uint32_t kMinWlOutputVersion = 2;
 }
 
 // static
@@ -31,11 +30,14 @@ void WaylandOutput::Instantiate(WaylandConnection* connection,
                                 uint32_t version) {
   DCHECK_EQ(interface, kInterfaceName);
 
-  if (!wl::CanBind(interface, version, kMinVersion, kMinVersion)) {
+  if (version < kMinWlOutputVersion) {
+    LOG(ERROR)
+        << "Unable to bind to the unsupported wl_output object with version= "
+        << version << ". Minimum supported version is " << kMinWlOutputVersion;
     return;
   }
 
-  auto output = wl::Bind<wl_output>(registry, name, kMinVersion);
+  auto output = wl::Bind<wl_output>(registry, name, version);
   if (!output) {
     LOG(ERROR) << "Failed to bind to wl_output global";
     return;

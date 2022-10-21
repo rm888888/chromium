@@ -9,6 +9,7 @@
 #include <utility>
 
 #include "base/compiler_specific.h"
+#include "base/macros.h"
 #include "base/run_loop.h"
 #include "base/test/task_environment.h"
 #include "base/values.h"
@@ -25,11 +26,11 @@ namespace chromeos {
 namespace {
 
 void VerifyOnlyUILanguages(const base::ListValue& list) {
-  for (const base::Value& value : list.GetList()) {
-    ASSERT_TRUE(value.is_dict());
-    const base::DictionaryValue& dict = base::Value::AsDictionaryValue(value);
+  for (size_t i = 0; i < list.GetList().size(); ++i) {
+    const base::DictionaryValue* dict;
+    ASSERT_TRUE(list.GetDictionary(i, &dict));
     std::string code;
-    ASSERT_TRUE(dict.GetString("code", &code));
+    ASSERT_TRUE(dict->GetString("code", &code));
     EXPECT_NE("ga", code)
         << "Irish is an example language which has input method "
         << "but can't use it as UI language.";
@@ -39,11 +40,10 @@ void VerifyOnlyUILanguages(const base::ListValue& list) {
 void VerifyLanguageCode(const base::ListValue& list,
                         size_t index,
                         const std::string& expected_code) {
-  const base::Value& value = list.GetList()[index];
-  ASSERT_TRUE(value.is_dict());
-  const base::DictionaryValue& dict = base::Value::AsDictionaryValue(value);
+  const base::DictionaryValue* dict;
+  ASSERT_TRUE(list.GetDictionary(index, &dict));
   std::string actual_code;
-  ASSERT_TRUE(dict.GetString("code", &actual_code));
+  ASSERT_TRUE(dict->GetString("code", &actual_code));
   EXPECT_EQ(expected_code, actual_code)
       << "Wrong language code at index " << index << ".";
 }
@@ -57,50 +57,53 @@ class L10nUtilTest : public testing::Test {
   L10nUtilTest(const L10nUtilTest&) = delete;
   L10nUtilTest& operator=(const L10nUtilTest&) = delete;
 
-  ~L10nUtilTest() override = default;
+  ~L10nUtilTest() override;
 
   void SetInputMethods1();
   void SetInputMethods2();
 
- protected:
-  MockInputMethodManagerWithInputMethods input_manager_;
-
  private:
   base::test::TaskEnvironment task_environment_;
   system::ScopedFakeStatisticsProvider scoped_fake_statistics_provider_;
+  MockInputMethodManagerWithInputMethods* input_manager_;
 };
 
-L10nUtilTest::L10nUtilTest() {
+L10nUtilTest::L10nUtilTest()
+    : input_manager_(new MockInputMethodManagerWithInputMethods) {
+  ash::input_method::InitializeForTesting(input_manager_);
   auto mock_component_extension_ime_manager_delegate = std::make_unique<
       input_method::MockComponentExtensionIMEManagerDelegate>();
-  input_manager_.SetComponentExtensionIMEManager(
+  input_manager_->SetComponentExtensionIMEManager(
       std::make_unique<ComponentExtensionIMEManager>(
           std::move(mock_component_extension_ime_manager_delegate)));
 
   base::RunLoop().RunUntilIdle();
 }
 
+L10nUtilTest::~L10nUtilTest() {
+  ash::input_method::Shutdown();
+}
+
 void L10nUtilTest::SetInputMethods1() {
-  input_manager_.AddInputMethod("xkb:us::eng", "us", "en-US");
-  input_manager_.AddInputMethod("xkb:fr::fra", "fr", "fr");
-  input_manager_.AddInputMethod("xkb:be::fra", "be", "fr");
-  input_manager_.AddInputMethod("xkb:ie::ga", "ga", "ga");
+  input_manager_->AddInputMethod("xkb:us::eng", "us", "en-US");
+  input_manager_->AddInputMethod("xkb:fr::fra", "fr", "fr");
+  input_manager_->AddInputMethod("xkb:be::fra", "be", "fr");
+  input_manager_->AddInputMethod("xkb:ie::ga", "ga", "ga");
 }
 
 void L10nUtilTest::SetInputMethods2() {
-  input_manager_.AddInputMethod("xkb:us::eng", "us", "en-US");
-  input_manager_.AddInputMethod("xkb:ch:fr:fra", "ch(fr)", "fr");
-  input_manager_.AddInputMethod("xkb:ch::ger", "ch", "de");
-  input_manager_.AddInputMethod("xkb:it::ita", "it", "it");
-  input_manager_.AddInputMethod("xkb:ie::ga", "ga", "ga");
+  input_manager_->AddInputMethod("xkb:us::eng", "us", "en-US");
+  input_manager_->AddInputMethod("xkb:ch:fr:fra", "ch(fr)", "fr");
+  input_manager_->AddInputMethod("xkb:ch::ger", "ch", "de");
+  input_manager_->AddInputMethod("xkb:it::ita", "it", "it");
+  input_manager_->AddInputMethod("xkb:ie::ga", "ga", "ga");
 }
 
 TEST_F(L10nUtilTest, GetUILanguageList) {
   SetInputMethods1();
 
   // This requires initialized StatisticsProvider (see L10nUtilTest()).
-  std::unique_ptr<base::ListValue> list(
-      GetUILanguageList(NULL, std::string(), &input_manager_));
+  std::unique_ptr<base::ListValue> list(GetUILanguageList(NULL, std::string()));
 
   VerifyOnlyUILanguages(*list);
 }
@@ -164,8 +167,7 @@ TEST_F(L10nUtilTest, GetUILanguageListMulti) {
   SetInputMethods2();
 
   // This requires initialized StatisticsProvider (see L10nUtilTest()).
-  std::unique_ptr<base::ListValue> list(
-      GetUILanguageList(NULL, std::string(), &input_manager_));
+  std::unique_ptr<base::ListValue> list(GetUILanguageList(NULL, std::string()));
 
   VerifyOnlyUILanguages(*list);
 
@@ -186,8 +188,8 @@ TEST_F(L10nUtilTest, GetUILanguageListWithMostRelevant) {
   most_relevant_language_codes.push_back("nonexistent");
 
   // This requires initialized StatisticsProvider (see L10nUtilTest()).
-  std::unique_ptr<base::ListValue> list(GetUILanguageList(
-      &most_relevant_language_codes, std::string(), &input_manager_));
+  std::unique_ptr<base::ListValue> list(
+      GetUILanguageList(&most_relevant_language_codes, std::string()));
 
   VerifyOnlyUILanguages(*list);
 

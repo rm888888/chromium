@@ -20,7 +20,7 @@ class ViewAXPlatformNodeDelegateMac : public ViewAXPlatformNodeDelegate {
 
   // |ViewAXPlatformNodeDelegate| overrides:
   gfx::NativeViewAccessible GetNSWindow() override;
-  gfx::NativeViewAccessible GetParent() const override;
+  gfx::NativeViewAccessible GetParent() override;
 };
 
 }  // namespace views

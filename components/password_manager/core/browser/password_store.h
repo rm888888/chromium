@@ -15,9 +15,8 @@
 #include "base/callback_list.h"
 #include "base/cancelable_callback.h"
 #include "base/gtest_prod_util.h"
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/memory/scoped_refptr.h"
-#include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "base/task/sequenced_task_runner.h"
 #include "base/time/time.h"
@@ -50,15 +49,6 @@ using metrics_util::GaiaPasswordHashChange;
 
 class PasswordStoreConsumer;
 
-// Used to notify that unsynced credentials are about to be deleted.
-class UnsyncedCredentialsDeletionNotifier {
- public:
-  // Should be called from the UI thread.
-  virtual void Notify(std::vector<PasswordForm>) = 0;
-  virtual ~UnsyncedCredentialsDeletionNotifier() = default;
-  virtual base::WeakPtr<UnsyncedCredentialsDeletionNotifier> GetWeakPtr() = 0;
-};
-
 // Partial, cross-platform implementation for storing form passwords.
 // The login request/manipulation API is not threadsafe and must be used
 // from the UI thread.
@@ -66,15 +56,22 @@ class UnsyncedCredentialsDeletionNotifier {
 // needs to access these methods.
 class PasswordStore : public PasswordStoreInterface {
  public:
+  // Used to notify that unsynced credentials are about to be deleted.
+  class UnsyncedCredentialsDeletionNotifier {
+   public:
+    // Should be called from the UI thread.
+    virtual void Notify(std::vector<PasswordForm>) = 0;
+    virtual ~UnsyncedCredentialsDeletionNotifier() = default;
+    virtual base::WeakPtr<UnsyncedCredentialsDeletionNotifier> GetWeakPtr() = 0;
+  };
+
   explicit PasswordStore(std::unique_ptr<PasswordStoreBackend> backend);
 
   PasswordStore(const PasswordStore&) = delete;
   PasswordStore& operator=(const PasswordStore&) = delete;
 
-  // Always call this too on the UI thread. |sync_enabled_or_disabled_cb| is
-  // invoked in UI thread (or sequence used to invoke Init()) when sync is
-  // enabled or disabled. It is no longer invoked after ShutdownOnUIThread().
-  // TODO(crbug.com/1218413): Move initialization into the core interface, too.
+  // Always call this too on the UI thread.
+  // TODO(crbug.bom/1218413): Move initialization into the core interface, too.
   bool Init(
       PrefService* prefs,
       std::unique_ptr<AffiliatedMatchHelper> affiliated_match_helper,
@@ -107,12 +104,11 @@ class PasswordStore : public PasswordStoreInterface {
   void Unblocklist(const PasswordFormDigest& form_digest,
                    base::OnceClosure completion) override;
   void GetLogins(const PasswordFormDigest& form,
-                 base::WeakPtr<PasswordStoreConsumer> consumer) override;
-  void GetAutofillableLogins(
-      base::WeakPtr<PasswordStoreConsumer> consumer) override;
-  void GetAllLogins(base::WeakPtr<PasswordStoreConsumer> consumer) override;
+                 PasswordStoreConsumer* consumer) override;
+  void GetAutofillableLogins(PasswordStoreConsumer* consumer) override;
+  void GetAllLogins(PasswordStoreConsumer* consumer) override;
   void GetAllLoginsWithAffiliationAndBrandingInformation(
-      base::WeakPtr<PasswordStoreConsumer> consumer) override;
+      PasswordStoreConsumer* consumer) override;
   void AddObserver(Observer* observer) override;
   void RemoveObserver(Observer* observer) override;
   SmartBubbleStatsStore* GetSmartBubbleStatsStore() override;
@@ -137,12 +133,15 @@ class PasswordStore : public PasswordStoreInterface {
     kFailure,
   };
 
+  // TODO(crbug.com/1217071): Remove when local backend doesn't inherit from
+  // this class anymore.
+  PasswordStore();
   ~PasswordStore() override;
 
   // This member is called to perform the actual interaction with the storage.
   // TODO(crbug.com/1217071): Make private std::unique_ptr as soon as the
   // backend is passed into the store instead of it being the store(_impl).
-  raw_ptr<PasswordStoreBackend> backend_ = nullptr;
+  PasswordStoreBackend* backend_ = nullptr;
 
  private:
   using InsecureCredentialsTask =
@@ -153,17 +152,9 @@ class PasswordStore : public PasswordStoreInterface {
   // |init_status_|.
   void OnInitCompleted(bool success);
 
-  // Notifies observers that password store data may have been changed. If
-  // available, it forwards the changes to observers. Otherwise, all logins are
-  // requested and forwarded to `NotifyLoginsRetainedOnMainSequence`.
+  // Notifies observers that password store data may have been changed.
   void NotifyLoginsChangedOnMainSequence(
-      absl::optional<PasswordStoreChangeList> changes);
-
-  // Notifies observers with all logins remaining after a modifying operation.
-  void NotifyLoginsRetainedOnMainSequence(LoginsResultOrError result);
-
-  // Called when the backend reports that sync has been enabled or disabled.
-  void NotifySyncEnabledOrDisabledOnMainSequence();
+      const PasswordStoreChangeList& changes);
 
   // The following methods notify observers that the password store may have
   // been modified via NotifyLoginsChangedOnMainSequence(). Note that there is
@@ -190,15 +181,12 @@ class PasswordStore : public PasswordStoreInterface {
   // TODO(crbug.com/1217071): Move into backend_.
   scoped_refptr<base::SequencedTaskRunner> main_task_runner_;
 
-  // Closure passed during Init().
-  base::RepeatingClosure sync_enabled_or_disabled_cb_ = base::DoNothing();
-
   // The observers.
   base::ObserverList<Observer, /*check_empty=*/true> observers_;
 
   std::unique_ptr<AffiliatedMatchHelper> affiliated_match_helper_;
 
-  raw_ptr<PrefService> prefs_ = nullptr;
+  PrefService* prefs_ = nullptr;
 
   InitStatus init_status_ = InitStatus::kUnknown;
 };

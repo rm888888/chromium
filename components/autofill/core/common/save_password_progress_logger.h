@@ -9,6 +9,7 @@
 
 #include <string>
 
+#include "base/macros.h"
 #include "components/autofill/core/common/form_data.h"
 #include "url/gurl.h"
 

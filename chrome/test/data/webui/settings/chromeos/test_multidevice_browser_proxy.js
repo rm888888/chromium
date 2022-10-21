@@ -58,8 +58,6 @@ cr.define('multidevice', function() {
         'getAndroidSmsInfo',
         'attemptNotificationSetup',
         'cancelNotificationSetup',
-        'attemptAppsSetup',
-        'cancelAppsSetup',
       ]);
       this.data = createFakePageContentData(
           settings.MultiDeviceSettingsMode.NO_HOST_SET);
@@ -126,16 +124,6 @@ cr.define('multidevice', function() {
     /** @override */
     cancelNotificationSetup() {
       this.methodCalled('cancelNotificationSetup');
-    }
-
-    /** @override */
-    attemptAppsSetup() {
-      this.methodCalled('attemptAppsSetup');
-    }
-
-    /** @override */
-    cancelAppsSetup() {
-      this.methodCalled('cancelAppsSetup');
     }
 
     /**

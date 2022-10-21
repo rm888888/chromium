@@ -10,7 +10,6 @@
 
 #include "base/containers/flat_set.h"
 #include "base/gtest_prod_util.h"
-#include "base/memory/raw_ptr.h"
 #include "base/strings/string_piece_forward.h"
 #include "components/url_formatter/spoof_checks/skeleton_generator.h"
 #include "net/extras/preload_data/decoder.h"
@@ -103,8 +102,6 @@ class IDNSpoofChecker {
 
   IDNSpoofChecker();
   ~IDNSpoofChecker();
-  IDNSpoofChecker(const IDNSpoofChecker&) = delete;
-  IDNSpoofChecker& operator=(const IDNSpoofChecker&) = delete;
 
   // Returns kSafe if |label| is safe to display as Unicode. Some of the checks
   // depend on the TLD of the full domain name, so this function also takes
@@ -204,7 +201,7 @@ class IDNSpoofChecker {
   // characters that look like digits (but not exclusively actual digits).
   bool IsDigitLookalike(const icu::UnicodeString& label);
 
-  raw_ptr<USpoofChecker> checker_;
+  USpoofChecker* checker_;
   icu::UnicodeSet deviation_characters_;
   icu::UnicodeSet non_ascii_latin_letters_;
   icu::UnicodeSet kana_letters_exceptions_;
@@ -213,12 +210,13 @@ class IDNSpoofChecker {
   icu::UnicodeSet digit_lookalikes_;
   icu::UnicodeSet icelandic_characters_;
 
-  // skeleton_generator_ may be null if uspoof_open fails. It's unclear why this
-  // happens, see crbug.com/1169079.
   std::unique_ptr<SkeletonGenerator> skeleton_generator_;
 
   // List of scripts containing whole-script-confusable information.
   std::vector<std::unique_ptr<WholeScriptConfusable>> wholescriptconfusables_;
+
+  IDNSpoofChecker(const IDNSpoofChecker&) = delete;
+  void operator=(const IDNSpoofChecker&) = delete;
 };
 
 }  // namespace url_formatter

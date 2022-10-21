@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "base/containers/flat_map.h"
+#include "base/macros.h"
 #include "build/build_config.h"
 #include "components/viz/common/display/overlay_strategy.h"
 #include "components/viz/common/quads/aggregated_render_pass.h"
@@ -66,19 +67,6 @@ class VIZ_SERVICE_EXPORT OverlayProcessorDelegated
       absl::optional<OutputSurfaceOverlayPlane>* output_surface_plane) override;
 
  private:
-  // These values are persisted to logs. Entries should not be renumbered and
-  // numeric values should never be reused. For some cases in
-  // |OverlayCandidate::CandidateStatus| feed into this enum but neither is a
-  // perfect subset of the other.
-  enum class DelegationStatus {
-    kFullDelegation = 0,
-    kCompositedOther = 1,
-    kCompositedNotAxisAligned = 2,
-    kCompositedCheckOverlayFail = 3,
-    kCompositedNotOverlay = 4,
-    kMaxValue = kCompositedNotOverlay
-  };
-
   gfx::RectF GetPrimaryPlaneDisplayRect(
       const OverlayProcessorInterface::OutputSurfaceOverlayPlane*
           primary_plane);
@@ -99,8 +87,6 @@ class VIZ_SERVICE_EXPORT OverlayProcessorDelegated
       OverlayProcessorInterface::OutputSurfaceOverlayPlane* primary_plane,
       OverlayCandidateList* candidates,
       std::vector<gfx::Rect>* content_bounds);
-
-  DelegationStatus delegated_status_ = DelegationStatus::kCompositedOther;
 };
 }  // namespace viz
 

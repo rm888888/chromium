@@ -12,6 +12,7 @@
 #include <set>
 #include <vector>
 
+#include "base/macros.h"
 #include "ui/events/devices/device_data_manager.h"
 #include "ui/events/devices/x11/events_devices_x11_export.h"
 #include "ui/events/event_constants.h"

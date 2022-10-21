@@ -6,7 +6,6 @@
 
 #include <memory>
 
-#include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/strings/utf_string_conversions.h"
 #include "build/build_config.h"
@@ -116,9 +115,8 @@ class MockAutofillExternalDelegate : public AutofillExternalDelegate {
   ~MockAutofillExternalDelegate() override = default;
 
   void DidSelectSuggestion(const std::u16string& value,
-                           int frontend_id,
-                           const std::string& backend_id) override {}
-  bool RemoveSuggestion(const std::u16string& value, int frontend_id) override {
+                           int identifier) override {}
+  bool RemoveSuggestion(const std::u16string& value, int identifier) override {
     return true;
   }
   base::WeakPtr<AutofillExternalDelegate> GetWeakPtr() {
@@ -297,8 +295,7 @@ class AutofillPopupControllerUnitTest : public ChromeRenderViewHostTestHarness {
   std::unique_ptr<MockBrowserAutofillManager> autofill_manager_;
   std::unique_ptr<NiceMock<MockAutofillExternalDelegate>> external_delegate_;
   std::unique_ptr<NiceMock<MockAutofillPopupView>> autofill_popup_view_;
-  raw_ptr<NiceMock<TestAutofillPopupController>> autofill_popup_controller_ =
-      nullptr;
+  NiceMock<TestAutofillPopupController>* autofill_popup_controller_ = nullptr;
 };
 
 #if !BUILDFLAG(IS_CHROMEOS_ASH)

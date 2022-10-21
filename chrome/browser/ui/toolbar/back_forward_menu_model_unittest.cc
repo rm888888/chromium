@@ -6,6 +6,7 @@
 
 #include <string>
 
+#include "base/macros.h"
 #include "base/run_loop.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"

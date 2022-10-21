@@ -284,9 +284,9 @@ display::Display WaylandScreen::GetDisplayMatching(
   return display_matching ? *display_matching : GetPrimaryDisplay();
 }
 
-bool WaylandScreen::SetScreenSaverSuspended(bool suspend) {
+void WaylandScreen::SetScreenSaverSuspended(bool suspend) {
   if (!connection_->zwp_idle_inhibit_manager())
-    return false;
+    return;
 
   if (suspend) {
     // Wayland inhibits idle behaviour on certain output, and implies that a
@@ -300,7 +300,7 @@ bool WaylandScreen::SetScreenSaverSuspended(bool suspend) {
     const auto* current_window = window_manager->GetCurrentFocusedWindow();
     if (!current_window) {
       LOG(WARNING) << "Cannot inhibit going idle when no window is focused";
-      return false;
+      return;
     }
     DCHECK(current_window->root_surface());
     idle_inhibitor_ = connection_->zwp_idle_inhibit_manager()->CreateInhibitor(
@@ -308,8 +308,6 @@ bool WaylandScreen::SetScreenSaverSuspended(bool suspend) {
   } else {
     idle_inhibitor_.reset();
   }
-
-  return true;
 }
 
 bool WaylandScreen::IsScreenSaverActive() const {

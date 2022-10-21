@@ -6,7 +6,6 @@
 
 #include "ash/public/cpp/window_properties.h"
 #include "chrome/browser/ui/app_list/arc/arc_app_utils.h"
-#include "chrome/browser/ui/app_list/arc/intent.h"
 
 namespace {
 
@@ -17,11 +16,11 @@ constexpr char kLogicalWindowIntentPrefix[] =
     "S.org.chromium.arc.logical_window_id=";
 
 std::string GetLogicalWindowIdFromIntent(const std::string& launch_intent) {
-  auto intent = arc::Intent::Get(launch_intent);
-  if (!intent)
+  arc::Intent intent;
+  if (!arc::ParseIntent(launch_intent, &intent))
     return std::string();
   const std::string prefix(kLogicalWindowIntentPrefix);
-  for (const auto& param : intent->extra_params()) {
+  for (const auto& param : intent.extra_params()) {
     if (base::StartsWith(param, prefix, base::CompareCase::SENSITIVE))
       return param.substr(prefix.length());
   }

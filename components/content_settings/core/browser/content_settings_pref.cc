@@ -32,25 +32,25 @@
 
 namespace {
 
-const char kExpirationKey[] = "expiration";
-const char kSessionModelKey[] = "model";
-const char kSettingKey[] = "setting";
-const char kLastModifiedKey[] = "last_modified";
+const char kExpirationPath[] = "expiration";
+const char kSessionModelPath[] = "model";
+const char kSettingPath[] = "setting";
+const char kLastModifiedPath[] = "last_modified";
 
-bool IsValueAllowedForType(const base::Value& value, ContentSettingsType type) {
+bool IsValueAllowedForType(const base::Value* value, ContentSettingsType type) {
   const content_settings::ContentSettingsInfo* info =
       content_settings::ContentSettingsRegistry::GetInstance()->Get(type);
   if (info) {
-    if (!value.is_int())
+    if (!value->is_int())
       return false;
-    if (value.GetInt() == CONTENT_SETTING_DEFAULT)
+    if (value->GetInt() == CONTENT_SETTING_DEFAULT)
       return false;
-    return info->IsSettingValid(IntToContentSetting(value.GetInt()));
+    return info->IsSettingValid(IntToContentSetting(value->GetInt()));
   }
 
   // TODO(raymes): We should permit different types of base::Value for
   // website settings.
-  return value.is_dict();
+  return value->type() == base::Value::Type::DICTIONARY;
 }
 
 std::string GetString(const base::Value& dict, const char* key) {
@@ -59,10 +59,10 @@ std::string GetString(const base::Value& dict, const char* key) {
   return value ? *value : std::string();
 }
 
-// Extract a timestamp from |dictionary[kLastModifiedKey]|.
+// Extract a timestamp from |dictionary[kLastModifiedPath]|.
 // Will return base::Time() if no timestamp exists.
-base::Time GetTimeStamp(const base::Value& dictionary) {
-  std::string timestamp_str = GetString(dictionary, kLastModifiedKey);
+base::Time GetTimeStamp(const base::DictionaryValue* dictionary) {
+  std::string timestamp_str = GetString(*dictionary, kLastModifiedPath);
   int64_t timestamp = 0;
   base::StringToInt64(timestamp_str, &timestamp);
   base::Time last_modified =
@@ -70,10 +70,11 @@ base::Time GetTimeStamp(const base::Value& dictionary) {
   return last_modified;
 }
 
-// Extract a timestamp from |dictionary[kExpirationKey]|. Will return
+// Extract a timestamp from |dictionary[kExpirationPath]|. Will return
 // base::Time() if no timestamp exists.
-base::Time GetExpiration(const base::Value& dictionary) {
-  std::string expiration_timestamp_str = GetString(dictionary, kExpirationKey);
+base::Time GetExpiration(const base::DictionaryValue* dictionary) {
+  std::string expiration_timestamp_str =
+      GetString(*dictionary, kExpirationPath);
   int64_t expiration_timestamp = 0;
   base::StringToInt64(expiration_timestamp_str, &expiration_timestamp);
   base::Time expiration = base::Time::FromDeltaSinceWindowsEpoch(
@@ -81,10 +82,11 @@ base::Time GetExpiration(const base::Value& dictionary) {
   return expiration;
 }
 
-// Extract a SessionModel from |dictionary[kSessionModelKey]|. Will return
+// Extract a SessionModel from |dictionary[kSessionModelPath]|. Will return
 // SessionModel::Durable if no model exists.
-content_settings::SessionModel GetSessionModel(const base::Value& dictionary) {
-  int model_int = dictionary.FindIntKey(kSessionModelKey).value_or(0);
+content_settings::SessionModel GetSessionModel(
+    const base::DictionaryValue* dictionary) {
+  int model_int = dictionary->FindIntKey(kSessionModelPath).value_or(0);
   if ((model_int >
        static_cast<int>(content_settings::SessionModel::kMaxValue)) ||
       (model_int < 0)) {
@@ -143,7 +145,7 @@ ContentSettingsPref::ContentSettingsPref(
                                       base::Unretained(this)));
 }
 
-ContentSettingsPref::~ContentSettingsPref() = default;
+ContentSettingsPref::~ContentSettingsPref() {}
 
 std::unique_ptr<RuleIterator> ContentSettingsPref::GetRuleIterator(
     bool off_the_record) const {
@@ -152,17 +154,20 @@ std::unique_ptr<RuleIterator> ContentSettingsPref::GetRuleIterator(
   return value_map_.GetRuleIterator(content_type_, &lock_);
 }
 
-void ContentSettingsPref::SetWebsiteSetting(
+bool ContentSettingsPref::SetWebsiteSetting(
     const ContentSettingsPattern& primary_pattern,
     const ContentSettingsPattern& secondary_pattern,
     base::Time modified_time,
-    base::Value value,
+    std::unique_ptr<base::Value>&& in_value,
     const ContentSettingConstraints& constraints) {
-  DCHECK(value.is_none() || IsValueAllowedForType(value, content_type_));
+  DCHECK(!in_value || IsValueAllowedForType(in_value.get(), content_type_));
   DCHECK(thread_checker_.CalledOnValidThread());
   DCHECK(prefs_);
   DCHECK(primary_pattern != ContentSettingsPattern::Wildcard() ||
          secondary_pattern != ContentSettingsPattern::Wildcard());
+
+  // At this point take the ownership of the |in_value|.
+  std::unique_ptr<base::Value> value(std::move(in_value));
 
   // Update in memory value map.
   OriginIdentifierValueMap* map_to_modify = &off_the_record_value_map_;
@@ -171,9 +176,9 @@ void ContentSettingsPref::SetWebsiteSetting(
 
   {
     base::AutoLock auto_lock(lock_);
-    if (!value.is_none()) {
+    if (value) {
       map_to_modify->SetValue(primary_pattern, secondary_pattern, content_type_,
-                              modified_time, value.Clone(), constraints);
+                              modified_time, value->Clone(), constraints);
     } else {
       map_to_modify->DeleteValue(primary_pattern, secondary_pattern,
                                  content_type_);
@@ -181,11 +186,13 @@ void ContentSettingsPref::SetWebsiteSetting(
   }
   // Update the content settings preference.
   if (!off_the_record_) {
-    UpdatePref(primary_pattern, secondary_pattern, modified_time,
-               std::move(value), constraints);
+    UpdatePref(primary_pattern, secondary_pattern, modified_time, value.get(),
+               constraints);
   }
 
   notify_callback_.Run(primary_pattern, secondary_pattern, content_type_);
+
+  return true;
 }
 
 base::Time ContentSettingsPref::GetWebsiteSettingLastModified(
@@ -255,7 +262,7 @@ void ContentSettingsPref::ReadContentSettingsFromPref() {
   value_map_.clear();
 
   // The returned value could be nullptr if the pref has never been set.
-  const base::Value* all_settings_dictionary =
+  const base::DictionaryValue* all_settings_dictionary =
       prefs_->GetDictionary(pref_name_);
   if (!all_settings_dictionary)
     return;
@@ -274,8 +281,9 @@ void ContentSettingsPref::ReadContentSettingsFromPref() {
   // patterns is to be re-keyed under the canonical pattern.
   base::StringPairs non_canonical_patterns_to_canonical_pattern;
 
-  for (const auto i : all_settings_dictionary->DictItems()) {
-    const std::string& pattern_str(i.first);
+  for (base::DictionaryValue::Iterator i(*all_settings_dictionary);
+       !i.IsAtEnd(); i.Advance()) {
+    const std::string& pattern_str(i.key());
     PatternPair pattern_pair = ParsePatternString(pattern_str);
     if (!pattern_pair.first.IsValid() || !pattern_pair.second.IsValid()) {
       // TODO: Change this to DFATAL when crbug.com/132659 is fixed.
@@ -287,7 +295,7 @@ void ContentSettingsPref::ReadContentSettingsFromPref() {
         CreatePatternString(pattern_pair.first, pattern_pair.second);
     DCHECK(!canonicalized_pattern_str.empty());
     if (canonicalized_pattern_str != pattern_str) {
-      if (all_settings_dictionary->FindKey(canonicalized_pattern_str)) {
+      if (all_settings_dictionary->HasKey(canonicalized_pattern_str)) {
         non_canonical_patterns_to_remove.push_back(pattern_str);
         continue;
       } else {
@@ -302,8 +310,9 @@ void ContentSettingsPref::ReadContentSettingsFromPref() {
 
     // Get settings dictionary for the current pattern string, and read
     // settings from the dictionary.
-    DCHECK(i.second.is_dict());
-    const base::Value& settings_dictionary = i.second;
+    const base::DictionaryValue* settings_dictionary = nullptr;
+    bool is_dictionary = i.value().GetAsDictionary(&settings_dictionary);
+    DCHECK(is_dictionary);
 
     // Check to see if the setting is expired or not. This may be due to a past
     // expiration date or a SessionModel of UserSession.
@@ -315,10 +324,10 @@ void ContentSettingsPref::ReadContentSettingsFromPref() {
       continue;
     }
 
-    const base::Value* value = settings_dictionary.FindKey(kSettingKey);
+    const base::Value* value = settings_dictionary->FindKey(kSettingPath);
     if (value) {
       base::Time last_modified = GetTimeStamp(settings_dictionary);
-      DCHECK(IsValueAllowedForType(*value, content_type_));
+      DCHECK(IsValueAllowedForType(value, content_type_));
       value_map_.SetValue(std::move(pattern_pair.first),
                           std::move(pattern_pair.second), content_type_,
                           last_modified, value->Clone(),
@@ -369,7 +378,7 @@ void ContentSettingsPref::UpdatePref(
     const ContentSettingsPattern& primary_pattern,
     const ContentSettingsPattern& secondary_pattern,
     const base::Time last_modified,
-    base::Value value,
+    const base::Value* value,
     const ContentSettingConstraints& constraints) {
   // Ensure that |lock_| is not held by this thread, since this function will
   // send out notifications (by |~ScopedDictionaryPrefUpdate|).
@@ -388,7 +397,7 @@ void ContentSettingsPref::UpdatePref(
     bool found = pattern_pairs_settings->GetDictionaryWithoutPathExpansion(
         pattern_str, &settings_dictionary);
 
-    if (!found && !value.is_none()) {
+    if (!found && value) {
       settings_dictionary =
           pattern_pairs_settings->SetDictionaryWithoutPathExpansion(
               pattern_str, std::make_unique<base::DictionaryValue>());
@@ -396,27 +405,28 @@ void ContentSettingsPref::UpdatePref(
 
     if (settings_dictionary) {
       // Update settings dictionary.
-      if (value.is_none()) {
-        settings_dictionary->RemoveWithoutPathExpansion(kSettingKey, nullptr);
-        settings_dictionary->RemoveWithoutPathExpansion(kLastModifiedKey,
+      if (value == nullptr) {
+        settings_dictionary->RemoveWithoutPathExpansion(kSettingPath, nullptr);
+        settings_dictionary->RemoveWithoutPathExpansion(kLastModifiedPath,
                                                         nullptr);
-        settings_dictionary->RemoveWithoutPathExpansion(kExpirationKey,
+        settings_dictionary->RemoveWithoutPathExpansion(kExpirationPath,
                                                         nullptr);
-        settings_dictionary->RemoveWithoutPathExpansion(kSessionModelKey,
+        settings_dictionary->RemoveWithoutPathExpansion(kSessionModelPath,
                                                         nullptr);
       } else {
-        settings_dictionary->SetKey(kSettingKey, std::move(value));
+        settings_dictionary->SetWithoutPathExpansion(
+            kSettingPath, base::Value::ToUniquePtrValue(value->Clone()));
         settings_dictionary->SetKey(
-            kLastModifiedKey,
+            kLastModifiedPath,
             base::Value(base::NumberToString(
                 last_modified.ToDeltaSinceWindowsEpoch().InMicroseconds())));
         settings_dictionary->SetKey(
-            kExpirationKey,
+            kExpirationPath,
             base::Value(base::NumberToString(
                 constraints.expiration.ToDeltaSinceWindowsEpoch()
                     .InMicroseconds())));
         settings_dictionary->SetKey(
-            kSessionModelKey,
+            kSessionModelPath,
             base::Value(static_cast<int>(constraints.session_model)));
       }
 

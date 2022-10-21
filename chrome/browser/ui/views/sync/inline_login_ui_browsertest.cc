@@ -5,7 +5,7 @@
 #include "base/bind.h"
 #include "base/command_line.h"
 #include "base/containers/contains.h"
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/memory/ref_counted.h"
 #include "base/run_loop.h"
 #include "base/strings/utf_string_conversions.h"
@@ -15,6 +15,7 @@
 #include "chrome/browser/profiles/profile_attributes_entry.h"
 #include "chrome/browser/profiles/profile_attributes_storage.h"
 #include "chrome/browser/profiles/profile_manager.h"
+#include "chrome/browser/signin/identity_browser_test_base.h"
 #include "chrome/browser/signin/identity_manager_factory.h"
 #include "chrome/browser/signin/identity_test_environment_profile_adaptor.h"
 #include "chrome/browser/signin/signin_promo.h"
@@ -22,7 +23,6 @@
 #include "chrome/browser/ui/browser.h"
 #include "chrome/browser/ui/browser_list.h"
 #include "chrome/browser/ui/tabs/tab_strip_model.h"
-#include "chrome/browser/ui/test/test_browser_dialog.h"
 #include "chrome/browser/ui/views/sync/one_click_signin_dialog_view.h"
 #include "chrome/browser/ui/webui/signin/inline_login_handler_impl.h"
 #include "chrome/browser/ui/webui/signin/inline_login_ui.h"
@@ -35,7 +35,6 @@
 #include "chrome/common/url_constants.h"
 #include "chrome/grit/chromium_strings.h"
 #include "chrome/grit/generated_resources.h"
-#include "chrome/test/base/in_process_browser_test.h"
 #include "chrome/test/base/test_browser_window.h"
 #include "chrome/test/base/test_chrome_web_ui_controller_factory.h"
 #include "chrome/test/base/testing_browser_process.h"
@@ -97,9 +96,9 @@ struct ContentInfo {
     this->storage_partition = storage_partition;
   }
 
-  raw_ptr<content::WebContents> contents;
+  content::WebContents* contents;
   int pid;
-  raw_ptr<content::StoragePartition> storage_partition;
+  content::StoragePartition* storage_partition;
 };
 
 ContentInfo NavigateAndGetInfo(Browser* browser,
@@ -254,7 +253,7 @@ MockSyncStarterInlineSigninHelper::MockSyncStarterInlineSigninHelper(
 
 }  // namespace
 
-class InlineLoginUIBrowserTest : public InProcessBrowserTest {
+class InlineLoginUIBrowserTest : public IdentityBrowserTestBase {
  public:
   InlineLoginUIBrowserTest() {}
   void EnableSigninAllowed(bool enable);
@@ -274,8 +273,8 @@ void InlineLoginUIBrowserTest::EnableSigninAllowed(bool enable) {
 void InlineLoginUIBrowserTest::AddEmailToOneClickRejectedList(
     const std::string& email) {
   PrefService* pref_service = browser()->profile()->GetPrefs();
-  ListPrefUpdateDeprecated updater(pref_service,
-                                   prefs::kReverseAutologinRejectedEmailList);
+  ListPrefUpdate updater(pref_service,
+                         prefs::kReverseAutologinRejectedEmailList);
   if (!base::Contains(updater->GetList(), base::Value(email)))
     updater->Append(email);
 }
@@ -402,7 +401,7 @@ IN_PROC_BROWSER_TEST_F(InlineLoginUIBrowserTest, CanOfferNoSigninCookies) {
   EXPECT_EQ(error, SigninUIError::Other("user@gmail.com"));
 }
 
-class InlineLoginHelperBrowserTest : public DialogBrowserTest {
+class InlineLoginHelperBrowserTest : public InProcessBrowserTest {
  public:
   InlineLoginHelperBrowserTest() : forced_signin_setter_(true) {}
 
@@ -491,25 +490,6 @@ class InlineLoginHelperBrowserTest : public DialogBrowserTest {
         ->GetURLLoaderFactoryForBrowserProcess();
   }
 
-  void ShowUi(const std::string& name) override {
-    InlineLoginHandlerImpl handler;
-    // See Source enum in components/signin/public/base/signin_metrics.h for
-    // possible values of access_point=, reason=.
-    GURL url("chrome://chrome-signin/?access_point=0&reason=5");
-    // MockSyncStarterInlineSigninHelper will delete itself when done using
-    // base::ThreadTaskRunnerHandle::DeleteSoon(), so need to delete here.  But
-    // do need the RunUntilIdle() at the end.
-    MockSyncStarterInlineSigninHelper* helper =
-        new MockSyncStarterInlineSigninHelper(
-            handler.GetWeakPtr(), test_shared_loader_factory(), profile(), url,
-            "foo@gmail.com", "gaiaid-12345", "password", "auth_code",
-            /*signin_scoped_device_id=*/std::string(),
-            /*confirm_untrusted_signin=*/true,
-            /*is_force_sign_in_with_usermanager=*/true);
-    SimulateOnClientOAuthSuccess(helper, "refresh_token");
-    EXPECT_TRUE(OneClickSigninDialogView::IsShowing());
-  }
-
  protected:
   signin::IdentityManager* identity_manager() {
     return identity_test_env_profile_adaptor_->identity_test_env()
@@ -523,7 +503,7 @@ class InlineLoginHelperBrowserTest : public DialogBrowserTest {
   std::unique_ptr<IdentityTestEnvironmentProfileAdaptor>
       identity_test_env_profile_adaptor_;
   base::CallbackListSubscription create_services_subscription_;
-  raw_ptr<Profile> profile_ = nullptr;
+  Profile* profile_ = nullptr;
   signin_util::ScopedForceSigninSetterForTesting forced_signin_setter_;
 };
 
@@ -720,17 +700,6 @@ IN_PROC_BROWSER_TEST_F(InlineLoginHelperBrowserTest,
   ASSERT_FALSE(entry->IsSigninRequired());
 }
 
-// https://crbug.com/1271819: Added Mac and Win due to excessive flakiness
-#if defined(OS_LINUX) || defined(OS_CHROMEOS) || defined(OS_MAC) || \
-    defined(OS_WIN)
-#define MAYBE_InvokeUi_default DISABLED_InvokeUi_default
-#else
-#define MAYBE_InvokeUi_default InvokeUi_default
-#endif
-IN_PROC_BROWSER_TEST_F(InlineLoginHelperBrowserTest, MAYBE_InvokeUi_default) {
-  ShowAndVerifyUi();
-}
-
 class InlineLoginUISafeIframeBrowserTest : public InProcessBrowserTest {
  public:
   FooWebUIProvider& foo_provider() { return foo_provider_; }
@@ -844,7 +813,7 @@ class HtmlRequestTracker {
     net::QueryIterator it(request_url);
     for (; !it.IsAtEnd(); it.Advance()) {
       query_params.push_back(
-          std::make_pair(std::string(it.GetKey()), it.GetUnescapedValue()));
+          std::make_pair(it.GetKey(), it.GetUnescapedValue()));
     }
     requested_urls_[GURL(request.GetURL().GetWithEmptyPath().Resolve(
                         request.GetURL().path()))]

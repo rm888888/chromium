@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+#include "base/macros.h"
 #include "net/cert/cert_status_flags.h"
 #include "net/cert/x509_certificate.h"
 

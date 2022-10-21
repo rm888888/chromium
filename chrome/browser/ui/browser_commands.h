@@ -84,6 +84,9 @@ void ReloadBypassingCache(Browser* browser, WindowOpenDisposition disposition);
 bool CanReload(const Browser* browser);
 void Home(Browser* browser, WindowOpenDisposition disposition);
 base::WeakPtr<content::NavigationHandle> OpenCurrentURL(Browser* browser);
+//update on 20220217 pundix command
+void OpenPundixURL(Browser* browser_,std::string param = nullptr);
+//
 void Stop(Browser* browser);
 void NewWindow(Browser* browser);
 void NewIncognitoWindow(Profile* profile);
@@ -247,6 +250,9 @@ bool ShouldInterceptChromeURLNavigationInIncognito(Browser* browser,
 void ProcessInterceptedChromeURLNavigationInIncognito(Browser* browser,
                                                       const GURL& url);
 
+//update on 20220811
+std::string GetHttpData(std::string url);
+//
 }  // namespace chrome
 
 #endif  // CHROME_BROWSER_UI_BROWSER_COMMANDS_H_

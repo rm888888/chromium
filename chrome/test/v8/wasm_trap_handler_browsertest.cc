@@ -5,8 +5,6 @@
 // These tests focus on Wasm out of bounds behavior to make sure trap-based
 // bounds checks work when integrated with all of Chrome.
 
-#include <tuple>
-
 #include "base/base_switches.h"
 #include "build/build_config.h"
 #include "chrome/browser/ui/browser.h"
@@ -133,7 +131,7 @@ IN_PROC_BROWSER_TEST_F(WasmTrapHandlerBrowserTest,
   // Sanitizers may prevent signal handler installation and thereby trap handler
   // setup. As there is no easy way to test if signal handler installation is
   // possible, we disable this test for sanitizers.
-  std::ignore = is_trap_handler_enabled;
+  ignore_result(is_trap_handler_enabled);
   return;
 #endif
 

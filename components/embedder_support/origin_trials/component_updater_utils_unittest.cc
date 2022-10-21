@@ -85,7 +85,7 @@ class OriginTrialsComponentInstallerTest : public PlatformTest {
     for (const std::string& feature : features) {
       disabled_feature_list.Append(feature);
     }
-    ListPrefUpdateDeprecated update(
+    ListPrefUpdate update(
         local_state(), embedder_support::prefs::kOriginTrialDisabledFeatures);
     update->Swap(&disabled_feature_list);
   }
@@ -96,20 +96,20 @@ class OriginTrialsComponentInstallerTest : public PlatformTest {
     ASSERT_TRUE(local_state()->HasPrefPath(
         embedder_support::prefs::kOriginTrialDisabledFeatures));
 
-    const base::Value* disabled_feature_list = local_state()->GetList(
+    const base::ListValue* disabled_feature_list = local_state()->GetList(
         embedder_support::prefs::kOriginTrialDisabledFeatures);
     ASSERT_TRUE(disabled_feature_list);
 
     ASSERT_EQ(features.size(), disabled_feature_list->GetList().size());
 
+    std::string disabled_feature;
     for (size_t i = 0; i < features.size(); ++i) {
-      const std::string* disabled_feature =
-          disabled_feature_list->GetList()[i].GetIfString();
-      if (!disabled_feature) {
-        ADD_FAILURE() << "Entry not found or not a string at index " << i;
+      const bool found = disabled_feature_list->GetString(i, &disabled_feature);
+      EXPECT_TRUE(found) << "Entry not found or not a string at index " << i;
+      if (!found) {
         continue;
       }
-      EXPECT_EQ(features[i], *disabled_feature)
+      EXPECT_EQ(features[i], disabled_feature)
           << "Feature lists differ at index " << i;
     }
   }
@@ -119,8 +119,8 @@ class OriginTrialsComponentInstallerTest : public PlatformTest {
     for (const std::string& token : tokens) {
       disabled_token_list.Append(token);
     }
-    ListPrefUpdateDeprecated update(
-        local_state(), embedder_support::prefs::kOriginTrialDisabledTokens);
+    ListPrefUpdate update(local_state(),
+                          embedder_support::prefs::kOriginTrialDisabledTokens);
     update->Swap(&disabled_token_list);
   }
 
@@ -130,21 +130,20 @@ class OriginTrialsComponentInstallerTest : public PlatformTest {
     ASSERT_TRUE(local_state()->HasPrefPath(
         embedder_support::prefs::kOriginTrialDisabledTokens));
 
-    const base::Value* disabled_token_list = local_state()->GetList(
+    const base::ListValue* disabled_token_list = local_state()->GetList(
         embedder_support::prefs::kOriginTrialDisabledTokens);
     ASSERT_TRUE(disabled_token_list);
 
     ASSERT_EQ(tokens.size(), disabled_token_list->GetList().size());
 
+    std::string disabled_token;
     for (size_t i = 0; i < tokens.size(); ++i) {
-      const std::string* disabled_token =
-          disabled_token_list->GetList()[i].GetIfString();
-
-      if (!disabled_token) {
-        ADD_FAILURE() << "Entry not found or not a string at index " << i;
+      const bool found = disabled_token_list->GetString(i, &disabled_token);
+      EXPECT_TRUE(found) << "Entry not found or not a string at index " << i;
+      if (!found) {
         continue;
       }
-      EXPECT_EQ(tokens[i], *disabled_token)
+      EXPECT_EQ(tokens[i], disabled_token)
           << "Token lists differ at index " << i;
     }
   }

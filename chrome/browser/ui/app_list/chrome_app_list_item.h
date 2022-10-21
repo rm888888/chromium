@@ -65,7 +65,6 @@ class ChromeAppListItem {
   bool is_folder() const { return metadata_->is_folder; }
   bool is_persistent() const { return metadata_->is_persistent; }
   const gfx::ImageSkia& icon() const { return metadata_->icon; }
-  const ash::IconColor& icon_color() const { return metadata_->icon_color; }
   bool is_page_break() const { return metadata_->is_page_break; }
 
   void SetMetadata(std::unique_ptr<ash::AppListItemMetadata> metadata);
@@ -82,7 +81,6 @@ class ChromeAppListItem {
   void SetFolderId(const std::string& folder_id);
   void SetIsPageBreak(bool is_page_break);
   void SetIsPersistent(bool is_persistent);
-  void SetIsNewInstall(bool is_new_install);
 
   // The following methods won't make changes to Ash and it should be called
   // by this item itself or the model updater.
@@ -93,10 +91,6 @@ class ChromeAppListItem {
 
   // Call |Activate()| and dismiss launcher if necessary.
   void PerformActivate(int event_flags);
-
-  // Returns the default position if it exists; otherwise returns an empty
-  // value.
-  syncer::StringOrdinal CalculateDefaultPositionIfApplicable();
 
   // Activates (opens) the item. Does nothing by default.
   virtual void Activate(int event_flags);
@@ -110,8 +104,7 @@ class ChromeAppListItem {
   // takes the ownership of the returned menu model.
   using GetMenuModelCallback =
       base::OnceCallback<void(std::unique_ptr<ui::SimpleMenuModel>)>;
-  virtual void GetContextMenuModel(bool add_sort_options,
-                                   GetMenuModelCallback callback);
+  virtual void GetContextMenuModel(GetMenuModelCallback callback);
 
   // Returns true iff this item was badged because it's an extension app that
   // has its Android analog installed.
@@ -121,7 +114,10 @@ class ChromeAppListItem {
 
   std::string ToDebugString() const;
 
-  syncer::StringOrdinal CalculateDefaultPositionForTest();
+  // Returns the default position if it exists. Otherwise returns the position
+  // for a new item if |model_updater| is not null.
+  syncer::StringOrdinal CalculateDefaultPositionIfApplicable(
+      AppListModelUpdater* model_updater);
 
   AppListModelUpdater* model_updater() { return model_updater_; }
 
@@ -137,6 +133,8 @@ class ChromeAppListItem {
   AppListControllerDelegate* GetController();
 
   void SetName(const std::string& name);
+  void SetNameAndShortName(const std::string& name,
+                           const std::string& short_name);
   void SetPosition(const syncer::StringOrdinal& position);
 
   void set_model_updater(AppListModelUpdater* model_updater) {

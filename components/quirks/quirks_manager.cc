@@ -206,8 +206,7 @@ bool QuirksManager::QuirksEnabled() {
 void QuirksManager::SetLastServerCheck(int64_t product_id,
                                        const base::Time& last_check) {
   DCHECK(thread_checker_.CalledOnValidThread());
-  DictionaryPrefUpdateDeprecated dict(local_state_,
-                                      prefs::kQuirksClientLastServerCheck);
+  DictionaryPrefUpdate dict(local_state_, prefs::kQuirksClientLastServerCheck);
   dict->SetDouble(IdToHexString(product_id), last_check.ToDoubleT());
 }
 

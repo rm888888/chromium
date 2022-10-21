@@ -62,9 +62,11 @@ extern const base::Feature kApplyNativeOcclusionToCompositor;
 COMPONENT_EXPORT(UI_BASE_FEATURES)
 extern const char kApplyNativeOcclusionToCompositorType[];
 COMPONENT_EXPORT(UI_BASE_FEATURES)
-extern const char kApplyNativeOcclusionToCompositorTypeRelease[];
+extern const char kApplyNativeOcclusionToCompositorTypeApplyOnly[];
 COMPONENT_EXPORT(UI_BASE_FEATURES)
-extern const char kApplyNativeOcclusionToCompositorTypeThrottle[];
+extern const char kApplyNativeOcclusionToCompositorTypeApplyAndEvict[];
+COMPONENT_EXPORT(UI_BASE_FEATURES)
+extern const char kApplyNativeOcclusionToCompositorTypeEvictOnly[];
 COMPONENT_EXPORT(UI_BASE_FEATURES)
 extern const base::Feature kCalculateNativeWinOcclusion;
 COMPONENT_EXPORT(UI_BASE_FEATURES)
@@ -145,6 +147,16 @@ extern const base::Feature kSynchronousPageFlipTesting;
 COMPONENT_EXPORT(UI_BASE_FEATURES)
 bool IsSynchronousPageFlipTestingEnabled();
 
+#if defined(USE_X11) || defined(USE_OZONE)
+// This is going to be removed once USE_X11 is removed. This used to control
+// Ozone/X11 vs non-Ozone/X11 paths. At the moment, only Ozone path is
+// supported, but we still rely on some USE_X11 defines for Ozone/X11 and have
+// to keep use_x11 == ozone_platform_x11. Whenever that is enabled, we still
+// have to check IsUsingOzonePlatform to ensure correct path is chosen (even
+// though it's always true).
+COMPONENT_EXPORT(UI_BASE_FEATURES) bool IsUsingOzonePlatform();
+#endif
+
 // The type of predictor to use for the resampling events. These values are
 // used as the 'predictor' feature param for
 // |blink::features::kResamplingScrollEvents|.
@@ -188,10 +200,6 @@ extern const base::Feature kSwipeToMoveCursor;
 COMPONENT_EXPORT(UI_BASE_FEATURES) extern const base::Feature kUIDebugTools;
 
 COMPONENT_EXPORT(UI_BASE_FEATURES) bool IsSwipeToMoveCursorEnabled();
-
-// Enables Raw Draw.
-COMPONENT_EXPORT(UI_BASE_FEATURES) extern const base::Feature kRawDraw;
-COMPONENT_EXPORT(UI_BASE_FEATURES) bool IsUsingRawDraw();
 
 }  // namespace features
 

@@ -9,6 +9,7 @@
 #include <memory>
 
 #include "ash/public/cpp/multi_user_window_manager_delegate.h"
+#include "base/macros.h"
 #include "chrome/browser/ui/ash/multi_user/multi_user_window_manager_helper.h"
 #include "chrome/browser/ui/browser_list_observer.h"
 #include "components/account_id/account_id.h"
@@ -74,8 +75,7 @@ class MultiProfileSupport : public ash::MultiUserWindowManagerDelegate,
   // tests.
   static MultiProfileSupport* instance_;
 
-  using AccountIdToAppWindowObserver =
-      std::map<AccountId, std::unique_ptr<AppObserver>>;
+  using AccountIdToAppWindowObserver = std::map<AccountId, AppObserver*>;
 
   // A list of all known users and their app window observers.
   AccountIdToAppWindowObserver account_id_to_app_observer_;

@@ -134,8 +134,7 @@ SkiaOutputDeviceGL::SkiaOutputDeviceGL(
   if (feature_info->workarounds().supports_two_yuv_hardware_overlays) {
     capabilities_.supports_two_yuv_hardware_overlays = true;
   }
-  capabilities_.pending_swap_params.max_pending_swaps =
-      gl_surface_->GetBufferCount() - 1;
+  capabilities_.max_frames_pending = gl_surface_->GetBufferCount() - 1;
   capabilities_.supports_commit_overlay_planes =
       gl_surface_->SupportsCommitOverlayPlanes();
   capabilities_.supports_gpu_vsync = gl_surface_->SupportsGpuVSync();
@@ -233,7 +232,8 @@ bool SkiaOutputDeviceGL::Reshape(const gfx::Size& size,
     base::debug::Alias(nullptr);
     return false;
   }
-  SkSurfaceProps surface_props{0, kUnknown_SkPixelGeometry};
+  SkSurfaceProps surface_props =
+      skia::LegacyDisplayGlobals::GetSkSurfaceProps();
 
   GrGLFramebufferInfo framebuffer_info;
   framebuffer_info.fFBOID = 0;

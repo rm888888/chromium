@@ -49,11 +49,6 @@ SourceId AppSourceUrlRecorder::GetSourceIdForPWA(const GURL& url) {
   return GetSourceIdForUrl(url, AppType::kPWA);
 }
 
-SourceId AppSourceUrlRecorder::GetSourceIdForBorealis(const std::string& app) {
-  GURL url("app://borealis/" + app);
-  return GetSourceIdForUrl(url, AppType::kBorealis);
-}
-
 SourceId AppSourceUrlRecorder::GetSourceIdForCrostini(
     const std::string& desktop_id,
     const std::string& app_name) {

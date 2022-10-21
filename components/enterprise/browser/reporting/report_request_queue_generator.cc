@@ -54,26 +54,23 @@ void ReportRequestQueueGenerator::SetMaximumReportSizeForTesting(
   maximum_report_size_ = maximum_report_size;
 }
 
-ReportRequestQueue ReportRequestQueueGenerator::Generate(
-    const ReportRequest& basic_request) {
-  ReportRequestQueue requests;
-  size_t basic_request_size =
-      basic_request.GetDeviceReportRequest().ByteSizeLong();
+ReportRequestQueueGenerator::ReportRequests
+ReportRequestQueueGenerator::Generate(const ReportRequest& basic_request) {
+  ReportRequests requests;
+  size_t basic_request_size = basic_request.ByteSizeLong();
   base::UmaHistogramMemoryKB(kBasicRequestSizeMetricsName,
                              basic_request_size / 1024);
 
   if (basic_request_size <= maximum_report_size_) {
-    requests.push(basic_request.Clone());
-    int profile_infos_size = basic_request.GetDeviceReportRequest()
-                                 .browser_report()
-                                 .chrome_user_profile_infos_size();
+    requests.push(std::make_unique<ReportRequest>(basic_request));
+    int profile_infos_size =
+        basic_request.browser_report().chrome_user_profile_infos_size();
     for (int index = 0; index < profile_infos_size; index++) {
       GenerateProfileReportWithIndex(index, basic_request, &requests);
     }
 
-    base::UmaHistogramMemoryKB(
-        kRequestSizeMetricsName,
-        requests.back()->GetDeviceReportRequest().ByteSizeLong() / 1024);
+    base::UmaHistogramMemoryKB(kRequestSizeMetricsName,
+                               requests.back()->ByteSizeLong() / 1024);
   }
 
   base::UmaHistogramExactLinear(kRequestCountMetricsName, requests.size(),
@@ -84,16 +81,13 @@ ReportRequestQueue ReportRequestQueueGenerator::Generate(
 void ReportRequestQueueGenerator::GenerateProfileReportWithIndex(
     int profile_index,
     const ReportRequest& basic_request,
-    ReportRequestQueue* requests) {
-  DCHECK_LT(profile_index, basic_request.GetDeviceReportRequest()
-                               .browser_report()
-                               .chrome_user_profile_infos_size());
+    ReportRequests* requests) {
+  DCHECK_LT(profile_index,
+            basic_request.browser_report().chrome_user_profile_infos_size());
 
-  size_t basic_request_size =
-      basic_request.GetDeviceReportRequest().ByteSizeLong();
-  auto basic_profile = basic_request.GetDeviceReportRequest()
-                           .browser_report()
-                           .chrome_user_profile_infos(profile_index);
+  size_t basic_request_size = basic_request.ByteSizeLong();
+  auto basic_profile =
+      basic_request.browser_report().chrome_user_profile_infos(profile_index);
   auto profile_report = profile_report_generator_.MaybeGenerate(
       base::FilePath::FromUTF8Unsafe(basic_profile.id()), basic_profile.name(),
       ReportType::kFull);
@@ -106,15 +100,13 @@ void ReportRequestQueueGenerator::GenerateProfileReportWithIndex(
   // is added. There are still few bytes difference but close enough.
   size_t profile_report_incremental_size =
       profile_report->ByteSizeLong() - basic_profile.ByteSizeLong();
-  size_t current_request_size =
-      requests->back()->GetDeviceReportRequest().ByteSizeLong();
+  size_t current_request_size = requests->back()->ByteSizeLong();
 
   if (current_request_size + profile_report_incremental_size <=
       maximum_report_size_) {
     // The new full Profile report can be appended into the current request.
     requests->back()
-        ->GetDeviceReportRequest()
-        .mutable_browser_report()
+        ->mutable_browser_report()
         ->mutable_chrome_user_profile_infos(profile_index)
         ->Swap(profile_report.get());
   } else if (basic_request_size + profile_report_incremental_size <=
@@ -122,13 +114,11 @@ void ReportRequestQueueGenerator::GenerateProfileReportWithIndex(
     // The new full Profile report is too big to be appended into the current
     // request, move it to the next request if possible. Record metrics for the
     // current request's size.
-    base::UmaHistogramMemoryKB(
-        kRequestSizeMetricsName,
-        requests->back()->GetDeviceReportRequest().ByteSizeLong() / 1024);
-    requests->push(basic_request.Clone());
+    base::UmaHistogramMemoryKB(kRequestSizeMetricsName,
+                               requests->back()->ByteSizeLong() / 1024);
+    requests->push(std::make_unique<ReportRequest>(basic_request));
     requests->back()
-        ->GetDeviceReportRequest()
-        .mutable_browser_report()
+        ->mutable_browser_report()
         ->mutable_chrome_user_profile_infos(profile_index)
         ->Swap(profile_report.get());
   } else {

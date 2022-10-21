@@ -90,11 +90,11 @@ void AppServerMac::UninstallSelf() {
   UninstallCandidate(updater_scope());
 }
 
-bool AppServerMac::SwapInNewVersion() {
+bool AppServerMac::SwapRPCInterfaces() {
   return PromoteCandidate(updater_scope()) == setup_exit_codes::kSuccess;
 }
 
-bool AppServerMac::MigrateLegacyUpdaters(
+bool AppServerMac::ConvertLegacyUpdaters(
     base::RepeatingCallback<void(const RegistrationRequest&)>
         register_callback) {
   return ConvertKeystone(updater_scope(), register_callback);

@@ -650,13 +650,17 @@ void VerdictCacheManager::CleanUpExpiredPhishGuardVerdicts() {
   int removed_count = 0;
   for (ContentSettingPatternSource& source : password_protection_settings) {
     // Find all verdicts associated with this origin.
-    base::Value cache_dictionary = std::move(source.setting_value);
+    std::unique_ptr<base::Value> cache_dictionary =
+        base::Value::ToUniquePtrValue(std::move(source.setting_value));
     bool has_expired_password_on_focus_entry = RemoveExpiredPhishGuardVerdicts(
-        LoginReputationClientRequest::UNFAMILIAR_LOGIN_PAGE, &cache_dictionary);
+        LoginReputationClientRequest::UNFAMILIAR_LOGIN_PAGE,
+        cache_dictionary.get());
     bool has_expired_password_reuse_entry = RemoveExpiredPhishGuardVerdicts(
-        LoginReputationClientRequest::PASSWORD_REUSE_EVENT, &cache_dictionary);
+        LoginReputationClientRequest::PASSWORD_REUSE_EVENT,
+        cache_dictionary.get());
 
-    if (!cache_dictionary.DictEmpty() && !has_expired_password_on_focus_entry &&
+    if (!cache_dictionary->DictEmpty() &&
+        !has_expired_password_on_focus_entry &&
         !has_expired_password_reuse_entry) {
       continue;
     }
@@ -666,8 +670,7 @@ void VerdictCacheManager::CleanUpExpiredPhishGuardVerdicts() {
     content_settings_->SetWebsiteSettingCustomScope(
         source.primary_pattern, source.secondary_pattern,
         ContentSettingsType::PASSWORD_PROTECTION,
-        cache_dictionary.DictEmpty() ? base::Value()
-                                     : std::move(cache_dictionary));
+        cache_dictionary->DictEmpty() ? nullptr : std::move(cache_dictionary));
 
     if ((++removed_count) == kMaxRemovedEntriesCount) {
       return;
@@ -688,11 +691,12 @@ void VerdictCacheManager::CleanUpExpiredRealTimeUrlCheckVerdicts() {
   for (ContentSettingPatternSource& source :
        safe_browsing_url_check_data_settings) {
     // Find all verdicts associated with this origin.
-    base::Value cache_dictionary = std::move(source.setting_value);
+    std::unique_ptr<base::Value> cache_dictionary =
+        base::Value::ToUniquePtrValue(std::move(source.setting_value));
     bool has_expired_entry =
-        RemoveExpiredRealTimeUrlCheckVerdicts(&cache_dictionary);
+        RemoveExpiredRealTimeUrlCheckVerdicts(cache_dictionary.get());
 
-    if (!cache_dictionary.DictEmpty() && !has_expired_entry) {
+    if (!cache_dictionary->DictEmpty() && !has_expired_entry) {
       continue;
     }
 
@@ -701,8 +705,7 @@ void VerdictCacheManager::CleanUpExpiredRealTimeUrlCheckVerdicts() {
     content_settings_->SetWebsiteSettingCustomScope(
         source.primary_pattern, source.secondary_pattern,
         ContentSettingsType::SAFE_BROWSING_URL_CHECK_DATA,
-        cache_dictionary.DictEmpty() ? base::Value()
-                                     : std::move(cache_dictionary));
+        cache_dictionary->DictEmpty() ? nullptr : std::move(cache_dictionary));
 
     if ((++removed_count) == kMaxRemovedEntriesCount) {
       return;

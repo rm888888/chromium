@@ -8,7 +8,6 @@
 #include <memory>
 
 #include "base/logging.h"
-#include "base/no_destructor.h"
 
 namespace ui {
 

@@ -140,18 +140,3 @@ bool OSCrypt::DecryptString(const std::string& ciphertext,
 
   return true;
 }
-
-// static
-bool OSCrypt::IsEncryptionAvailable() {
-  return false;
-}
-
-// static
-void OSCrypt::SetRawEncryptionKey(const std::string& raw_key) {
-  DCHECK(raw_key.empty());
-}
-
-// static
-std::string OSCrypt::GetRawEncryptionKey() {
-  return "";
-}

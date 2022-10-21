@@ -25,22 +25,19 @@ const mojom = chromeos.bluetoothConfig.mojom;
  *     opt_audioCapability
  * @param {!chromeos.bluetoothConfig.mojom.DeviceType=}
  *     opt_deviceType
- * @param {boolean=} opt_isBlockedByPolicy
  * @return {!chromeos.bluetoothConfig.mojom.PairedBluetoothDeviceProperties}
  */
 export function createDefaultBluetoothDevice(
     id, publicName, connectionState, opt_nickname = undefined,
     opt_audioCapability = mojom.AudioOutputCapability.kNotCapableOfAudioOutput,
-    opt_deviceType = mojom.DeviceType.kUnknown, opt_isBlockedByPolicy = false) {
+    opt_deviceType = mojom.DeviceType.kUnknown) {
   return {
     deviceProperties: {
       id: id,
-      address: id,
       publicName: stringToMojoString16(publicName),
       deviceType: opt_deviceType,
       audioCapability: opt_audioCapability,
       connectionState: connectionState,
-      isBlockedByPolicy: opt_isBlockedByPolicy,
     },
     nickname: opt_nickname,
   };
@@ -71,13 +68,7 @@ export class FakeBluetoothConfig {
      * @private {!Array<
      *     !chromeos.bluetoothConfig.mojom.SystemPropertiesObserverInterface>}
      */
-    this.system_properties_observers_ = [];
-
-    /**
-     * @private {!Array<
-     *     !chromeos.bluetoothConfig.mojom.BluetoothDeviceStatusObserverInterface>}
-     */
-    this.bluetooth_device_status_observers_ = [];
+    this.observers_ = [];
 
     /**
      * @private {?chromeos.bluetoothConfig.mojom.BluetoothDiscoveryDelegateInterface}
@@ -106,8 +97,6 @@ export class FakeBluetoothConfig {
     this.pendingForgetRequest_ = null;
 
     /**
-     * The last pairing handler created. If defined, indicates discovery in is
-     * progress. If null, indicates no discovery is occurring.
      * @private {?FakeDevicePairingHandler}
      */
     this.lastPairingHandler_ = null;
@@ -119,17 +108,8 @@ export class FakeBluetoothConfig {
    *     observer
    */
   observeSystemProperties(observer) {
-    this.system_properties_observers_.push(observer);
+    this.observers_.push(observer);
     this.notifyObserversPropertiesUpdated_();
-  }
-
-  /**
-   * @override
-   * @param {!chromeos.bluetoothConfig.mojom.BluetoothDeviceStatusObserverInterface}
-   *     observer
-   */
-  observeDeviceStatusChanges(observer) {
-    this.bluetooth_device_status_observers_.push(observer);
   }
 
 
@@ -140,8 +120,8 @@ export class FakeBluetoothConfig {
    */
   startDiscovery(delegate) {
     this.lastDiscoveryDelegate_ = delegate;
-    this.notifyDiscoveryStarted_();
     this.notifyDelegatesPropertiesUpdated_();
+    this.notifyDiscoveryStarted_();
   }
 
   /**
@@ -238,21 +218,6 @@ export class FakeBluetoothConfig {
          */
         (Object.assign({}, this.systemProperties_));
     this.notifyObserversPropertiesUpdated_();
-
-    // If discovery is in progress and Bluetooth is no longer enabled, stop
-    // discovery and any pairing that may be occurring.
-    if (!this.lastPairingHandler_) {
-      return;
-    }
-
-    if (systemState ===
-        chromeos.bluetoothConfig.mojom.BluetoothSystemState.kEnabled) {
-      return;
-    }
-
-    this.lastPairingHandler_.rejectPairDevice();
-    this.lastPairingHandler_ = null;
-    this.notifyDiscoveryStopped_();
   }
 
   /**
@@ -430,8 +395,7 @@ export class FakeBluetoothConfig {
    * Notifies the observer list that systemProperties_ has changed.
    */
   notifyObserversPropertiesUpdated_() {
-    this.system_properties_observers_.forEach(
-        o => o.onPropertiesUpdated(this.systemProperties_));
+    this.observers_.forEach(o => o.onPropertiesUpdated(this.systemProperties_));
   }
 
   /**
@@ -457,14 +421,6 @@ export class FakeBluetoothConfig {
             this.lastPairingHandler_);
     this.lastDiscoveryDelegate_.onBluetoothDiscoveryStarted(
         devicePairingHandlerReciever.$.bindNewPipeAndPassRemote());
-  }
-
-  /**
-   * @private
-   * Notifies the last delegate that device discovery has stopped.
-   */
-  notifyDiscoveryStopped_() {
-    this.lastDiscoveryDelegate_.onBluetoothDiscoveryStopped();
   }
 
   /**

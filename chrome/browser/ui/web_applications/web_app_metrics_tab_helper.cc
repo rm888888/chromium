@@ -28,8 +28,7 @@ bool WebAppMetricsTabHelper::IsEnabled(content::WebContents* contents) {
 }
 
 WebAppMetricsTabHelper::WebAppMetricsTabHelper(content::WebContents* contents)
-    : content::WebContentsUserData<WebAppMetricsTabHelper>(*contents),
-      content::WebContentsObserver(contents) {
+    : content::WebContentsObserver(contents) {
   DCHECK(IsEnabled(contents));
   DCHECK(web_app::WebAppMetrics::Get(
       Profile::FromBrowserContext(contents->GetBrowserContext())));

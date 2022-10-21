@@ -4,7 +4,7 @@
 
 import {fakeFirmwareUpdates} from 'chrome://accessory-update/fake_data.js';
 import {FakeUpdateProvider} from 'chrome://accessory-update/fake_update_provider.js';
-import {UpdateObserverRemote} from 'chrome://accessory-update/firmware_update_types.js';
+import {UpdateObserver} from 'chrome://accessory-update/firmware_update_types.js';
 
 import {assertDeepEquals} from '../../chai_assert.js';
 
@@ -22,11 +22,12 @@ export function fakeUpdateProviderTest() {
   test('ObservePeripheralUpdates', () => {
     provider.setFakeFirmwareUpdates(fakeFirmwareUpdates);
 
-    const updateObserverRemote = /** @type {!UpdateObserverRemote} */ ({
+    /** @type {!UpdateObserver} */
+    const updateObserverRemote = {
       onUpdateListChanged: (firmwareUpdates) => {
         assertDeepEquals(fakeFirmwareUpdates[0], firmwareUpdates);
       }
-    });
+    };
 
     provider.observePeripheralUpdates(updateObserverRemote);
     return provider.getObservePeripheralUpdatesPromiseForTesting();

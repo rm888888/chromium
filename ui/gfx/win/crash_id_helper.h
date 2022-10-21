@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+#include "base/macros.h"
 #include "base/no_destructor.h"
 #include "base/threading/platform_thread.h"
 #include "components/crash/core/common/crash_key.h"

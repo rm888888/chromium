@@ -161,30 +161,6 @@ constexpr int kDomainDiversityMaxBacktrackedDays = 7;
 // avoid other potential issues.
 constexpr int kDSTRoundingOffsetHours = 4;
 
-// Merges `update` into `existing` by overwriting fields in `existing` that are
-// not the default value in `update`.
-void MergeUpdateIntoExistingModelAnnotations(
-    const VisitContentModelAnnotations& update,
-    VisitContentModelAnnotations& existing) {
-  if (update.visibility_score !=
-      VisitContentModelAnnotations::kDefaultVisibilityScore) {
-    existing.visibility_score = update.visibility_score;
-  }
-
-  if (!update.categories.empty()) {
-    existing.categories = update.categories;
-  }
-
-  if (update.page_topics_model_version !=
-      VisitContentModelAnnotations::kDefaultPageTopicsModelVersion) {
-    existing.page_topics_model_version = update.page_topics_model_version;
-  }
-
-  if (!update.entities.empty()) {
-    existing.entities = update.entities;
-  }
-}
-
 }  // namespace
 
 std::u16string FormatUrlForRedirectComparison(const GURL& url) {
@@ -515,8 +491,7 @@ void HistoryBackend::AddContentModelAnnotationsForVisit(
   if (db_->GetRowForVisit(visit_id, &visit_row)) {
     VisitContentAnnotations annotations;
     if (db_->GetContentAnnotationsForVisit(visit_id, &annotations)) {
-      MergeUpdateIntoExistingModelAnnotations(model_annotations,
-                                              annotations.model_annotations);
+      annotations.model_annotations = model_annotations;
       db_->UpdateContentAnnotationsForVisit(visit_id, annotations);
     } else {
       annotations.model_annotations = model_annotations;
@@ -888,7 +863,7 @@ void HistoryBackend::InitImpl(
       // The frequency of this UMA will indicate how often history
       // initialization fails.
       UMA_HISTOGRAM_BOOLEAN("History.AttemptedToFixProfileError", kill_db);
-      [[fallthrough]];
+      FALLTHROUGH;
     }
     case sql::INIT_TOO_NEW: {
       db_diagnostics_ += sql::GetCorruptFileDiagnosticsInfo(history_name);
@@ -1325,7 +1300,7 @@ DomainDiversityResults HistoryBackend::GetDomainDiversity(
       std::min(number_of_days_to_report, kDomainDiversityMaxBacktrackedDays);
 
   base::Time current_midnight = report_time.LocalMidnight();
-  SCOPED_UMA_HISTOGRAM_TIMER("History.DomainCountQueryTime_V2");
+  SCOPED_UMA_HISTOGRAM_TIMER("History.DomainCountQueryTime");
 
   for (int days_back = 0; days_back < number_of_days_to_report; ++days_back) {
     DomainMetricSet single_metric_set;

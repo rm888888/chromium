@@ -44,8 +44,6 @@ const char kObsoletePluginsDefaultPref[] =
     "profile.default_content_setting_values.plugins";
 const char kObsoletePluginsDataDefaultPref[] =
     "profile.default_content_setting_values.flash_data";
-const char kObsoleteFileHandlingDefaultPref[] =
-    "profile.default_content_setting_values.file_handling";
 #endif  // !defined(OS_ANDROID)
 #endif  // !defined(OS_IOS)
 
@@ -55,10 +53,10 @@ const char kDeprecatedEnableDRM[] = "settings.privacy.drm_enabled";
 #endif  // BUILDFLAG(IS_CHROMEOS_ASH) || defined(OS_WIN)
 
 ContentSetting GetDefaultValue(const WebsiteSettingsInfo* info) {
-  const base::Value& initial_default = info->initial_default_value();
-  if (initial_default.is_none())
+  const base::Value* initial_default = info->initial_default_value();
+  if (!initial_default)
     return CONTENT_SETTING_DEFAULT;
-  return static_cast<ContentSetting>(initial_default.GetInt());
+  return static_cast<ContentSetting>(initial_default->GetInt());
 }
 
 ContentSetting GetDefaultValue(ContentSettingsType type) {
@@ -73,9 +71,9 @@ const std::string& GetPrefName(ContentSettingsType type) {
 
 class DefaultRuleIterator : public RuleIterator {
  public:
-  explicit DefaultRuleIterator(base::Value value) {
-    if (!value.is_none())
-      value_ = std::move(value);
+  explicit DefaultRuleIterator(const base::Value* value) {
+    if (value)
+      value_ = value->Clone();
     else
       is_done_ = true;
   }
@@ -126,7 +124,6 @@ void DefaultProvider::RegisterProfilePrefs(
       user_prefs::PrefRegistrySyncable::SYNCABLE_PREF);
   registry->RegisterIntegerPref(kObsoletePluginsDataDefaultPref, 0);
   registry->RegisterIntegerPref(kObsoletePluginsDefaultPref, 0);
-  registry->RegisterIntegerPref(kObsoleteFileHandlingDefaultPref, 0);
 #endif  // !defined(OS_ANDROID)
 #endif  // !defined(OS_IOS)
 
@@ -221,15 +218,10 @@ DefaultProvider::DefaultProvider(PrefService* prefs, bool off_the_record)
                                 ContentSettingsType::AUTO_DARK_WEB_CONTENT))),
                             CONTENT_SETTING_NUM_SETTINGS);
 
-#endif
-
-#if defined(OS_ANDROID) || defined(OS_IOS)
-
   UMA_HISTOGRAM_ENUMERATION("ContentSettings.DefaultRequestDesktopSiteSetting",
                             IntToContentSetting(prefs_->GetInteger(GetPrefName(
                                 ContentSettingsType::REQUEST_DESKTOP_SITE))),
                             CONTENT_SETTING_NUM_SETTINGS);
-
 #endif
 
   pref_change_registrar_.Init(prefs_);
@@ -241,13 +233,14 @@ DefaultProvider::DefaultProvider(PrefService* prefs, bool off_the_record)
     pref_change_registrar_.Add(info->default_value_pref_name(), callback);
 }
 
-DefaultProvider::~DefaultProvider() = default;
+DefaultProvider::~DefaultProvider() {
+}
 
 bool DefaultProvider::SetWebsiteSetting(
     const ContentSettingsPattern& primary_pattern,
     const ContentSettingsPattern& secondary_pattern,
     ContentSettingsType content_type,
-    base::Value&& in_value,
+    std::unique_ptr<base::Value>&& in_value,
     const ContentSettingConstraints& constraints) {
   DCHECK(CalledOnValidThread());
   DCHECK(prefs_);
@@ -258,9 +251,9 @@ bool DefaultProvider::SetWebsiteSetting(
     return false;
   }
 
-  // Move |in_value| to ensure that it gets cleaned up properly even if we don't
-  // pass on the ownership.
-  base::Value value(std::move(in_value));
+  // Put |in_value| in a scoped pointer to ensure that it gets cleaned up
+  // properly if we don't pass on the ownership.
+  std::unique_ptr<base::Value> value(std::move(in_value));
 
   // The default settings may not be directly modified for OTR sessions.
   // Instead, they are synced to the main profile's setting.
@@ -275,9 +268,9 @@ bool DefaultProvider::SetWebsiteSetting(
     // whose callbacks may try to reacquire the lock on the same thread.
     {
       base::AutoLock lock(lock_);
-      ChangeSetting(content_type, value.Clone());
+      ChangeSetting(content_type, value.get());
     }
-    WriteToPref(content_type, value);
+    WriteToPref(content_type, value.get());
   }
 
   NotifyObservers(ContentSettingsPattern::Wildcard(),
@@ -294,12 +287,12 @@ std::unique_ptr<RuleIterator> DefaultProvider::GetRuleIterator(
     return nullptr;
 
   base::AutoLock lock(lock_);
-  const auto it = default_settings_.find(content_type);
+  auto it = default_settings_.find(content_type);
   if (it == default_settings_.end()) {
     NOTREACHED();
     return nullptr;
   }
-  return std::make_unique<DefaultRuleIterator>(it->second.Clone());
+  return std::make_unique<DefaultRuleIterator>(it->second.get());
 }
 
 void DefaultProvider::ClearAllContentSettingsRules(
@@ -323,34 +316,34 @@ void DefaultProvider::ReadDefaultSettings() {
   WebsiteSettingsRegistry* website_settings =
       WebsiteSettingsRegistry::GetInstance();
   for (const WebsiteSettingsInfo* info : *website_settings)
-    ChangeSetting(info->type(), ReadFromPref(info->type()));
+    ChangeSetting(info->type(), ReadFromPref(info->type()).get());
 }
 
 bool DefaultProvider::IsValueEmptyOrDefault(ContentSettingsType content_type,
-                                            const base::Value& value) {
-  return value.is_none() ||
+                                            base::Value* value) {
+  return !value ||
          ValueToContentSetting(value) == GetDefaultValue(content_type);
 }
 
 void DefaultProvider::ChangeSetting(ContentSettingsType content_type,
-                                    base::Value value) {
+                                    base::Value* value) {
   const ContentSettingsInfo* info =
       ContentSettingsRegistry::GetInstance()->Get(content_type);
-  DCHECK(!info || value.is_none() ||
+  DCHECK(!info || !value ||
          info->IsDefaultSettingValid(ValueToContentSetting(value)));
   default_settings_[content_type] =
-      value.is_none() ? ContentSettingToValue(GetDefaultValue(content_type))
-                      : std::move(value);
+      value ? base::Value::ToUniquePtrValue(value->Clone())
+            : ContentSettingToValue(GetDefaultValue(content_type));
 }
 
 void DefaultProvider::WriteToPref(ContentSettingsType content_type,
-                                  const base::Value& value) {
+                                  base::Value* value) {
   if (IsValueEmptyOrDefault(content_type, value)) {
     prefs_->ClearPref(GetPrefName(content_type));
     return;
   }
 
-  prefs_->SetInteger(GetPrefName(content_type), value.GetInt());
+  prefs_->SetInteger(GetPrefName(content_type), value->GetInt());
 }
 
 void DefaultProvider::OnPreferenceChanged(const std::string& name) {
@@ -385,7 +378,7 @@ void DefaultProvider::OnPreferenceChanged(const std::string& name) {
     // whose callbacks may try to reacquire the lock on the same thread.
     {
       base::AutoLock lock(lock_);
-      ChangeSetting(content_type, ReadFromPref(content_type));
+      ChangeSetting(content_type, ReadFromPref(content_type).get());
     }
   }
 
@@ -393,7 +386,8 @@ void DefaultProvider::OnPreferenceChanged(const std::string& name) {
                   ContentSettingsPattern::Wildcard(), content_type);
 }
 
-base::Value DefaultProvider::ReadFromPref(ContentSettingsType content_type) {
+std::unique_ptr<base::Value> DefaultProvider::ReadFromPref(
+    ContentSettingsType content_type) {
   int int_value = prefs_->GetInteger(GetPrefName(content_type));
   return ContentSettingToValue(IntToContentSetting(int_value));
 }
@@ -409,7 +403,6 @@ void DefaultProvider::DiscardOrMigrateObsoletePreferences() {
   prefs_->ClearPref(kObsoleteMouseLockDefaultPref);
   prefs_->ClearPref(kObsoletePluginsDefaultPref);
   prefs_->ClearPref(kObsoletePluginsDataDefaultPref);
-  prefs_->ClearPref(kObsoleteFileHandlingDefaultPref);
 #endif  // !defined(OS_ANDROID)
 #endif  // !defined(OS_IOS)
 

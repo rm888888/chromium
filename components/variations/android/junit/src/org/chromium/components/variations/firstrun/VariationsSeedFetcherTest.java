@@ -80,7 +80,9 @@ public class VariationsSeedFetcherTest {
                 .getServerConnection(VariationsSeedFetcher.VariationsPlatform.ANDROID, sRestrict,
                         sMilestone, sChannel);
         mPrefs = ContextUtils.getAppSharedPreferences();
-        ShadowRecordHistogram.reset();
+
+        RecordHistogram.forgetHistogramForTesting(
+                VariationsSeedFetcher.SEED_FETCH_RESULT_HISTOGRAM);
     }
 
     @After

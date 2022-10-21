@@ -4,6 +4,7 @@
 
 #include "ui/compositor/canvas_painter.h"
 
+#include "base/macros.h"
 #include "testing/gtest/include/gtest/gtest.h"
 #include "ui/compositor/paint_recorder.h"
 #include "ui/gfx/canvas.h"

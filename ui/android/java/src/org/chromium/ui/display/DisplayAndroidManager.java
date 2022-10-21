@@ -51,11 +51,9 @@ public class DisplayAndroidManager {
             // Never remove the primary display.
             if (sdkDisplayId == mMainSdkDisplayId) return;
 
-            PhysicalDisplayAndroid displayAndroid =
-                    (PhysicalDisplayAndroid) mIdMap.get(sdkDisplayId);
+            DisplayAndroid displayAndroid = mIdMap.get(sdkDisplayId);
             if (displayAndroid == null) return;
 
-            displayAndroid.onDisplayRemoved();
             if (mNativePointer != 0) {
                 DisplayAndroidManagerJni.get().removeDisplay(
                         mNativePointer, DisplayAndroidManager.this, sdkDisplayId);

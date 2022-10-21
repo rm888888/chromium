@@ -8,6 +8,7 @@
 #include <set>
 #include <string>
 
+#include "base/macros.h"
 #include "chrome/browser/ui/ash/shelf/shelf_app_updater.h"
 #include "components/services/app_service/public/cpp/app_registry_cache.h"
 
@@ -34,8 +35,7 @@ class ShelfAppServiceAppUpdater : public ShelfAppUpdater,
       apps::AppRegistryCache* cache) override;
 
  private:
-  void OnShowInShelfChangedForAppDisabledByPolicy(const std::string& app_id,
-                                                  bool show_in_shelf);
+  void OnShowInShelfChanged(const std::string& app_id, bool show_in_shelf);
   std::set<std::string> installed_apps_;
 };
 

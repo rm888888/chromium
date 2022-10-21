@@ -69,7 +69,6 @@ class PlayerFrameMediator implements PlayerFrameViewDelegate, PlayerFrameMediato
     /** Transient object to avoid allocation. */
     private Rect mScaledRectIntersection = new Rect();
     private float mInitialScaleFactor;
-    private float mMinScaleFactor;
     /** Handles scaling of bitmaps. */
     private final Matrix mBitmapScaleMatrix;
     private final Point mOffsetForScaling;
@@ -81,8 +80,8 @@ class PlayerFrameMediator implements PlayerFrameViewDelegate, PlayerFrameMediato
 
     PlayerFrameMediator(PropertyModel model, PlayerCompositorDelegate compositorDelegate,
             PlayerGestureListener gestureListener, UnguessableToken frameGuid, Size contentSize,
-            int initialScrollX, int initialScrollY, float initialScaleFactor,
-            Runnable initialViewportSizeAvailable, boolean shouldCompressBitmaps) {
+            int initialScrollX, int initialScrollY, Runnable initialViewportSizeAvailable,
+            boolean shouldCompressBitmaps) {
         mBitmapScaleMatrix = new Matrix();
         mOffsetForScaling = new Point();
         mModel = model;
@@ -92,7 +91,7 @@ class PlayerFrameMediator implements PlayerFrameViewDelegate, PlayerFrameMediato
         mGestureListener = gestureListener;
         mViewport = new PlayerFrameViewport();
         mIsSubframe = false;
-        mInitialScaleFactor = initialScaleFactor;
+        mInitialScaleFactor = 0f;
         mGuid = frameGuid;
         mContentSize = contentSize;
         SequencedTaskRunner taskRunner =
@@ -100,7 +99,7 @@ class PlayerFrameMediator implements PlayerFrameViewDelegate, PlayerFrameMediato
         mBitmapStateController = new PlayerFrameBitmapStateController(mGuid, mViewport,
                 mContentSize, mCompositorDelegate, this, taskRunner, shouldCompressBitmaps);
         mViewport.offset(initialScrollX, initialScrollY);
-        mViewport.setScale(mInitialScaleFactor);
+        mViewport.setScale(0f);
         mInitialViewportSizeAvailable = initialViewportSizeAvailable;
     }
 
@@ -186,8 +185,8 @@ class PlayerFrameMediator implements PlayerFrameViewDelegate, PlayerFrameMediato
         }
 
         final float scaleFactor = mViewport.getScale();
-        // Ensure subframes use their assigned initial scale factor.
-        updateViewportSize(width, height, (scaleFactor == 0f) ? mInitialScaleFactor : scaleFactor);
+        updateViewportSize(
+                width, height, (scaleFactor == 0f) ? getInitialScaleFactor() : scaleFactor);
 
         if (mInitialViewportSizeAvailable != null) {
             mInitialViewportSizeAvailable.run();
@@ -225,8 +224,8 @@ class PlayerFrameMediator implements PlayerFrameViewDelegate, PlayerFrameMediato
     }
 
     @Override
-    public float getMinScaleFactor() {
-        return mMinScaleFactor;
+    public float getInitialScaleFactor() {
+        return mInitialScaleFactor;
     }
 
     @Override
@@ -427,11 +426,7 @@ class PlayerFrameMediator implements PlayerFrameViewDelegate, PlayerFrameMediato
      * @param width The viewport width.
      */
     private void adjustInitialScaleFactor(float width) {
-        mMinScaleFactor = width / ((float) mContentSize.getWidth());
-        if (mInitialScaleFactor == 0f) {
-            mInitialScaleFactor = mMinScaleFactor;
-        }
-
+        mInitialScaleFactor = width / ((float) mContentSize.getWidth());
         for (int i = 0; i < mSubFrameViews.size(); i++) {
             mSubFrameMediators.get(i).setInitialScaleFactor(mInitialScaleFactor);
         }

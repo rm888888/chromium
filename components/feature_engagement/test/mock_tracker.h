@@ -8,6 +8,7 @@
 #include <memory>
 #include <string>
 
+#include "base/macros.h"
 #include "components/feature_engagement/public/tracker.h"
 #include "testing/gmock/include/gmock/gmock.h"
 

@@ -10,6 +10,8 @@
 #include <string>
 #include <vector>
 
+#include "base/macros.h"
+
 namespace password_manager {
 
 struct PasswordForm;

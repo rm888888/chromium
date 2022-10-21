@@ -10,8 +10,8 @@
 
 #include "base/bind.h"
 #include "base/callback.h"
+#include "base/macros.h"
 #include "base/memory/ptr_util.h"
-#include "base/memory/raw_ptr.h"
 #include "base/memory/ref_counted.h"
 #include "base/run_loop.h"
 #include "base/strings/string_util.h"
@@ -38,7 +38,7 @@ namespace webapps {
 
 namespace {
 
-const char* kWebAppInstallInfoTitle = "Meta Title";
+const char* kWebApplicationInfoTitle = "Meta Title";
 const char* kDefaultManifestUrl = "https://www.example.com/manifest.json";
 const char* kDefaultIconUrl = "https://www.example.com/icon.png";
 const char* kDefaultManifestName = "Default Name";
@@ -253,7 +253,7 @@ class AddToHomescreenDataFetcherTest
     webapps::mojom::WebPageMetadataPtr web_page_metadata(
         webapps::mojom::WebPageMetadata::New());
     web_page_metadata->application_name =
-        base::ASCIIToUTF16(kWebAppInstallInfoTitle);
+        base::ASCIIToUTF16(kWebApplicationInfoTitle);
 
     fetcher->OnDidGetWebPageMetadata(
         mojo::AssociatedRemote<webapps::mojom::WebPageMetadataAgent>(),
@@ -320,7 +320,7 @@ class AddToHomescreenDataFetcherTest
     }
   };
 
-  raw_ptr<TestInstallableManager> installable_manager_;
+  TestInstallableManager* installable_manager_;
   NullLargeFaviconProvider null_large_favicon_provider_;
 };
 
@@ -329,7 +329,7 @@ TEST_F(AddToHomescreenDataFetcherTest, EmptyManifest) {
   base::HistogramTester histograms;
   ObserverWaiter waiter;
   std::unique_ptr<AddToHomescreenDataFetcher> fetcher = BuildFetcher(&waiter);
-  RunFetcher(fetcher.get(), waiter, kWebAppInstallInfoTitle,
+  RunFetcher(fetcher.get(), waiter, kWebApplicationInfoTitle,
              blink::mojom::DisplayMode::kBrowser, false);
   CheckHistograms(histograms);
 }
@@ -366,7 +366,7 @@ TEST_F(AddToHomescreenDataFetcherTest, ManifestFetchTimesOutPwa) {
   base::HistogramTester histograms;
   ObserverWaiter waiter;
   std::unique_ptr<AddToHomescreenDataFetcher> fetcher = BuildFetcher(&waiter);
-  RunFetcher(fetcher.get(), waiter, kWebAppInstallInfoTitle,
+  RunFetcher(fetcher.get(), waiter, kWebApplicationInfoTitle,
              blink::mojom::DisplayMode::kBrowser, false);
   CheckHistograms(histograms);
 
@@ -384,7 +384,7 @@ TEST_F(AddToHomescreenDataFetcherTest, ManifestFetchTimesOutNonPwa) {
   base::HistogramTester histograms;
   ObserverWaiter waiter;
   std::unique_ptr<AddToHomescreenDataFetcher> fetcher = BuildFetcher(&waiter);
-  RunFetcher(fetcher.get(), waiter, kWebAppInstallInfoTitle,
+  RunFetcher(fetcher.get(), waiter, kWebApplicationInfoTitle,
              blink::mojom::DisplayMode::kBrowser, false);
   CheckHistograms(histograms);
 
@@ -401,7 +401,7 @@ TEST_F(AddToHomescreenDataFetcherTest, ManifestFetchTimesOutUnknown) {
   base::HistogramTester histograms;
   ObserverWaiter waiter;
   std::unique_ptr<AddToHomescreenDataFetcher> fetcher = BuildFetcher(&waiter);
-  RunFetcher(fetcher.get(), waiter, kWebAppInstallInfoTitle,
+  RunFetcher(fetcher.get(), waiter, kWebApplicationInfoTitle,
              blink::mojom::DisplayMode::kBrowser, false);
   NavigateAndCommit(GURL("about:blank"));
   CheckHistograms(histograms);
@@ -570,7 +570,7 @@ TEST_F(AddToHomescreenDataFetcherTest, ManifestNoNameNoShortName) {
   // Test that when the manifest does not provide either Manifest::short_name
   // nor Manifest::name that:
   //  - The page is not WebAPK compatible.
-  //  - WebAppInstallInfo::title is used as the "name".
+  //  - WebApplicationInfo::title is used as the "name".
   //  - We still use the icons from the manifest.
   blink::mojom::ManifestPtr manifest = BuildDefaultManifest();
   manifest->name = absl::nullopt;
@@ -580,13 +580,13 @@ TEST_F(AddToHomescreenDataFetcherTest, ManifestNoNameNoShortName) {
   SetManifest(std::move(manifest));
   ObserverWaiter waiter;
   std::unique_ptr<AddToHomescreenDataFetcher> fetcher = BuildFetcher(&waiter);
-  RunFetcher(fetcher.get(), waiter, kWebAppInstallInfoTitle,
+  RunFetcher(fetcher.get(), waiter, kWebApplicationInfoTitle,
              blink::mojom::DisplayMode::kStandalone, false);
 
   EXPECT_TRUE(base::EqualsASCII(fetcher->shortcut_info().name,
-                                kWebAppInstallInfoTitle));
+                                kWebApplicationInfoTitle));
   EXPECT_TRUE(base::EqualsASCII(fetcher->shortcut_info().short_name,
-                                kWebAppInstallInfoTitle));
+                                kWebApplicationInfoTitle));
   EXPECT_FALSE(fetcher->primary_icon().drawsNothing());
   EXPECT_EQ(fetcher->shortcut_info().best_primary_icon_url,
             GURL(kDefaultIconUrl));

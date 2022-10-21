@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include "base/macros.h"
 #include "content/public/browser/context_factory.h"
 #include "content/public/common/result_codes.h"
 #include "content/shell/browser/shell_browser_context.h"
@@ -18,7 +19,7 @@ class ViewsContentClientMainPartsChromeOS
     : public ViewsContentClientMainPartsAura {
  public:
   ViewsContentClientMainPartsChromeOS(
-      content::MainFunctionParams content_params,
+      const content::MainFunctionParams& content_params,
       ViewsContentClient* views_content_client);
 
   ViewsContentClientMainPartsChromeOS(
@@ -38,10 +39,10 @@ class ViewsContentClientMainPartsChromeOS
 };
 
 ViewsContentClientMainPartsChromeOS::ViewsContentClientMainPartsChromeOS(
-    content::MainFunctionParams content_params,
+    const content::MainFunctionParams& content_params,
     ViewsContentClient* views_content_client)
-    : ViewsContentClientMainPartsAura(std::move(content_params),
-                                      views_content_client) {}
+    : ViewsContentClientMainPartsAura(content_params, views_content_client) {
+}
 
 int ViewsContentClientMainPartsChromeOS::PreMainMessageLoopRun() {
   ViewsContentClientMainPartsAura::PreMainMessageLoopRun();
@@ -69,10 +70,11 @@ void ViewsContentClientMainPartsChromeOS::PostMainMessageLoopRun() {
 
 // static
 std::unique_ptr<ViewsContentClientMainParts>
-ViewsContentClientMainParts::Create(content::MainFunctionParams content_params,
-                                    ViewsContentClient* views_content_client) {
+ViewsContentClientMainParts::Create(
+    const content::MainFunctionParams& content_params,
+    ViewsContentClient* views_content_client) {
   return std::make_unique<ViewsContentClientMainPartsChromeOS>(
-      std::move(content_params), views_content_client);
+      content_params, views_content_client);
 }
 
 }  // namespace ui

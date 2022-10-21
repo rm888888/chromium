@@ -165,7 +165,10 @@ DefaultSearchManager::GetDefaultSearchEngineIgnoringExtensions() const {
   const base::Value* user_value =
       pref_service_->GetUserPrefValue(kDefaultSearchProviderDataPrefName);
   if (user_value && user_value->is_dict()) {
-    auto turl_data = TemplateURLDataFromDictionary(*user_value);
+    const base::DictionaryValue* dict_value = nullptr;
+    user_value->GetAsDictionary(&dict_value);
+    DCHECK(dict_value);
+    auto turl_data = TemplateURLDataFromDictionary(*dict_value);
     if (turl_data)
       return turl_data;
   }
@@ -287,7 +290,7 @@ void DefaultSearchManager::LoadDefaultSearchEngineFromPrefs() {
   DCHECK(pref);
   default_search_controlled_by_policy_ = pref->IsManaged();
 
-  const base::Value* url_dict =
+  const base::DictionaryValue* url_dict =
       pref_service_->GetDictionary(kDefaultSearchProviderDataPrefName);
   if (url_dict->DictEmpty())
     return;

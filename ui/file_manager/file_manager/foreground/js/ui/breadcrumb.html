@@ -126,11 +126,15 @@
   }
 
   :host([checked]) button[elider] {
-    background: var(--cros-icon-button-pressed-color);
+    background: linear-gradient(var(--cros-ripple-color),
+                                var(--cros-ripple-color)),
+                var(--cros-ripple-color);
   }
 
   button:active {
-    background: var(--cros-icon-button-pressed-color);
+    background: linear-gradient(var(--cros-ripple-color),
+                                var(--cros-ripple-color)),
+                var(--cros-ripple-color);
   }
 
   #elider-menu button {

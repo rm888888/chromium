@@ -5,23 +5,40 @@
 package org.chromium.components.language;
 
 import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
 
 /**
  * Interface to get language profile data for device.
  */
 public interface LanguageProfileDelegate {
     /**
-     * @return True if ULP is currently supported.
+     * Helper class to hold language preference values.
      */
-    public boolean isULPSupported();
+    public static class LanguagePreference {
+        private final String mLanguageName;
+        private final float mPreference;
+
+        public LanguagePreference(String languageName, float preference) {
+            mLanguageName = languageName;
+            mPreference = preference;
+        }
+
+        public String getLanguage() {
+            return mLanguageName;
+        }
+
+        public float getPreference() {
+            return mPreference;
+        }
+    }
+
+    /**
+     * @return True if ULP is currently available.
+     */
+    public boolean isULPAvailable();
 
     /**
      * @param accountName Account to get profile or null if the default profile should be returned.
-     * @param timeoutInSeconds Seconds to wait before timing out on call to device.
-     * @return A list of language tags ordered by preference for |accountName|
+     * @return A list of language preferences for |accountName|
      */
-    public List<String> getLanguagePreferences(String accountName, int timeoutInSeconds)
-            throws ExecutionException, InterruptedException, TimeoutException;
+    public List<LanguagePreference> getLanguagePreferences(String accountName);
 }

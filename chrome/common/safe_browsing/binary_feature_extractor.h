@@ -14,6 +14,7 @@
 #include <string>
 
 #include "base/files/file.h"
+#include "base/macros.h"
 #include "base/memory/ref_counted.h"
 #include "third_party/protobuf/src/google/protobuf/repeated_field.h"
 

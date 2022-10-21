@@ -13,6 +13,8 @@
 #include "base/containers/contains.h"
 #include "base/files/file_util.h"
 #include "base/location.h"
+#include "base/macros.h"
+#include "base/no_destructor.h"
 #include "base/path_service.h"
 #include "base/run_loop.h"
 #include "base/strings/string_number_conversions.h"
@@ -220,9 +222,6 @@ TestingProfile::TestingProfile(
     bool guest_session,
     bool allows_browser_windows,
     bool is_new_profile,
-#if BUILDFLAG(IS_CHROMEOS_LACROS)
-    bool is_main_profile,
-#endif  // BUILDFLAG(IS_CHROMEOS_LACROS)
     const std::string& supervised_user_id,
 #if BUILDFLAG(IS_CHROMEOS_ASH)
     std::unique_ptr<policy::UserCloudPolicyManagerAsh> policy_manager,
@@ -233,16 +232,12 @@ TestingProfile::TestingProfile(
     TestingFactories testing_factories,
     const std::string& profile_name,
     absl::optional<bool> override_policy_connector_is_managed,
-    absl::optional<OTRProfileID> otr_profile_id,
-    scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory)
+    absl::optional<OTRProfileID> otr_profile_id)
     : prefs_(std::move(prefs)),
       original_profile_(parent),
       guest_session_(guest_session),
       allows_browser_windows_(allows_browser_windows),
       is_new_profile_(is_new_profile),
-#if BUILDFLAG(IS_CHROMEOS_LACROS)
-      is_main_profile_(is_main_profile),
-#endif  // BUILDFLAG(IS_CHROMEOS_LACROS)
       supervised_user_id_(supervised_user_id),
 #if BUILDFLAG(ENABLE_EXTENSIONS)
       extension_special_storage_policy_(extension_policy),
@@ -254,8 +249,7 @@ TestingProfile::TestingProfile(
       override_policy_connector_is_managed_(
           override_policy_connector_is_managed),
       otr_profile_id_(otr_profile_id),
-      policy_service_(std::move(policy_service)),
-      url_loader_factory_(url_loader_factory) {
+      policy_service_(std::move(policy_service)) {
   if (parent)
     parent->SetOffTheRecordProfile(std::unique_ptr<Profile>(this));
 
@@ -327,7 +321,7 @@ void TestingProfile::Init() {
     SupervisedUserSettingsService* settings_service =
         SupervisedUserSettingsServiceFactory::GetForKey(key_.get());
     supervised_user_pref_store_ = new TestingPrefStore();
-    settings_service->Init(supervised_user_pref_store_.get());
+    settings_service->Init(supervised_user_pref_store_);
     settings_service->MergeDataAndStartSyncing(
         syncer::SUPERVISED_USER_SETTINGS, syncer::SyncDataList(),
         std::unique_ptr<syncer::SyncChangeProcessor>(
@@ -545,7 +539,7 @@ TestingProfile::~TestingProfile() {
   // failure.
   if (resource_context_) {
     CHECK(BrowserThread::DeleteSoon(BrowserThread::IO, FROM_HERE,
-                                    resource_context_.get()));
+                                    resource_context_));
     resource_context_ = nullptr;
     content::RunAllPendingInMessageLoop(BrowserThread::IO);
   }
@@ -701,6 +695,10 @@ void TestingProfile::SetSupervisedUserId(const std::string& id) {
     GetPrefs()->ClearPref(prefs::kSupervisedUserId);
 }
 
+bool TestingProfile::IsSupervised() const {
+  return !supervised_user_id_.empty();
+}
+
 bool TestingProfile::IsChild() const {
 #if BUILDFLAG(ENABLE_SUPERVISED_USERS)
   return supervised_user_id_ == supervised_users::kChildAccountSUID;
@@ -752,7 +750,6 @@ void TestingProfile::CreatePrefServiceForSupervisedUser() {
   testing_prefs_ = new sync_preferences::TestingPrefServiceSyncable(
       /*managed_prefs=*/new TestingPrefStore, supervised_user_pref_store_,
       /*extension_prefs=*/new TestingPrefStore,
-      /*standalone_browser_prefs=*/new TestingPrefStore,
       /*user_prefs=*/new TestingPrefStore,
       /*recommended_prefs=*/new TestingPrefStore,
       new user_prefs::PrefRegistrySyncable, new PrefNotifierImpl);
@@ -811,7 +808,7 @@ DownloadManagerDelegate* TestingProfile::GetDownloadManagerDelegate() {
 
 scoped_refptr<network::SharedURLLoaderFactory>
 TestingProfile::GetURLLoaderFactory() {
-  return url_loader_factory_;
+  return nullptr;
 }
 
 content::ResourceContext* TestingProfile::GetResourceContext() {
@@ -1028,12 +1025,6 @@ void TestingProfile::Builder::SetSupervisedUserId(
   supervised_user_id_ = supervised_user_id;
 }
 
-#if BUILDFLAG(IS_CHROMEOS_LACROS)
-void TestingProfile::Builder::SetIsMainProfile(bool is_main_profile) {
-  is_main_profile_ = is_main_profile;
-}
-#endif  // BUILDFLAG(IS_CHROMEOS_LACROS)
-
 #if BUILDFLAG(IS_CHROMEOS_ASH)
 void TestingProfile::Builder::SetUserCloudPolicyManagerAsh(
     std::unique_ptr<policy::UserCloudPolicyManagerAsh>
@@ -1054,11 +1045,6 @@ void TestingProfile::Builder::SetPolicyService(
 
 void TestingProfile::Builder::SetProfileName(const std::string& profile_name) {
   profile_name_ = profile_name;
-}
-
-void TestingProfile::Builder::SetSharedURLLoaderFactory(
-    scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory) {
-  url_loader_factory_ = url_loader_factory;
 }
 
 void TestingProfile::Builder::OverridePolicyConnectorIsManagedForTesting(
@@ -1088,14 +1074,10 @@ std::unique_ptr<TestingProfile> TestingProfile::Builder::Build() {
       extension_policy_,
 #endif
       std::move(pref_service_), nullptr, guest_session_,
-      allows_browser_windows_, is_new_profile_,
-#if BUILDFLAG(IS_CHROMEOS_LACROS)
-      is_main_profile_,
-#endif  // BUILDFLAG(IS_CHROMEOS_LACROS)
-      supervised_user_id_, std::move(user_cloud_policy_manager_),
-      std::move(policy_service_), std::move(testing_factories_), profile_name_,
-      override_policy_connector_is_managed_, absl::optional<OTRProfileID>(),
-      url_loader_factory_);
+      allows_browser_windows_, is_new_profile_, supervised_user_id_,
+      std::move(user_cloud_policy_manager_), std::move(policy_service_),
+      std::move(testing_factories_), profile_name_,
+      override_policy_connector_is_managed_, absl::optional<OTRProfileID>());
 }
 
 TestingProfile* TestingProfile::Builder::BuildOffTheRecord(
@@ -1112,14 +1094,11 @@ TestingProfile* TestingProfile::Builder::BuildOffTheRecord(
       extension_policy_,
 #endif
       std::move(pref_service_), original_profile, guest_session_,
-      allows_browser_windows_, is_new_profile_,
-#if BUILDFLAG(IS_CHROMEOS_LACROS)
-      is_main_profile_,
-#endif  // BUILDFLAG(IS_CHROMEOS_LACROS)
-      supervised_user_id_, std::move(user_cloud_policy_manager_),
-      std::move(policy_service_), std::move(testing_factories_), profile_name_,
+      allows_browser_windows_, is_new_profile_, supervised_user_id_,
+      std::move(user_cloud_policy_manager_), std::move(policy_service_),
+      std::move(testing_factories_), profile_name_,
       override_policy_connector_is_managed_,
-      absl::optional<OTRProfileID>(otr_profile_id), url_loader_factory_);
+      absl::optional<OTRProfileID>(otr_profile_id));
 }
 
 TestingProfile* TestingProfile::Builder::BuildIncognito(

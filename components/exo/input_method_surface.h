@@ -5,6 +5,7 @@
 #ifndef COMPONENTS_EXO_INPUT_METHOD_SURFACE_H_
 #define COMPONENTS_EXO_INPUT_METHOD_SURFACE_H_
 
+#include "base/macros.h"
 #include "components/exo/client_controlled_shell_surface.h"
 #include "components/exo/surface_delegate.h"
 #include "components/exo/surface_observer.h"

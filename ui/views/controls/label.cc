@@ -157,10 +157,6 @@ void Label::SetTextStyle(int style) {
     return;
 
   text_style_ = style;
-  ApplyBaselineTextStyle();
-}
-
-void Label::ApplyBaselineTextStyle() {
   full_text_->SetFontList(style::GetFont(text_context_, text_style_));
   full_text_->SetMinLineHeight(GetLineHeight());
   ClearDisplayText();
@@ -769,7 +765,8 @@ void Label::PaintText(gfx::Canvas* canvas) {
     if (view->layer()) {
       // If we aren't painted to an opaque background, we must paint to an
       // opaque layer.
-      DCHECK(view->layer()->fills_bounds_opaquely());
+      //update on 20220718
+      //DCHECK(view->layer()->fills_bounds_opaquely());
       break;
     }
   }

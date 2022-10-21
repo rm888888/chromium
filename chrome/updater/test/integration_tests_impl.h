@@ -51,6 +51,11 @@ void EnterTestMode(const GURL& url);
 // Copies the logs to a location where they can be retrieved by ResultDB.
 void CopyLog(const base::FilePath& src_dir);
 
+// Sleeps for the given number of seconds. This should be avoided, but in some
+// cases surrounding uninstall it is necessary since the processes can exit
+// prior to completing the actual uninstallation.
+void SleepFor(int seconds);
+
 // Waits for a given predicate to become true, testing it by polling. Returns
 // true if the predicate becomes true before a timeout, otherwise returns false.
 bool WaitFor(base::RepeatingCallback<bool()> predicate);
@@ -138,14 +143,12 @@ void ExpectAppVersion(UpdaterScope scope,
 
 void RegisterApp(UpdaterScope scope, const std::string& app_id);
 
-void WaitForUpdaterExit(UpdaterScope scope);
+void WaitForServerExit(UpdaterScope scope);
 
 #if defined(OS_WIN)
 void ExpectInterfacesRegistered(UpdaterScope scope);
 void ExpectLegacyUpdate3WebSucceeds(UpdaterScope scope,
-                                    const std::string& app_id,
-                                    int expected_final_state,
-                                    int expected_error_code);
+                                    const std::string& app_id);
 void ExpectLegacyProcessLauncherSucceeds(UpdaterScope scope);
 void RunTestServiceCommand(const std::string& sub_command);
 
@@ -155,8 +158,6 @@ void RunTestServiceCommand(const std::string& sub_command);
 void InvokeTestServiceFunction(
     const std::string& function_name,
     const base::flat_map<std::string, base::Value>& arguments);
-
-void RunUninstallCmdLine(UpdaterScope scope);
 #endif  // OS_WIN
 
 // Returns the number of files in the directory, not including directories,
@@ -174,10 +175,6 @@ void ExpectUpdateSequence(UpdaterScope scope,
                           const base::Version& to_version);
 
 void StressUpdateService(UpdaterScope scope);
-
-void CallServiceUpdate(UpdaterScope updater_scope,
-                       const std::string& app_id,
-                       bool same_version_update_allowed);
 
 }  // namespace test
 }  // namespace updater

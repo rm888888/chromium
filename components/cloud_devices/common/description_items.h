@@ -16,6 +16,7 @@
 
 #include "base/check_op.h"
 #include "base/containers/contains.h"
+#include "base/macros.h"
 #include "base/numerics/safe_conversions.h"
 #include "components/cloud_devices/common/cloud_device_description.h"
 

@@ -19,8 +19,7 @@
 namespace ui {
 
 namespace {
-constexpr uint32_t kMinVersion = 1;
-constexpr uint32_t kMaxVersion = 28;
+constexpr uint32_t kMaxAuraShellVersion = 28;
 }
 
 // static
@@ -34,13 +33,11 @@ void WaylandZAuraShell::Instantiate(WaylandConnection* connection,
                                     uint32_t version) {
   DCHECK_EQ(interface, kInterfaceName);
 
-  if (connection->zaura_shell_ ||
-      !wl::CanBind(interface, version, kMinVersion, kMaxVersion)) {
+  if (connection->zaura_shell_)
     return;
-  }
 
   auto zaura_shell = wl::Bind<struct zaura_shell>(
-      registry, name, std::min(version, kMaxVersion));
+      registry, name, std::min(version, kMaxAuraShellVersion));
   if (!zaura_shell) {
     LOG(ERROR) << "Failed to bind zaura_shell";
     return;

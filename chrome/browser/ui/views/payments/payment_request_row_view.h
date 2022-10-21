@@ -8,7 +8,6 @@
 #include "base/memory/weak_ptr.h"
 #include "ui/base/metadata/metadata_header_macros.h"
 #include "ui/views/controls/button/button.h"
-#include "ui/views/metadata/view_factory.h"
 
 namespace payments {
 
@@ -19,7 +18,6 @@ class PaymentRequestRowView
       public base::SupportsWeakPtr<PaymentRequestRowView> {
  public:
   METADATA_HEADER(PaymentRequestRowView);
-  PaymentRequestRowView();
   // Creates a row view. If |clickable| is true, the row will be shaded on hover
   // and handle click events. |insets| are used as padding around the content.
   PaymentRequestRowView(PressedCallback callback,
@@ -29,15 +27,12 @@ class PaymentRequestRowView
   PaymentRequestRowView& operator=(const PaymentRequestRowView&) = delete;
   ~PaymentRequestRowView() override;
 
-  gfx::Insets GetRowInsets() const;
-  void SetRowInsets(const gfx::Insets& row_insets);
-
-  bool GetClickable() const;
-  void SetClickable(bool clickable);
-
   void set_previous_row(base::WeakPtr<PaymentRequestRowView> previous_row) {
     previous_row_ = previous_row;
   }
+
+ protected:
+  bool GetClickable() const;
 
  private:
   // Sets this row's background to the theme's hovered color to indicate that
@@ -58,9 +53,6 @@ class PaymentRequestRowView
   // colored background color.
   void SetIsHighlighted(bool highlighted);
 
-  // Updates the button state to reflect the |clickable_| state.
-  void UpdateButtonState();
-
   // views::Button:
   void GetAccessibleNodeData(ui::AXNodeData* node_data) override;
   void StateChanged(ButtonState old_state) override;
@@ -70,22 +62,15 @@ class PaymentRequestRowView
   void OnFocus() override;
   void OnBlur() override;
 
-  bool clickable_ = true;
+  bool clickable_;
   bool bottom_separator_visible_ = false;
-  gfx::Insets row_insets_;
+  gfx::Insets insets_;
 
   // A non-owned pointer to the previous row object in the UI. Used to hide the
   // bottom border of the previous row when highlighting this one. May be null.
   base::WeakPtr<PaymentRequestRowView> previous_row_;
 };
 
-BEGIN_VIEW_BUILDER(, PaymentRequestRowView, views::Button)
-VIEW_BUILDER_PROPERTY(bool, Clickable)
-VIEW_BUILDER_PROPERTY(gfx::Insets, RowInsets)
-END_VIEW_BUILDER
-
 }  // namespace payments
-
-DEFINE_VIEW_BUILDER(, payments::PaymentRequestRowView)
 
 #endif  // CHROME_BROWSER_UI_VIEWS_PAYMENTS_PAYMENT_REQUEST_ROW_VIEW_H_

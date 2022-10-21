@@ -7,7 +7,9 @@
 
 #include <memory>
 
-#include "base/memory/raw_ptr.h"
+#include "base/containers/span.h"
+#include "base/macros.h"
+#include "base/timer/timer.h"
 #include "chrome/browser/ui/views/webauthn/authenticator_request_sheet_view.h"
 #include "chrome/browser/ui/webauthn/sheet_models.h"
 
@@ -23,13 +25,18 @@ class AuthenticatorQRSheetView : public AuthenticatorRequestSheetView {
 
   ~AuthenticatorQRSheetView() override;
 
+  // RefreshQRCode causes a fresh QR code to be painted.
+  void RefreshQRCode(base::span<const uint8_t> new_qr_data);
+
  private:
   // AuthenticatorRequestSheetView:
   std::pair<std::unique_ptr<views::View>, AutoFocus> BuildStepSpecificContent()
       override;
+  void Update();
 
-  raw_ptr<AuthenticatorQRViewCentered> qr_view_ = nullptr;
+  AuthenticatorQRViewCentered* qr_view_ = nullptr;
   const std::string qr_string_;
+  base::RepeatingTimer timer_;
 };
 
 #endif  // CHROME_BROWSER_UI_VIEWS_WEBAUTHN_AUTHENTICATOR_QR_SHEET_VIEW_H_

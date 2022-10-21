@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "base/auto_reset.h"
+#include "base/macros.h"
 #include "base/observer_list.h"
 #include "ui/events/events_export.h"
 #include "ui/events/platform_event.h"
@@ -71,9 +72,6 @@ class EVENTS_EXPORT PlatformEventSource {
 
   void AddPlatformEventObserver(PlatformEventObserver* observer);
   void RemovePlatformEventObserver(PlatformEventObserver* observer);
-
-  // This method will synchronously stop event processing.
-  virtual void StopProcessingEventsForTesting();
 
   // Creates PlatformEventSource and sets it as a thread-local singleton.
   static std::unique_ptr<PlatformEventSource> CreateDefault();

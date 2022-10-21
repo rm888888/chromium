@@ -5,6 +5,7 @@
 #ifndef COMPONENTS_IMAGE_FETCHER_IMAGE_FETCHER_BRIDGE_H_
 #define COMPONENTS_IMAGE_FETCHER_IMAGE_FETCHER_BRIDGE_H_
 
+#include <memory>
 #include <string>
 
 #include "base/android/scoped_java_ref.h"
@@ -80,4 +81,4 @@ class ImageFetcherBridge {
 
 }  // namespace image_fetcher
 
-#endif  // COMPONENTS_IMAGE_FETCHER_IMAGE_FETCHER_BRIDGE_H_
+#endif  // CHROME_BROWSER_ANDROID_IMAGE_FETCHER_IMAGE_FETCHER_BRIDGE_H_

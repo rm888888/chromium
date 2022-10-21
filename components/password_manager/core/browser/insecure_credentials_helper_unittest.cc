@@ -54,9 +54,7 @@ class InsecureCredentialsHelperTest : public testing::Test {
 
     EXPECT_CALL(*store_, GetLogins(digest, _))
         .WillOnce(testing::WithArg<1>(
-            [this](base::WeakPtr<PasswordStoreConsumer> consumer) {
-              consumer_ = consumer;
-            }));
+            [this](PasswordStoreConsumer* consumer) { consumer_ = consumer; }));
   }
 
   void SimulateStoreRepliedWithResults(
@@ -73,7 +71,7 @@ class InsecureCredentialsHelperTest : public testing::Test {
   base::test::SingleThreadTaskEnvironment task_environment_{
       base::test::TaskEnvironment::TimeSource::MOCK_TIME};
   scoped_refptr<MockPasswordStoreInterface> store_;
-  base::WeakPtr<PasswordStoreConsumer> consumer_;
+  PasswordStoreConsumer* consumer_ = nullptr;
 };
 
 TEST_F(InsecureCredentialsHelperTest, UpdateLoginCalledForTheRightFormAdd) {

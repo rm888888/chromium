@@ -5,6 +5,7 @@
 #ifndef CHROME_BROWSER_UI_WEBUI_RESET_PASSWORD_RESET_PASSWORD_UI_H_
 #define CHROME_BROWSER_UI_WEBUI_RESET_PASSWORD_RESET_PASSWORD_UI_H_
 
+#include "base/macros.h"
 #include "chrome/browser/safe_browsing/chrome_password_protection_service.h"
 #include "chrome/browser/ui/webui/reset_password/reset_password.mojom.h"
 #include "components/password_manager/core/browser/password_manager_metrics_util.h"

@@ -9,6 +9,7 @@
 #include <ostream>
 #include <string>
 
+#include "base/macros.h"
 #include "ui/display/types/display_types_export.h"
 #include "ui/gfx/geometry/size.h"
 

@@ -62,8 +62,6 @@ void MockInputMethod::OnFocus() {
     observer.OnFocus();
 }
 
-void MockInputMethod::OnTouch(ui::EventPointerType pointerType) {}
-
 void MockInputMethod::OnBlur() {
   for (InputMethodObserver& observer : observer_list_)
     observer.OnBlur();
@@ -103,6 +101,11 @@ TextInputType MockInputMethod::GetTextInputType() const {
 
 bool MockInputMethod::IsCandidatePopupOpen() const {
   return false;
+}
+
+void MockInputMethod::ShowVirtualKeyboardIfEnabled() {
+  for (InputMethodObserver& observer : observer_list_)
+    observer.OnShowVirtualKeyboardIfEnabled();
 }
 
 void MockInputMethod::SetVirtualKeyboardVisibilityIfEnabled(bool should_show) {

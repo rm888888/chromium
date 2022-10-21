@@ -6,6 +6,7 @@
 
 #include <memory>
 
+#include "base/macros.h"
 #include "base/test/task_environment.h"
 #include "base/time/time.h"
 #include "testing/gtest/include/gtest/gtest.h"

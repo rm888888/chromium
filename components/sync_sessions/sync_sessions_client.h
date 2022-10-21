@@ -8,6 +8,7 @@
 #include <memory>
 #include <string>
 
+#include "base/macros.h"
 #include "components/sync/model/model_type_store.h"
 
 class GURL;

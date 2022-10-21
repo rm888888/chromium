@@ -20,9 +20,9 @@
 #include "ui/views/controls/image_view.h"
 #include "ui/views/controls/label.h"
 #include "ui/views/controls/progress_bar.h"
-#include "ui/views/layout/box_layout_view.h"
+#include "ui/views/layout/box_layout.h"
+#include "ui/views/layout/grid_layout.h"
 #include "ui/views/layout/layout_provider.h"
-#include "ui/views/layout/table_layout.h"
 
 namespace payments {
 namespace {
@@ -231,46 +231,74 @@ void SecurePaymentConfirmationDialogView::InitChildViews() {
   InvalidateLayout();
 }
 
-// Creates the body including the title, the set of merchant, instrument, and
-// total rows.
+// Creates the body.
 // +------------------------------------------+
 // | Title                                    |
 // |                                          |
 // | merchant label      value                |
 // +~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~+
-// | instrument label    [icon] value         |
+// | instrument label    value           icon |
 // +~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~+
 // | total label         value                |
 // +~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~+
 std::unique_ptr<views::View>
 SecurePaymentConfirmationDialogView::CreateBodyView() {
-  auto body_view = std::make_unique<views::BoxLayoutView>();
-  body_view->SetOrientation(views::BoxLayout::Orientation::kVertical);
-  body_view->SetInsideBorderInsets(
-      ChromeLayoutProvider::Get()->GetInsetsMetric(views::INSETS_DIALOG));
-  body_view->SetMainAxisAlignment(views::BoxLayout::MainAxisAlignment::kCenter);
-  body_view->SetCrossAxisAlignment(
-      views::BoxLayout::CrossAxisAlignment::kStretch);
+  auto body = std::make_unique<views::View>();
+  body->SetBorder(views::CreateEmptyBorder(gfx::Insets(
+      kBodyInsets, kBodyExtraInset, kBodyExtraInset, kBodyExtraInset)));
 
+  views::GridLayout* layout =
+      body->SetLayoutManager(std::make_unique<views::GridLayout>());
+  views::ColumnSet* columns = layout->AddColumnSet(0);
+  columns->AddColumn(views::GridLayout::FILL, views::GridLayout::CENTER, 1.0,
+                     views::GridLayout::ColumnSize::kUsePreferred, 0, 0);
+
+  layout->StartRow(views::GridLayout::kFixedSize, 0);
   std::unique_ptr<views::Label> title_text =
       CreateSecurePaymentConfirmationTitleLabel(model_->title());
   title_text->SetID(static_cast<int>(DialogViewID::TITLE));
-  body_view->AddChildView(std::move(title_text));
+  layout->AddView(std::move(title_text));
 
-  body_view->AddChildView(
+  layout->StartRow(views::GridLayout::kFixedSize, 0);
+  layout->AddView(CreateRows());
+
+  return body;
+}
+
+// Creates the set of merchant, instrument, and total rows.
+// +------------------------------------------+
+// | merchant label     value                 |
+// +~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~+
+// | instrument label   [icon] value          |
+// +~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~+
+// | total label        value                 |
+// +~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~+
+std::unique_ptr<views::View> SecurePaymentConfirmationDialogView::CreateRows() {
+  auto rows = std::make_unique<views::View>();
+
+  views::GridLayout* layout =
+      rows->SetLayoutManager(std::make_unique<views::GridLayout>());
+  views::ColumnSet* columns = layout->AddColumnSet(0);
+  columns->AddColumn(views::GridLayout::FILL, views::GridLayout::CENTER, 1.0,
+                     views::GridLayout::ColumnSize::kUsePreferred, 0, 0);
+
+  layout->StartRow(views::GridLayout::kFixedSize, 0);
+  layout->AddView(
       CreateRowView(model_->merchant_label(), DialogViewID::MERCHANT_LABEL,
                     model_->merchant_value(), DialogViewID::MERCHANT_VALUE));
 
-  body_view->AddChildView(
+  layout->StartRow(views::GridLayout::kFixedSize, 0);
+  layout->AddView(
       CreateRowView(model_->instrument_label(), DialogViewID::INSTRUMENT_LABEL,
                     model_->instrument_value(), DialogViewID::INSTRUMENT_VALUE,
                     model_->instrument_icon(), DialogViewID::INSTRUMENT_ICON));
 
-  body_view->AddChildView(
+  layout->StartRow(views::GridLayout::kFixedSize, 0);
+  layout->AddView(
       CreateRowView(model_->total_label(), DialogViewID::TOTAL_LABEL,
                     model_->total_value(), DialogViewID::TOTAL_VALUE));
 
-  return body_view;
+  return rows;
 }
 
 // Creates a row of data with |label|, |value|, and optionally |icon|.
@@ -286,37 +314,37 @@ std::unique_ptr<views::View> SecurePaymentConfirmationDialogView::CreateRowView(
     DialogViewID icon_id) {
   auto row = std::make_unique<BorderedRowView>();
 
-  views::TableLayout* layout =
-      row->SetLayoutManager(std::make_unique<views::TableLayout>());
+  views::GridLayout* layout =
+      row->SetLayoutManager(std::make_unique<views::GridLayout>());
 
+  views::ColumnSet* columns = layout->AddColumnSet(0);
   // Label column
   constexpr int kLabelColumnWidth = 80;
-  layout->AddColumn(
-      views::LayoutAlignment::kStart, views::LayoutAlignment::kCenter,
-      views::TableLayout::kFixedSize, views::TableLayout::ColumnSize::kFixed,
-      kLabelColumnWidth, 0);
+  columns->AddColumn(views::GridLayout::LEADING, views::GridLayout::CENTER,
+                     views::GridLayout::kFixedSize,
+                     views::GridLayout::ColumnSize::kFixed, kLabelColumnWidth,
+                     0);
 
   constexpr int kPaddingAfterLabel = 24;
-  layout->AddPaddingColumn(views::TableLayout::kFixedSize, kPaddingAfterLabel);
+  columns->AddPaddingColumn(views::GridLayout::kFixedSize, kPaddingAfterLabel);
 
   // Icon column
   if (icon) {
-    layout->AddColumn(
-        views::LayoutAlignment::kStart, views::LayoutAlignment::kCenter,
-        views::TableLayout::kFixedSize, views::TableLayout::ColumnSize::kFixed,
-        kSecurePaymentConfirmationInstrumentIconWidthPx,
-        kSecurePaymentConfirmationInstrumentIconWidthPx);
-    layout->AddPaddingColumn(views::TableLayout::kFixedSize,
-                             ChromeLayoutProvider::Get()->GetDistanceMetric(
-                                 views::DISTANCE_RELATED_LABEL_HORIZONTAL));
+    columns->AddColumn(views::GridLayout::LEADING, views::GridLayout::CENTER,
+                       views::GridLayout::kFixedSize,
+                       views::GridLayout::ColumnSize::kFixed,
+                       kSecurePaymentConfirmationInstrumentIconWidthPx,
+                       kSecurePaymentConfirmationInstrumentIconWidthPx);
+    columns->AddPaddingColumn(views::GridLayout::kFixedSize,
+                              ChromeLayoutProvider::Get()->GetDistanceMetric(
+                                  views::DISTANCE_RELATED_LABEL_HORIZONTAL));
   }
 
   // Value column
-  layout->AddColumn(views::LayoutAlignment::kStretch,
-                    views::LayoutAlignment::kCenter, 1.0f,
-                    views::TableLayout::ColumnSize::kUsePreferred, 0, 0);
+  columns->AddColumn(views::GridLayout::FILL, views::GridLayout::CENTER, 1.0,
+                     views::GridLayout::ColumnSize::kUsePreferred, 0, 0);
 
-  layout->AddRows(1, views::TableLayout::kFixedSize, kPaymentInfoRowHeight);
+  layout->StartRow(views::GridLayout::kFixedSize, 0, kPaymentInfoRowHeight);
 
   std::unique_ptr<views::Label> label_text = std::make_unique<views::Label>(
       label, views::style::CONTEXT_DIALOG_BODY_TEXT,
@@ -324,7 +352,7 @@ std::unique_ptr<views::View> SecurePaymentConfirmationDialogView::CreateRowView(
   label_text->SetHorizontalAlignment(gfx::ALIGN_TO_HEAD);
   label_text->SetLineHeight(kDescriptionLineHeight);
   label_text->SetID(static_cast<int>(label_id));
-  row->AddChildView(std::move(label_text));
+  layout->AddView(std::move(label_text));
 
   if (icon) {
     instrument_icon_ = model_->instrument_icon();
@@ -335,7 +363,7 @@ std::unique_ptr<views::View> SecurePaymentConfirmationDialogView::CreateRowView(
         CreateSecurePaymentConfirmationInstrumentIconView(
             *model_->instrument_icon());
     icon_view->SetID(static_cast<int>(icon_id));
-    row->AddChildView(std::move(icon_view));
+    layout->AddView(std::move(icon_view));
   }
 
   std::unique_ptr<views::Label> value_text = std::make_unique<views::Label>(
@@ -344,7 +372,7 @@ std::unique_ptr<views::View> SecurePaymentConfirmationDialogView::CreateRowView(
   value_text->SetHorizontalAlignment(gfx::ALIGN_TO_HEAD);
   value_text->SetLineHeight(kDescriptionLineHeight);
   value_text->SetID(static_cast<int>(value_id));
-  row->AddChildView(std::move(value_text));
+  layout->AddView(std::move(value_text));
 
   return row;
 }

@@ -53,11 +53,6 @@ extern const base::Feature kAllowTouchpadHapticClickSettings;
 COMPONENT_EXPORT(CHROME_FEATURES)
 extern const base::Feature kAlwaysReinstallSystemWebApps;
 
-#if defined(OS_ANDROID)
-COMPONENT_EXPORT(CHROME_FEATURES)
-extern const base::Feature kAnonymousUpdateChecks;
-#endif
-
 #if BUILDFLAG(IS_CHROMEOS_ASH)
 COMPONENT_EXPORT(CHROME_FEATURES)
 extern const base::Feature kApkWebAppInstalls;
@@ -78,8 +73,6 @@ COMPONENT_EXPORT(CHROME_FEATURES)
 extern const base::Feature kAppServiceExternalProtocol;
 COMPONENT_EXPORT(CHROME_FEATURES)
 extern const base::Feature kAppServiceLoadIconWithoutMojom;
-COMPONENT_EXPORT(CHROME_FEATURES)
-extern const base::Feature kAppServiceExtension;
 #endif  // !defined(OS_ANDROID)
 
 #if defined(OS_MAC)
@@ -88,11 +81,6 @@ extern const base::Feature kAppShimRemoteCocoa;
 COMPONENT_EXPORT(CHROME_FEATURES)
 extern const base::Feature kAppShimNewCloseBehavior;
 #endif  // defined(OS_MAC)
-
-#if defined(OS_CHROMEOS)
-COMPONENT_EXPORT(CHROME_FEATURES)
-extern const base::Feature kArcPiGhostWindow;
-#endif  // defined(OS_CHROMEOS)
 
 COMPONENT_EXPORT(CHROME_FEATURES) extern const base::Feature kAsyncDns;
 
@@ -164,17 +152,12 @@ COMPONENT_EXPORT(CHROME_FEATURES)
 extern const base::Feature kCryptohomeUserDataAuthKillswitch;
 #endif
 
-#if defined(OS_CHROMEOS)
+#if BUILDFLAG(IS_CHROMEOS_ASH)
 COMPONENT_EXPORT(CHROME_FEATURES)
 extern const base::Feature kDataLeakPreventionPolicy;
 
 COMPONENT_EXPORT(CHROME_FEATURES)
 extern const base::Feature kDataLeakPreventionFilesRestriction;
-#endif
-
-#if BUILDFLAG(IS_CHROMEOS_ASH)
-COMPONENT_EXPORT(CHROME_FEATURES)
-extern const base::Feature kDefaultLinkCapturingInBrowser;
 #endif
 
 #if BUILDFLAG(IS_CHROMEOS_ASH)
@@ -187,8 +170,12 @@ COMPONENT_EXPORT(CHROME_FEATURES)
 extern const base::Feature kPreinstalledWebAppInstallation;
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS_ASH) || defined(OS_MAC) || defined(OS_LINUX) || \
-    defined(OS_FUCHSIA)
+#if BUILDFLAG(IS_CHROMEOS_ASH)
+COMPONENT_EXPORT(CHROME_FEATURES)
+extern const base::Feature kDefaultPinnedAppsUpdate2021Q2;
+#endif
+
+#if BUILDFLAG(IS_CHROMEOS_ASH) || defined(OS_MAC) || defined(OS_LINUX)
 COMPONENT_EXPORT(CHROME_FEATURES)
 extern const base::Feature kDesktopPWAsAppIconShortcutsMenuUI;
 #endif
@@ -200,10 +187,10 @@ COMPONENT_EXPORT(CHROME_FEATURES)
 extern const base::Feature kDesktopPWAsCacheDuringDefaultInstall;
 
 COMPONENT_EXPORT(CHROME_FEATURES)
-extern const base::Feature kDesktopPWAsDefaultOfflinePage;
+extern const base::Feature kDesktopPWAsElidedExtensionsMenu;
 
 COMPONENT_EXPORT(CHROME_FEATURES)
-extern const base::Feature kDesktopPWAsElidedExtensionsMenu;
+extern const base::Feature kDesktopPWAsFileHandlingSettingsGated;
 
 COMPONENT_EXPORT(CHROME_FEATURES)
 extern const base::Feature kDesktopPWAsFlashAppNameInsteadOfOrigin;
@@ -215,6 +202,9 @@ COMPONENT_EXPORT(CHROME_FEATURES)
 extern const base::Feature kDesktopPWAsRunOnOsLogin;
 
 COMPONENT_EXPORT(CHROME_FEATURES)
+extern const base::Feature kDesktopPWAsSubApps;
+
+COMPONENT_EXPORT(CHROME_FEATURES)
 extern const base::Feature kDesktopPWAsTabStripLinkCapturing;
 
 COMPONENT_EXPORT(CHROME_FEATURES)
@@ -222,11 +212,6 @@ extern const base::Feature kDesktopPWAsTabStripSettings;
 
 COMPONENT_EXPORT(CHROME_FEATURES)
 extern const base::Feature kDesktopPWAsWebBundles;
-
-COMPONENT_EXPORT(CHROME_FEATURES)
-extern const base::Feature kDisableHttpDiskCache;
-COMPONENT_EXPORT(CHROME_FEATURES)
-extern const base::FeatureParam<int> kDisableHttpDiskCacheMemoryCacheSizeParam;
 
 COMPONENT_EXPORT(CHROME_FEATURES)
 extern const base::Feature kDnsOverHttps;
@@ -280,8 +265,18 @@ extern const base::Feature kEnableRestrictedWebApis;
 COMPONENT_EXPORT(CHROME_FEATURES)
 extern const base::Feature kEnableWebAppUninstallFromOsSettings;
 
+#if !defined(OS_ANDROID)
+COMPONENT_EXPORT(CHROME_FEATURES)
+extern const base::Feature kExtensionDeferredIndividualSettings;
+#endif
+
 COMPONENT_EXPORT(CHROME_FEATURES)
 extern const base::Feature kExtensionWorkflowJustification;
+
+#if defined(OS_MAC)
+COMPONENT_EXPORT(CHROME_FEATURES)
+extern const base::Feature kEnterpriseReportingApiKeychainRecreation;
+#endif
 
 COMPONENT_EXPORT(CHROME_FEATURES)
 extern const base::Feature kEnterpriseReportingExtensionManifestVersion;
@@ -301,6 +296,10 @@ extern const base::Feature kFlashDeprecationWarning;
 
 COMPONENT_EXPORT(CHROME_FEATURES)
 extern const base::Feature kFocusMode;
+
+#if defined(OS_WIN)
+COMPONENT_EXPORT(CHROME_FEATURES) extern const base::Feature kGdiTextPrinting;
+#endif
 
 COMPONENT_EXPORT(CHROME_FEATURES) extern const base::Feature kGeoLanguage;
 
@@ -329,9 +328,6 @@ COMPONENT_EXPORT(CHROME_FEATURES)
 extern const base::FeatureParam<bool>
     kHappinessTrackingSurveysForDesktopSettingsPrivacyNoSandbox;
 COMPONENT_EXPORT(CHROME_FEATURES)
-extern const base::FeatureParam<bool>
-    kHappinessTrackingSurveysForDesktopSettingsPrivacyNoReview;
-COMPONENT_EXPORT(CHROME_FEATURES)
 extern const base::FeatureParam<base::TimeDelta>
     kHappinessTrackingSurveysForDesktopSettingsPrivacyTime;
 
@@ -343,12 +339,6 @@ extern const base::FeatureParam<base::TimeDelta>
 
 COMPONENT_EXPORT(CHROME_FEATURES)
 extern const base::Feature kHappinessTrackingSurveysForDesktopNtpModules;
-
-COMPONENT_EXPORT(CHROME_FEATURES)
-extern const base::Feature kHappinessTrackingSurveysForDesktopWhatsNew;
-COMPONENT_EXPORT(CHROME_FEATURES)
-extern const base::FeatureParam<base::TimeDelta>
-    kHappinessTrackingSurveysForDesktopWhatsNewTime;
 
 COMPONENT_EXPORT(CHROME_FEATURES)
 extern const base::Feature kHaTSDesktopDevToolsIssuesCOEP;
@@ -375,9 +365,6 @@ COMPONENT_EXPORT(CHROME_FEATURES)
 extern const base::Feature kHappinessTrackingSystem;
 
 COMPONENT_EXPORT(CHROME_FEATURES)
-extern const base::Feature kHappinessTrackingSystemEnt;
-
-COMPONENT_EXPORT(CHROME_FEATURES)
 extern const base::Feature kHappinessTrackingSystemStability;
 
 COMPONENT_EXPORT(CHROME_FEATURES)
@@ -391,12 +378,6 @@ extern const base::Feature kHappinessTrackingSystemUnlock;
 
 COMPONENT_EXPORT(CHROME_FEATURES)
 extern const base::Feature kHappinessTrackingSystemSmartLock;
-
-COMPONENT_EXPORT(CHROME_FEATURES)
-extern const base::Feature kHappinessTrackingSystemArcGames;
-
-COMPONENT_EXPORT(CHROME_FEATURES)
-extern const base::Feature kHappinessTrackingSystemAudio;
 #endif
 
 COMPONENT_EXPORT(CHROME_FEATURES)
@@ -408,11 +389,6 @@ extern const base::Feature kHttpsOnlyMode;
 #if defined(OS_MAC)
 COMPONENT_EXPORT(CHROME_FEATURES)
 extern const base::Feature kImmersiveFullscreen;
-#endif
-
-#if defined(OS_LINUX) || defined(OS_CHROMEOS)
-COMPONENT_EXPORT(CHROME_FEATURES)
-extern const base::Feature kImproveAccessibilityTreeUsingLocalML;
 #endif
 
 #if BUILDFLAG(IS_CHROMEOS_ASH)
@@ -454,17 +430,9 @@ extern const base::Feature kIntentPickerPWAPersistence;
 COMPONENT_EXPORT(CHROME_FEATURES)
 extern const base::Feature kInvalidatorUniqueOwnerName;
 
-COMPONENT_EXPORT(CHROME_FEATURES)
-extern const base::Feature kIPHInWebUIDemo;
-
 #if BUILDFLAG(IS_CHROMEOS_ASH)
 COMPONENT_EXPORT(CHROME_FEATURES)
 extern const base::Feature kKernelnextVMs;
-#endif
-
-#if defined(OS_CHROMEOS)
-COMPONENT_EXPORT(CHROME_FEATURES)
-extern const base::Feature kLinkCapturingUiUpdate;
 #endif
 
 #if defined(OS_LINUX) && !defined(OS_CHROMEOS)
@@ -475,6 +443,9 @@ extern const base::FeatureParam<int> kLinuxLowMemoryMonitorModerateLevel;
 COMPONENT_EXPORT(CHROME_FEATURES)
 extern const base::FeatureParam<int> kLinuxLowMemoryMonitorCriticalLevel;
 #endif  // defined(OS_LINUX) && !defined(OS_CHROMEOS)
+
+COMPONENT_EXPORT(CHROME_FEATURES)
+extern const base::Feature kLiteVideo;
 
 #if defined(OS_MAC)
 COMPONENT_EXPORT(CHROME_FEATURES)
@@ -546,6 +517,9 @@ extern const base::Feature kOobeMarketingAdditionalCountriesSupported;
 
 COMPONENT_EXPORT(CHROME_FEATURES)
 extern const base::Feature kOobeMarketingDoubleOptInCountriesSupported;
+
+COMPONENT_EXPORT(CHROME_FEATURES)
+extern const base::Feature kOobeMarketingScreen;
 
 #if defined(OS_ANDROID)
 COMPONENT_EXPORT(CHROME_FEATURES) extern const base::Feature kOomIntervention;
@@ -663,6 +637,9 @@ COMPONENT_EXPORT(CHROME_FEATURES) extern const base::Feature kSitePerProcess;
 #if BUILDFLAG(IS_CHROMEOS_ASH)
 COMPONENT_EXPORT(CHROME_FEATURES) extern const base::Feature kSmartDim;
 #endif
+
+COMPONENT_EXPORT(CHROME_FEATURES)
+extern const base::Feature kSpareRendererOnPrimaryProfileCreation;
 
 COMPONENT_EXPORT(CHROME_FEATURES)
 extern const base::Feature kSoundContentSetting;
@@ -819,9 +796,6 @@ bool IsParentAccessCodeForOnlineLoginEnabled();
 // details of Omnibox triggered prerendering.
 COMPONENT_EXPORT(CHROME_FEATURES)
 extern const base::Feature kOmniboxTriggerForPrerender2;
-
-COMPONENT_EXPORT(CHROME_FEATURES)
-extern const base::Feature kOmniboxTriggerForNoStatePrefetch;
 
 bool PrefServiceEnabled();
 

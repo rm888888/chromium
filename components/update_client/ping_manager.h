@@ -8,6 +8,7 @@
 #include <string>
 
 #include "base/callback_forward.h"
+#include "base/macros.h"
 #include "base/memory/ref_counted.h"
 #include "base/threading/thread_checker.h"
 
@@ -15,7 +16,6 @@ namespace update_client {
 
 class Configurator;
 class Component;
-class PersistedData;
 
 class PingManager : public base::RefCountedThreadSafe<PingManager> {
  public:
@@ -32,9 +32,7 @@ class PingManager : public base::RefCountedThreadSafe<PingManager> {
   // Sends a ping for the |item|. |callback| is invoked after the ping is sent
   // or an error has occured. The ping itself is not persisted and it will
   // be discarded if it has not been sent for any reason.
-  virtual void SendPing(const Component& component,
-                        const PersistedData& metadata,
-                        Callback callback);
+  virtual void SendPing(const Component& component, Callback callback);
 
  protected:
   virtual ~PingManager();

@@ -5,7 +5,6 @@
 #include <algorithm>
 #include <list>
 #include <map>
-#include <tuple>
 
 #include "base/bind.h"
 #include "base/feature_list.h"
@@ -35,7 +34,6 @@
 #include "components/prefs/pref_service.h"
 #include "components/security_interstitials/content/security_interstitial_tab_helper.h"
 #include "components/security_interstitials/content/ssl_blocking_page.h"
-#include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/notification_details.h"
 #include "content/public/browser/notification_source.h"
 #include "content/public/browser/storage_partition.h"
@@ -238,6 +236,8 @@ class LoginPromptBrowserTest
     auth_map_["bar"] = AuthInfo("testuser", "barpassword");
     auth_map_["testrealm"] = AuthInfo(username_basic_, password_);
 
+    // TODO(https://crbug.com/333943): Remove kFtpProtocol feature and FTP
+    // credential tests when FTP support is removed.
     if (GetParam() == SplitAuthCacheByNetworkIsolationKey::kFalse) {
       scoped_feature_list_.InitAndDisableFeature(
           network::features::kSplitAuthCacheByNetworkIsolationKey);
@@ -1962,23 +1962,22 @@ IN_PROC_BROWSER_TEST_P(LoginPromptBrowserTest, NoRepostDialogAfterCredentials) {
 // Tests that when HTTP Auth committed interstitials are enabled, showing a
 // login prompt in a new window opened from window.open() does not
 // crash. Regression test for https://crbug.com/1005096.
-IN_PROC_BROWSER_TEST_P(LoginPromptBrowserTest, PromptWithOnlyInitialEntry) {
+IN_PROC_BROWSER_TEST_P(LoginPromptBrowserTest, PromptWithNoVisibleEntry) {
   ASSERT_TRUE(embedded_test_server()->Start());
 
   content::WebContents* contents =
       browser()->tab_strip_model()->GetActiveWebContents();
 
-  ASSERT_TRUE(ui_test_utils::NavigateToURL(
-      browser(), embedded_test_server()->GetURL("/title1.html")));
+  ASSERT_TRUE(ui_test_utils::NavigateToURL(browser(), GURL("about:blank")));
 
   // Open a new window via JavaScript and navigate it to a page that delivers an
   // auth prompt.
   GURL test_page = embedded_test_server()->GetURL(kAuthBasicPage);
-  ASSERT_NE(false, content::EvalJs(contents, "w = window.open('/nocontent');"));
+  ASSERT_NE(false, content::EvalJs(contents, "w = window.open();"));
   content::WebContents* opened_contents =
       browser()->tab_strip_model()->GetWebContentsAt(1);
   NavigationController* opened_controller = &opened_contents->GetController();
-  ASSERT_TRUE(opened_controller->GetVisibleEntry()->IsInitialEntry());
+  ASSERT_FALSE(opened_controller->GetVisibleEntry());
   LoginPromptBrowserTestObserver observer;
   observer.Register(content::Source<NavigationController>(opened_controller));
   WindowedAuthNeededObserver auth_needed_waiter(opened_controller);
@@ -2428,10 +2427,10 @@ IN_PROC_BROWSER_TEST_P(LoginPromptPrerenderBrowserTest,
   const GURL kAuthIFrameUrl = embedded_test_server()->GetURL(kAuthBasicPage);
   content::RenderFrameHost* prerender_rfh =
       prerender_helper().GetPrerenderedMainFrameHost(host_id);
-  std::ignore =
-      ExecJs(prerender_rfh,
-             "var i = document.createElement('iframe'); i.src = '" +
-                 kAuthIFrameUrl.spec() + "'; document.body.appendChild(i);");
+  ignore_result(ExecJs(prerender_rfh,
+                       "var i = document.createElement('iframe'); i.src = '" +
+                           kAuthIFrameUrl.spec() +
+                           "'; document.body.appendChild(i);"));
 
   // The prerender should be destroyed.
   host_observer.WaitForDestroyed();
@@ -2473,8 +2472,8 @@ IN_PROC_BROWSER_TEST_P(LoginPromptPrerenderBrowserTest,
         imgElement.src = '/auth-basic/favicon.gif';
         document.body.appendChild(imgElement);
   )";
-  std::ignore = ExecJs(prerender_helper().GetPrerenderedMainFrameHost(host_id),
-                       fetch_subresource_script);
+  ignore_result(ExecJs(prerender_helper().GetPrerenderedMainFrameHost(host_id),
+                       fetch_subresource_script));
 
   // The prerender should be destroyed.
   host_observer.WaitForDestroyed();

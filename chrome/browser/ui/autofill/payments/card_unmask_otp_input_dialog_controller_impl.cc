@@ -7,7 +7,7 @@
 #include <string>
 
 #include "chrome/browser/ui/autofill/payments/card_unmask_otp_input_dialog_view.h"
-#include "components/autofill/core/browser/metrics/autofill_metrics.h"
+#include "components/autofill/core/browser/autofill_metrics.h"
 #include "components/autofill/core/browser/payments/otp_unmask_result.h"
 #include "components/strings/grit/components_strings.h"
 #include "content/public/browser/web_contents.h"
@@ -47,11 +47,6 @@ void CardUnmaskOtpInputDialogControllerImpl::ShowDialog(
 
 void CardUnmaskOtpInputDialogControllerImpl::OnOtpVerificationResult(
     OtpUnmaskResult result) {
-  // This can be invoked when the dialog is not visible. In this case we do
-  // nothing.
-  if (!dialog_view_)
-    return;
-
   switch (result) {
     case OtpUnmaskResult::kSuccess:
       dialog_view_->Dismiss(/*show_confirmation_before_closing=*/true,
@@ -181,9 +176,7 @@ std::u16string CardUnmaskOtpInputDialogControllerImpl::GetConfirmationMessage()
 
 CardUnmaskOtpInputDialogControllerImpl::CardUnmaskOtpInputDialogControllerImpl(
     content::WebContents* web_contents)
-    : content::WebContentsObserver(web_contents),
-      content::WebContentsUserData<CardUnmaskOtpInputDialogControllerImpl>(
-          *web_contents) {}
+    : content::WebContentsObserver(web_contents) {}
 
 void CardUnmaskOtpInputDialogControllerImpl::ShowInvalidState(
     OtpUnmaskResult otp_unmask_result) {

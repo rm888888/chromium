@@ -8,6 +8,7 @@
 #include <inttypes.h>
 
 #include "base/callback.h"
+#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "base/task/single_thread_task_runner.h"
 #include "base/threading/thread_checker.h"
@@ -15,9 +16,9 @@
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "mojo/public/cpp/bindings/receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
-#include "ui/ozone/platform/scenic/mojom/scenic_gpu_host.mojom.h"
-#include "ui/ozone/platform/scenic/mojom/scenic_gpu_service.mojom.h"
 #include "ui/ozone/public/gpu_platform_support_host.h"
+#include "ui/ozone/public/mojom/scenic_gpu_host.mojom.h"
+#include "ui/ozone/public/mojom/scenic_gpu_service.mojom.h"
 
 namespace ui {
 class ScenicWindowManager;

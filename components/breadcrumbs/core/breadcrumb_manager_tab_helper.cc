@@ -7,6 +7,7 @@
 #include "base/format_macros.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
+#include "components/breadcrumbs/core/breadcrumb_manager_keyed_service.h"
 #include "components/infobars/core/infobar.h"
 #include "components/infobars/core/infobar_delegate.h"
 #include "components/infobars/core/infobar_manager.h"
@@ -52,7 +53,7 @@ BreadcrumbManagerTabHelper::BreadcrumbManagerTabHelper(
   unique_id_ = next_unique_id++;
 
   infobar_manager_ = infobar_manager;
-  infobar_observation_.Observe(infobar_manager_.get());
+  infobar_observation_.Observe(infobar_manager_);
 }
 
 BreadcrumbManagerTabHelper::~BreadcrumbManagerTabHelper() = default;
@@ -86,7 +87,7 @@ void BreadcrumbManagerTabHelper::LogDidStartNavigation(
   event.push_back(base::StringPrintf(
       "#%s", ui::PageTransitionGetCoreTransitionString(page_transition)));
 
-  LogEvent(base::JoinString(event, " "));
+  PlatformLogEvent(base::JoinString(event, " "));
 }
 
 void BreadcrumbManagerTabHelper::LogDidFinishNavigation(int64_t navigation_id,
@@ -101,7 +102,7 @@ void BreadcrumbManagerTabHelper::LogDidFinishNavigation(int64_t navigation_id,
     event.push_back(breadcrumbs::kBreadcrumbDownload);
   if (error_code)
     event.push_back(net::ErrorToShortString(error_code));
-  LogEvent(base::JoinString(event, " "));
+  PlatformLogEvent(base::JoinString(event, " "));
 }
 
 void BreadcrumbManagerTabHelper::LogPageLoaded(
@@ -128,7 +129,7 @@ void BreadcrumbManagerTabHelper::LogPageLoaded(
     }
   }
 
-  LogEvent(base::JoinString(event, " "));
+  PlatformLogEvent(base::JoinString(event, " "));
 }
 
 void BreadcrumbManagerTabHelper::LogDidChangeVisibleSecurityState(
@@ -143,16 +144,18 @@ void BreadcrumbManagerTabHelper::LogDidChangeVisibleSecurityState(
   if (!event.empty()) {
     event.insert(event.begin(),
                  breadcrumbs::kBreadcrumbDidChangeVisibleSecurityState);
-    LogEvent(base::JoinString(event, " "));
+    PlatformLogEvent(base::JoinString(event, " "));
   }
 }
 
 void BreadcrumbManagerTabHelper::LogRenderProcessGone() {
-  LogEvent("RenderProcessGone");
+  PlatformLogEvent("RenderProcessGone");
 }
 
-void BreadcrumbManagerTabHelper::LogEvent(const std::string& event) {
-  PlatformLogEvent(
+void BreadcrumbManagerTabHelper::LogEvent(
+    const std::string& event,
+    BreadcrumbManagerKeyedService* service) {
+  service->AddEvent(
       base::StringPrintf("Tab%d %s", GetUniqueId(), event.c_str()));
 }
 
@@ -163,8 +166,8 @@ bool BreadcrumbManagerTabHelper::ShouldLogRepeatedEvent(int count) {
 
 void BreadcrumbManagerTabHelper::OnInfoBarAdded(infobars::InfoBar* infobar) {
   sequentially_replaced_infobars_ = 0;
-  LogEvent(base::StringPrintf("%s%d", kBreadcrumbInfobarAdded,
-                              infobar->delegate()->GetIdentifier()));
+  PlatformLogEvent(base::StringPrintf("%s%d", kBreadcrumbInfobarAdded,
+                                      infobar->delegate()->GetIdentifier()));
 }
 
 void BreadcrumbManagerTabHelper::OnInfoBarRemoved(infobars::InfoBar* infobar,
@@ -176,7 +179,7 @@ void BreadcrumbManagerTabHelper::OnInfoBarRemoved(infobars::InfoBar* infobar,
   };
   if (!animate)
     event.push_back(kBreadcrumbInfobarNotAnimated);
-  LogEvent(base::JoinString(event, " "));
+  PlatformLogEvent(base::JoinString(event, " "));
 }
 
 void BreadcrumbManagerTabHelper::OnInfoBarReplaced(
@@ -185,9 +188,10 @@ void BreadcrumbManagerTabHelper::OnInfoBarReplaced(
   sequentially_replaced_infobars_++;
 
   if (ShouldLogRepeatedEvent(sequentially_replaced_infobars_)) {
-    LogEvent(base::StringPrintf("%s%d %d", kBreadcrumbInfobarReplaced,
-                                new_infobar->delegate()->GetIdentifier(),
-                                sequentially_replaced_infobars_));
+    PlatformLogEvent(
+        base::StringPrintf("%s%d %d", kBreadcrumbInfobarReplaced,
+                           new_infobar->delegate()->GetIdentifier(),
+                           sequentially_replaced_infobars_));
   }
 }
 

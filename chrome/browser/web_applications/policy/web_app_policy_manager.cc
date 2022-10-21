@@ -35,12 +35,12 @@
 #include "content/public/browser/browser_thread.h"
 #include "third_party/blink/public/common/manifest/manifest.h"
 
-#if defined(OS_CHROMEOS)
+#if BUILDFLAG(IS_CHROMEOS_ASH)
+#include "chrome/browser/ash/policy/handlers/system_features_disable_list_policy_handler.h"
 #include "chrome/browser/browser_process.h"
-#include "chrome/browser/policy/system_features_disable_list_policy_handler.h"
 #include "chrome/browser/web_applications/web_app_utils.h"
 #include "components/policy/core/common/policy_pref_names.h"
-#endif  // defined(OS_CHROMEOS)
+#endif  // BUILDFLAG(IS_CHROMEOS_ASH)
 
 namespace web_app {
 
@@ -147,14 +147,14 @@ void WebAppPolicyManager::InitChangeRegistrarAndRefreshPolicy(
 }
 
 void WebAppPolicyManager::OnDisableListPolicyChanged() {
-#if defined(OS_CHROMEOS)
+#if BUILDFLAG(IS_CHROMEOS_ASH)
   PopulateDisabledWebAppsIdsLists();
   std::vector<web_app::AppId> app_ids = app_registrar_->GetAppIds();
   for (const auto& id : app_ids) {
     const bool is_disabled = base::Contains(disabled_web_apps_, id);
     sync_bridge_->SetAppIsDisabled(id, is_disabled);
   }
-#endif  // defined(OS_CHROMEOS)
+#endif  // BUILDFLAG(IS_CHROMEOS_ASH)
 }
 
 const std::set<SystemAppType>& WebAppPolicyManager::GetDisabledSystemWebApps()
@@ -171,7 +171,7 @@ bool WebAppPolicyManager::IsWebAppInDisabledList(const AppId& app_id) const {
 }
 
 bool WebAppPolicyManager::IsDisabledAppsModeHidden() const {
-#if defined(OS_CHROMEOS)
+#if BUILDFLAG(IS_CHROMEOS_ASH)
   PrefService* const local_state = g_browser_process->local_state();
   if (!local_state)  // Sometimes it's not available in tests.
     return false;
@@ -180,7 +180,7 @@ bool WebAppPolicyManager::IsDisabledAppsModeHidden() const {
       local_state->GetString(policy::policy_prefs::kSystemFeaturesDisableMode);
   if (disabled_mode == policy::kHiddenDisableMode)
     return true;
-#endif  // defined(OS_CHROMEOS)
+#endif  // BUILDFLAG(IS_CHROMEOS_ASH)
   return false;
 }
 
@@ -231,7 +231,7 @@ void WebAppPolicyManager::RefreshPolicySettings() {
   // No need to validate the types or values of the policy members because we
   // are using a SimpleSchemaValidatingPolicyHandler which should validate them
   // for us.
-  const base::Value* web_app_dict =
+  const base::DictionaryValue* web_app_dict =
       pref_service_->GetDictionary(prefs::kWebAppSettings);
 
   settings_by_url_.clear();
@@ -241,31 +241,32 @@ void WebAppPolicyManager::RefreshPolicySettings() {
     return;
 
   // Read default policy, if provided.
-  const base::Value* default_settings_dict =
-      web_app_dict->FindDictKey(kWildcard);
-  if (default_settings_dict) {
-    if (!default_settings_->Parse(*default_settings_dict, true)) {
+  const base::DictionaryValue* default_settings_dict = nullptr;
+  if (web_app_dict->GetDictionary(kWildcard, &default_settings_dict)) {
+    if (!default_settings_->Parse(default_settings_dict, true)) {
       SYSLOG(WARNING) << "Malformed default web app management setting.";
       default_settings_->ResetSettings();
     }
   }
 
   // Read policy for individual web apps
-  for (const auto iter : web_app_dict->DictItems()) {
-    if (iter.first == kWildcard)
+  for (base::DictionaryValue::Iterator iter(*web_app_dict); !iter.IsAtEnd();
+       iter.Advance()) {
+    if (iter.key() == kWildcard)
       continue;
 
-    if (!iter.second.is_dict())
+    const base::DictionaryValue* web_app_settings_dict;
+    if (!iter.value().GetAsDictionary(&web_app_settings_dict))
       continue;
 
-    GURL url = GURL(iter.first);
+    GURL url = GURL(iter.key());
     if (!url.is_valid()) {
-      LOG(WARNING) << "Invalid URL: " << iter.first;
+      LOG(WARNING) << "Invalid URL: " << iter.key();
       continue;
     }
 
     WebAppPolicyManager::WebAppSetting by_url(*default_settings_);
-    if (by_url.Parse(iter.second, false)) {
+    if (by_url.Parse(web_app_settings_dict, false)) {
       settings_by_url_[url] = by_url;
     } else {
       LOG(WARNING) << "Malformed web app settings for " << url;
@@ -359,10 +360,13 @@ ExternalInstallOptions WebAppPolicyManager::ParseInstallPolicyEntry(
       custom_manifest_values_by_url_[gurl].SetName(custom_name->GetString());
   }
 
-  if (custom_icon && custom_icon->is_dict() && gurl.is_valid()) {
-    const std::string* icon_url = custom_icon->FindStringKey(kCustomIconURLKey);
-    if (icon_url) {
-      custom_manifest_values_by_url_[gurl].SetIcon(*icon_url);
+  if (custom_icon && gurl.is_valid()) {
+    const base::DictionaryValue* dict = nullptr;
+    if (custom_icon->GetAsDictionary(&dict)) {
+      const std::string* icon_url = dict->FindStringKey(kCustomIconURLKey);
+      if (icon_url) {
+        custom_manifest_values_by_url_[gurl].SetIcon(*icon_url);
+      }
     }
   }
 
@@ -448,9 +452,10 @@ WebAppPolicyManager::WebAppSetting::WebAppSetting() {
   ResetSettings();
 }
 
-bool WebAppPolicyManager::WebAppSetting::Parse(const base::Value& dict,
-                                               bool for_default_settings) {
-  const std::string* run_on_os_login_str = dict.FindStringKey(kRunOnOsLogin);
+bool WebAppPolicyManager::WebAppSetting::Parse(
+    const base::DictionaryValue* dict,
+    bool for_default_settings) {
+  const std::string* run_on_os_login_str = dict->FindStringKey(kRunOnOsLogin);
   if (run_on_os_login_str) {
     if (*run_on_os_login_str == kAllowed) {
       run_on_os_login_policy = RunOnOsLoginPolicy::kAllowed;
@@ -494,7 +499,7 @@ void WebAppPolicyManager::CustomManifestValues::SetIcon(
 }
 
 void WebAppPolicyManager::ObserveDisabledSystemFeaturesPolicy() {
-#if defined(OS_CHROMEOS)
+#if BUILDFLAG(IS_CHROMEOS_ASH)
   PrefService* const local_state = g_browser_process->local_state();
   if (!local_state) {  // Sometimes it's not available in tests.
     return;
@@ -512,24 +517,24 @@ void WebAppPolicyManager::ObserveDisabledSystemFeaturesPolicy() {
   // Make sure we get the right disabled mode in case it was changed before
   // policy registration.
   OnDisableModePolicyChanged();
-#endif  // defined(OS_CHROMEOS)
+#endif  // BUILDFLAG(IS_CHROMEOS_ASH)
 }
 
 void WebAppPolicyManager::OnDisableModePolicyChanged() {
-#if defined(OS_CHROMEOS)
+#if BUILDFLAG(IS_CHROMEOS_ASH)
   sync_bridge_->UpdateAppsDisableMode();
-#endif  // defined(OS_CHROMEOS)
+#endif  // BUILDFLAG(IS_CHROMEOS_ASH)
 }
 
 void WebAppPolicyManager::PopulateDisabledWebAppsIdsLists() {
   disabled_system_apps_.clear();
   disabled_web_apps_.clear();
-#if defined(OS_CHROMEOS)
+#if BUILDFLAG(IS_CHROMEOS_ASH)
   PrefService* const local_state = g_browser_process->local_state();
   if (!local_state)  // Sometimes it's not available in tests.
     return;
 
-  const base::Value* disabled_system_features_pref =
+  const base::ListValue* disabled_system_features_pref =
       local_state->GetList(policy::policy_prefs::kSystemFeaturesDisableList);
   if (!disabled_system_features_pref)
     return;
@@ -561,7 +566,7 @@ void WebAppPolicyManager::PopulateDisabledWebAppsIdsLists() {
       disabled_web_apps_.insert(app_id.value());
     }
   }
-#endif  // defined(OS_CHROMEOS)
+#endif  // BUILDFLAG(IS_CHROMEOS_ASH)
 }
 
 }  // namespace web_app

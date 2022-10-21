@@ -174,8 +174,7 @@ void FeaturePromoSnoozeService::RegisterProfilePrefs(
 }
 
 void FeaturePromoSnoozeService::Reset(const base::Feature& iph_feature) {
-  DictionaryPrefUpdateDeprecated update(profile_->GetPrefs(),
-                                        kIPHSnoozeDataPath);
+  DictionaryPrefUpdate update(profile_->GetPrefs(), kIPHSnoozeDataPath);
   base::DictionaryValue* pref_data = update.Get();
   pref_data->RemovePath(iph_feature.name);
 }
@@ -190,7 +189,7 @@ absl::optional<FeaturePromoSnoozeService::SnoozeData>
 FeaturePromoSnoozeService::ReadSnoozeData(const base::Feature& iph_feature) {
   std::string path_prefix = std::string(iph_feature.name) + ".";
 
-  const base::Value* pref_data =
+  const base::DictionaryValue* pref_data =
       profile_->GetPrefs()->GetDictionary(kIPHSnoozeDataPath);
   absl::optional<bool> is_dismissed =
       pref_data->FindBoolPath(path_prefix + kIPHIsDismissedPath);
@@ -239,8 +238,7 @@ void FeaturePromoSnoozeService::SaveSnoozeData(
     const FeaturePromoSnoozeService::SnoozeData& snooze_data) {
   std::string path_prefix = std::string(iph_feature.name) + ".";
 
-  DictionaryPrefUpdateDeprecated update(profile_->GetPrefs(),
-                                        kIPHSnoozeDataPath);
+  DictionaryPrefUpdate update(profile_->GetPrefs(), kIPHSnoozeDataPath);
   base::DictionaryValue* pref_data = update.Get();
 
   pref_data->SetBoolPath(path_prefix + kIPHIsDismissedPath,

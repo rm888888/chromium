@@ -19,7 +19,6 @@ import android.view.View.OnClickListener;
 import android.view.ViewStub;
 import android.widget.ImageButton;
 
-import androidx.annotation.ColorRes;
 import androidx.annotation.VisibleForTesting;
 import androidx.appcompat.content.res.AppCompatResources;
 import androidx.core.view.ViewCompat;
@@ -28,8 +27,6 @@ import org.chromium.base.ApiCompatibilityUtils;
 import org.chromium.base.metrics.RecordUserAction;
 import org.chromium.base.supplier.BooleanSupplier;
 import org.chromium.base.supplier.ObservableSupplier;
-import org.chromium.chrome.browser.flags.CachedFeatureFlags;
-import org.chromium.chrome.browser.flags.ChromeFeatureList;
 import org.chromium.chrome.browser.omnibox.LocationBar;
 import org.chromium.chrome.browser.omnibox.LocationBarCoordinator;
 import org.chromium.chrome.browser.omnibox.NewTabPageDelegate;
@@ -49,12 +46,10 @@ import org.chromium.chrome.browser.toolbar.ToolbarDataProvider;
 import org.chromium.chrome.browser.toolbar.ToolbarTabController;
 import org.chromium.chrome.browser.toolbar.menu_button.MenuButtonCoordinator;
 import org.chromium.chrome.browser.toolbar.top.NavigationPopup.HistoryDelegate;
-import org.chromium.chrome.browser.ui.theme.BrandedColorScheme;
 import org.chromium.chrome.browser.util.ChromeAccessibilityUtil;
 import org.chromium.components.browser_ui.styles.ChromeColors;
 import org.chromium.ui.UiUtils;
 import org.chromium.ui.base.DeviceFormFactor;
-import org.chromium.ui.util.ColorUtils;
 import org.chromium.ui.widget.Toast;
 
 import java.util.ArrayList;
@@ -140,9 +135,8 @@ public class ToolbarTablet extends ToolbarLayout
                 getContext(), R.drawable.btn_close, R.color.default_icon_color_tint_list);
         reloadIcon.addLevel(stopLevel, stopLevel, stopLevelDrawable);
         mReloadButton.setImageDrawable(reloadIcon);
-        mShowTabStack = (ChromeAccessibilityUtil.get().isAccessibilityEnabled()
-                                && isAccessibilityTabSwitcherPreferenceEnabled())
-                || isGridTabSwitcherEnabled();
+        mShowTabStack = ChromeAccessibilityUtil.get().isAccessibilityEnabled()
+                && isAccessibilityTabSwitcherPreferenceEnabled();
 
         mAccessibilitySwitcherButton = findViewById(R.id.tab_switcher_button);
         updateSwitcherButtonVisibility(mShowTabStack);
@@ -381,12 +375,13 @@ public class ToolbarTablet extends ToolbarLayout
     }
 
     @Override
-    public void onTintChanged(ColorStateList tint, @BrandedColorScheme int brandedColorScheme) {
+    public void onTintChanged(ColorStateList tint, boolean useLight) {
         ApiCompatibilityUtils.setImageTintList(mHomeButton, tint);
         ApiCompatibilityUtils.setImageTintList(mBackButton, tint);
         ApiCompatibilityUtils.setImageTintList(mForwardButton, tint);
         ApiCompatibilityUtils.setImageTintList(mSaveOfflineButton, tint);
         ApiCompatibilityUtils.setImageTintList(mReloadButton, tint);
+        mAccessibilitySwitcherButton.setUseLightDrawables(useLight);
 
         if (mOptionalButton != null && mOptionalButtonUsesTint) {
             ApiCompatibilityUtils.setImageTintList(mOptionalButton, tint);
@@ -401,8 +396,6 @@ public class ToolbarTablet extends ToolbarLayout
         mLocationBar.getTabletCoordinator().getBackground().setTint(textBoxColor);
         mLocationBar.updateVisualsForState();
         setToolbarHairlineColor(color);
-        final boolean useLight = ColorUtils.shouldUseLightForegroundOnBackground(color);
-        mAccessibilitySwitcherButton.setUseLightDrawables(useLight);
     }
 
     /**
@@ -463,10 +456,9 @@ public class ToolbarTablet extends ToolbarLayout
     void updateBookmarkButton(boolean isBookmarked, boolean editingAllowed) {
         if (isBookmarked) {
             mBookmarkButton.setImageResource(R.drawable.btn_star_filled);
-            final @ColorRes int tint = isIncognito() ? R.color.default_icon_color_blue_light
-                                                     : R.color.default_icon_color_accent1_tint_list;
-            ApiCompatibilityUtils.setImageTintList(
-                    mBookmarkButton, AppCompatResources.getColorStateList(getContext(), tint));
+            ApiCompatibilityUtils.setImageTintList(mBookmarkButton,
+                    AppCompatResources.getColorStateList(
+                            getContext(), R.color.default_icon_color_accent1_tint_list));
             mBookmarkButton.setContentDescription(getContext().getString(R.string.edit_bookmark));
         } else {
             mBookmarkButton.setImageResource(R.drawable.btn_star);
@@ -534,8 +526,7 @@ public class ToolbarTablet extends ToolbarLayout
 
     @Override
     void onAccessibilityStatusChanged(boolean enabled) {
-        mShowTabStack = (enabled && isAccessibilityTabSwitcherPreferenceEnabled())
-                || isGridTabSwitcherEnabled();
+        mShowTabStack = enabled && isAccessibilityTabSwitcherPreferenceEnabled();
         updateSwitcherButtonVisibility(mShowTabStack);
     }
 
@@ -752,9 +743,5 @@ public class ToolbarTablet extends ToolbarLayout
     private boolean isAccessibilityTabSwitcherPreferenceEnabled() {
         return SharedPreferencesManager.getInstance().readBoolean(
                 ChromePreferenceKeys.ACCESSIBILITY_TAB_SWITCHER, true);
-    }
-
-    private boolean isGridTabSwitcherEnabled() {
-        return CachedFeatureFlags.isEnabled(ChromeFeatureList.GRID_TAB_SWITCHER_FOR_TABLETS);
     }
 }

@@ -7,7 +7,8 @@
 
 #include <memory>
 
-#include "base/memory/raw_ptr.h"
+#include "base/compiler_specific.h"
+#include "base/macros.h"
 #include "build/build_config.h"
 #include "chrome/browser/search/search_engine_base_url_tracker.h"
 #include "chrome/browser/ui/search/instant_controller.h"
@@ -38,7 +39,7 @@ class BrowserInstantController {
 
   Profile* profile() const;
 
-  const raw_ptr<Browser> browser_;
+  Browser* const browser_;
 
   InstantController instant_;
 

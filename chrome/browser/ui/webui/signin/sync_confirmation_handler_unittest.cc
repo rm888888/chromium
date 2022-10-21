@@ -10,7 +10,6 @@
 
 #include "base/bind.h"
 #include "base/callback_helpers.h"
-#include "base/memory/raw_ptr.h"
 #include "base/scoped_observation.h"
 #include "base/test/metrics/histogram_tester.h"
 #include "base/test/metrics/user_action_tester.h"
@@ -203,7 +202,7 @@ class SyncConfirmationHandlerTest : public BrowserWithTestWindowTest,
  private:
   std::unique_ptr<content::TestWebUI> web_ui_;
   std::unique_ptr<SyncConfirmationUI> sync_confirmation_ui_;
-  raw_ptr<TestingSyncConfirmationHandler> handler_;  // Not owned.
+  TestingSyncConfirmationHandler* handler_;  // Not owned.
   base::UserActionTester user_action_tester_;
   std::unordered_map<std::string, int> string_to_grd_id_map_;
   base::ScopedObservation<LoginUIService, LoginUIService::Observer>
@@ -226,7 +225,7 @@ TEST_F(SyncConfirmationHandlerTest, TestSetAccountInfoIfPrimaryAccountReady) {
       "http://picture.example.com/picture.jpg");
 
   base::ListValue args;
-  args.Append(kDefaultDialogHeight);
+  args.Set(0, std::make_unique<base::Value>(kDefaultDialogHeight));
   handler()->HandleInitializedWithSize(&args);
 
   ASSERT_EQ(1U, web_ui()->call_data().size());
@@ -236,7 +235,7 @@ TEST_F(SyncConfirmationHandlerTest, TestSetAccountInfoIfPrimaryAccountReady) {
 TEST_F(SyncConfirmationHandlerTest,
        TestSetAccountInfoIfPrimaryAccountReadyLater) {
   base::ListValue args;
-  args.Append(kDefaultDialogHeight);
+  args.Set(0, std::make_unique<base::Value>(kDefaultDialogHeight));
   handler()->HandleInitializedWithSize(&args);
 
   // No callback called when there's no account image available.
@@ -254,7 +253,7 @@ TEST_F(SyncConfirmationHandlerTest,
 TEST_F(SyncConfirmationHandlerTest,
        TestSetAccountInfoIgnoredIfSecondaryAccountUpdated) {
   base::ListValue args;
-  args.Append(kDefaultDialogHeight);
+  args.Set(0, std::make_unique<base::Value>(kDefaultDialogHeight));
   handler()->HandleInitializedWithSize(&args);
   EXPECT_EQ(0U, web_ui()->call_data().size());
 
@@ -287,7 +286,7 @@ TEST_F(SyncConfirmationHandlerTest, TestSetAccountInfoManaged) {
       "http://picture.example.com/picture.jpg");
 
   base::ListValue args;
-  args.Append(kDefaultDialogHeight);
+  args.Set(0, std::make_unique<base::Value>(kDefaultDialogHeight));
   handler()->HandleInitializedWithSize(&args);
 
   ASSERT_EQ(1U, web_ui()->call_data().size());

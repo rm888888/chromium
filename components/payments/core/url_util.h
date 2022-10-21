@@ -5,6 +5,8 @@
 #ifndef COMPONENTS_PAYMENTS_CORE_URL_UTIL_H_
 #define COMPONENTS_PAYMENTS_CORE_URL_UTIL_H_
 
+#include "base/macros.h"
+
 class GURL;
 
 namespace payments {

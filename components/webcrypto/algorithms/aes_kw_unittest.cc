@@ -162,12 +162,10 @@ TEST_F(WebCryptoAesKwTest, AesKwKeyImport) {
 
 TEST_F(WebCryptoAesKwTest, UnwrapFailures) {
   // This test exercises the code path common to all unwrap operations.
-  base::Value tests;
-  ASSERT_TRUE(ReadJsonTestFileAsList("aes_kw.json", &tests));
-  const base::Value& test_value = tests.GetList()[0];
-  ASSERT_TRUE(test_value.is_dict());
-  const base::DictionaryValue* test =
-      &base::Value::AsDictionaryValue(test_value);
+  base::ListValue tests;
+  ASSERT_TRUE(ReadJsonTestFileToList("aes_kw.json", &tests));
+  base::DictionaryValue* test;
+  ASSERT_TRUE(tests.GetDictionary(0, &test));
   const std::vector<uint8_t> test_kek = GetBytesFromHexString(test, "kek");
   const std::vector<uint8_t> test_ciphertext =
       GetBytesFromHexString(test, "ciphertext");
@@ -188,16 +186,14 @@ TEST_F(WebCryptoAesKwTest, UnwrapFailures) {
 }
 
 TEST_F(WebCryptoAesKwTest, AesKwRawSymkeyWrapUnwrapKnownAnswer) {
-  base::Value tests;
-  ASSERT_TRUE(ReadJsonTestFileAsList("aes_kw.json", &tests));
+  base::ListValue tests;
+  ASSERT_TRUE(ReadJsonTestFileToList("aes_kw.json", &tests));
 
   for (size_t test_index = 0; test_index < tests.GetList().size();
        ++test_index) {
     SCOPED_TRACE(test_index);
-    const base::Value& test_value = tests.GetList()[test_index];
-    ASSERT_TRUE(test_value.is_dict());
-    const base::DictionaryValue* test =
-        &base::Value::AsDictionaryValue(test_value);
+    base::DictionaryValue* test;
+    ASSERT_TRUE(tests.GetDictionary(test_index, &test));
     const std::vector<uint8_t> test_kek = GetBytesFromHexString(test, "kek");
     const std::vector<uint8_t> test_key = GetBytesFromHexString(test, "key");
     const std::vector<uint8_t> test_ciphertext =
@@ -250,13 +246,11 @@ TEST_F(WebCryptoAesKwTest, AesKwRawSymkeyWrapUnwrapKnownAnswer) {
 // Unwrap a HMAC key using AES-KW, and then try doing a sign/verify with the
 // unwrapped key
 TEST_F(WebCryptoAesKwTest, AesKwRawSymkeyUnwrapSignVerifyHmac) {
-  base::Value tests;
-  ASSERT_TRUE(ReadJsonTestFileAsList("aes_kw.json", &tests));
+  base::ListValue tests;
+  ASSERT_TRUE(ReadJsonTestFileToList("aes_kw.json", &tests));
 
-  const base::Value& test_value = tests.GetList()[0];
-  ASSERT_TRUE(test_value.is_dict());
-  const base::DictionaryValue* test =
-      &base::Value::AsDictionaryValue(test_value);
+  base::DictionaryValue* test;
+  ASSERT_TRUE(tests.GetDictionary(0, &test));
   const std::vector<uint8_t> test_kek = GetBytesFromHexString(test, "kek");
   const std::vector<uint8_t> test_ciphertext =
       GetBytesFromHexString(test, "ciphertext");
@@ -303,13 +297,11 @@ TEST_F(WebCryptoAesKwTest, AesKwRawSymkeyUnwrapSignVerifyHmac) {
 }
 
 TEST_F(WebCryptoAesKwTest, AesKwRawSymkeyWrapUnwrapErrors) {
-  base::Value tests;
-  ASSERT_TRUE(ReadJsonTestFileAsList("aes_kw.json", &tests));
+  base::ListValue tests;
+  ASSERT_TRUE(ReadJsonTestFileToList("aes_kw.json", &tests));
+  base::DictionaryValue* test;
   // Use 256 bits of data with a 256-bit KEK
-  const base::Value& test_value = tests.GetList()[3];
-  ASSERT_TRUE(test_value.is_dict());
-  const base::DictionaryValue* test =
-      &base::Value::AsDictionaryValue(test_value);
+  ASSERT_TRUE(tests.GetDictionary(3, &test));
   const std::vector<uint8_t> test_kek = GetBytesFromHexString(test, "kek");
   const std::vector<uint8_t> test_key = GetBytesFromHexString(test, "key");
   const std::vector<uint8_t> test_ciphertext =
@@ -346,13 +338,11 @@ TEST_F(WebCryptoAesKwTest, AesKwRawSymkeyWrapUnwrapErrors) {
 }
 
 TEST_F(WebCryptoAesKwTest, AesKwRawSymkeyUnwrapCorruptData) {
-  base::Value tests;
-  ASSERT_TRUE(ReadJsonTestFileAsList("aes_kw.json", &tests));
+  base::ListValue tests;
+  ASSERT_TRUE(ReadJsonTestFileToList("aes_kw.json", &tests));
+  base::DictionaryValue* test;
   // Use 256 bits of data with a 256-bit KEK
-  const base::Value& test_value = tests.GetList()[3];
-  ASSERT_TRUE(test_value.is_dict());
-  const base::DictionaryValue* test =
-      &base::Value::AsDictionaryValue(test_value);
+  ASSERT_TRUE(tests.GetDictionary(3, &test));
   const std::vector<uint8_t> test_kek = GetBytesFromHexString(test, "kek");
   const std::vector<uint8_t> test_key = GetBytesFromHexString(test, "key");
   const std::vector<uint8_t> test_ciphertext =

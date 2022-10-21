@@ -46,7 +46,7 @@ class MockOsIntegrationManager : public OsIntegrationManager {
   MOCK_METHOD(void,
               RegisterShortcutsMenu,
               (const AppId& app_id,
-               const std::vector<WebAppShortcutsMenuItemInfo>&
+               const std::vector<WebApplicationShortcutsMenuItemInfo>&
                    shortcuts_menu_item_infos,
                const ShortcutsMenuIconBitmaps& shortcuts_menu_icon_bitmaps,
                ResultCallback callback),
@@ -113,7 +113,7 @@ class MockOsIntegrationManager : public OsIntegrationManager {
               UpdateFileHandlers,
               (const AppId& app_id,
                FileHandlerUpdateAction file_handlers_need_os_update,
-               ResultCallback finished_callback),
+               base::OnceClosure finished_callback),
               (override));
   MOCK_METHOD(void,
               UpdateShortcuts,
@@ -123,7 +123,7 @@ class MockOsIntegrationManager : public OsIntegrationManager {
               (override));
   MOCK_METHOD(void,
               UpdateShortcutsMenu,
-              (const AppId& app_id, const WebAppInstallInfo& web_app_info),
+              (const AppId& app_id, const WebApplicationInfo& web_app_info),
               (override));
   MOCK_METHOD(void,
               UpdateUrlHandlers,

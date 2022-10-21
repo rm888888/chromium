@@ -11,11 +11,8 @@
 
 #include "base/auto_reset.h"
 #include "base/callback_forward.h"
-#include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
-#include "base/scoped_observation.h"
 #include "base/strings/string_piece_forward.h"
-#include "chrome/browser/web_applications/app_registrar_observer.h"
 #include "chrome/browser/web_applications/url_handler_manager.h"
 #include "chrome/browser/web_applications/web_app_constants.h"
 #include "chrome/browser/web_applications/web_app_file_handler_manager.h"
@@ -30,12 +27,15 @@
 
 class Profile;
 
+namespace content {
+class WebContents;
+}
+
 namespace web_app {
 
 class FakeOsIntegrationManager;
 class WebAppIconManager;
 class WebAppRegistrar;
-class WebAppSyncBridge;
 class WebAppUiManager;
 
 // OsHooksErrors contains the result of all Os hook deployments.
@@ -68,9 +68,8 @@ using InstallOsHooksCallback =
 using UninstallOsHooksCallback =
     base::OnceCallback<void(OsHooksErrors os_hooks_errors)>;
 
-// Callback made after UpdateOsHooks is finished.
-using UpdateOsHooksCallback =
-    base::OnceCallback<void(OsHooksErrors os_hooks_errors)>;
+// Used to suppress OS hooks within this object's lifetime.
+using ScopedOsHooksSuppress = std::unique_ptr<base::AutoReset<bool>>;
 
 using BarrierCallback =
     base::RepeatingCallback<void(OsHookType::Type os_hook, bool completed)>;
@@ -79,28 +78,17 @@ using BarrierCallback =
 // all OS hooks during Web App lifecycle.
 // It contains individual OS integration managers and takes
 // care of inter-dependencies among them.
-class OsIntegrationManager : public AppRegistrarObserver {
+class OsIntegrationManager {
  public:
-  // Used to suppress OS hooks during this object's lifetime.
-  class ScopedSuppressForTesting {
-   public:
-    ScopedSuppressForTesting();
-    ~ScopedSuppressForTesting();
-
-   private:
-    base::AutoReset<bool> scope_;
-  };
-
   explicit OsIntegrationManager(
       Profile* profile,
       std::unique_ptr<WebAppShortcutManager> shortcut_manager,
       std::unique_ptr<WebAppFileHandlerManager> file_handler_manager,
       std::unique_ptr<WebAppProtocolHandlerManager> protocol_handler_manager,
       std::unique_ptr<UrlHandlerManager> url_handler_manager);
-  ~OsIntegrationManager() override;
+  virtual ~OsIntegrationManager();
 
-  void SetSubsystems(WebAppSyncBridge* sync_bridge,
-                     WebAppRegistrar* registrar,
+  void SetSubsystems(WebAppRegistrar* registrar,
                      WebAppUiManager* ui_manager,
                      WebAppIconManager* icon_manager);
 
@@ -112,7 +100,7 @@ class OsIntegrationManager : public AppRegistrarObserver {
   // virtual for testing
   virtual void InstallOsHooks(const AppId& app_id,
                               InstallOsHooksCallback callback,
-                              std::unique_ptr<WebAppInstallInfo> web_app_info,
+                              std::unique_ptr<WebApplicationInfo> web_app_info,
                               InstallOsHooksOptions options);
 
   // Uninstall specific OS hooks for the web app.
@@ -136,8 +124,7 @@ class OsIntegrationManager : public AppRegistrarObserver {
       const AppId& app_id,
       base::StringPiece old_name,
       FileHandlerUpdateAction file_handlers_need_os_update,
-      const WebAppInstallInfo& web_app_info,
-      UpdateOsHooksCallback callback);
+      const WebApplicationInfo& web_app_info);
 
   // Proxy calls for WebAppShortcutManager.
   // virtual for testing
@@ -156,6 +143,11 @@ class OsIntegrationManager : public AppRegistrarObserver {
   const absl::optional<GURL> GetMatchingFileHandlerURL(
       const AppId& app_id,
       const std::vector<base::FilePath>& launch_files);
+  void MaybeUpdateFileHandlingOriginTrialExpiry(
+      content::WebContents* web_contents,
+      const AppId& app_id);
+  void ForceEnableFileHandlingOriginTrial(const AppId& app_id);
+  void DisableForceEnabledFileHandlingOriginTrial(const AppId& app_id);
 
   // Proxy calls for WebAppProtocolHandlerManager.
   virtual absl::optional<GURL> TranslateProtocolUrl(const AppId& app_id,
@@ -176,6 +168,8 @@ class OsIntegrationManager : public AppRegistrarObserver {
 
   WebAppProtocolHandlerManager& protocol_handler_manager_for_testing();
 
+  static ScopedOsHooksSuppress ScopedSuppressOsHooksForTesting();
+
   virtual FakeOsIntegrationManager* AsTestOsIntegrationManager();
 
   void set_url_handler_manager(
@@ -190,7 +184,7 @@ class OsIntegrationManager : public AppRegistrarObserver {
   virtual void UpdateFileHandlers(
       const AppId& app_id,
       FileHandlerUpdateAction file_handlers_need_os_update,
-      ResultCallback finished_callback);
+      base::OnceClosure finished_callback);
 
   // Updates protocol handler registrations with the OS.
   // If `force_shortcut_updates_if_needed` is true, then also update the
@@ -198,13 +192,6 @@ class OsIntegrationManager : public AppRegistrarObserver {
   virtual void UpdateProtocolHandlers(const AppId& app_id,
                                       bool force_shortcut_updates_if_needed,
                                       base::OnceClosure callback);
-
-  virtual void UpdateShortcuts(const AppId& app_id,
-                               base::StringPiece old_name,
-                               base::OnceClosure callback);
-
-  // AppRegistrarObserver:
-  void OnWebAppProfileWillBeDeleted(const AppId& app_id) override;
 
  protected:
   WebAppShortcutManager* shortcut_manager() { return shortcut_manager_.get(); }
@@ -243,7 +230,8 @@ class OsIntegrationManager : public AppRegistrarObserver {
                                    ResultCallback callback);
   virtual void RegisterShortcutsMenu(
       const AppId& app_id,
-      const std::vector<WebAppShortcutsMenuItemInfo>& shortcuts_menu_item_infos,
+      const std::vector<WebApplicationShortcutsMenuItemInfo>&
+          shortcuts_menu_item_infos,
       const ShortcutsMenuIconBitmaps& shortcuts_menu_icon_bitmaps,
       ResultCallback callback);
   virtual void ReadAllShortcutsMenuIconsAndRegisterShortcutsMenu(
@@ -274,8 +262,11 @@ class OsIntegrationManager : public AppRegistrarObserver {
   virtual void UnregisterWebAppOsUninstallation(const AppId& app_id);
 
   // Update:
+  virtual void UpdateShortcuts(const AppId& app_id,
+                               base::StringPiece old_name,
+                               base::OnceClosure callback);
   virtual void UpdateShortcutsMenu(const AppId& app_id,
-                                   const WebAppInstallInfo& web_app_info);
+                                   const WebApplicationInfo& web_app_info);
 
   // Utility methods:
   virtual std::unique_ptr<ShortcutInfo> BuildShortcutInfo(const AppId& app_id);
@@ -284,7 +275,7 @@ class OsIntegrationManager : public AppRegistrarObserver {
   class OsHooksBarrier;
 
   void OnShortcutsCreated(const AppId& app_id,
-                          std::unique_ptr<WebAppInstallInfo> web_app_info,
+                          std::unique_ptr<WebApplicationInfo> web_app_info,
                           InstallOsHooksOptions options,
                           scoped_refptr<OsHooksBarrier> barrier,
                           bool shortcuts_created);
@@ -305,17 +296,14 @@ class OsIntegrationManager : public AppRegistrarObserver {
       const AppId& app_id,
       base::OnceClosure update_finished_callback);
 
-  const raw_ptr<Profile> profile_;
-  raw_ptr<WebAppRegistrar> registrar_ = nullptr;
-  raw_ptr<WebAppUiManager> ui_manager_ = nullptr;
+  Profile* const profile_;
+  WebAppRegistrar* registrar_ = nullptr;
+  WebAppUiManager* ui_manager_ = nullptr;
 
   std::unique_ptr<WebAppShortcutManager> shortcut_manager_;
   std::unique_ptr<WebAppFileHandlerManager> file_handler_manager_;
   std::unique_ptr<WebAppProtocolHandlerManager> protocol_handler_manager_;
   std::unique_ptr<UrlHandlerManager> url_handler_manager_;
-
-  base::ScopedObservation<WebAppRegistrar, AppRegistrarObserver>
-      registrar_observation_{this};
 
   base::WeakPtrFactory<OsIntegrationManager> weak_ptr_factory_{this};
 };

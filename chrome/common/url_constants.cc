@@ -157,10 +157,6 @@ const char kFlashDeprecationLearnMoreURL[] =
 const char kGoogleAccountActivityControlsURL[] =
     "https://myaccount.google.com/activitycontrols/search";
 
-const char kGoogleAccountActivityControlsURLInPrivacyReview[] =
-    "https://myaccount.google.com/activitycontrols/"
-    "search&utm_source=chrome&utm_medium=privacy-guide";
-
 const char kGoogleAccountLanguagesURL[] =
     "https://myaccount.google.com/language";
 
@@ -292,9 +288,6 @@ const char kSyncTrustedVaultOptInURL[] =
     "utm_source=chrome&utm_medium=desktop&utm_campaign=encryption_enroll";
 #endif
 
-const char kSyncTrustedVaultLearnMoreURL[] =
-    "https://support.google.com/accounts?p=settings_password_ode";
-
 const char kUpgradeHelpCenterBaseURL[] =
     "https://support.google.com/installer/?product="
     "{8A69D345-D564-463c-AFF1-A69D9E530F96}&error=";
@@ -380,6 +373,9 @@ const char kAutoUpdatePolicyURL[] =
 
 const char kGoogleNameserversLearnMoreURL[] =
     "https://developers.google.com/speed/public-dns";
+
+const char kGsuiteTermsEducationPrivacyURL[] =
+    "https://gsuite.google.com/terms/education_privacy.html";
 
 const char kInstantTetheringLearnMoreURL[] =
     "https://support.google.com/chromebook?p=instant_tethering";

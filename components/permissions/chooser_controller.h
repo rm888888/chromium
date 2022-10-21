@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 
 namespace permissions {
 
@@ -177,7 +177,7 @@ class ChooserController {
 
  private:
   std::u16string title_;
-  raw_ptr<View> view_ = nullptr;
+  View* view_ = nullptr;
 };
 
 }  // namespace permissions

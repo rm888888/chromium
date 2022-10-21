@@ -7,6 +7,7 @@
 
 #include <string>
 
+#include "base/macros.h"
 #include "components/permissions/chooser_controller.h"
 #include "testing/gmock/include/gmock/gmock.h"
 

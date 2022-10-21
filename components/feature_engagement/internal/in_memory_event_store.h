@@ -7,6 +7,7 @@
 
 #include <vector>
 
+#include "base/macros.h"
 #include "components/feature_engagement/internal/event_store.h"
 
 namespace feature_engagement {

@@ -11,7 +11,6 @@ import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 
 import org.chromium.base.Callback;
-import org.chromium.url.GURL;
 
 import jp.tomorrowkey.android.gifplayer.BaseGifImage;
 
@@ -51,15 +50,6 @@ public abstract class ImageFetcher {
          * Creates image fetcher parameters. The image will not be resized.
          * @See {@link #Params(String, String, int, int, int)}.
          */
-        public static Params create(final GURL url, String clientName) {
-            return create(url.getSpec(), clientName);
-        }
-
-        /**
-         * Creates image fetcher parameters. The image will not be resized.
-         * @See {@link #Params(String, String, int, int, int)}.
-         */
-        @Deprecated
         public static Params create(final String url, String clientName) {
             return new Params(url, clientName, DEFAULT_IMAGE_SIZE, DEFAULT_IMAGE_SIZE,
                     INVALID_EXPIRATION_INTERVAL);
@@ -69,15 +59,6 @@ public abstract class ImageFetcher {
          * Creates image fetcher parameters with image size specified.
          * @See {@link #Params(String, String, int, int, int)}.
          */
-        public static Params create(final GURL url, String clientName, int width, int height) {
-            return create(url.getSpec(), clientName, width, height);
-        }
-
-        /**
-         * Creates image fetcher parameters with image size specified.
-         * @See {@link #Params(String, String, int, int, int)}.
-         */
-        @Deprecated
         public static Params create(final String url, String clientName, int width, int height) {
             return new Params(url, clientName, width, height, INVALID_EXPIRATION_INTERVAL);
         }
@@ -87,11 +68,11 @@ public abstract class ImageFetcher {
          * certain period of time.
          * @See {@link #Params(String, String, int, int, int)}.
          */
-        public static Params createWithExpirationInterval(final GURL url, String clientName,
+        public static Params createWithExpirationInterval(final String url, String clientName,
                 int width, int height, int expirationIntervalMinutes) {
             assert expirationIntervalMinutes > INVALID_EXPIRATION_INTERVAL
                 : "Must specify a positive expiration interval, or use other constructors.";
-            return new Params(url.getSpec(), clientName, width, height, expirationIntervalMinutes);
+            return new Params(url, clientName, width, height, expirationIntervalMinutes);
         }
 
         private Params(String url, String clientName, int width, int height,

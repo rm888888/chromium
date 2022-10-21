@@ -35,8 +35,17 @@ namespace chromeos {
 namespace {
 
 const char kRequestBatteryChargeDataCallback[] = "requestBatteryChargeData";
+const char kOnRequestBatteryChargeDataFunction[] =
+    "powerUI.showBatteryChargeData";
+
 const char kRequestCpuIdleDataCallback[] = "requestCpuIdleData";
+const char kOnRequestCpuIdleDataFunction[] =
+    "powerUI.showCpuIdleData";
+
 const char kRequestCpuFreqDataCallback[] = "requestCpuFreqData";
+const char kOnRequestCpuFreqDataFunction[] =
+    "powerUI.showCpuFreqData";
+
 const char kRequestProcessUsageDataCallback[] = "requestProcessUsageData";
 
 class PowerMessageHandler : public content::WebUIMessageHandler {
@@ -84,9 +93,7 @@ void PowerMessageHandler::RegisterMessages() {
                           base::Unretained(this)));
 }
 
-void PowerMessageHandler::OnGetBatteryChargeData(const base::ListValue* args) {
-  AllowJavascript();
-
+void PowerMessageHandler::OnGetBatteryChargeData(const base::ListValue* value) {
   const base::circular_deque<PowerDataCollector::PowerSupplySample>&
       power_supply = PowerDataCollector::Get()->power_supply_data();
   base::ListValue js_power_supply_data;
@@ -105,16 +112,12 @@ void PowerMessageHandler::OnGetBatteryChargeData(const base::ListValue* args) {
   base::ListValue js_system_resumed_data;
   GetJsSystemResumedData(&js_system_resumed_data);
 
-  base::DictionaryValue data;
-  data.SetKey("powerSupplyData", std::move(js_power_supply_data));
-  data.SetKey("systemResumedData", std::move(js_system_resumed_data));
-  const base::Value& callback_id = args->GetList()[0];
-  ResolveJavascriptCallback(callback_id, data);
+  web_ui()->CallJavascriptFunctionUnsafe(kOnRequestBatteryChargeDataFunction,
+                                         js_power_supply_data,
+                                         js_system_resumed_data);
 }
 
-void PowerMessageHandler::OnGetCpuIdleData(const base::ListValue* args) {
-  AllowJavascript();
-
+void PowerMessageHandler::OnGetCpuIdleData(const base::ListValue* value) {
   const CpuDataCollector& cpu_data_collector =
       PowerDataCollector::Get()->cpu_data_collector();
 
@@ -128,16 +131,11 @@ void PowerMessageHandler::OnGetCpuIdleData(const base::ListValue* args) {
   base::ListValue js_system_resumed_data;
   GetJsSystemResumedData(&js_system_resumed_data);
 
-  base::DictionaryValue data;
-  data.SetKey("idleStateData", std::move(js_idle_data));
-  data.SetKey("systemResumedData", std::move(js_system_resumed_data));
-  const base::Value& callback_id = args->GetList()[0];
-  ResolveJavascriptCallback(callback_id, data);
+  web_ui()->CallJavascriptFunctionUnsafe(kOnRequestCpuIdleDataFunction,
+                                         js_idle_data, js_system_resumed_data);
 }
 
-void PowerMessageHandler::OnGetCpuFreqData(const base::ListValue* args) {
-  AllowJavascript();
-
+void PowerMessageHandler::OnGetCpuFreqData(const base::ListValue* value) {
   const CpuDataCollector& cpu_data_collector =
       PowerDataCollector::Get()->cpu_data_collector();
 
@@ -151,18 +149,16 @@ void PowerMessageHandler::OnGetCpuFreqData(const base::ListValue* args) {
   base::ListValue js_system_resumed_data;
   GetJsSystemResumedData(&js_system_resumed_data);
 
-  base::DictionaryValue data;
-  data.SetKey("freqStateData", std::move(js_freq_data));
-  data.SetKey("systemResumedData", std::move(js_system_resumed_data));
-  const base::Value& callback_id = args->GetList()[0];
-  ResolveJavascriptCallback(callback_id, data);
+  web_ui()->CallJavascriptFunctionUnsafe(kOnRequestCpuFreqDataFunction,
+                                         js_freq_data, js_system_resumed_data);
 }
 
 void PowerMessageHandler::OnGetProcessUsageData(const base::ListValue* args) {
   AllowJavascript();
   CHECK_EQ(1U, args->GetList().size());
 
-  const base::Value& callback_id = args->GetList()[0];
+  const base::Value* callback_id;
+  CHECK(args->Get(0, &callback_id));
 
   const std::vector<ProcessDataCollector::ProcessUsageData>& process_list =
       ProcessDataCollector::Get()->GetProcessUsages();
@@ -181,7 +177,7 @@ void PowerMessageHandler::OnGetProcessUsageData(const base::ListValue* args) {
     js_process_usages.Append(std::move(element));
   }
 
-  ResolveJavascriptCallback(callback_id, js_process_usages);
+  ResolveJavascriptCallback(*callback_id, js_process_usages);
 }
 
 void PowerMessageHandler::GetJsSystemResumedData(base::ListValue *data) {

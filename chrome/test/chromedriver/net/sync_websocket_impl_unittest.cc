@@ -96,8 +96,9 @@ TEST_F(SyncWebSocketImplTest, DetermineRecipient) {
   ASSERT_TRUE(message_value->GetAsDictionary(&message_dict));
   std::string method;
   ASSERT_TRUE(message_dict->GetString("method", &method));
+  int id;
+  ASSERT_TRUE(message_dict->GetInteger("id", &id));
   ASSERT_EQ(method, "Page.enable");
-  int id = message_dict->FindIntKey("id").value_or(-1);
   ASSERT_EQ(id, 1);
 }
 

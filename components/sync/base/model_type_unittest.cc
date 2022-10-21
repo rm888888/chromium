@@ -30,13 +30,12 @@ TEST_F(ModelTypeTest, ModelTypeSetToValue) {
   const ModelTypeSet model_types(BOOKMARKS, APPS);
 
   std::unique_ptr<base::ListValue> value(ModelTypeSetToValue(model_types));
-  ASSERT_TRUE(value->is_list());
-  base::Value::ConstListView value_list = value->GetList();
-  ASSERT_EQ(2u, value_list.size());
-  ASSERT_TRUE(value_list[0].is_string());
-  EXPECT_EQ("Bookmarks", value_list[0].GetString());
-  ASSERT_TRUE(value_list[1].is_string());
-  EXPECT_EQ("Apps", value_list[1].GetString());
+  EXPECT_EQ(2u, value->GetList().size());
+  std::string types[2];
+  EXPECT_TRUE(value->GetString(0, &types[0]));
+  EXPECT_TRUE(value->GetString(1, &types[1]));
+  EXPECT_EQ("Bookmarks", types[0]);
+  EXPECT_EQ("Apps", types[1]);
 }
 
 TEST_F(ModelTypeTest, IsRealDataType) {

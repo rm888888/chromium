@@ -232,9 +232,7 @@ IN_PROC_BROWSER_TEST_F(WindowPlacementTest, MAYBE_OnScreensChangeEvent) {
 #define MAYBE_OnCurrentScreenChangeEvent OnCurrentScreenChangeEvent
 #endif
 // Test that the oncurrentscreenchange handler fires correctly for screen
-// changes and property updates.  It also verifies that window.screen.onchange
-// also fires in the same scenarios.  (This is not true in all cases, e.g.
-// isInternal changing, but is true for width/height tests here.)
+// changes and property updates.
 IN_PROC_BROWSER_TEST_F(WindowPlacementTest, MAYBE_OnCurrentScreenChangeEvent) {
 #if BUILDFLAG(IS_CHROMEOS_ASH)
   display::test::DisplayManagerTestApi(ash::Shell::Get()->display_manager())
@@ -268,13 +266,8 @@ IN_PROC_BROWSER_TEST_F(WindowPlacementTest, MAYBE_OnCurrentScreenChangeEvent) {
       var makeCurrentScreenChangePromise = () => {
         return promiseForEvent(screenDetails, 'currentscreenchange');
       };
-      var makeWindowScreenChangePromise = () => {
-        return promiseForEvent(window.screen, 'change');
-      };
       (async () => {
           screenDetails = await self.getScreenDetails();
-          if (screenDetails.currentScreen.width != window.screen.width)
-            return -1;
           return screenDetails.currentScreen.width;
       })();
   )";
@@ -283,10 +276,8 @@ IN_PROC_BROWSER_TEST_F(WindowPlacementTest, MAYBE_OnCurrentScreenChangeEvent) {
   EXPECT_EQ(801, EvalJs(remote_child, initial_script));
 
   // Switch to a second display.  This should fire an event.
-  auto* add_current_screen_change_promise = R"(
-      var currentScreenChange = makeCurrentScreenChangePromise();
-      var windowScreenChange = makeWindowScreenChangePromise();
-  )";
+  auto* add_current_screen_change_promise =
+      R"(var change = makeCurrentScreenChangePromise();)";
   EXPECT_TRUE(ExecJs(tab, add_current_screen_change_promise));
   EXPECT_TRUE(ExecJs(local_child, add_current_screen_change_promise));
   EXPECT_TRUE(ExecJs(remote_child, add_current_screen_change_promise));
@@ -296,10 +287,7 @@ IN_PROC_BROWSER_TEST_F(WindowPlacementTest, MAYBE_OnCurrentScreenChangeEvent) {
 
   auto* await_change_width = R"(
       (async () => {
-          await currentScreenChange;
-          await windowScreenChange;
-          if (screenDetails.currentScreen.width != window.screen.width)
-            return -1;
+          await change;
           return screenDetails.currentScreen.width;
       })();
   )";
@@ -323,10 +311,7 @@ IN_PROC_BROWSER_TEST_F(WindowPlacementTest, MAYBE_OnCurrentScreenChangeEvent) {
 
   auto* await_change_height = R"(
       (async () => {
-          await currentScreenChange;
-          await windowScreenChange;
-          if (screenDetails.currentScreen.height != window.screen.height)
-            return -1;
+          await change;
           return screenDetails.currentScreen.height;
       })();
   )";

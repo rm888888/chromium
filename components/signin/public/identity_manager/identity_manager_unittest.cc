@@ -13,7 +13,6 @@
 #include "base/command_line.h"
 #include "base/containers/flat_set.h"
 #include "base/files/scoped_temp_dir.h"
-#include "base/memory/raw_ptr.h"
 #include "base/run_loop.h"
 #include "base/scoped_observation.h"
 #include "base/test/bind.h"
@@ -251,7 +250,7 @@ class TestIdentityManagerDiagnosticsObserver
       std::move(on_access_token_request_completed_callback_).Run();
   }
 
-  raw_ptr<IdentityManager> identity_manager_;
+  IdentityManager* identity_manager_;
   base::OnceClosure on_access_token_requested_callback_;
   base::OnceClosure on_access_token_request_completed_callback_;
   CoreAccountId token_requestor_account_id_;
@@ -417,9 +416,8 @@ class IdentityManagerTest : public testing::Test {
         PrimaryAccountManagerSetup::kWithAuthenticatedAccout) {
       CoreAccountId account_id =
           account_tracker_service->SeedAccountInfo(kTestGaiaId, kTestEmail);
-      primary_account_manager->SetPrimaryAccountInfo(
-          account_tracker_service->GetAccountInfo(account_id),
-          ConsentLevel::kSync);
+      primary_account_manager->SetSyncPrimaryAccountInfo(
+          account_tracker_service->GetAccountInfo(account_id));
     }
 
     IdentityManager::InitParameters init_params;

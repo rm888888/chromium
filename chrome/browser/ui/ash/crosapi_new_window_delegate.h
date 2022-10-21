@@ -44,7 +44,6 @@ class CrosapiNewWindowDelegate : public ash::NewWindowDelegate {
   void OpenDiagnostics() override;
   void OpenFeedbackPage(FeedbackSource source,
                         const std::string& description_template) override;
-  void OpenPersonalizationHub() override;
 
  private:
   // Observes the aura::Window instances created after the webui tab-drop

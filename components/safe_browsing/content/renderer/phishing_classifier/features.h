@@ -29,6 +29,8 @@
 #include <string>
 #include <unordered_map>
 
+#include "base/macros.h"
+
 namespace safe_browsing {
 
 // Container for a map of features to values, which enforces behavior

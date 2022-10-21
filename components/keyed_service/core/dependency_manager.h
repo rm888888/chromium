@@ -9,6 +9,7 @@
 #include <string>
 
 #include "base/dcheck_is_on.h"
+#include "base/macros.h"
 #include "components/keyed_service/core/dependency_graph.h"
 #include "components/keyed_service/core/keyed_service_export.h"
 
@@ -75,8 +76,8 @@ class KEYED_SERVICE_EXPORT DependencyManager {
   void DestroyContextServices(void* context);
 
   // Runtime assertion called as a part of GetServiceForContext() to check if
-  // |context| is considered stale. This will CHECK(false) to avoid a potential 
-  // use-after-free from services created after context destruction.
+  // |context| is considered stale. This will NOTREACHED() or
+  // base::debug::DumpWithoutCrashing() depending on the DCHECK_IS_ON() value.
   void AssertContextWasntDestroyed(void* context) const;
 
   // Marks |context| as live (i.e., not stale). This method can be called as a

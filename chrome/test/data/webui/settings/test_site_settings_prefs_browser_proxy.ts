@@ -61,8 +61,7 @@ export class TestSiteSettingsPrefsBrowserProxy extends TestBrowserProxy
       'setProtocolHandlerDefault',
       'updateIncognitoStatus',
       'clearEtldPlus1DataAndCookies',
-      'clearUnpartitionedOriginDataAndCookies',
-      'clearPartitionedOriginDataAndCookies',
+      'clearOriginDataAndCookies',
       'recordAction',
       'getCookieSettingDescription',
       'getRecentSitePermissions',
@@ -78,6 +77,7 @@ export class TestSiteSettingsPrefsBrowserProxy extends TestBrowserProxy
       ContentSettingsTypes.BLUETOOTH_SCANNING,
       ContentSettingsTypes.CAMERA,
       ContentSettingsTypes.CLIPBOARD,
+      ContentSettingsTypes.FILE_HANDLING,
       ContentSettingsTypes.FILE_SYSTEM_WRITE,
       ContentSettingsTypes.FONT_ACCESS,
       ContentSettingsTypes.GEOLOCATION,
@@ -495,6 +495,7 @@ export class TestSiteSettingsPrefsBrowserProxy extends TestBrowserProxy
         setting: setting!,
         source: source!,
         isEmbargoed: false,
+        settingDetail: null,
         type: '',
       });
     });
@@ -581,14 +582,8 @@ export class TestSiteSettingsPrefsBrowserProxy extends TestBrowserProxy
   }
 
   /** @override */
-  clearUnpartitionedOriginDataAndCookies(origin: string) {
-    this.methodCalled('clearUnpartitionedOriginDataAndCookies', origin);
-  }
-
-  /** @override */
-  clearPartitionedOriginDataAndCookies(origin: string, etldPlus1: string) {
-    this.methodCalled(
-        'clearPartitionedOriginDataAndCookies', [origin, etldPlus1]);
+  clearOriginDataAndCookies(origin: string) {
+    this.methodCalled('clearOriginDataAndCookies', origin);
   }
 
   /** @override */

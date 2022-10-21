@@ -16,7 +16,6 @@
 #include "chrome/browser/profiles/profile.h"
 #include "chrome/browser/themes/theme_properties.h"
 #include "chrome/browser/ui/browser.h"
-#include "chrome/browser/ui/browser_element_identifiers.h"
 #include "chrome/browser/ui/read_later/reading_list_model_factory.h"
 #include "chrome/browser/ui/tabs/tab_strip_model.h"
 #include "chrome/browser/ui/views/bubble/bubble_contents_wrapper.h"
@@ -48,7 +47,6 @@
 #include "ui/views/controls/button/button_controller.h"
 #include "ui/views/controls/dot_indicator.h"
 #include "ui/views/controls/highlight_path_generator.h"
-#include "ui/views/view_class_properties.h"
 #include "url/gurl.h"
 
 namespace {
@@ -107,7 +105,8 @@ ReadLaterButton::ReadLaterButton(Browser* browser)
           this,
           browser->profile(),
           GURL(chrome::kChromeUIReadLaterURL),
-          IDS_READ_LATER_TITLE)),
+          IDS_READ_LATER_TITLE,
+          true)),
       widget_open_timer_(base::BindRepeating([](base::TimeDelta time_elapsed) {
         base::UmaHistogramMediumTimes("ReadingList.WindowDisplayedDuration",
                                       time_elapsed);
@@ -125,7 +124,7 @@ ReadLaterButton::ReadLaterButton(Browser* browser)
   reading_list_model_ =
       ReadingListModelFactory::GetForBrowserContext(browser_->profile());
   if (reading_list_model_)
-    reading_list_model_scoped_observation_.Observe(reading_list_model_.get());
+    reading_list_model_scoped_observation_.Observe(reading_list_model_);
 
   SetImageLabelSpacing(ChromeLayoutProvider::Get()->GetDistanceMetric(
       DISTANCE_RELATED_LABEL_HORIZONTAL_LIST));
@@ -137,7 +136,6 @@ ReadLaterButton::ReadLaterButton(Browser* browser)
 
   button_controller()->set_notify_action(
       views::ButtonController::NotifyAction::kOnPress);
-  SetProperty(views::kElementIdentifierKey, kReadLaterButtonElementId);
 }
 
 ReadLaterButton::~ReadLaterButton() = default;
@@ -191,7 +189,7 @@ void ReadLaterButton::ReadingListModelBeingDeleted(
     const ReadingListModel* model) {
   DCHECK(model == reading_list_model_);
   DCHECK(reading_list_model_scoped_observation_.IsObservingSource(
-      reading_list_model_.get()));
+      reading_list_model_));
   reading_list_model_scoped_observation_.Reset();
   reading_list_model_ = nullptr;
 }

@@ -117,8 +117,22 @@ bool PermissionsClient::DoOriginsMatchNewTabPage(const GURL& requesting_origin,
 }
 
 #if defined(OS_ANDROID)
+bool PermissionsClient::IsPermissionControlledByDse(
+    content::BrowserContext* browser_context,
+    ContentSettingsType type,
+    const url::Origin& origin) {
+  return false;
+}
+
 bool PermissionsClient::IsDseOrigin(content::BrowserContext* browser_context,
                                     const url::Origin& origin) {
+  return false;
+}
+
+bool PermissionsClient::ResetPermissionIfControlledByDse(
+    content::BrowserContext* browser_context,
+    ContentSettingsType type,
+    const url::Origin& origin) {
   return false;
 }
 
@@ -133,16 +147,6 @@ infobars::InfoBar* PermissionsClient::MaybeCreateInfoBar(
     base::WeakPtr<PermissionPromptAndroid> prompt) {
   return nullptr;
 }
-
-#if defined(OS_ANDROID)
-std::unique_ptr<PermissionsClient::PermissionMessageDelegate>
-PermissionsClient::MaybeCreateMessageUI(
-    content::WebContents* web_contents,
-    ContentSettingsType type,
-    base::WeakPtr<PermissionPromptAndroid> prompt) {
-  return nullptr;
-}
-#endif
 
 void PermissionsClient::RepromptForAndroidPermissions(
     content::WebContents* web_contents,

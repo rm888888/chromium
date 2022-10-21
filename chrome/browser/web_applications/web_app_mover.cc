@@ -145,7 +145,7 @@ void WebAppMover::Start() {
   sync_service_ = SyncServiceFactory::GetForProfile(profile_);
   // This can be a nullptr if the --disable-sync switch is specified.
   if (sync_service_)
-    sync_observer_.Observe(sync_service_.get());
+    sync_observer_.Observe(sync_service_);
   // We must wait for sync to complete at least one cycle (if it is turned on).
   // This avoids our local updates accidentally re-installing any web apps that
   // were uninstalled on other devices. Installing the replacement app will send
@@ -301,7 +301,7 @@ void WebAppMover::OnAllUninstalled(
       web_contents, true, webapps::WebappInstallSource::OMNIBOX_INSTALL_ICON,
       base::BindOnce(
           [](content::WebContents* initiator_web_contents,
-             std::unique_ptr<WebAppInstallInfo> web_app_info,
+             std::unique_ptr<WebApplicationInfo> web_app_info,
              ForInstallableSite for_installable_site,
              WebAppInstallationAcceptanceCallback acceptance_callback) {
             // Note: |open_as_window| is set to false here (which it should be

@@ -99,22 +99,30 @@ ZeroStateFileProvider::ZeroStateFileProvider(Profile* profile)
         profile->GetPath().AppendASCII("zero_state_local_files.pb"), config,
         chromeos::ProfileHelper::IsEphemeralUserProfile(profile));
   }
+
+  // Normalize scores if the launcher search normalization experiment is
+  // enabled, but don't if the categorical search experiment is also enabled.
+  // This is because categorical search normalizes scores from all providers
+  // during ranking, and we don't want to do it twice.
+  if (base::FeatureList::IsEnabled(
+          app_list_features::kEnableLauncherSearchNormalization) &&
+      !app_list_features::IsCategoricalSearchEnabled()) {
+    auto path =
+        RankerStateDirectory(profile).AppendASCII("score_norm_local.pb");
+    normalizer_.emplace(path, ScoreNormalizer::Params());
+  }
 }
 
 ZeroStateFileProvider::~ZeroStateFileProvider() = default;
 
-ash::AppListSearchResultType ZeroStateFileProvider::ResultType() const {
+ash::AppListSearchResultType ZeroStateFileProvider::ResultType() {
   return ash::AppListSearchResultType::kZeroStateFile;
 }
 
-bool ZeroStateFileProvider::ShouldBlockZeroState() const {
-  return true;
-}
-
-void ZeroStateFileProvider::StartZeroState() {
+void ZeroStateFileProvider::Start(const std::u16string& query) {
   query_start_time_ = base::TimeTicks::Now();
   ClearResultsSilently();
-  if (!files_ranker_)
+  if (!files_ranker_ || !query.empty())
     return;
 
   base::PostTaskAndReplyWithResult(
@@ -134,10 +142,14 @@ void ZeroStateFileProvider::SetSearchResults(
   SearchProvider::Results new_results;
   for (const auto& filepath_score : results.first) {
     double score = filepath_score.second;
+    if (normalizer_.has_value()) {
+      score = normalizer_->UpdateAndNormalize("results", score);
+    }
+
     auto result = std::make_unique<FileResult>(
         kZeroStateFileSchema, filepath_score.first,
         ash::AppListSearchResultType::kZeroStateFile, GetDisplayType(), score,
-        std::u16string(), FileResult::Type::kFile, profile_);
+        profile_);
     // TODO(crbug.com/1258415): Only generate thumbnails if the old launcher is
     // enabled. We should implement new thumbnail logic for Continue results if
     // necessary.
@@ -151,11 +163,11 @@ void ZeroStateFileProvider::SetSearchResults(
     // launched.
     if (app_list_features::IsSuggestedLocalFilesEnabled() &&
         IsSuggestedContentEnabled(profile_)) {
-      new_results.emplace_back(std::make_unique<FileResult>(
-          kFileChipSchema, filepath_score.first,
-          ash::AppListSearchResultType::kFileChip,
-          ash::SearchResultDisplayType::kChip, filepath_score.second,
-          std::u16string(), FileResult::Type::kFile, profile_));
+      new_results.emplace_back(
+          std::make_unique<FileResult>(kFileChipSchema, filepath_score.first,
+                                       ash::AppListSearchResultType::kFileChip,
+                                       ash::SearchResultDisplayType::kChip,
+                                       filepath_score.second, profile_));
     }
   }
 
@@ -190,8 +202,7 @@ void ZeroStateFileProvider::AppendFakeSearchResults(Results* results) {
         base::FilePath(FILE_PATH_LITERAL(
             base::StrCat({"Fake-file-", base::NumberToString(i), ".png"}))),
         ash::AppListSearchResultType::kFileChip,
-        ash::SearchResultDisplayType::kContinue, 0.1f, std::u16string(),
-        FileResult::Type::kFile, profile_));
+        ash::SearchResultDisplayType::kContinue, 0.1f, profile_));
   }
 }
 

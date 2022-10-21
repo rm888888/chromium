@@ -21,7 +21,6 @@ class MockLeakDetectionRequest : public LeakDetectionRequestInterface {
               LookupSingleLeak,
               (network::mojom::URLLoaderFactory*,
                const absl::optional<std::string>&,
-               const absl::optional<std::string>&,
                LookupSingleLeakPayload,
                LookupSingleLeakCallback),
               (override));

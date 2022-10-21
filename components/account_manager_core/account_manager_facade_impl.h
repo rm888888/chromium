@@ -83,15 +83,6 @@ class COMPONENT_EXPORT(ACCOUNT_MANAGER_CORE) AccountManagerFacadeImpl
                            ShowAddAccountDialogUMA);
   FRIEND_TEST_ALL_PREFIXES(AccountManagerFacadeImplTest,
                            ShowReauthAccountDialogCallsMojo);
-  FRIEND_TEST_ALL_PREFIXES(
-      AccountManagerFacadeImplTest,
-      ShowAddAccountDialogSetsCorrectOptionsForAdditionFromAsh);
-  FRIEND_TEST_ALL_PREFIXES(
-      AccountManagerFacadeImplTest,
-      ShowAddAccountDialogSetsCorrectOptionsForAdditionFromLacros);
-  FRIEND_TEST_ALL_PREFIXES(
-      AccountManagerFacadeImplTest,
-      ShowAddAccountDialogSetsCorrectOptionsForAdditionFromArc);
   FRIEND_TEST_ALL_PREFIXES(AccountManagerFacadeImplTest,
                            ShowReauthAccountDialogUMA);
   FRIEND_TEST_ALL_PREFIXES(AccountManagerFacadeImplTest,

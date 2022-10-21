@@ -53,22 +53,18 @@ ModelValidatorExecutor::ModelValidatorExecutor() = default;
 
 ModelValidatorExecutor::~ModelValidatorExecutor() = default;
 
-bool ModelValidatorExecutor::Preprocess(
+absl::Status ModelValidatorExecutor::Preprocess(
     const std::vector<TfLiteTensor*>& input_tensors,
     const std::vector<float>& input) {
   // Return error so that actual model execution does not happen.
-  return false;
+  return absl::Status(absl::StatusCode::kUnimplemented,
+                      "Model execution not supported");
 }
 
-absl::optional<float> ModelValidatorExecutor::Postprocess(
+float ModelValidatorExecutor::Postprocess(
     const std::vector<const TfLiteTensor*>& output_tensors) {
   std::vector<float> data;
-  absl::Status status =
-      tflite::task::core::PopulateVector<float>(output_tensors[0], &data);
-  if (!status.ok()) {
-    NOTREACHED();
-    return absl::nullopt;
-  }
+  tflite::task::core::PopulateVector<float>(output_tensors[0], &data);
   return data[0];
 }
 

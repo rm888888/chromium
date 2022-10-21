@@ -10,7 +10,7 @@
 
 #include "base/bind.h"
 #include "base/feature_list.h"
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/metrics/histogram_functions.h"
 #include "base/scoped_observation.h"
 #include "build/build_config.h"
@@ -58,21 +58,22 @@
 #include "ui/views/layout/fill_layout.h"
 #include "ui/views/layout/flex_layout.h"
 #include "ui/views/layout/flex_layout_types.h"
-#include "ui/views/layout/table_layout.h"
 #include "ui/views/view_class_properties.h"
 
 #if !BUILDFLAG(IS_CHROMEOS_ASH)
 #include "chrome/browser/ui/views/profiles/profile_menu_view.h"
 #include "chrome/browser/ui/views/sync/dice_signin_button_view.h"
 #endif
-
+//update on 20220803
+#include "chrome/browser/ui/views/frame/browser_view.h"
+//
 namespace {
 
 ProfileMenuViewBase* g_profile_bubble_ = nullptr;
 
 // Helpers --------------------------------------------------------------------
 
-constexpr int kMenuWidth = 288;
+//constexpr int kMenuWidth = 288;
 constexpr int kMaxImageSize = ProfileMenuViewBase::kIdentityImageSize;
 constexpr int kDefaultMargin = 8;
 constexpr int kBadgeSize = 16;
@@ -325,7 +326,7 @@ class AvatarImageView : public views::ImageView {
   }
 
   ui::ImageModel avatar_image_;
-  raw_ptr<const ProfileMenuViewBase> root_view_;
+  const ProfileMenuViewBase* root_view_;
 };
 
 class SyncButton : public HoverButton {
@@ -344,7 +345,7 @@ class SyncButton : public HoverButton {
   }
 
  private:
-  raw_ptr<const ProfileMenuViewBase> root_view_;
+  const ProfileMenuViewBase* root_view_;
 };
 
 BEGIN_METADATA(SyncButton, HoverButton)
@@ -362,7 +363,7 @@ class SyncImageView : public views::ImageView {
   }
 
  private:
-  raw_ptr<const ProfileMenuViewBase> root_view_;
+  const ProfileMenuViewBase* root_view_;
 };
 
 void BuildProfileTitleAndSubtitle(views::View* parent,
@@ -533,7 +534,40 @@ void ProfileMenuViewBase::ShowBubble(profiles::BubbleViewMode view_mode,
   if (is_source_accelerator)
     bubble->FocusFirstProfileButton();
 }
-
+//update on 20220216
+//void ProfileMenuViewBase::ShowWalletBubble(profiles::BubbleViewMode view_mode,
+//                                     views::Button* anchor_button,
+//                                     Browser* browser,
+//                                     bool is_source_accelerator) {
+//  if (IsShowing())
+//    return;
+//
+//  signin_ui_util::RecordProfileMenuViewShown(browser->profile());
+//  // Close any existing IPH bubble for the profile menu.
+//  FeaturePromoController* promo_controller =
+//      browser->window()->GetFeaturePromoController();
+//  promo_controller->CloseBubble(feature_engagement::kIPHProfileSwitchFeature);
+//
+//  WalletViewBase* bubble = nullptr;
+//
+//#if BUILDFLAG(IS_CHROMEOS_ASH)
+//    // Note: on Ash, Guest Sessions have incognito profiles, and use
+//    // BUBBLE_VIEW_MODE_INCOGNITO.
+//    NOTREACHED() << "The profile menu is not implemented on Ash.";
+//#else
+//    DCHECK_EQ(profiles::BUBBLE_VIEW_MODE_PROFILE_CHOOSER, view_mode);
+//    bubble = new WalletView(anchor_button, browser);
+//#endif
+//
+//
+//  views::Widget* widget = views::BubbleDialogDelegateView::CreateBubble(bubble);
+//  bubble->ax_widget_observer_ =
+//      std::make_unique<AXMenuWidgetObserver>(bubble, widget);
+//  widget->Show();
+//  if (is_source_accelerator)
+//    bubble->FocusFirstProfileButton();
+//}
+//
 // static
 bool ProfileMenuViewBase::IsShowing() {
   return g_profile_bubble_ != nullptr;
@@ -556,7 +590,8 @@ ProfileMenuViewBase::ProfileMenuViewBase(views::Button* anchor_button,
       browser_(browser),
       anchor_button_(anchor_button),
       close_bubble_helper_(this, browser) {
-  DCHECK(!g_profile_bubble_);
+    //update on 20220803
+  //DCHECK(!g_profile_bubble_);
   g_profile_bubble_ = this;
   SetButtons(ui::DIALOG_BUTTON_NONE);
   // TODO(tluk): Remove when fixing https://crbug.com/822075
@@ -589,6 +624,20 @@ ProfileMenuViewBase::~ProfileMenuViewBase() {
 gfx::ImageSkia ProfileMenuViewBase::GetSyncIcon() const {
   return gfx::ImageSkia();
 }
+
+//update on 20220803
+void ProfileMenuViewBase::SetLeftPanelSetting(SettingRepeatingCallBack call){
+    heading_container_->RemoveAllChildViews();
+    // The colored background fully bleeds to the edges of the menu and to achieve
+    // that margin is set to 0. Further margins will be added by children views.
+    heading_container_->SetLayoutManager(
+            CreateBoxLayout(views::BoxLayout::Orientation::kVertical,
+                            views::BoxLayout::CrossAxisAlignment::kStretch,
+                            gfx::Insets(0, 0, 0, 0)));
+   auto setting = std::make_unique<SettingView>(BrowserView::GetBrowserViewForBrowser(browser_),call);
+    heading_container_->AddChildView(std::move(setting));
+}
+//
 
 void ProfileMenuViewBase::SetProfileIdentityInfo(
     const std::u16string& profile_name,
@@ -982,14 +1031,16 @@ void ProfileMenuViewBase::Reset() {
   scroll_view->ClipHeightTo(0, GetMaxHeight());
   scroll_view->SetContents(std::move(components));
 
-  // Create a table layout to set the menu width.
-  SetLayoutManager(std::make_unique<views::TableLayout>())
-      ->AddColumn(
-          views::LayoutAlignment::kStretch, views::LayoutAlignment::kStretch,
-          views::TableLayout::kFixedSize,
-          views::TableLayout::ColumnSize::kFixed, kMenuWidth, kMenuWidth)
-      .AddRows(1, 1.0f);
-  AddChildView(std::move(scroll_view));
+  // Create a grid layout to set the menu width.
+  views::GridLayout* layout =
+      SetLayoutManager(std::make_unique<views::GridLayout>());
+  views::ColumnSet* columns = layout->AddColumnSet(0);
+  columns->AddColumn(views::GridLayout::FILL, views::GridLayout::FILL,
+                     views::GridLayout::kFixedSize,
+                     views::GridLayout::ColumnSize::kFixed, kMenuWidth,
+                     kMenuWidth);
+  layout->StartRow(1.0f, 0);
+  layout->AddView(std::move(scroll_view));
 }
 
 void ProfileMenuViewBase::FocusFirstProfileButton() {
@@ -1024,7 +1075,8 @@ void ProfileMenuViewBase::OnThemeChanged() {
 }
 
 void ProfileMenuViewBase::OnWindowClosing() {
-  DCHECK_EQ(g_profile_bubble_, this);
+    //update on 20220808
+  //DCHECK_EQ(g_profile_bubble_, this);
   if (anchor_button()) {
     views::InkDrop::Get(anchor_button())
         ->AnimateToState(views::InkDropState::DEACTIVATED, nullptr);
@@ -1070,7 +1122,7 @@ class ProfileMenuViewBase::AXMenuWidgetObserver : public views::WidgetObserver {
   }
 
  private:
-  raw_ptr<ProfileMenuViewBase> owner_;
+  ProfileMenuViewBase* owner_;
   base::ScopedObservation<views::Widget, views::WidgetObserver> observation_{
       this};
 };

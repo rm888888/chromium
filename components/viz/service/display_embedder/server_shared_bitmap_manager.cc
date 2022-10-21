@@ -11,6 +11,7 @@
 
 #include "base/containers/contains.h"
 #include "base/lazy_instance.h"
+#include "base/macros.h"
 #include "base/memory/read_only_shared_memory_region.h"
 #include "base/memory/ref_counted.h"
 #include "base/memory/shared_memory_mapping.h"

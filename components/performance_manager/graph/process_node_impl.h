@@ -9,6 +9,7 @@
 #include <string>
 
 #include "base/containers/flat_set.h"
+#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "base/process/process.h"
 #include "base/process/process_handle.h"

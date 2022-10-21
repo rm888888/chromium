@@ -23,7 +23,6 @@
 #include "components/viz/service/frame_sinks/frame_sink_bundle_impl.h"
 #include "components/viz/service/frame_sinks/video_capture/capturable_frame_sink.h"
 #include "components/viz/service/frame_sinks/video_capture/frame_sink_video_capturer_impl.h"
-#include "components/viz/service/performance_hint/utils.h"
 #include "components/viz/service/surfaces/pending_copy_output_request.h"
 
 namespace viz {
@@ -71,11 +70,16 @@ FrameSinkManagerImpl::FrameSinkManagerImpl(const InitParams& params)
           params.run_all_compositor_stages_before_draw),
       log_capture_pipeline_in_webrtc_(params.log_capture_pipeline_in_webrtc),
       debug_settings_(params.debug_renderer_settings),
-      host_process_id_(params.host_process_id),
-      hint_session_factory_(params.hint_session_factory) {
+      gpu_pipeline_(params.gpu_pipeline) {
   surface_manager_.AddObserver(&hit_test_manager_);
   surface_manager_.AddObserver(this);
 }
+
+FrameSinkManagerImpl::FrameSinkManagerImpl(
+    SharedBitmapManager* shared_bitmap_manager,
+    OutputSurfaceProvider* output_surface_provider)
+    : FrameSinkManagerImpl(
+          InitParams(shared_bitmap_manager, output_surface_provider)) {}
 
 FrameSinkManagerImpl::~FrameSinkManagerImpl() {
   DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
@@ -182,8 +186,7 @@ void FrameSinkManagerImpl::CreateRootCompositorFrameSink(
   // Creating RootCompositorFrameSinkImpl can fail and return null.
   auto root_compositor_frame_sink = RootCompositorFrameSinkImpl::Create(
       std::move(params), this, output_surface_provider_, restart_id_,
-      run_all_compositor_stages_before_draw_, &debug_settings_,
-      hint_session_factory_);
+      run_all_compositor_stages_before_draw_, &debug_settings_, gpu_pipeline_);
 
   if (root_compositor_frame_sink)
     root_sink_map_[frame_sink_id] = std::move(root_compositor_frame_sink);
@@ -348,6 +351,15 @@ void FrameSinkManagerImpl::RequestCopyOfOutput(
       surface_id.local_surface_id(), SubtreeCaptureId(), std::move(request)});
 }
 
+void FrameSinkManagerImpl::SetHitTestAsyncQueriedDebugRegions(
+    const FrameSinkId& root_frame_sink_id,
+    const std::vector<FrameSinkId>& hit_test_async_queried_debug_queue) {
+  hit_test_manager_.SetHitTestAsyncQueriedDebugRegions(
+      root_frame_sink_id, hit_test_async_queried_debug_queue);
+  DCHECK(base::Contains(root_sink_map_, root_frame_sink_id));
+  root_sink_map_[root_frame_sink_id]->ForceImmediateDrawAndSwapIfPossible();
+}
+
 void FrameSinkManagerImpl::DestroyFrameSinkBundle(const FrameSinkBundleId& id) {
   bundle_map_.erase(id);
 }
@@ -397,8 +409,7 @@ void FrameSinkManagerImpl::RegisterCompositorFrameSinkSupport(
   support_map_[frame_sink_id] = support;
 
   for (auto& capturer : video_capturers_) {
-    if (capturer->target() &&
-        capturer->target()->frame_sink_id == frame_sink_id)
+    if (capturer->requested_target() == frame_sink_id)
       capturer->SetResolvedTarget(support);
   }
 
@@ -418,8 +429,7 @@ void FrameSinkManagerImpl::UnregisterCompositorFrameSinkSupport(
     observer.OnDestroyedCompositorFrameSink(frame_sink_id);
 
   for (auto& capturer : video_capturers_) {
-    if (capturer->target() &&
-        capturer->target()->frame_sink_id == frame_sink_id)
+    if (capturer->requested_target() == frame_sink_id)
       capturer->OnTargetWillGoAway();
   }
 
@@ -656,29 +666,23 @@ void FrameSinkManagerImpl::OnCaptureStopped(const FrameSinkId& id) {
   UpdateThrottling();
 }
 
-bool FrameSinkManagerImpl::VerifySandboxedThreadIds(
-    base::flat_set<base::PlatformThreadId> thread_ids) {
-  return CheckThreadIdsDoNotBelongToProcessIds(
-      {host_process_id_, base::GetCurrentProcId()}, std::move(thread_ids));
-}
-
 void FrameSinkManagerImpl::CacheBackBuffer(
     uint32_t cache_id,
     const FrameSinkId& root_frame_sink_id) {
   auto it = root_sink_map_.find(root_frame_sink_id);
 
-  // If creating RootCompositorFrameSinkImpl failed there might not be an entry
-  // in |root_sink_map_|.
-  if (it == root_sink_map_.end())
-    return;
+  DCHECK(it != root_sink_map_.end());
+  DCHECK(cached_back_buffers_.find(cache_id) == cached_back_buffers_.end());
 
-  DCHECK(!base::Contains(cached_back_buffers_, cache_id));
   cached_back_buffers_[cache_id] = it->second->GetCacheBackBufferCb();
 }
 
 void FrameSinkManagerImpl::EvictBackBuffer(uint32_t cache_id,
                                            EvictBackBufferCallback callback) {
-  cached_back_buffers_.erase(cache_id);
+  auto it = cached_back_buffers_.find(cache_id);
+  DCHECK(it != cached_back_buffers_.end());
+
+  cached_back_buffers_.erase(it);
   std::move(callback).Run();
 }
 

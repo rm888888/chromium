@@ -12,7 +12,7 @@
 #include <vector>
 
 #include "base/gtest_prod_util.h"
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/observer_list.h"
 #include "chrome/browser/ui/media_router/cast_modes_with_media_sources.h"
 #include "chrome/browser/ui/media_router/media_cast_mode.h"
@@ -187,7 +187,7 @@ class QueryResultManager {
   base::ObserverList<Observer>::Unchecked observers_;
 
   // Not owned by this object.
-  const raw_ptr<MediaRouter> router_;
+  MediaRouter* const router_;
 };
 
 }  // namespace media_router

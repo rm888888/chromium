@@ -9,6 +9,10 @@
 
 class PrefRegistrySimple;
 
+namespace user_prefs {
+class PrefRegistrySyncable;
+}
+
 namespace onc {
 
 namespace prefs {
@@ -21,7 +25,7 @@ COMPONENT_EXPORT(ONC) extern const char kOpenNetworkConfiguration[];
 COMPONENT_EXPORT(ONC) void RegisterPrefs(PrefRegistrySimple* registry);
 
 COMPONENT_EXPORT(ONC)
-void RegisterProfilePrefs(PrefRegistrySimple* registry);
+void RegisterProfilePrefs(user_prefs::PrefRegistrySyncable* registry);
 
 }  // namespace onc
 

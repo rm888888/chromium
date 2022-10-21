@@ -50,11 +50,13 @@ class AppServer : public App {
   virtual void ActiveDutyInternal(
       scoped_refptr<UpdateServiceInternal> update_service_internal) = 0;
 
-  // Sets up all non-side-by-side registration to point to the new version.
-  virtual bool SwapInNewVersion() = 0;
+  // Sets up all non-side-by-side RPC interfaces to point to this candidate
+  // server.
+  virtual bool SwapRPCInterfaces() = 0;
 
-  // Imports metadata from legacy updaters, then replaces them with shims.
-  virtual bool MigrateLegacyUpdaters(
+  // Ingests metadata from incompatible legacy updaters, then replaces those
+  // updaters with shims.
+  virtual bool ConvertLegacyUpdaters(
       base::RepeatingCallback<void(const RegistrationRequest&)>
           register_callback) = 0;
 

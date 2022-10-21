@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "components/autofill/core/common/signatures.h"
 #include "url/gurl.h"
 
@@ -78,11 +78,11 @@ class PasswordGenerationFrameHelper {
 
   // The PasswordManagerClient instance associated with this instance. Must
   // outlive this instance.
-  raw_ptr<PasswordManagerClient> client_;
+  PasswordManagerClient* client_;
 
   // The PasswordManagerDriver instance associated with this instance. Must
   // outlive this instance.
-  raw_ptr<PasswordManagerDriver> driver_;
+  PasswordManagerDriver* driver_;
 };
 
 }  // namespace password_manager

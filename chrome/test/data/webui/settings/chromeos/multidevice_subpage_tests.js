@@ -81,11 +81,6 @@ suite('Multidevice', function() {
               supportedFeatures.includes(settings.MultiDeviceFeature.ECHE) ?
               settings.MultiDeviceFeatureState.ENABLED_BY_USER :
               settings.MultiDeviceFeatureState.NOT_SUPPORTED_BY_CHROMEBOOK,
-          phoneHubCameraRollState:
-              supportedFeatures.includes(
-                  settings.MultiDeviceFeature.PHONE_HUB_CAMERA_ROLL) ?
-              settings.MultiDeviceFeatureState.ENABLED_BY_USER :
-              settings.MultiDeviceFeatureState.NOT_SUPPORTED_BY_CHROMEBOOK,
         });
     Polymer.dom.flush();
   }
@@ -158,9 +153,6 @@ suite('Multidevice', function() {
       assertEquals(
           !!multideviceSubpage.$$('#phoneHubAppsItem'),
           mode === settings.MultiDeviceSettingsMode.HOST_SET_VERIFIED);
-      assertEquals(
-          !!multideviceSubpage.$$('#phoneHubCameraRollItem'),
-          mode === settings.MultiDeviceSettingsMode.HOST_SET_VERIFIED);
     }
   });
 
@@ -175,7 +167,6 @@ suite('Multidevice', function() {
         assertTrue(!!multideviceSubpage.$$('#phoneHubTaskContinuationItem'));
         assertTrue(!!multideviceSubpage.$$('#wifiSyncItem'));
         assertTrue(!!multideviceSubpage.$$('#phoneHubAppsItem'));
-        assertTrue(!!multideviceSubpage.$$('#phoneHubCameraRollItem'));
 
         setSupportedFeatures([
           settings.MultiDeviceFeature.SMART_LOCK,
@@ -185,7 +176,6 @@ suite('Multidevice', function() {
           settings.MultiDeviceFeature.PHONE_HUB_TASK_CONTINUATION,
           settings.MultiDeviceFeature.WIFI_SYNC,
           settings.MultiDeviceFeature.ECHE,
-          settings.MultiDeviceFeature.PHONE_HUB_CAMERA_ROLL,
         ]);
         assertTrue(!!multideviceSubpage.$$('#smartLockItem'));
         assertFalse(!!multideviceSubpage.$$('#instantTetheringItem'));
@@ -195,7 +185,6 @@ suite('Multidevice', function() {
         assertTrue(!!multideviceSubpage.$$('#phoneHubTaskContinuationItem'));
         assertTrue(!!multideviceSubpage.$$('#wifiSyncItem'));
         assertTrue(!!multideviceSubpage.$$('#phoneHubAppsItem'));
-        assertTrue(!!multideviceSubpage.$$('#phoneHubCameraRollItem'));
 
         setSupportedFeatures([settings.MultiDeviceFeature.INSTANT_TETHERING]);
         assertFalse(!!multideviceSubpage.$$('#smartLockItem'));
@@ -206,7 +195,6 @@ suite('Multidevice', function() {
         assertFalse(!!multideviceSubpage.$$('#phoneHubTaskContinuationItem'));
         assertFalse(!!multideviceSubpage.$$('#wifiSyncItem'));
         assertFalse(!!multideviceSubpage.$$('#phoneHubAppsItem'));
-        assertFalse(!!multideviceSubpage.$$('#phoneHubCameraRollItem'));
 
         setSupportedFeatures([]);
         assertFalse(!!multideviceSubpage.$$('#smartLockItem'));
@@ -217,7 +205,6 @@ suite('Multidevice', function() {
         assertFalse(!!multideviceSubpage.$$('#phoneHubTaskContinuationItem'));
         assertFalse(!!multideviceSubpage.$$('#wifiSyncItem'));
         assertFalse(!!multideviceSubpage.$$('#phoneHubAppsItem'));
-        assertFalse(!!multideviceSubpage.$$('#phoneHubCameraRollItem'));
       });
 
   test('clicking SmartLock item routes to SmartLock subpage', function() {
@@ -364,70 +351,7 @@ suite('Multidevice', function() {
           settings.MultiDeviceFeature.PHONE_HUB,
           settings.MultiDeviceFeature.PHONE_HUB_NOTIFICATIONS,
         ]);
-
-        multideviceSubpage.pageContentData =
-            Object.assign({}, multideviceSubpage.pageContentData, {
-              phoneHubNotificationsState:
-                  settings.MultiDeviceFeatureState.ENABLED_BY_USER,
-              isPhoneHubAppsAccessGranted: true,
-              notificationAccessStatus:
-                  settings.PhoneHubNotificationAccessStatus.ACCESS_GRANTED
-            });
-
-        Polymer.dom.flush();
-
         assertTrue(!!multideviceSubpage.$$('#phoneHubItem'));
-        assertFalse(!!multideviceSubpage.$$('#phoneHubCombinedSetupItem'));
-        assertTrue(!!multideviceSubpage.$$('#phoneHubNotificationsItem'));
-        assertFalse(!!multideviceSubpage.$$('#phoneHubAppsItem'));
-
-        multideviceSubpage.pageContentData =
-            Object.assign({}, multideviceSubpage.pageContentData, {
-              phoneHubNotificationsState:
-                  settings.MultiDeviceFeatureState.ENABLED_BY_USER,
-              isPhoneHubAppsAccessGranted: true,
-              notificationAccessStatus:
-                  settings.PhoneHubNotificationAccessStatus
-                      .AVAILABLE_BUT_NOT_GRANTED
-            });
-
-        Polymer.dom.flush();
-
-        assertTrue(!!multideviceSubpage.$$('#phoneHubItem'));
-        assertFalse(!!multideviceSubpage.$$('#phoneHubCombinedSetupItem'));
-        assertTrue(!!multideviceSubpage.$$('#phoneHubNotificationsItem'));
-        assertFalse(!!multideviceSubpage.$$('#phoneHubAppsItem'));
-
-        multideviceSubpage.pageContentData =
-            Object.assign({}, multideviceSubpage.pageContentData, {
-              phoneHubNotificationsState:
-                  settings.MultiDeviceFeatureState.ENABLED_BY_USER,
-              isPhoneHubAppsAccessGranted: false,
-              notificationAccessStatus:
-                  settings.PhoneHubNotificationAccessStatus.ACCESS_GRANTED
-            });
-
-        Polymer.dom.flush();
-
-        assertTrue(!!multideviceSubpage.$$('#phoneHubItem'));
-        assertFalse(!!multideviceSubpage.$$('#phoneHubCombinedSetupItem'));
-        assertTrue(!!multideviceSubpage.$$('#phoneHubNotificationsItem'));
-        assertFalse(!!multideviceSubpage.$$('#phoneHubAppsItem'));
-
-        multideviceSubpage.pageContentData =
-            Object.assign({}, multideviceSubpage.pageContentData, {
-              phoneHubNotificationsState:
-                  settings.MultiDeviceFeatureState.ENABLED_BY_USER,
-              isPhoneHubAppsAccessGranted: false,
-              notificationAccessStatus:
-                  settings.PhoneHubNotificationAccessStatus
-                      .AVAILABLE_BUT_NOT_GRANTED
-            });
-
-        Polymer.dom.flush();
-
-        assertTrue(!!multideviceSubpage.$$('#phoneHubItem'));
-        assertFalse(!!multideviceSubpage.$$('#phoneHubCombinedSetupItem'));
         assertTrue(!!multideviceSubpage.$$('#phoneHubNotificationsItem'));
         assertFalse(!!multideviceSubpage.$$('#phoneHubAppsItem'));
 
@@ -436,22 +360,7 @@ suite('Multidevice', function() {
           settings.MultiDeviceFeature.PHONE_HUB_NOTIFICATIONS,
           settings.MultiDeviceFeature.ECHE,
         ]);
-
-        multideviceSubpage.pageContentData =
-            Object.assign({}, multideviceSubpage.pageContentData, {
-              phoneHubNotificationsState:
-                  settings.MultiDeviceFeatureState.ENABLED_BY_USER,
-              phoneHubAppsState:
-                  settings.MultiDeviceFeatureState.ENABLED_BY_USER,
-              isPhoneHubAppsAccessGranted: true,
-              notificationAccessStatus:
-                  settings.PhoneHubNotificationAccessStatus.ACCESS_GRANTED
-            });
-
-        Polymer.dom.flush();
-
         assertTrue(!!multideviceSubpage.$$('#phoneHubItem'));
-        assertFalse(!!multideviceSubpage.$$('#phoneHubCombinedSetupItem'));
         assertTrue(!!multideviceSubpage.$$('#phoneHubNotificationsItem'));
         assertTrue(!!multideviceSubpage.$$('#phoneHubAppsItem'));
 
@@ -465,10 +374,8 @@ suite('Multidevice', function() {
               notificationAccessStatus:
                   settings.PhoneHubNotificationAccessStatus.ACCESS_GRANTED
             });
-
         Polymer.dom.flush();
 
-        assertTrue(!!multideviceSubpage.$$('#phoneHubItem'));
         assertFalse(!!multideviceSubpage.$$('#phoneHubCombinedSetupItem'));
         assertTrue(!!multideviceSubpage.$$('#phoneHubNotificationsItem'));
         assertTrue(!!multideviceSubpage.$$('#phoneHubAppsItem'));
@@ -479,44 +386,6 @@ suite('Multidevice', function() {
                   settings.MultiDeviceFeatureState.ENABLED_BY_USER,
               phoneHubAppsState:
                   settings.MultiDeviceFeatureState.ENABLED_BY_USER,
-              isPhoneHubPermissionsDialogSupported: false,
-              isPhoneHubAppsAccessGranted: false,
-              notificationAccessStatus:
-                  settings.PhoneHubNotificationAccessStatus.ACCESS_GRANTED
-            });
-
-        Polymer.dom.flush();
-        assertTrue(!!multideviceSubpage.$$('#phoneHubItem'));
-        assertFalse(!!multideviceSubpage.$$('#phoneHubCombinedSetupItem'));
-        assertTrue(!!multideviceSubpage.$$('#phoneHubNotificationsItem'));
-        assertTrue(!!multideviceSubpage.$$('#phoneHubAppsItem'));
-
-        multideviceSubpage.pageContentData =
-            Object.assign({}, multideviceSubpage.pageContentData, {
-              phoneHubNotificationsState:
-                  settings.MultiDeviceFeatureState.ENABLED_BY_USER,
-              phoneHubAppsState:
-                  settings.MultiDeviceFeatureState.ENABLED_BY_USER,
-              isPhoneHubPermissionsDialogSupported: false,
-              isPhoneHubAppsAccessGranted: false,
-              notificationAccessStatus:
-                  settings.PhoneHubNotificationAccessStatus
-                      .AVAILABLE_BUT_NOT_GRANTED
-            });
-
-        Polymer.dom.flush();
-        assertTrue(!!multideviceSubpage.$$('#phoneHubItem'));
-        assertFalse(!!multideviceSubpage.$$('#phoneHubCombinedSetupItem'));
-        assertTrue(!!multideviceSubpage.$$('#phoneHubNotificationsItem'));
-        assertTrue(!!multideviceSubpage.$$('#phoneHubAppsItem'));
-
-        multideviceSubpage.pageContentData =
-            Object.assign({}, multideviceSubpage.pageContentData, {
-              phoneHubNotificationsState:
-                  settings.MultiDeviceFeatureState.ENABLED_BY_USER,
-              phoneHubAppsState:
-                  settings.MultiDeviceFeatureState.ENABLED_BY_USER,
-              isPhoneHubPermissionsDialogSupported: true,
               isPhoneHubAppsAccessGranted: false,
               notificationAccessStatus:
                   settings.PhoneHubNotificationAccessStatus.ACCESS_GRANTED
@@ -524,7 +393,7 @@ suite('Multidevice', function() {
 
         Polymer.dom.flush();
 
-        assertTrue(!!multideviceSubpage.$$('#phoneHubItem'));
+        assertFalse(!!multideviceSubpage.$$('#phoneHubCombinedSetupItem'));
         assertTrue(!!multideviceSubpage.$$('#phoneHubNotificationsItem'));
         assertTrue(!!multideviceSubpage.$$('#phoneHubAppsItem'));
         const controllerSelector =
@@ -539,7 +408,6 @@ suite('Multidevice', function() {
                   settings.MultiDeviceFeatureState.ENABLED_BY_USER,
               phoneHubAppsState:
                   settings.MultiDeviceFeatureState.ENABLED_BY_USER,
-              isPhoneHubPermissionsDialogSupported: true,
               isPhoneHubAppsAccessGranted: false,
               notificationAccessStatus:
                   settings.PhoneHubNotificationAccessStatus
@@ -548,7 +416,6 @@ suite('Multidevice', function() {
 
         Polymer.dom.flush();
 
-        assertTrue(!!multideviceSubpage.$$('#phoneHubItem'));
         assertTrue(!!multideviceSubpage.$$('#phoneHubCombinedSetupItem'));
         assertFalse(!!multideviceSubpage.$$('#phoneHubNotificationsItem'));
         assertFalse(!!multideviceSubpage.$$('#phoneHubAppsItem'));

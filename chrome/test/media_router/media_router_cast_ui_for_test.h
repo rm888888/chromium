@@ -6,6 +6,7 @@
 #define CHROME_TEST_MEDIA_ROUTER_MEDIA_ROUTER_CAST_UI_FOR_TEST_H_
 
 #include "base/callback_forward.h"
+#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "chrome/browser/ui/views/media_router/media_router_dialog_controller_views.h"
 #include "chrome/test/media_router/media_router_ui_for_test_base.h"
@@ -42,6 +43,8 @@ class MediaRouterCastUiForTest
   void WaitForAnyRoute() override;
   void WaitForDialogShown() override;
   void WaitForDialogHidden() override;
+  void SetLocalFile(const GURL& file_url) override;
+  void SetLocalFileSelectionIssue(const IssueInfo& issue) override;
   void OnDialogCreated() override;
 
  private:

@@ -21,8 +21,10 @@ MockMediaSinksObserver::MockMediaSinksObserver(MediaRouter* router,
     : MediaSinksObserver(router, source, origin) {}
 MockMediaSinksObserver::~MockMediaSinksObserver() = default;
 
-MockMediaRoutesObserver::MockMediaRoutesObserver(MediaRouter* router)
-    : MediaRoutesObserver(router) {}
+MockMediaRoutesObserver::MockMediaRoutesObserver(
+    MediaRouter* router,
+    const MediaSource::Id source_id)
+    : MediaRoutesObserver(router, source_id) {}
 MockMediaRoutesObserver::~MockMediaRoutesObserver() = default;
 
 MockPresentationConnectionProxy::MockPresentationConnectionProxy() = default;

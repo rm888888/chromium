@@ -9,7 +9,6 @@
 
 #include "base/cxx17_backports.h"
 #include "base/i18n/rtl.h"
-#include "base/memory/raw_ptr.h"
 #include "base/numerics/safe_conversions.h"
 #include "base/strings/stringprintf.h"
 #include "cc/paint/paint_record.h"
@@ -61,6 +60,13 @@ class GM2TabStyle : public TabStyleViews {
       float scale,
       bool force_active = false,
       RenderUnits render_units = RenderUnits::kPixels) const override;
+  //update on 20220913
+  SkPath GetPathNewStyle(
+          PathType path_type,
+          float scale,
+          bool force_active = false,
+          RenderUnits render_units = RenderUnits::kPixels) const override;
+  //
   gfx::Insets GetContentsInsets() const override;
   float GetZValue() const override;
   TabStyle::TabColors CalculateColors() const override;
@@ -155,7 +161,7 @@ class GM2TabStyle : public TabStyleViews {
                                         float scale,
                                         int stroke_thickness);
 
-  const raw_ptr<const Tab> tab_;
+  const Tab* const tab_;
 
   std::unique_ptr<GlowHoverController> hover_controller_;
   gfx::FontList normal_font_;
@@ -302,11 +308,6 @@ SkPath GM2TabStyle::GetPath(PathType path_type,
         radius - inset, radius - inset);
     path.addRRect(rrect);
   } else {
-    // Avoid mallocs at every new path verb by preallocating an
-    // empirically-determined amount of space in the verb and point buffers.
-    const int kMaxPathPoints = 20;
-    path.incReserve(kMaxPathPoints);
-
     // We will go clockwise from the lower left. We start in the overlap region,
     // preventing a gap between toolbar and tabstrip.
     // TODO(dfried): verify that the we actually want to start the stroke for
@@ -318,26 +319,30 @@ SkPath GM2TabStyle::GetPath(PathType path_type,
     path.moveTo(left, extended_bottom);
 
     if (tab_left != left) {
-      // Draw the left edge of the extension.
-      //   ╭─────────╮
-      //   │ Content │
-      // ┏─╯         ╰─┐
-      if (tab_bottom != extended_bottom)
-        path.lineTo(left, tab_bottom);
+        //update on 20220913
+        if (tab_->controller()->IsTabFirst(tab_)) {
+            tab_left = left;
+        } else {//update on 20220913
+            // Draw the left edge of the extension.
+            //   ╭─────────╮
+            //   │ Content │
+            // ┏─╯         ╰─┐
+            if (tab_bottom != extended_bottom)
+                path.lineTo(left, tab_bottom);
 
-      // Draw the bottom-left corner.
-      //   ╭─────────╮
-      //   │ Content │
-      // ┌━╝         ╰─┐
-      if (extend_left_to_bottom) {
-        path.lineTo(tab_left, tab_bottom);
-      } else {
-        path.lineTo(tab_left - bottom_radius, tab_bottom);
-        path.arcTo(bottom_radius, bottom_radius, 0, SkPath::kSmall_ArcSize,
-                   SkPathDirection::kCCW, tab_left, tab_bottom - bottom_radius);
-      }
+            // Draw the bottom-left corner.
+            //   ╭─────────╮
+            //   │ Content │
+            // ┌━╝         ╰─┐
+            if (extend_left_to_bottom) {
+                path.lineTo(tab_left, tab_bottom);
+            } else {
+                path.lineTo(tab_left - bottom_radius, tab_bottom);
+                path.arcTo(bottom_radius, bottom_radius, 0, SkPath::kSmall_ArcSize,
+                           SkPathDirection::kCCW, tab_left, tab_bottom - bottom_radius);
+            }
+        }
     }
-
     // Draw the ascender and top-left curve, if present.
     if (extend_to_top) {
       //   ┎─────────╮
@@ -409,6 +414,214 @@ SkPath GM2TabStyle::GetPath(PathType path_type,
   return path;
 }
 
+//update on 20220913
+SkPath GM2TabStyle::GetPathNewStyle(PathType path_type,
+                                float scale,
+                                bool force_active,
+                                RenderUnits render_units) const {
+        const int stroke_thickness = GetStrokeThickness(force_active);
+
+        // We'll do the entire path calculation in aligned pixels.
+        // TODO(dfried): determine if we actually want to use |stroke_thickness| as
+        // the inset in this case.
+        gfx::RectF aligned_bounds =
+                ScaleAndAlignBounds(tab_->bounds(), scale, stroke_thickness);
+        if (path_type == PathType::kInteriorClip) {
+            // When there is a separator, animate the clip to account for it, in sync
+            // with the separator's fading.
+            // TODO(pkasting): Consider crossfading the favicon instead of animating
+            // the clip, especially if other children get crossfaded.
+            const auto opacities = GetSeparatorOpacities(true);
+            constexpr float kChildClipPadding = 2.5f;
+            aligned_bounds.Inset(gfx::InsetsF(0.0f, kChildClipPadding + opacities.left,
+                                              0.0f,
+                                              kChildClipPadding + opacities.right));
+        }
+
+        // Calculate the corner radii. Note that corner radius is based on original
+        // tab width (in DIP), not our new, scaled-and-aligned bounds.
+        const float radius = GetTopCornerRadiusForWidth(tab_->width()) * scale;
+        float top_radius = radius;
+        float bottom_radius = radius;
+
+        // Compute |extension| as the width outside the separators.  This is a fixed
+        // value equal to the normal corner radius.
+        const float extension = GetCornerRadius() * scale;
+
+        // Calculate the bounds of the actual path.
+        const float left = aligned_bounds.x();
+        const float right = aligned_bounds.right();
+        float tab_top = aligned_bounds.y();
+        float tab_left = left + extension;
+        float tab_right = right - extension;
+
+        // Overlap the toolbar below us so that gaps don't occur when rendering at
+        // non-integral display scale factors.
+        const float extended_bottom = aligned_bounds.bottom();
+        const float bottom_extension =
+                GetLayoutConstant(TABSTRIP_TOOLBAR_OVERLAP) * scale;
+        float tab_bottom = extended_bottom - bottom_extension;
+
+        // Path-specific adjustments:
+        const float stroke_adjustment = stroke_thickness * scale;
+        bool extend_to_top = false;
+        if (path_type == PathType::kInteriorClip) {
+            // Inside of the border runs |stroke_thickness| inside the outer edge.
+            tab_left += stroke_adjustment;
+            tab_right -= stroke_adjustment;
+            tab_top += stroke_adjustment;
+            top_radius -= stroke_adjustment;
+        } else if (path_type == PathType::kFill || path_type == PathType::kBorder) {
+            tab_left += 0.5f * stroke_adjustment;
+            tab_right -= 0.5f * stroke_adjustment;
+            tab_top += 0.5f * stroke_adjustment;
+            top_radius -= 0.5f * stroke_adjustment;
+            tab_bottom -= 0.5f * stroke_adjustment;
+            bottom_radius -= 0.5f * stroke_adjustment;
+        } else if (path_type == PathType::kHitTest) {
+            // Outside border needs to draw its bottom line a stroke width above the
+            // bottom of the tab, to line up with the stroke that runs across the rest
+            // of the bottom of the tab bar (when strokes are enabled).
+            tab_bottom -= stroke_adjustment;
+            bottom_radius -= stroke_adjustment;
+            if (ShouldExtendHitTest()) {
+                extend_to_top = true;
+                if (tab_->controller()->IsTabFirst(tab_)) {
+                    // The path is not mirrored in RTL and thus we must manually choose the
+                    // correct "leading" edge.
+                    if (base::i18n::IsRTL())
+                        tab_right = right;
+                    else
+                        tab_left = left;
+                }
+            }
+        }
+        const ShapeModifier shape_modifier = GetShapeModifier(path_type);
+        //update on 20220913
+        //const bool extend_left_to_bottom = shape_modifier & kNoLowerLeftArc;
+        const bool extend_right_to_bottom = shape_modifier & kNoLowerRightArc;
+
+        SkPath path;
+
+        if (path_type == PathType::kInteriorClip) {
+            // Clip path is a simple rectangle.
+            path.addRect(tab_left, tab_top, tab_right, tab_bottom);
+        } else if (path_type == PathType::kHighlight) {
+            // The path is a round rect inset by the focus ring thickness. The
+            // radius is also adjusted by the inset.
+            const float inset = views::FocusRing::kDefaultHaloThickness +
+                                views::FocusRing::kDefaultHaloInset;
+            SkRRect rrect = SkRRect::MakeRectXY(
+                    SkRect::MakeLTRB(tab_left + inset, tab_top + inset, tab_right - inset,
+                                     tab_bottom - inset),
+                    radius - inset, radius - inset);
+            path.addRRect(rrect);
+        } else {
+            // We will go clockwise from the lower left. We start in the overlap region,
+            // preventing a gap between toolbar and tabstrip.
+            // TODO(dfried): verify that the we actually want to start the stroke for
+            // the exterior path outside the region; we might end up rendering an
+            // extraneous descending pixel on displays with odd scaling and nonzero
+            // stroke width.
+
+            // Start with the left side of the shape.
+            path.moveTo(left, extended_bottom);
+
+            if (tab_left != left) {
+                // Draw the left edge of the extension.
+                //   ╭─────────╮
+                //   │ Content │
+                // ┏─╯         ╰─┐
+                if (tab_bottom != extended_bottom)
+                    path.lineTo(left, tab_bottom);
+
+                // Draw the bottom-left corner.
+                //   ╭─────────╮
+                //   │ Content │
+                // ┌━╝         ╰─┐
+                //update on 20220913 remove the left corner
+                tab_left = left;
+//      if (extend_left_to_bottom) {
+//        path.lineTo(tab_left, tab_bottom);
+//      } else {
+//        path.lineTo(tab_left - bottom_radius, tab_bottom);
+//        path.arcTo(bottom_radius, bottom_radius, 0, SkPath::kSmall_ArcSize,
+//                   SkPathDirection::kCCW, tab_left, tab_bottom - bottom_radius);
+//      }
+            }
+
+            // Draw the ascender and top-left curve, if present.
+            if (extend_to_top) {
+                //   ┎─────────╮
+                //   ┃ Content │
+                // ┌─╯         ╰─┐
+                path.lineTo(tab_left, tab_top);
+            } else {
+                //   ╔─────────╮
+                //   ┃ Content │
+                // ┌─╯         ╰─┐
+                path.lineTo(tab_left, tab_top + top_radius);
+                path.arcTo(top_radius, top_radius, 0, SkPath::kSmall_ArcSize,
+                           SkPathDirection::kCW, tab_left + top_radius, tab_top);
+            }
+
+            // Draw the top crossbar and top-right curve, if present.
+            if (extend_to_top) {
+                //   ┌━━━━━━━━━┑
+                //   │ Content │
+                // ┌─╯         ╰─┐
+                path.lineTo(tab_right, tab_top);
+            } else {
+                //   ╭━━━━━━━━━╗
+                //   │ Content │
+                // ┌─╯         ╰─┐
+                path.lineTo(tab_right - top_radius, tab_top);
+                path.arcTo(top_radius, top_radius, 0, SkPath::kSmall_ArcSize,
+                           SkPathDirection::kCW, tab_right, tab_top + top_radius);
+            }
+
+            if (tab_right != right) {
+                // Draw the descender and bottom-right corner.
+                //   ╭─────────╮
+                //   │ Content ┃
+                // ┌─╯         ╚━┐
+                if (extend_right_to_bottom) {
+                    path.lineTo(tab_right, tab_bottom);
+                } else {
+                    path.lineTo(tab_right, tab_bottom - bottom_radius);
+                    path.arcTo(bottom_radius, bottom_radius, 0, SkPath::kSmall_ArcSize,
+                               SkPathDirection::kCCW, tab_right + bottom_radius,
+                               tab_bottom);
+                }
+                if (tab_bottom != extended_bottom)
+                    path.lineTo(right, tab_bottom);
+            }
+
+            // Draw anything remaining: the descender, the bottom right horizontal
+            // stroke, or the right edge of the extension, depending on which
+            // conditions fired above.
+            //   ╭─────────╮
+            //   │ Content │
+            // ┌─╯         ╰─┓
+            path.lineTo(right, extended_bottom);
+
+            if (path_type != PathType::kBorder)
+                path.close();
+        }
+
+        // Convert path to be relative to the tab origin.
+        gfx::PointF origin(tab_->origin());
+        origin.Scale(scale);
+        path.offset(-origin.x(), -origin.y());
+
+        // Possibly convert back to DIPs.
+        if (render_units == RenderUnits::kDips && scale != 1.0f)
+            path.transform(SkMatrix::Scale(1.0f / scale, 1.0f / scale));
+
+        return path;
+}
+//
+
 gfx::Insets GM2TabStyle::GetContentsInsets() const {
   const int stroke_thickness = GetStrokeThickness();
   const int horizontal_inset = GetContentsHorizontalInsetSize();
@@ -468,7 +681,6 @@ TabStyle::TabColors GM2TabStyle::CalculateColors() const {
   const SkColor foreground_color = tab_->controller()->GetTabForegroundColor(
       expected_opacity > 0.5f ? TabActive::kActive : TabActive::kInactive,
       background_color);
-
   return {foreground_color, background_color};
 }
 
@@ -594,8 +806,8 @@ float GM2TabStyle::GetSeparatorOpacity(bool for_layout, bool leading) const {
   const Tab* adjacent_tab =
       tab_->controller()->GetAdjacentTab(tab_, leading ? -1 : 1);
 
-  const Tab* left_tab = leading ? adjacent_tab : tab_.get();
-  const Tab* right_tab = leading ? tab_.get() : adjacent_tab;
+  const Tab* left_tab = leading ? adjacent_tab : tab_;
+  const Tab* right_tab = leading ? tab_ : adjacent_tab;
   const bool adjacent_to_header =
       right_tab && right_tab->group().has_value() &&
       (!left_tab || left_tab->group() != right_tab->group());
@@ -730,11 +942,10 @@ float GM2TabStyle::GetHoverOpacity() const {
   // that most tabs will fall on the low end of the opacity range, but very
   // narrow tabs will still stand out on the high end.
   const float range_start = static_cast<float>(GetStandardWidth());
-  constexpr float kWidthForMaxHoverOpacity = 32.0f;
+  const float range_end = static_cast<float>(GetMinimumInactiveWidth());
   const float value_in_range = static_cast<float>(tab_->width());
   const float t = base::clamp(
-      (value_in_range - range_start) / (kWidthForMaxHoverOpacity - range_start),
-      0.0f, 1.0f);
+      (value_in_range - range_start) / (range_end - range_start), 0.0f, 1.0f);
   return tab_->controller()->GetHoverOpacityForTab(t * t);
 }
 
@@ -875,6 +1086,9 @@ void GM2TabStyle::PaintTabBackgroundFill(gfx::Canvas* canvas,
 void GM2TabStyle::PaintBackgroundStroke(gfx::Canvas* canvas,
                                         TabActive active,
                                         SkColor stroke_color) const {
+    //update on 20220518
+    //stroke_color = SkColorSetARGB(255,235,226,238);
+    //
   const bool is_active = active == TabActive::kActive;
   const int stroke_thickness = GetStrokeThickness(is_active);
   if (!stroke_thickness)
@@ -961,7 +1175,7 @@ gfx::RectF GM2TabStyle::ScaleAndAlignBounds(const gfx::Rect& bounds,
 
   // Convert back to full bounds.  It's OK that the outer corners of the curves
   // around the separator may not be snapped to the pixel grid as a result.
-  aligned_bounds.Inset(-gfx::ScaleInsets(layout_insets, scale));
+  aligned_bounds.Inset(-layout_insets.Scale(scale));
   return aligned_bounds;
 }
 

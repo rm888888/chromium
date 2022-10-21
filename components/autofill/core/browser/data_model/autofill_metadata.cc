@@ -4,8 +4,6 @@
 
 #include "components/autofill/core/browser/data_model/autofill_metadata.h"
 
-#include <ostream>
-
 #include "components/autofill/core/common/autofill_clock.h"
 #include "components/autofill/core/common/autofill_constants.h"
 

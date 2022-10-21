@@ -25,6 +25,7 @@
 #include "base/strings/string_piece.h"
 #include "base/strings/string_split.h"
 #include "base/strings/string_util.h"
+#include "ui/display/types/display_constants.h"
 #include "ui/display/types/display_mode.h"
 #include "ui/display/util/display_util.h"
 #include "ui/display/util/edid_parser.h"
@@ -49,29 +50,29 @@ bool IsCrtcInUse(
   return false;
 }
 
-// Returns a CRTC compatible with |connector| and not already used in |displays|
-// and the CRTC that's currently connected to the connector.
+// Return a CRTC compatible with |connector| and not already used in |displays|.
 // If there are multiple compatible CRTCs, the one that supports the majority of
-// planes will be returned as best CRTC.
-std::pair<uint32_t /* best_crtc */, uint32_t /* connected_crtc */> GetCrtcs(
+// planes will be returned.
+uint32_t GetCrtc(
     int fd,
     drmModeConnector* connector,
     drmModeRes* resources,
-    const std::vector<std::unique_ptr<HardwareDisplayControllerInfo>>& displays,
-    const std::vector<ScopedDrmPlanePtr>& planes) {
+    const std::vector<std::unique_ptr<HardwareDisplayControllerInfo>>&
+        displays) {
+  ScopedDrmPlaneResPtr plane_resources(drmModeGetPlaneResources(fd));
+  std::vector<ScopedDrmPlanePtr> planes;
+  for (uint32_t i = 0; i < plane_resources->count_planes; i++)
+    planes.emplace_back(drmModeGetPlane(fd, plane_resources->planes[i]));
+
   DCHECK_GE(32, resources->count_crtcs);
-  int most_crtc_planes = -1;
   uint32_t best_crtc = 0;
-  uint32_t connected_crtc = 0;
+  int best_crtc_planes = -1;
 
   // Try to find an encoder for the connector.
   for (int i = 0; i < connector->count_encoders; ++i) {
     ScopedDrmEncoderPtr encoder(drmModeGetEncoder(fd, connector->encoders[i]));
     if (!encoder)
       continue;
-
-    if (connector->encoder_id == encoder->encoder_id)
-      connected_crtc = encoder->crtc_id;
 
     for (int j = 0; j < resources->count_crtcs; ++j) {
       // Check if the encoder is compatible with this CRTC
@@ -84,16 +85,20 @@ std::pair<uint32_t /* best_crtc */, uint32_t /* connected_crtc */> GetCrtcs(
           planes.begin(), planes.end(), [crtc_bit](const ScopedDrmPlanePtr& p) {
             return p->possible_crtcs & crtc_bit;
           });
-      if (supported_planes > most_crtc_planes ||
-          (supported_planes == most_crtc_planes &&
-           connected_crtc == resources->crtcs[j])) {
-        most_crtc_planes = supported_planes;
+
+      uint32_t assigned_crtc = 0;
+      if (connector->encoder_id == encoder->encoder_id)
+        assigned_crtc = encoder->crtc_id;
+      if (supported_planes > best_crtc_planes ||
+          (supported_planes == best_crtc_planes &&
+           assigned_crtc == resources->crtcs[j])) {
+        best_crtc_planes = supported_planes;
         best_crtc = resources->crtcs[j];
       }
     }
   }
 
-  return std::make_pair(best_crtc, connected_crtc);
+  return best_crtc;
 }
 
 // Computes the refresh rate for the specific mode. If we have enough
@@ -110,30 +115,6 @@ float GetRefreshRate(const drmModeModeInfo& mode) {
   float vtotal = mode.vtotal;
 
   return (clock * 1000.0f) / (htotal * vtotal);
-}
-
-display::DisplayConnectionType GetDisplayType(drmModeConnector* connector) {
-  switch (connector->connector_type) {
-    case DRM_MODE_CONNECTOR_VGA:
-      return display::DISPLAY_CONNECTION_TYPE_VGA;
-    case DRM_MODE_CONNECTOR_DVII:
-    case DRM_MODE_CONNECTOR_DVID:
-    case DRM_MODE_CONNECTOR_DVIA:
-      return display::DISPLAY_CONNECTION_TYPE_DVI;
-    case DRM_MODE_CONNECTOR_VIRTUAL:
-      // A display on VM is treated as an internal display.
-    case DRM_MODE_CONNECTOR_LVDS:
-    case DRM_MODE_CONNECTOR_eDP:
-    case DRM_MODE_CONNECTOR_DSI:
-      return display::DISPLAY_CONNECTION_TYPE_INTERNAL;
-    case DRM_MODE_CONNECTOR_DisplayPort:
-      return display::DISPLAY_CONNECTION_TYPE_DISPLAYPORT;
-    case DRM_MODE_CONNECTOR_HDMIA:
-    case DRM_MODE_CONNECTOR_HDMIB:
-      return display::DISPLAY_CONNECTION_TYPE_HDMI;
-    default:
-      return display::DISPLAY_CONNECTION_TYPE_UNKNOWN;
-  }
 }
 
 int GetDrmProperty(int fd,
@@ -181,34 +162,22 @@ ScopedDrmPropertyBlobPtr GetDrmPropertyBlob(int fd,
 
 display::PrivacyScreenState GetPrivacyScreenState(int fd,
                                                   drmModeConnector* connector) {
-  ScopedDrmPropertyPtr sw_property;
-  const int sw_index = GetDrmProperty(
-      fd, connector, kPrivacyScreenSwStatePropertyName, &sw_property);
-  ScopedDrmPropertyPtr hw_property;
-  const int hw_index = GetDrmProperty(
-      fd, connector, kPrivacyScreenHwStatePropertyName, &hw_property);
+  ScopedDrmPropertyPtr property;
+  int index = GetDrmProperty(fd, connector, "privacy-screen", &property);
+  if (index < 0)
+    return display::PrivacyScreenState::kNotSupported;
 
-  // Both privacy-screen properties (software- and hardware-state) must be
-  // present in order for the feature to be supported, but the hardware-state
-  // property indicates the true state of the privacy screen.
-  if (sw_index >= 0 && hw_index >= 0) {
-    const std::string hw_enum_value = GetNameForEnumValue(
-        hw_property.get(), connector->prop_values[hw_index]);
-    return GetPrivacyScreenStateFromEnumValue(hw_enum_value);
+  DCHECK_LT(connector->prop_values[index],
+            display::PrivacyScreenState::kPrivacyScreenStateLast);
+  if (connector->prop_values[index] >=
+      display::PrivacyScreenState::kPrivacyScreenStateLast) {
+    LOG(ERROR) << "Invalid privacy-screen property value: Expected < "
+               << display::PrivacyScreenState::kPrivacyScreenStateLast
+               << ", but got: " << connector->prop_values[index];
   }
 
-  // If the new privacy screen UAPI properties are missing, try to fetch the
-  // legacy privacy screen property.
-  ScopedDrmPropertyPtr legacy_property;
-  const int legacy_index = GetDrmProperty(
-      fd, connector, kPrivacyScreenPropertyNameLegacy, &legacy_property);
-  if (legacy_index >= 0) {
-    const std::string legacy_enum_value = GetNameForEnumValue(
-        legacy_property.get(), connector->prop_values[legacy_index]);
-    return GetPrivacyScreenStateFromEnumValue(legacy_enum_value);
-  }
-
-  return display::PrivacyScreenState::kNotSupported;
+  return static_cast<display::PrivacyScreenState>(
+      connector->prop_values[index]);
 }
 
 std::vector<uint64_t> GetPathTopology(int fd, drmModeConnector* connector) {
@@ -336,12 +305,11 @@ HardwareDisplayControllerInfo::HardwareDisplayControllerInfo(
 
 HardwareDisplayControllerInfo::~HardwareDisplayControllerInfo() = default;
 
-std::pair<HardwareDisplayControllerInfoList, std::vector<uint32_t>>
-GetDisplayInfosAndInvalidCrtcs(int fd) {
+std::vector<std::unique_ptr<HardwareDisplayControllerInfo>>
+GetAvailableDisplayControllerInfos(int fd) {
   ScopedDrmResourcesPtr resources(drmModeGetResources(fd));
   DCHECK(resources) << "Failed to get DRM resources";
   std::vector<std::unique_ptr<HardwareDisplayControllerInfo>> displays;
-  std::vector<uint32_t> invalid_crtcs;
 
   std::vector<ScopedDrmConnectorPtr> connectors;
   std::vector<drmModeConnector*> available_connectors;
@@ -391,24 +359,12 @@ GetDisplayInfosAndInvalidCrtcs(int fd) {
                             c1_crtcs != c2_crtcs;
                    });
 
-  ScopedDrmPlaneResPtr plane_resources(drmModeGetPlaneResources(fd));
-  std::vector<ScopedDrmPlanePtr> planes;
-  for (uint32_t i = 0; i < plane_resources->count_planes; i++)
-    planes.emplace_back(drmModeGetPlane(fd, plane_resources->planes[i]));
-
   for (auto* c : available_connectors) {
-    uint32_t best_crtc, connected_crtc;
-    std::tie(best_crtc, connected_crtc) =
-        GetCrtcs(fd, c, resources.get(), displays, planes);
-    if (!best_crtc)
+    uint32_t crtc_id = GetCrtc(fd, c, resources.get(), displays);
+    if (!crtc_id)
       continue;
 
-    // If the currently connected CRTC isn't the best CRTC for the connector,
-    // add the CRTC to the list of Invalid CRTCs.
-    if (connected_crtc && connected_crtc != best_crtc)
-      invalid_crtcs.push_back((connected_crtc));
-
-    ScopedDrmCrtcPtr crtc(drmModeGetCrtc(fd, best_crtc));
+    ScopedDrmCrtcPtr crtc(drmModeGetCrtc(fd, crtc_id));
     auto iter = std::find_if(connectors.begin(), connectors.end(),
                              [c](const ScopedDrmConnectorPtr& connector) {
                                return connector.get() == c;
@@ -421,12 +377,7 @@ GetDisplayInfosAndInvalidCrtcs(int fd) {
         std::move(*iter), std::move(crtc), index));
   }
 
-  return std::make_pair(std::move(displays), std::move(invalid_crtcs));
-}
-
-std::vector<std::unique_ptr<HardwareDisplayControllerInfo>>
-GetAvailableDisplayControllerInfos(int fd) {
-  return GetDisplayInfosAndInvalidCrtcs(fd).first;
+  return displays;
 }
 
 bool SameMode(const drmModeModeInfo& lhs, const drmModeModeInfo& rhs) {
@@ -491,6 +442,31 @@ display::DisplaySnapshot::DisplayModeList ExtractDisplayModes(
     *out_native_mode = modes.front().get();
 
   return modes;
+}
+
+display::DisplayConnectionType GetDisplayType(
+    const drmModeConnector* connector) {
+  switch (connector->connector_type) {
+    case DRM_MODE_CONNECTOR_VGA:
+      return display::DISPLAY_CONNECTION_TYPE_VGA;
+    case DRM_MODE_CONNECTOR_DVII:
+    case DRM_MODE_CONNECTOR_DVID:
+    case DRM_MODE_CONNECTOR_DVIA:
+      return display::DISPLAY_CONNECTION_TYPE_DVI;
+    case DRM_MODE_CONNECTOR_VIRTUAL:
+      // A display on VM is treated as an internal display.
+    case DRM_MODE_CONNECTOR_LVDS:
+    case DRM_MODE_CONNECTOR_eDP:
+    case DRM_MODE_CONNECTOR_DSI:
+      return display::DISPLAY_CONNECTION_TYPE_INTERNAL;
+    case DRM_MODE_CONNECTOR_DisplayPort:
+      return display::DISPLAY_CONNECTION_TYPE_DISPLAYPORT;
+    case DRM_MODE_CONNECTOR_HDMIA:
+    case DRM_MODE_CONNECTOR_HDMIB:
+      return display::DISPLAY_CONNECTION_TYPE_HDMI;
+    default:
+      return display::DISPLAY_CONNECTION_TYPE_UNKNOWN;
+  }
 }
 
 std::unique_ptr<display::DisplaySnapshot> CreateDisplaySnapshot(
@@ -684,18 +660,6 @@ std::vector<uint64_t> ParsePathBlob(const drmModePropertyBlobRes& path_blob) {
   }
 
   return path;
-}
-
-display::PrivacyScreenState GetPrivacyScreenStateFromEnumValue(
-    const std::string& enum_value) {
-  for (auto mapping : kPrivacyScreenStates) {
-    if (enum_value == mapping.drm_enum)
-      return mapping.internal_state;
-  }
-
-  NOTREACHED() << "Failed to match privacy screen property enum '" << enum_value
-               << "' to an internal type.";
-  return display::kNotSupported;
 }
 
 }  // namespace ui

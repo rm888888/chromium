@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "base/macros.h"
 #include "base/memory/singleton.h"
 #include "base/observer_list.h"
 

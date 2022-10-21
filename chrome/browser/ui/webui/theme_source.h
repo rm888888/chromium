@@ -7,7 +7,8 @@
 
 #include <string>
 
-#include "base/memory/raw_ptr.h"
+#include "base/compiler_specific.h"
+#include "base/macros.h"
 #include "base/memory/ref_counted.h"
 #include "base/task/single_thread_task_runner.h"
 #include "content/public/browser/url_data_source.h"
@@ -54,7 +55,7 @@ class ThemeSource : public content::URLDataSource {
                       float scale);
 
   // The profile this object was initialized with.
-  raw_ptr<Profile> profile_;
+  Profile* profile_;
 
   // Whether this source services chrome-unstrusted://theme.
   bool serve_untrusted_;

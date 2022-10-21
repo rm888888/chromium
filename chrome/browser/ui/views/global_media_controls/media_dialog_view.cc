@@ -19,6 +19,7 @@
 #include "chrome/browser/ui/views/global_media_controls/media_item_ui_device_selector_view.h"
 #include "chrome/browser/ui/views/global_media_controls/media_item_ui_footer_view.h"
 #include "chrome/browser/ui/views/global_media_controls/media_item_ui_legacy_cast_footer_view.h"
+#include "chrome/browser/ui/views/user_education/new_badge_label.h"
 #include "chrome/grit/generated_resources.h"
 #include "components/global_media_controls/public/media_item_manager.h"
 #include "components/global_media_controls/public/views/media_item_ui_list_view.h"
@@ -50,24 +51,6 @@ static constexpr int kLiveCaptionBetweenChildSpacing = 4;
 static constexpr int kLiveCaptionHorizontalMarginDip = 10;
 static constexpr int kLiveCaptionImageWidthDip = 20;
 static constexpr int kLiveCaptionVerticalMarginDip = 16;
-
-std::u16string GetLiveCaptionTitle(PrefService* profile_prefs) {
-  if (!base::FeatureList::IsEnabled(media::kLiveCaptionMultiLanguage)) {
-    return l10n_util::GetStringUTF16(
-        IDS_GLOBAL_MEDIA_CONTROLS_LIVE_CAPTION_ENGLISH_ONLY);
-  }
-  // The selected language is only shown when Live Caption is enabled.
-  if (profile_prefs->GetBoolean(prefs::kLiveCaptionEnabled)) {
-    int language_message_id = speech::GetLanguageDisplayName(
-        prefs::GetLiveCaptionLanguageCode(profile_prefs));
-    if (language_message_id) {
-      std::u16string language = l10n_util::GetStringUTF16(language_message_id);
-      return l10n_util::GetStringFUTF16(
-          IDS_GLOBAL_MEDIA_CONTROLS_LIVE_CAPTION_SHOW_LANGUAGE, language);
-    }
-  }
-  return l10n_util::GetStringUTF16(IDS_GLOBAL_MEDIA_CONTROLS_LIVE_CAPTION);
-}
 
 }  // namespace
 
@@ -299,16 +282,34 @@ void MediaDialogView::Init() {
       SkColor(gfx::kGoogleGrey700)));
   live_caption_container->AddChildView(std::move(live_caption_image));
 
-  std::u16string live_caption_title_message =
-      GetLiveCaptionTitle(profile_->GetPrefs());
-  auto live_caption_title =
-      std::make_unique<views::Label>(live_caption_title_message);
+  // Live Caption multi language is only enabled when SODA is also enabled.
+  const int live_caption_title_message =
+      base::FeatureList::IsEnabled(media::kLiveCaptionMultiLanguage) &&
+              base::FeatureList::IsEnabled(media::kUseSodaForLiveCaption)
+          ? IDS_GLOBAL_MEDIA_CONTROLS_LIVE_CAPTION
+          : IDS_GLOBAL_MEDIA_CONTROLS_LIVE_CAPTION_ENGLISH_ONLY;
+  auto live_caption_title = std::make_unique<views::Label>(
+      l10n_util::GetStringUTF16(live_caption_title_message));
   live_caption_title->SetHorizontalAlignment(
       gfx::HorizontalAlignment::ALIGN_LEFT);
   live_caption_title->SetMultiLine(true);
   live_caption_title_ =
       live_caption_container->AddChildView(std::move(live_caption_title));
   live_caption_container_layout->SetFlexForView(live_caption_title_, 1);
+
+  // Only create and show the new badge if Live Caption is not enabled at the
+  // initialization of the MediaDialogView.
+  if (!profile_->GetPrefs()->GetBoolean(prefs::kLiveCaptionEnabled)) {
+    auto live_caption_title_new_badge = std::make_unique<NewBadgeLabel>(
+        l10n_util::GetStringUTF16(live_caption_title_message));
+    live_caption_title_new_badge->SetHorizontalAlignment(
+        gfx::HorizontalAlignment::ALIGN_LEFT);
+    live_caption_title_new_badge_ = live_caption_container->AddChildView(
+        std::move(live_caption_title_new_badge));
+    live_caption_container_layout->SetFlexForView(live_caption_title_new_badge_,
+                                                  1);
+    live_caption_title_->SetVisible(false);
+  }
 
   auto live_caption_button = std::make_unique<views::ToggleButton>(
       base::BindRepeating(&MediaDialogView::OnLiveCaptionButtonPressed,
@@ -343,20 +344,24 @@ void MediaDialogView::OnLiveCaptionButtonPressed() {
 
 void MediaDialogView::ToggleLiveCaption(bool enabled) {
   profile_->GetPrefs()->SetBoolean(prefs::kLiveCaptionEnabled, enabled);
-
-  // Do not update the title if SODA is currently downloading.
-  if (!speech::SodaInstaller::GetInstance()->IsSodaDownloading(
-          speech::GetLanguageCode(
-              prefs::GetLiveCaptionLanguageCode(profile_->GetPrefs())))) {
-    live_caption_title_->SetText(GetLiveCaptionTitle(profile_->GetPrefs()));
-  }
-
   live_caption_button_->SetIsOn(enabled);
+  if (live_caption_title_new_badge_ &&
+      live_caption_title_new_badge_->GetVisible()) {
+    live_caption_title_->SetVisible(true);
+    live_caption_title_new_badge_->SetVisible(false);
+  }
 }
 
 void MediaDialogView::OnSodaInstalled() {
   speech::SodaInstaller::GetInstance()->RemoveObserver(this);
-  live_caption_title_->SetText(GetLiveCaptionTitle(profile_->GetPrefs()));
+  // Live Caption multi language is only enabled when SODA is also enabled.
+  const int live_caption_title_message =
+      base::FeatureList::IsEnabled(media::kLiveCaptionMultiLanguage) &&
+              base::FeatureList::IsEnabled(media::kUseSodaForLiveCaption)
+          ? IDS_GLOBAL_MEDIA_CONTROLS_LIVE_CAPTION
+          : IDS_GLOBAL_MEDIA_CONTROLS_LIVE_CAPTION_ENGLISH_ONLY;
+  live_caption_title_->SetText(
+      l10n_util::GetStringUTF16(live_caption_title_message));
 }
 
 void MediaDialogView::OnSodaError() {
@@ -384,7 +389,8 @@ MediaDialogView::BuildMediaItemUIView(
       item->SourceType() ==
       media_message_center::SourceType::kLocalMediaSession;
   const bool gmc_cast_start_stop_enabled =
-      media_router::GlobalMediaControlsCastStartStopEnabled(profile_);
+      media_router::GlobalMediaControlsCastStartStopEnabled() &&
+      media_router::MediaRouterEnabled(profile_);
 
   // Show a device selector view for media and supplemental notifications.
   std::unique_ptr<MediaItemUIDeviceSelectorView> device_selector_view;
@@ -394,7 +400,8 @@ MediaDialogView::BuildMediaItemUIView(
     const bool show_expand_button =
         !base::FeatureList::IsEnabled(media::kGlobalMediaControlsModernUI);
     std::unique_ptr<media_router::CastDialogController> cast_controller;
-    if (gmc_cast_start_stop_enabled) {
+    if (media_router::GlobalMediaControlsCastStartStopEnabled() &&
+        media_router::MediaRouterEnabled(profile_)) {
       cast_controller =
           is_local_media_session
               ? service_->CreateCastDialogControllerForSession(id)

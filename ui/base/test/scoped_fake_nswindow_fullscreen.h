@@ -7,6 +7,8 @@
 
 #include <memory>
 
+#include "base/macros.h"
+
 namespace ui {
 namespace test {
 

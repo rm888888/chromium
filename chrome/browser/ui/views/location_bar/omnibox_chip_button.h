@@ -26,8 +26,8 @@ class OmniboxChipButton : public views::MdTextButton {
   // Icon, text, and background colors that should be used for different types
   // of Chip.
   enum class Theme {
-    kNormalVisibility,
-    kLowVisibility,
+    kBlue,
+    kGray,
   };
 
   void AnimateCollapse();
@@ -70,7 +70,7 @@ class OmniboxChipButton : public views::MdTextButton {
   // An animation used for expanding and collapsing the chip.
   std::unique_ptr<gfx::SlideAnimation> animation_;
 
-  Theme theme_ = Theme::kNormalVisibility;
+  Theme theme_ = Theme::kBlue;
 
   // If chip is collapsed. In the collapsed state, only an icon is visible,
   // without text.

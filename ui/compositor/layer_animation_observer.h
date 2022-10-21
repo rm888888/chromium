@@ -8,6 +8,7 @@
 #include <map>
 #include <set>
 
+#include "base/compiler_specific.h"
 #include "base/memory/weak_ptr.h"
 #include "ui/compositor/compositor_export.h"
 #include "ui/compositor/layer_animation_element.h"

@@ -10,6 +10,7 @@
 
 #include "base/component_export.h"
 #include "base/files/file_path.h"
+#include "base/macros.h"
 #include "base/pickle.h"
 #include "ui/base/dragdrop/os_exchange_data_provider.h"
 #include "ui/base/x/selection_owner.h"

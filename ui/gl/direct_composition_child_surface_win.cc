@@ -9,6 +9,7 @@
 
 #include "base/debug/alias.h"
 #include "base/debug/dump_without_crashing.h"
+#include "base/macros.h"
 #include "base/metrics/histogram_functions.h"
 #include "base/metrics/histogram_macros.h"
 #include "base/process/process.h"
@@ -91,7 +92,7 @@ DirectCompositionChildSurfaceWin::~DirectCompositionChildSurfaceWin() {
 
 bool DirectCompositionChildSurfaceWin::Initialize(GLSurfaceFormat format) {
   d3d11_device_ = QueryD3D11DeviceObjectFromANGLE();
-  dcomp_device_ = DirectCompositionSurfaceWin::GetDirectCompositionDevice();
+  dcomp_device_ = QueryDirectCompositionDevice(d3d11_device_);
   if (!dcomp_device_)
     return false;
 

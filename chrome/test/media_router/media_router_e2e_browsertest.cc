@@ -25,6 +25,15 @@
 #include "testing/gtest/include/gtest/gtest.h"
 #include "url/origin.h"
 
+// Use the following command to run e2e browser tests:
+// ./out/Debug/browser_tests --user-data-dir=<empty user data dir>
+//   --extension-unpacked=<mr extension dir>
+//   --receiver=<chromecast device name>
+//   --enable-pixel-output-in-tests --run-manual
+//   --gtest_filter=MediaRouterE2EBrowserTest.<test case name>
+//   --enable-logging=stderr
+//   --ui-test-action-timeout=200000
+
 namespace {
 // URL to launch Castv2Player_Staging app on Chromecast
 const char kCastAppPresentationUrl[] =
@@ -59,8 +68,7 @@ void MediaRouterE2EBrowserTest::TearDownOnMainThread() {
 void MediaRouterE2EBrowserTest::OnRouteResponseReceived(
     mojom::RoutePresentationConnectionPtr,
     const RouteRequestResult& result) {
-  ASSERT_TRUE(result.route())
-      << "RouteRequestResult code: " << result.result_code();
+  ASSERT_TRUE(result.route());
   route_id_ = result.route()->media_route_id();
 }
 

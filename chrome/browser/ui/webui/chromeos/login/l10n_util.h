@@ -11,7 +11,6 @@
 
 #include "base/callback.h"
 #include "chrome/browser/ash/base/locale_util.h"
-#include "ui/base/ime/ash/input_method_manager.h"
 
 namespace base {
 class ListValue;
@@ -42,8 +41,7 @@ extern const char kMostRelevantLanguagesDivider[];
 // entry in the resulting list, that entry will be marked as selected.
 std::unique_ptr<base::ListValue> GetUILanguageList(
     const std::vector<std::string>* most_relevant_language_codes,
-    const std::string& selected,
-    input_method::InputMethodManager* input_method_manager);
+    const std::string& selected);
 
 // Must be called on UI thread. Runs GetUILanguageList(), on Blocking Pool,
 // and calls `callback` on UI thread with result.
@@ -51,7 +49,6 @@ std::unique_ptr<base::ListValue> GetUILanguageList(
 // correct and has been successfully loaded.
 void ResolveUILanguageList(
     std::unique_ptr<locale_util::LanguageSwitchResult> language_switch_result,
-    input_method::InputMethodManager* input_method_manager,
     UILanguageListResolvedCallback callback);
 
 // Returns a minimal list of UI languages, which consists of active language
@@ -76,10 +73,8 @@ std::string FindMostRelevantLocale(
 // In addition to returning the list of keyboard layouts, this function also
 // activates them, so that they can be selected by the user (e.g. by cycling
 // through keyboard layouts via keyboard shortcuts).
-base::ListValue GetAndActivateLoginKeyboardLayouts(
-    const std::string& locale,
-    const std::string& selected,
-    input_method::InputMethodManager* input_method_manager);
+base::ListValue GetAndActivateLoginKeyboardLayouts(const std::string& locale,
+                                                   const std::string& selected);
 
 // Invokes `callback` with a list of keyboard layouts that can be used for
 // `locale`. Each list entry is a dictionary that contains data such as an ID
@@ -89,10 +84,8 @@ base::ListValue GetAndActivateLoginKeyboardLayouts(
 // non-Latin characters by default.
 typedef base::OnceCallback<void(std::unique_ptr<base::ListValue>)>
     GetKeyboardLayoutsForLocaleCallback;
-void GetKeyboardLayoutsForLocale(
-    GetKeyboardLayoutsForLocaleCallback callback,
-    const std::string& locale,
-    input_method::InputMethodManager* input_method_manager);
+void GetKeyboardLayoutsForLocale(GetKeyboardLayoutsForLocaleCallback callback,
+                                 const std::string& locale);
 
 }  // namespace chromeos
 

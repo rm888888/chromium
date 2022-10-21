@@ -4,12 +4,8 @@
 
 #include "components/reporting/client/mock_dm_token_retriever.h"
 
-#include <string>
-#include <utility>
-
 #include "base/test/gmock_callback_support.h"
 #include "components/reporting/client/dm_token_retriever.h"
-#include "components/reporting/util/statusor.h"
 
 namespace reporting {
 

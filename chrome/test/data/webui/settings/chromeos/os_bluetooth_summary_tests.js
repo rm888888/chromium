@@ -9,11 +9,11 @@
 
 // #import {flush, Polymer} from 'chrome://resources/polymer/v3_0/polymer/polymer_bundled.min.js';
 // #import {Router, Route, routes} from 'chrome://os-settings/chromeos/os_settings.js';
-// #import {assertTrue, assertEquals, assertNotEquals} from '../../../chai_assert.js';
+// #import {assertTrue} from '../../../chai_assert.js';
 // #import {createDefaultBluetoothDevice, FakeBluetoothConfig,} from 'chrome://test/cr_components/chromeos/bluetooth/fake_bluetooth_config.js';
 // #import {setBluetoothConfigForTesting} from 'chrome://resources/cr_components/chromeos/bluetooth/cros_bluetooth_config.js';
 // #import {mojoString16ToString} from 'chrome://resources/cr_components/chromeos/bluetooth/bluetooth_utils.js';
-// #import {eventToPromise, waitAfterNextRender} from 'chrome://test/test_util.js';
+// #import {eventToPromise} from 'chrome://test/test_util.js';
 // clang-format on
 
 suite('OsBluetoothSummaryTest', function() {
@@ -73,15 +73,6 @@ suite('OsBluetoothSummaryTest', function() {
     assertEquals(
         settings.Router.getInstance().getCurrentRoute(),
         settings.routes.BLUETOOTH_DEVICES);
-
-    // Navigate back to the top-level page.
-    assertNotEquals(iconButton, bluetoothSummary.shadowRoot.activeElement);
-    const windowPopstatePromise = test_util.eventToPromise('popstate', window);
-    settings.Router.getInstance().navigateToPreviousRoute();
-    await windowPopstatePromise;
-
-    // Check that |iconButton| has been focused.
-    assertEquals(iconButton, bluetoothSummary.shadowRoot.activeElement);
   });
 
   test('Toggle button creation', async function() {

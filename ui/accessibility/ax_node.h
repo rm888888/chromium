@@ -15,7 +15,6 @@
 #include <vector>
 
 #include "base/containers/stack.h"
-#include "base/memory/raw_ptr.h"
 #include "base/strings/char_traits.h"
 #include "build/build_config.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
@@ -109,8 +108,8 @@ class AX_EXPORT AXNode final {
     NodeType* operator->() const;
 
    protected:
-    raw_ptr<const NodeType> parent_;
-    raw_ptr<NodeType> child_;
+    const NodeType* parent_;
+    NodeType* child_;
   };
 
   // The constructor requires a parent, id, and index in parent, but
@@ -280,9 +279,20 @@ class AX_EXPORT AXNode final {
   // now owns all of the passed children.
   void SwapChildren(std::vector<AXNode*>* children);
 
+  // This is called when the AXTree no longer includes this node in the
+  // tree. Reference counting is used on some platforms because the
+  // operating system may hold onto a reference to an AXNode
+  // object even after we're through with it, so this may decrement the
+  // reference count and clear out the object's data.
+  void Destroy();
+
   // Returns true if this node is equal to or a descendant of |ancestor|.
   bool IsDescendantOf(const AXNode* ancestor) const;
   bool IsDescendantOfCrossingTreeBoundary(const AXNode* ancestor) const;
+
+  // Gets the text offsets where new lines start either from the node's data or
+  // by computing them and caching the result.
+  std::vector<int> GetOrComputeLineStartOffsets();
 
   // If the color is transparent, blends with the ancestor's color.
   // Note that this is imperfect; it won't work if a node is absolute-
@@ -363,11 +373,17 @@ class AX_EXPORT AXNode final {
   GetIntListAttributes() const {
     return data().intlist_attributes;
   }
-  bool HasIntListAttribute(ax::mojom::IntListAttribute attribute) const;
+  bool HasIntListAttribute(ax::mojom::IntListAttribute attribute) const {
+    return data().HasIntListAttribute(attribute);
+  }
   const std::vector<int32_t>& GetIntListAttribute(
-      ax::mojom::IntListAttribute attribute) const;
+      ax::mojom::IntListAttribute attribute) const {
+    return data().GetIntListAttribute(attribute);
+  }
   bool GetIntListAttribute(ax::mojom::IntListAttribute attribute,
-                           std::vector<int32_t>* value) const;
+                           std::vector<int32_t>* value) const {
+    return data().GetIntListAttribute(attribute, value);
+  }
 
   bool HasStringListAttribute(ax::mojom::StringListAttribute attribute) const {
     return data().HasStringListAttribute(attribute);
@@ -437,10 +453,10 @@ class AX_EXPORT AXNode final {
   const std::string& GetNameUTF8() const;
   std::u16string GetNameUTF16() const;
 
-  // If this node is a leaf, returns the text content of this node. This is
+  // If this node is a leaf, returns the inner text of this node. This is
   // equivalent to its visible accessible name. Otherwise, if this node is not a
   // leaf, represents every non-textual child node with a special "embedded
-  // object character", and every textual child node with its text content.
+  // object character", and every textual child node with its inner text.
   // Textual nodes include e.g. static text and white space.
   //
   // This is how displayed text and embedded objects are represented in
@@ -463,13 +479,10 @@ class AX_EXPORT AXNode final {
   // Only text displayed on screen is included. Text from ARIA and HTML
   // attributes that is either not displayed on screen, or outside this node, is
   // not returned.
-  //
-  // Does not take into account line breaks that have been introduced by layout.
-  // For example, in the Web context, "A<div>B</div>C" would produce "ABC".
-  const std::string& GetTextContentUTF8() const;
-  const std::u16string& GetTextContentUTF16() const;
+  const std::string& GetInnerText() const;
+  const std::u16string& GetInnerTextUTF16() const;
 
-  // Returns the length of the text (in code units) that is found inside
+  // Returns the length of the text (in UTF16 code units) that is found inside
   // this node and all its descendants; including text found in embedded
   // objects.
   //
@@ -477,10 +490,9 @@ class AX_EXPORT AXNode final {
   // attributes that is either not displayed on screen, or outside this node, is
   // not included.
   //
-  // The length of the text is either in UTF8 or UTF16 code units, not in
-  // grapheme clusters.
-  int GetTextContentLengthUTF8() const;
-  int GetTextContentLengthUTF16() const;
+  // The length of the text is in UTF8 code units, not in grapheme clusters.
+  int GetInnerTextLength() const;
+  int GetInnerTextLengthUTF16() const;
 
   // Returns a string representing the language code.
   //
@@ -617,12 +629,12 @@ class AX_EXPORT AXNode final {
   // platform's accessibility layer.
   bool IsChildOfLeaf() const;
 
-  // Returns true if this is a leaf node that has no text content. Note that all
+  // Returns true if this is a leaf node that has no inner text. Note that all
   // descendants of a leaf node are not exposed to any platform's accessibility
-  // layer, but they may be used to compute the node's text content. Note also
-  // that, ignored nodes (leaf or otherwise) do not expose their text content or
-  // hypertext to the platforms' accessibility layer, but they expose the text
-  // content or hypertext of their unignored descendants.
+  // layer, but they may be used to compute the node's inner text. Note also
+  // that, ignored nodes (leaf or otherwise) do not expose their inner text or
+  // hypertext to the platforms' accessibility layer, but they expose the inner
+  // text or hypertext of their unignored descendants.
   //
   // For example, empty text fields might have a set of unignored nested divs
   // inside them:
@@ -688,11 +700,11 @@ class AX_EXPORT AXNode final {
   // Finds and returns a pointer to ordered set containing node.
   AXNode* GetOrderedSet() const;
 
-  // Returns false if the |data_| is uninitialized or has been taken. Returns
-  // true otherwise.
-  bool IsDataValid() const;
-
  private:
+  // Computes the text offset where each line starts by traversing all child
+  // leaf nodes.
+  void ComputeLineStartOffsets(std::vector<int>* line_offsets,
+                               int* start_offset) const;
   AXTableInfo* GetAncestorTableInfo() const;
   void IdVectorToNodeVector(const std::vector<AXNodeID>& ids,
                             std::vector<AXNode*>* nodes) const;
@@ -709,15 +721,21 @@ class AX_EXPORT AXNode final {
   // readable format. For example: "50% red 40% green 90% blue".
   std::string GetValueForColorWell() const;
 
+  // Returns the value of a text field. If necessary, computes the value from
+  // the field's internal representation in the accessibility tree, in order to
+  // minimize cross-process communication between the renderer and the browser
+  // processes.
+  std::string GetValueForTextField() const;
+
   // Compute the actual value of a color attribute that needs to be
   // blended with ancestor colors.
   SkColor ComputeColorAttribute(ax::mojom::IntAttribute color_attr) const;
 
-  const raw_ptr<OwnerTree> tree_;  // Owns this.
+  OwnerTree* const tree_;  // Owns this.
   size_t index_in_parent_;
   size_t unignored_index_in_parent_;
   size_t unignored_child_count_ = 0;
-  const raw_ptr<AXNode> parent_;
+  AXNode* const parent_;
   std::vector<AXNode*> children_;
 
   // Stores information about this node that is immutable and which has been

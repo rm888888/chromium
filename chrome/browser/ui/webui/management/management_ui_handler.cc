@@ -41,7 +41,6 @@
 #include "ui/base/webui/web_ui_util.h"
 
 #if BUILDFLAG(IS_CHROMEOS_ASH)
-#include "ash/components/settings/cros_settings_names.h"
 #include "chrome/browser/ash/crostini/crostini_features.h"
 #include "chrome/browser/ash/crostini/crostini_pref_names.h"
 #include "chrome/browser/ash/plugin_vm/plugin_vm_pref_names.h"
@@ -64,6 +63,7 @@
 #include "chromeos/network/network_state_handler.h"
 #include "chromeos/network/proxy/proxy_config_handler.h"
 #include "chromeos/network/proxy/ui_proxy_config_service.h"
+#include "chromeos/settings/cros_settings_names.h"
 #include "components/enterprise/browser/reporting/common_pref_names.h"
 #include "components/prefs/pref_service.h"
 #include "components/user_manager/user_manager.h"
@@ -171,7 +171,6 @@ const char kManagementReportAndroidApplications[] =
     "managementReportAndroidApplications";
 const char kManagementReportPrintJobs[] = "managementReportPrintJobs";
 const char kManagementReportLoginLogout[] = "managementReportLoginLogout";
-const char kManagementReportCRDSessions[] = "managementReportCRDSessions";
 const char kManagementReportDlpEvents[] = "managementReportDlpEvents";
 const char kManagementPrinting[] = "managementPrinting";
 const char kManagementCrostini[] = "managementCrostini";
@@ -222,8 +221,7 @@ enum class DeviceReportingType {
   kExtensions,
   kAndroidApplication,
   kDlpEvents,
-  kLoginLogout,
-  kCRDSessions,
+  kLoginLogout
 };
 
 // Corresponds to DeviceReportingType in management_browser_proxy.js
@@ -259,8 +257,6 @@ std::string ToJSDeviceReportingType(const DeviceReportingType& type) {
       return "dlp events";
     case DeviceReportingType::kLoginLogout:
       return "login-logout";
-    case DeviceReportingType::kCRDSessions:
-      return "crd sessions";
     default:
       NOTREACHED() << "Unknown device reporting type";
       return "device";
@@ -582,7 +578,7 @@ void ManagementUIHandler::AddDeviceReportingInfo(
   }
 
   bool report_print_jobs = false;
-  chromeos::CrosSettings::Get()->GetBoolean(ash::kReportDevicePrintJobs,
+  chromeos::CrosSettings::Get()->GetBoolean(chromeos::kReportDevicePrintJobs,
                                             &report_print_jobs);
   if (report_print_jobs) {
     AddDeviceReportingElement(report_sources, kManagementReportPrintJobs,
@@ -628,19 +624,11 @@ void ManagementUIHandler::AddDeviceReportingInfo(
   }
 
   bool report_login_logout = false;
-  chromeos::CrosSettings::Get()->GetBoolean(ash::kReportDeviceLoginLogout,
+  chromeos::CrosSettings::Get()->GetBoolean(chromeos::kReportDeviceLoginLogout,
                                             &report_login_logout);
   if (report_login_logout) {
     AddDeviceReportingElement(report_sources, kManagementReportLoginLogout,
                               DeviceReportingType::kLoginLogout);
-  }
-
-  bool report_crd_sessions = false;
-  chromeos::CrosSettings::Get()->GetBoolean(ash::kReportCRDSessions,
-                                            &report_crd_sessions);
-  if (report_crd_sessions) {
-    AddDeviceReportingElement(report_sources, kManagementReportCRDSessions,
-                              DeviceReportingType::kCRDSessions);
   }
 }
 
@@ -665,7 +653,7 @@ void ManagementUIHandler::AddUpdateRequiredEolInfo(
                                  base::UTF8ToUTF16(GetDeviceManager()),
                                  ui::GetChromeOSDeviceName()));
   std::string eol_admin_message;
-  ash::CrosSettings::Get()->GetString(ash::kDeviceMinimumVersionAueMessage,
+  ash::CrosSettings::Get()->GetString(chromeos::kDeviceMinimumVersionAueMessage,
                                       &eol_admin_message);
   response->SetStringPath("eolAdminMessage", eol_admin_message);
 }

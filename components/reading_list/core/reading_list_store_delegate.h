@@ -7,6 +7,8 @@
 
 #include <map>
 
+#include "base/macros.h"
+
 class ReadingListEntry;
 
 // The delegate to handle callbacks from the ReadingListStore.

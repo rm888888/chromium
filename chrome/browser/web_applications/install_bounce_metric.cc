@@ -56,7 +56,7 @@ absl::optional<InstallMetrics> ParseInstallMetricsFromPrefs(
     const web_app::AppId& app_id) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
-  const base::Value* ids_to_metrics =
+  const base::DictionaryValue* ids_to_metrics =
       pref_service->GetDictionary(prefs::kWebAppInstallMetrics);
   if (!ids_to_metrics)
     return absl::nullopt;
@@ -87,8 +87,7 @@ void WriteInstallMetricsToPrefs(const InstallMetrics& install_metrics,
   dict.SetKey(kInstallSource,
               base::Value(static_cast<int>(install_metrics.source)));
 
-  DictionaryPrefUpdateDeprecated update(pref_service,
-                                        prefs::kWebAppInstallMetrics);
+  DictionaryPrefUpdate update(pref_service, prefs::kWebAppInstallMetrics);
   update->SetKey(app_id, std::move(dict));
 }
 

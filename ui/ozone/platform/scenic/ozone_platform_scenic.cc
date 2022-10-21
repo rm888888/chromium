@@ -13,6 +13,7 @@
 
 #include "base/check.h"
 #include "base/fuchsia/fuchsia_logging.h"
+#include "base/macros.h"
 #include "base/memory/ptr_util.h"
 #include "base/message_loop/message_pump_type.h"
 #include "base/no_destructor.h"
@@ -21,15 +22,14 @@
 #include "build/build_config.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "ui/base/cursor/cursor_factory.h"
+#include "ui/base/cursor/ozone/bitmap_cursor_factory_ozone.h"
 #include "ui/base/ime/fuchsia/input_method_fuchsia.h"
 #include "ui/display/fake/fake_display_delegate.h"
 #include "ui/events/ozone/layout/keyboard_layout_engine_manager.h"
 #include "ui/events/ozone/layout/stub/stub_keyboard_layout_engine.h"
 #include "ui/events/platform/platform_event_source.h"
 #include "ui/gfx/native_widget_types.h"
-#include "ui/ozone/common/bitmap_cursor_factory.h"
 #include "ui/ozone/common/stub_overlay_manager.h"
-#include "ui/ozone/platform/scenic/mojom/scenic_gpu_service.mojom.h"
 #include "ui/ozone/platform/scenic/overlay_manager_scenic.h"
 #include "ui/ozone/platform/scenic/scenic_gpu_host.h"
 #include "ui/ozone/platform/scenic/scenic_gpu_service.h"
@@ -40,6 +40,7 @@
 #include "ui/ozone/platform_selection.h"
 #include "ui/ozone/public/gpu_platform_support_host.h"
 #include "ui/ozone/public/input_controller.h"
+#include "ui/ozone/public/mojom/scenic_gpu_service.mojom.h"
 #include "ui/ozone/public/ozone_platform.h"
 #include "ui/ozone/public/ozone_switches.h"
 #include "ui/ozone/public/system_input_injector.h"
@@ -167,7 +168,7 @@ class OzonePlatformScenic : public OzonePlatform,
     window_manager_ = std::make_unique<ScenicWindowManager>();
     overlay_manager_ = std::make_unique<StubOverlayManager>();
     input_controller_ = CreateStubInputController();
-    cursor_factory_ = std::make_unique<BitmapCursorFactory>();
+    cursor_factory_ = std::make_unique<BitmapCursorFactoryOzone>();
 
     scenic_gpu_host_ = std::make_unique<ScenicGpuHost>(window_manager_.get());
 

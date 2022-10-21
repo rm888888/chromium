@@ -7,6 +7,7 @@
 
 #include <memory>
 
+#include "base/macros.h"
 #include "chrome/browser/ui/views/payments/payment_request_sheet_controller.h"
 
 namespace views {

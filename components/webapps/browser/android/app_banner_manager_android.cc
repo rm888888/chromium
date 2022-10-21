@@ -25,7 +25,6 @@
 #include "components/version_info/version_info.h"
 #include "components/webapps/browser/android/add_to_homescreen_coordinator.h"
 #include "components/webapps/browser/android/add_to_homescreen_params.h"
-#include "components/webapps/browser/android/bottomsheet/pwa_bottom_sheet_controller.h"
 #include "components/webapps/browser/android/features.h"
 #include "components/webapps/browser/android/installable/installable_ambient_badge_infobar_delegate.h"
 #include "components/webapps/browser/android/shortcut_info.h"
@@ -63,7 +62,7 @@ bool gIgnoreChromeChannelForTesting = false;
 
 AppBannerManagerAndroid::AppBannerManagerAndroid(
     content::WebContents* web_contents)
-    : AppBannerManager(web_contents) {
+    : AppBannerManager(web_contents), message_controller_(this) {
   CreateJavaBannerManager(web_contents);
 }
 
@@ -179,7 +178,6 @@ void AppBannerManagerAndroid::ResetCurrentPageData() {
   AppBannerManager::ResetCurrentPageData();
   native_app_data_.Reset();
   native_app_package_ = "";
-  screenshots_.clear();
 }
 
 std::unique_ptr<AddToHomescreenParams>
@@ -282,7 +280,7 @@ void AppBannerManagerAndroid::OnInstallEvent(
           TrackUserResponse(USER_RESPONSE_NATIVE_APP_ACCEPTED);
           break;
         case AddToHomescreenParams::AppType::WEBAPK:
-          [[fallthrough]];
+          FALLTHROUGH;
         case AddToHomescreenParams::AppType::SHORTCUT:
           TrackUserResponse(USER_RESPONSE_WEB_APP_ACCEPTED);
           AppBannerSettingsHelper::RecordBannerInstallEvent(
@@ -345,13 +343,6 @@ void AppBannerManagerAndroid::OnInstallEvent(
   }
 }
 
-void AppBannerManagerAndroid::OnDidPerformInstallableWebAppCheck(
-    const InstallableData& data) {
-  screenshots_ = data.screenshots;
-
-  AppBannerManager::OnDidPerformInstallableWebAppCheck(data);
-}
-
 void AppBannerManagerAndroid::CreateJavaBannerManager(
     content::WebContents* web_contents) {
   JNIEnv* env = base::android::AttachCurrentThread();
@@ -364,7 +355,7 @@ std::string AppBannerManagerAndroid::ExtractQueryValueForName(
     const std::string& name) {
   for (net::QueryIterator it(url); !it.IsAtEnd(); it.Advance()) {
     if (it.GetKey() == name)
-      return std::string(it.GetValue());
+      return it.GetValue();
   }
   return std::string();
 }
@@ -486,25 +477,6 @@ std::u16string AppBannerManagerAndroid::GetAppName() const {
   }
 
   return native_app_title_;
-}
-
-bool AppBannerManagerAndroid::MaybeShowPwaBottomSheetController(
-    bool expand_sheet,
-    WebappInstallSource install_source) {
-  // Do not show the peeked bottom sheet if it was recently dismissed.
-  if (!expand_sheet && AppBannerSettingsHelper::WasBannerRecentlyBlocked(
-                           web_contents(), validated_url_, GetAppIdentifier(),
-                           GetCurrentTime())) {
-    return false;
-  }
-
-  auto a2hs_params = CreateAddToHomescreenParams(install_source);
-  return PwaBottomSheetController::MaybeShow(
-      web_contents(), GetAppName(), primary_icon_, has_maskable_primary_icon_,
-      manifest().start_url, screenshots_, manifest().description.value_or(u""),
-      expand_sheet, std::move(a2hs_params),
-      base::BindRepeating(&AppBannerManagerAndroid::OnInstallEvent,
-                          AppBannerManagerAndroid::GetAndroidWeakPtr()));
 }
 
 void AppBannerManagerAndroid::Install(

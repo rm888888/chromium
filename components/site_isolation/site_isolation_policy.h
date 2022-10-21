@@ -7,6 +7,7 @@
 
 #include <vector>
 
+#include "base/macros.h"
 #include "content/public/browser/child_process_security_policy.h"
 
 class GURL;

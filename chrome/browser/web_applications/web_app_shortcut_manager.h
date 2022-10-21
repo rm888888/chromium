@@ -8,7 +8,6 @@
 #include <map>
 #include <memory>
 
-#include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "chrome/browser/web_applications/web_app_constants.h"
 #include "chrome/browser/web_applications/web_app_icon_manager.h"
@@ -94,7 +93,8 @@ class WebAppShortcutManager {
   // registration flow.
   void RegisterShortcutsMenuWithOs(
       const AppId& app_id,
-      const std::vector<WebAppShortcutsMenuItemInfo>& shortcuts_menu_item_infos,
+      const std::vector<WebApplicationShortcutsMenuItemInfo>&
+          shortcuts_menu_item_infos,
       const ShortcutsMenuIconBitmaps& shortcuts_menu_icon_bitmaps);
 
   void UnregisterShortcutsMenuWithOs(const AppId& app_id);
@@ -150,12 +150,12 @@ class WebAppShortcutManager {
 
   bool suppress_shortcuts_for_testing_ = false;
 
-  const raw_ptr<Profile> profile_;
+  Profile* const profile_;
 
-  raw_ptr<WebAppRegistrar> registrar_ = nullptr;
-  raw_ptr<WebAppIconManager> icon_manager_ = nullptr;
-  raw_ptr<WebAppFileHandlerManager> file_handler_manager_ = nullptr;
-  raw_ptr<WebAppProtocolHandlerManager> protocol_handler_manager_ = nullptr;
+  WebAppRegistrar* registrar_ = nullptr;
+  WebAppIconManager* icon_manager_ = nullptr;
+  WebAppFileHandlerManager* file_handler_manager_ = nullptr;
+  WebAppProtocolHandlerManager* protocol_handler_manager_ = nullptr;
 
   base::WeakPtrFactory<WebAppShortcutManager> weak_ptr_factory_{this};
 };

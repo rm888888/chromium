@@ -432,8 +432,7 @@ AtspiAccessible* FindAccessible(const AXTreeSelector& selector) {
       char* name = atspi_accessible_get_name(child, &error);
       if (!error && name) {
         if ((!title.empty() && title == name) ||
-            (!selector.pattern.empty() &&
-             base::MatchPattern(name, selector.pattern))) {
+            base::MatchPattern(name, selector.pattern)) {
           matched_children.emplace_back(name, child);
         }
       }

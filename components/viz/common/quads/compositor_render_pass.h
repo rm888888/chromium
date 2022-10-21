@@ -13,6 +13,7 @@
 
 #include "base/callback.h"
 #include "base/hash/hash.h"
+#include "base/macros.h"
 #include "base/types/id_type.h"
 #include "cc/base/list_container.h"
 #include "cc/paint/filter_operations.h"

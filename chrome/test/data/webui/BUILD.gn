@@ -8,7 +8,6 @@ import("//chrome/common/features.gni")
 import("//chrome/test/base/js2gtest.gni")
 import("//chrome/test/include_js_tests.gni")
 import("//chromeos/components/chromebox_for_meetings/buildflags/buildflags.gni")
-import("//components/signin/features.gni")
 import("//printing/buildflags/buildflags.gni")
 import("//third_party/closure_compiler/compile_js.gni")
 import("//tools/grit/grit_rule.gni")
@@ -96,6 +95,7 @@ if (include_js_tests) {
       "settings/privacy_sandbox_browsertest.js",
       "settings/settings_idle_load_browsertest.js",
       "support_tool/support_tool_browsertest.js",
+      "tab_search/tab_search_browsertest.js",
       "text_defaults_browsertest.js",
       "webui_resource_async_browsertest.js",
       "whats_new/whats_new_browsertest.js",
@@ -116,6 +116,7 @@ if (include_js_tests) {
 
     deps = [
       "net_internals:preprocess",
+      "signin:preprocess",
       "//build:branding_buildflags",
       "//chrome/browser/ui",
       "//services/network/public/cpp",
@@ -134,7 +135,7 @@ if (include_js_tests) {
       deps += [ ":modulize" ]
     }
 
-    if (is_chromeos_ash || is_win || is_mac) {
+    if (is_chromeos_ash || is_win) {
       sources += [ "inline_login/inline_login_browsertest.js" ]
       deps += [ "//build:chromeos_buildflags" ]
     }
@@ -148,6 +149,7 @@ if (include_js_tests) {
         "../chromeos/oobe_webui_browsertest.js",
         "chromeos/account_manager/account_manager_browsertest.js",
         "chromeos/edu_coexistence/edu_coexistence_browsertest.js",
+        "chromeos/edu_login/edu_login_browsertest.js",
         "chromeos/emoji_picker/emoji_picker_browsertest.js",
         "chromeos/gaia_action_buttons/gaia_action_buttons_browsertest.js",
         "chromeos/internet_detail_dialog_browsertest.js",
@@ -160,11 +162,8 @@ if (include_js_tests) {
         "webview_manager/webview_manager_browsertest.js",
       ]
     } else {
-      sources += [ "signin/signin_browsertest.js" ]
-    }
-
-    if (enable_dice_support) {
       sources += [
+        "signin/signin_browsertest.js",
         "welcome/a11y_tests.js",
         "welcome/welcome_browsertest.js",
       ]
@@ -186,10 +185,7 @@ if (include_js_tests) {
       sources += [ "tab_strip/tab_strip_browsertest.js" ]
     }
     if (!is_android) {
-      sources += [
-        "access_code_cast/access_code_cast_browsertest.js",
-        "commander/commander_browsertest.js",
-      ]
+      sources += [ "commander/commander_browsertest.js" ]
     }
     if (is_cfm) {
       sources += [
@@ -200,6 +196,9 @@ if (include_js_tests) {
     data = [
       "$root_gen_dir/chrome/test/data/webui/net_internals/main_test.js",
       "$root_gen_dir/chrome/test/data/webui/net_internals/test_util.js",
+      "$root_gen_dir/chrome/test/data/webui/signin/profile_card_menu_test.js",
+      "$root_gen_dir/chrome/test/data/webui/signin/profile_picker_app_test.js",
+      "$root_gen_dir/chrome/test/data/webui/signin/test_manage_profiles_browser_proxy.js",
       "$root_gen_dir/ui/webui/resources/js/load_time_data.js",
     ]
 
@@ -357,6 +356,7 @@ if (include_js_tests) {
         "$root_gen_dir/chrome/test/data/webui/settings/chromeos/os_people_page_test.m.js",
         "$root_gen_dir/chrome/test/data/webui/settings/chromeos/os_privacy_page_test.m.js",
         "$root_gen_dir/chrome/test/data/webui/settings/chromeos/os_settings_menu_test.m.js",
+        "$root_gen_dir/chrome/test/data/webui/settings/chromeos/os_sync_controls_optional_disabled_test.m.js",
         "$root_gen_dir/chrome/test/data/webui/settings/chromeos/os_sync_controls_test.m.js",
         "$root_gen_dir/chrome/test/data/webui/settings/chromeos/lock_screen_tests.m.js",
         "$root_gen_dir/chrome/test/data/webui/settings/chromeos/os_printing_page_tests.m.js",
@@ -369,7 +369,6 @@ if (include_js_tests) {
         "$root_gen_dir/chrome/test/data/webui/settings/chromeos/personalization_page_test.m.js",
         "$root_gen_dir/chrome/test/data/webui/settings/chromeos/quick_unlock_authenticate_browsertest_chromeos.m.js",
         "$root_gen_dir/chrome/test/data/webui/settings/chromeos/smart_inputs_page_test.m.js",
-        "$root_gen_dir/chrome/test/data/webui/settings/chromeos/smart_privacy_subpage_tests.m.js",
         "$root_gen_dir/chrome/test/data/webui/settings/chromeos/smb_shares_page_tests.m.js",
         "$root_gen_dir/chrome/test/data/webui/settings/chromeos/os_a11y_page_tests.m.js",
         "$root_gen_dir/chrome/test/data/webui/settings/chromeos/reducers_test.m.js",
@@ -391,7 +390,6 @@ if (include_js_tests) {
         "$root_gen_dir/chrome/test/data/webui/settings/chromeos/test_os_lifetime_browser_proxy.m.js",
         "$root_gen_dir/chrome/test/data/webui/settings/chromeos/test_os_reset_browser_proxy.m.js",
         "$root_gen_dir/chrome/test/data/webui/settings/chromeos/test_os_sync_browser_proxy.m.js",
-        "$root_gen_dir/chrome/test/data/webui/settings/chromeos/test_personalization_hub_browser_proxy.m.js",
         "$root_gen_dir/chrome/test/data/webui/settings/chromeos/test_wallpaper_browser_proxy.m.js",
         "$root_gen_dir/chrome/test/data/webui/settings/chromeos/tether_connection_dialog_test.m.js",
         "$root_gen_dir/chrome/test/data/webui/settings/chromeos/text_to_speech_subpage_tests.m.js",
@@ -412,6 +410,7 @@ if (include_js_tests) {
       "media/media_engagement_browsertest.js",
       "media/media_history_webui_browsertest.js",
       "new_tab_page/new_tab_page_browsertest.js",
+      "read_later/read_later_browsertest.js",
       "read_later/side_panel/side_panel_browsertest.js",
     ]
 
@@ -425,6 +424,8 @@ if (include_js_tests) {
         "chromeos/diagnostics/diagnostics_browsertest.js",
         "chromeos/firmware_update/firmware_update_browsertest.js",
         "chromeos/os_feedback_ui/os_feedback_browsertest.js",
+        "chromeos/personalization_app/personalization_app_component_browsertest.js",
+        "chromeos/personalization_app/personalization_app_controller_browsertest.js",
         "chromeos/print_management/print_management_browsertest.js",
         "chromeos/scanning/scanning_app_browsertest.js",
         "chromeos/shimless_rma/shimless_rma_browsertest.js",
@@ -443,16 +444,10 @@ if (include_js_tests) {
       "cr_components/cr_components_mojo_browsertest.js",
       "downloads/downloads_browsertest.js",
       "engagement/site_engagement_browsertest.js",
-      "read_later/read_later_browsertest.js",
-      "tab_search/tab_search_browsertest.js",
       "usb_internals_browsertest.js",
     ]
     if (is_chromeos_ash) {
-      sources += [
-        "chromeos/parent_access/parent_access_browsertest.js",
-        "chromeos/personalization_app/personalization_app_component_browsertest.js",
-        "chromeos/personalization_app/personalization_app_controller_browsertest.js",
-      ]
+      sources += [ "chromeos/parent_access/parent_access_browsertest.js" ]
     }
     if (is_win || is_mac || is_linux || is_chromeos) {
       sources += [ "discards/discards_browsertest.js" ]
@@ -504,10 +499,14 @@ group("closure_compile") {
   deps = [
     ":closure_compile_local",
     "cr_components:closure_compile",
+    "cr_elements:closure_compile",
     "inline_login:closure_compile",
     "js/cr:closure_compile",
     "media_router:closure_compile",
     "new_tab_page:closure_compile",
+    "read_later:closure_compile",
+    "tab_search:closure_compile",
+    "tab_strip:closure_compile",
 
     # TODO(crbug.com/1000989): Add page specific targets here.
   ]
@@ -607,7 +606,6 @@ generate_grd("build_grd") {
   input_files = [
     "chai_assert.js",
     "fake_chrome_event.js",
-    "mock_controller.js",
     "mock_timer.js",
     "mojo_webui_test_support.js",
     "test_browser_proxy.js",
@@ -620,23 +618,15 @@ generate_grd("build_grd") {
     ":build_chai_grdp",
     ":build_web_ui_test_mojo_grdp",
     "bookmarks:build_grdp",
-    "cr_components:build_grdp",
-    "cr_elements:build_grdp",
     "downloads:build_grdp",
-    "read_later:build_grdp",
     "settings:build_grdp",
-    "tab_search:build_grdp",
   ]
 
   grdp_files = [
     "$target_gen_dir/bookmarks/resources.grdp",
-    "$target_gen_dir/cr_components/resources.grdp",
-    "$target_gen_dir/cr_elements/resources.grdp",
     "$target_gen_dir/chai_resources.grdp",
     "$target_gen_dir/downloads/resources.grdp",
-    "$target_gen_dir/read_later/resources.grdp",
     "$target_gen_dir/settings/resources.grdp",
-    "$target_gen_dir/tab_search/resources.grdp",
     "$target_gen_dir/web_ui_test_mojo_resources.grdp",
   ]
 
@@ -645,55 +635,24 @@ generate_grd("build_grd") {
     grdp_files += [ "$target_gen_dir/print_preview/resources.grdp" ]
   }
 
-  if (enable_webui_tab_strip) {
-    deps += [ "tab_strip:build_grdp" ]
-    grdp_files += [ "$target_gen_dir/tab_strip/resources.grdp" ]
-  }
-
   if (!is_chromeos_ash && !is_android) {
-    deps += [
-      "signin:build_grdp",
-      "welcome:build_grdp",
-    ]
-    grdp_files += [
-      "$target_gen_dir/welcome/resources.grdp",
-      "$target_gen_dir/signin/resources.grdp",
-    ]
-  }
-
-  if (is_chromeos_ash) {
-    deps += [ "chromeos/personalization_app:build_grdp" ]
-    grdp_files +=
-        [ "$target_gen_dir/chromeos/personalization_app/resources.grdp" ]
+    deps += [ "welcome:build_grdp" ]
+    grdp_files += [ "$target_gen_dir/welcome/resources.grdp" ]
   }
 }
 
 # TypeScript related targets
-
-checked_in_dts_files = [ "test_browser_proxy.d.ts" ]
-
-# Copies checked-in .d.ts files to the preprocess folder so that they are
-# discovered by TSC the same way generated .d.ts files are.
-copy("copy_checked_in_dts_files") {
-  sources = checked_in_dts_files
-  outputs = [ "$target_gen_dir/tsc/{{source_target_relative}}" ]
-}
 
 ts_definitions("generate_definitions") {
   root_dir = "./"
   out_dir = "$target_gen_dir/tsc"
   js_files = [
     "chai_assert.js",
-    "fake_chrome_event.js",
-    "mock_controller.js",
-    "mock_timer.js",
     "mojo_webui_test_support.js",
+    "test_browser_proxy.js",
     "test_plural_string_proxy.js",
     "test_store.js",
     "test_util.js",
   ]
-  extra_deps = [
-    ":copy_checked_in_dts_files",
-    "//ui/webui/resources:generate_definitions",
-  ]
+  extra_deps = [ "//ui/webui/resources:generate_definitions" ]
 }

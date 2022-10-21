@@ -8,6 +8,7 @@
 #include <memory>
 #include <string>
 
+#include "base/macros.h"
 #include "base/values.h"
 
 namespace guest_view {

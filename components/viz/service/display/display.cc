@@ -285,39 +285,34 @@ void Display::PresentationGroupTiming::AddPresentationHelper(
 }
 
 void Display::PresentationGroupTiming::OnDraw(
-    base::TimeTicks frame_time,
-    base::TimeTicks draw_start_timestamp,
-    base::flat_set<base::PlatformThreadId> thread_ids) {
-  frame_time_ = frame_time;
+    base::TimeTicks draw_start_timestamp) {
   draw_start_timestamp_ = draw_start_timestamp;
-  thread_ids_ = std::move(thread_ids);
 }
 
-void Display::PresentationGroupTiming::OnSwap(gfx::SwapTimings timings,
-                                              DisplaySchedulerBase* scheduler) {
+void Display::PresentationGroupTiming::OnSwap(gfx::SwapTimings timings) {
   swap_timings_ = timings;
-
-  if (timings.swap_start.is_null())
-    return;
-
-  auto frame_latency = timings.swap_start - frame_time_;
-  if (frame_latency < base::Seconds(0)) {
-    LOG(ERROR) << "Frame latency is negative: "
-               << frame_latency.InMillisecondsF() << " ms";
-    return;
-  }
-  // Can be nullptr in unittests.
-  if (scheduler) {
-    scheduler->ReportFrameTime(frame_latency, std::move(thread_ids_));
-  }
 }
 
 void Display::PresentationGroupTiming::OnPresent(
-    const gfx::PresentationFeedback& feedback) {
+    const gfx::PresentationFeedback& feedback,
+    DisplaySchedulerBase* scheduler) {
   for (auto& presentation_helper : presentation_helpers_) {
     presentation_helper->DidPresent(draw_start_timestamp_, swap_timings_,
                                     feedback);
   }
+
+  if (feedback.ready_timestamp.is_null())
+    return;
+
+  auto gpu_latency = feedback.ready_timestamp - swap_timings_.swap_start;
+  // TODO(crbug.com/1157620): Move this check to SanitizePresentationFeedback
+  // to handle all incorrect feedback cases.
+  if (gpu_latency < base::Seconds(0)) {
+    DVLOG(1) << "GPU latency is negative: " << gpu_latency.InMillisecondsF()
+             << " ms";
+    return;
+  }
+  scheduler->SetGpuLatency(gpu_latency);
 }
 
 Display::Display(
@@ -488,9 +483,6 @@ void Display::Resize(const gfx::Size& size) {
 
 void Display::InvalidateCurrentSurfaceId() {
   current_surface_id_ = SurfaceId();
-  // Force a gc as the display may not be visible (gc occurs after drawing,
-  // which won't happen when display is hidden).
-  surface_manager_->GarbageCollectSurfaces();
 }
 
 void Display::DisableSwapUntilResize(
@@ -603,10 +595,6 @@ void Display::InitializeRenderer(bool enable_shared_images) {
   aggregator_->SetDisplayColorSpaces(display_color_spaces_);
   aggregator_->SetMaxRenderTargetSize(
       output_surface_->capabilities().max_render_target_size);
-  // Do not move the |CopyOutputRequest| instances to the aggregated frame if
-  // the frame won't be drawn (as that would drop the copy request).
-  aggregator_->set_take_copy_requests(
-      !output_surface_->capabilities().skips_draw);
 }
 
 bool Display::IsRootFrameMissing() const {
@@ -668,8 +656,7 @@ void VisualDebuggerSync(gfx::OverlayTransform current_display_transform,
 
 }  // namespace
 
-bool Display::DrawAndSwap(base::TimeTicks frame_time,
-                          base::TimeTicks expected_display_time) {
+bool Display::DrawAndSwap(base::TimeTicks expected_display_time) {
   TRACE_EVENT0("viz", "Display::DrawAndSwap");
   if (debug_settings_->show_aggregated_damage !=
       aggregator_->HasFrameAnnotator()) {
@@ -897,18 +884,7 @@ bool Display::DrawAndSwap(base::TimeTicks frame_time,
   if (should_swap) {
     PresentationGroupTiming& presentation_group_timing =
         pending_presentation_group_timings_.emplace_back();
-
-    base::flat_set<base::PlatformThreadId> thread_ids;
-    for (const auto& id_entry : aggregator_->previous_contained_surfaces()) {
-      surface = surface_manager_->GetSurfaceForId(id_entry.first);
-      if (surface) {
-        base::flat_set<base::PlatformThreadId> surface_thread_ids =
-            surface->GetThreadIds();
-        thread_ids.insert(surface_thread_ids.begin(), surface_thread_ids.end());
-      }
-    }
-    presentation_group_timing.OnDraw(frame_time, draw_timer->Begin(),
-                                     std::move(thread_ids));
+    presentation_group_timing.OnDraw(draw_timer->Begin());
 
     for (const auto& id_entry : aggregator_->previous_contained_surfaces()) {
       surface = surface_manager_->GetSurfaceForId(id_entry.first);
@@ -1025,7 +1001,7 @@ void Display::DidReceiveSwapBuffersAck(const gfx::SwapTimings& timings,
   base::TimeTicks draw_start_timestamp;
   for (auto& group_timing : pending_presentation_group_timings_) {
     if (!group_timing.HasSwapped()) {
-      group_timing.OnSwap(timings, scheduler_.get());
+      group_timing.OnSwap(timings);
       draw_start_timestamp = group_timing.draw_start_timestamp();
       break;
     }
@@ -1131,7 +1107,7 @@ void Display::DidReceivePresentationFeedback(
     }
   }
 
-  presentation_group_timing.OnPresent(copy_feedback);
+  presentation_group_timing.OnPresent(copy_feedback, scheduler_.get());
   pending_presentation_group_timings_.pop_front();
 }
 
@@ -1162,18 +1138,16 @@ void Display::DidFinishFrame(const BeginFrameAck& ack) {
 
 base::TimeDelta Display::GetEstimatedDisplayDrawTime(base::TimeDelta interval,
                                                      double percentile) const {
-  base::TimeDelta default_estimate =
-      BeginFrameArgs::DefaultEstimatedDisplayDrawTime(interval);
-  if (draw_time_without_scheduling_waits_.sample_count() >= 60 &&
-      default_estimate > kMinEstimatedDisplayDrawTime) {
+  if (draw_time_without_scheduling_waits_.sample_count() >= 60) {
     // We do not want the deadline adjustmens to exceed a default of 1/3 VSync,
     // as we would not give other processes enough time to produce content. So
     // this would make high latency situations worse.
     return base::clamp(
         draw_time_without_scheduling_waits_.Percentile(percentile),
-        kMinEstimatedDisplayDrawTime, default_estimate);
+        kMinEstimatedDisplayDrawTime,
+        BeginFrameArgs::DefaultEstimatedDisplayDrawTime(interval));
   }
-  return default_estimate;
+  return BeginFrameArgs::DefaultEstimatedDisplayDrawTime(interval);
 }
 
 void Display::OnObservingBeginFrameSourceChanged(bool observing) {

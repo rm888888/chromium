@@ -6,6 +6,9 @@
 <resources>
   <dimen name="account_selection_sheet_horizontal_margin">16dp</dimen>
 
+  <dimen name="account_selection_sheet_handlebar_height">4dp</dimen>
+  <dimen name="account_selection_sheet_handlebar_margin">6dp</dimen>
+
   <dimen name="account_selection_sheet_title_height">32dp</dimen>
   <dimen name="account_selection_sheet_title_margin_bottom">8dp</dimen>
 
@@ -14,11 +17,4 @@
   <dimen name="account_selection_favicon_border_size">1dp</dimen>
 
   <dimen name="account_selection_sheet_button_margin">2dp</dimen>
-
-  <dimen name="account_selection_continue_icon_size">24dp</dimen>
-  <!-- Value chosen so that the text is centered in the button.
-    paddingStart (10dp)
-    + icon account_selection_continue_icon_size (24dp)
-    + drawablePadding (5dp) -->
-  <dimen name="account_selection_continue_padding_end">39dp</dimen>
 </resources>

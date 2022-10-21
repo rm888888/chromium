@@ -6,7 +6,6 @@
 
 #include <drm_fourcc.h>
 #include <algorithm>
-#include <cstdint>
 #include <memory>
 #include <set>
 #include <utility>
@@ -36,24 +35,6 @@ HardwareDisplayPlaneList::PageFlipInfo::PageFlipInfo(
     const PageFlipInfo& other) = default;
 
 HardwareDisplayPlaneList::PageFlipInfo::~PageFlipInfo() = default;
-
-void HardwareDisplayPlaneList::AsValueInto(
-    base::trace_event::TracedValue* value) const {
-  {
-    auto scoped_array = value->BeginArrayScoped("plane_list");
-    for (const auto* plane : plane_list) {
-      auto scoped_dict = value->AppendDictionaryScoped();
-      plane->AsValueInto(value);
-    }
-  }
-  {
-    auto scoped_array = value->BeginArrayScoped("old_plane_list");
-    for (const auto* plane : old_plane_list) {
-      auto scoped_dict = value->AppendDictionaryScoped();
-      plane->AsValueInto(value);
-    }
-  }
-}
 
 HardwareDisplayPlaneManager::CrtcProperties::CrtcProperties() = default;
 HardwareDisplayPlaneManager::CrtcProperties::CrtcProperties(
@@ -104,11 +85,11 @@ std::unique_ptr<HardwareDisplayPlane> HardwareDisplayPlaneManager::CreatePlane(
 
 HardwareDisplayPlane* HardwareDisplayPlaneManager::FindNextUnusedPlane(
     size_t* index,
-    uint32_t crtc_id,
+    uint32_t crtc_index,
     const DrmOverlayPlane& overlay) const {
   for (size_t i = *index; i < planes_.size(); ++i) {
     auto* plane = planes_[i].get();
-    if (!plane->in_use() && IsCompatible(plane, overlay, crtc_id)) {
+    if (!plane->in_use() && IsCompatible(plane, overlay, crtc_index)) {
       *index = i + 1;
       return plane;
     }
@@ -134,22 +115,11 @@ absl::optional<int> HardwareDisplayPlaneManager::LookupConnectorIndex(
   return {};
 }
 
-base::flat_set<uint32_t> HardwareDisplayPlaneManager::CrtcMaskToCrtcIds(
-    uint32_t crtc_mask) const {
-  base::flat_set<uint32_t> crtc_ids;
-  for (uint32_t idx = 0; idx < crtc_state_.size(); idx++) {
-    if (crtc_mask & (1 << idx))
-      crtc_ids.insert(crtc_state_[idx].properties.id);
-  }
-
-  return crtc_ids;
-}
-
 bool HardwareDisplayPlaneManager::IsCompatible(HardwareDisplayPlane* plane,
                                                const DrmOverlayPlane& overlay,
-                                               uint32_t crtc_id) const {
+                                               uint32_t crtc_index) const {
   if (plane->type() == DRM_PLANE_TYPE_CURSOR ||
-      !plane->CanUseForCrtcId(crtc_id))
+      !plane->CanUseForCrtc(crtc_index))
     return false;
 
   const uint32_t format =
@@ -213,10 +183,16 @@ bool HardwareDisplayPlaneManager::AssignOverlayPlanes(
     HardwareDisplayPlaneList* plane_list,
     const DrmOverlayPlaneList& overlay_list,
     uint32_t crtc_id) {
+  auto crtc_index = LookupCrtcIndex(crtc_id);
+  if (!crtc_index) {
+    LOG(ERROR) << "Cannot find crtc " << crtc_id;
+    return false;
+  }
+
   size_t plane_idx = 0;
   for (const auto& plane : overlay_list) {
     HardwareDisplayPlane* hw_plane =
-        FindNextUnusedPlane(&plane_idx, crtc_id, plane);
+        FindNextUnusedPlane(&plane_idx, *crtc_index, plane);
     if (!hw_plane) {
       RestoreCurrentPlaneList(plane_list);
       return false;
@@ -253,8 +229,13 @@ const std::vector<uint32_t>& HardwareDisplayPlaneManager::GetSupportedFormats()
 std::vector<uint64_t> HardwareDisplayPlaneManager::GetFormatModifiers(
     uint32_t crtc_id,
     uint32_t format) const {
+  auto crtc_index = LookupCrtcIndex(crtc_id);
+  if (!crtc_index) {
+    return {};
+  }
+
   for (const auto& plane : planes_) {
-    if (plane->CanUseForCrtcId(crtc_id) &&
+    if (plane->CanUseForCrtc(*crtc_index) &&
         plane->type() == DRM_PLANE_TYPE_PRIMARY) {
       return plane->ModifiersForFormat(format);
     }

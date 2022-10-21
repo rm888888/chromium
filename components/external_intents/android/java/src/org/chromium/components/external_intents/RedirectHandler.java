@@ -46,7 +46,6 @@ public class RedirectHandler {
     private boolean mIsOnEffectiveRedirectChain;
     private int mInitialNavigationType;
     private int mLastCommittedEntryIndexBeforeStartingNavigation;
-    private boolean mHasUserStartedNonInitialNavigation;
 
     private boolean mShouldNotOverrideUrlLoadingOnCurrentRedirectChain;
     private boolean mShouldNotBlockOverrideUrlLoadingOnCurrentRedirectionChain;
@@ -86,9 +85,10 @@ public class RedirectHandler {
 
         if (checkIsToChrome) mIsInitialIntentHeadingToChrome = isIntentToChrome(intent);
 
-        // A sanitized copy of the initial intent for detecting if resolvers have changed.
-        mInitialIntent = new Intent(intent);
-        ExternalNavigationHandler.sanitizeQueryIntentActivitiesIntent(mInitialIntent);
+        // A copy of the intent with component cleared to find resolvers.
+        mInitialIntent = new Intent(intent).setComponent(null);
+        Intent selector = mInitialIntent.getSelector();
+        if (selector != null) selector.setComponent(null);
     }
 
     private static boolean isIntentToChrome(Intent intent) {
@@ -114,7 +114,6 @@ public class RedirectHandler {
         mInitialNavigationType = NAVIGATION_TYPE_NONE;
         mIsOnEffectiveRedirectChain = false;
         mLastCommittedEntryIndexBeforeStartingNavigation = 0;
-        mHasUserStartedNonInitialNavigation = false;
         mShouldNotOverrideUrlLoadingOnCurrentRedirectChain = false;
         mShouldNotBlockOverrideUrlLoadingOnCurrentRedirectionChain = false;
     }
@@ -161,11 +160,9 @@ public class RedirectHandler {
      * @param hasUserGesture whether this loading is started by a user gesture.
      * @param lastUserInteractionTime time when the last user interaction was made.
      * @param lastCommittedEntryIndex the last committed entry index right before this loading.
-     * @param isInitialNavigation whether this loading is for the initial navigation.
      */
     public void updateNewUrlLoading(int pageTransType, boolean isRedirect, boolean hasUserGesture,
-            long lastUserInteractionTime, int lastCommittedEntryIndex,
-            boolean isInitialNavigation) {
+            long lastUserInteractionTime, int lastCommittedEntryIndex) {
         long prevNewUrlLoadingTime = mLastNewUrlLoadingTime;
         mLastNewUrlLoadingTime = SystemClock.elapsedRealtime();
 
@@ -205,9 +202,6 @@ public class RedirectHandler {
             }
             mIsOnEffectiveRedirectChain = false;
             mLastCommittedEntryIndexBeforeStartingNavigation = lastCommittedEntryIndex;
-            if (!isInitialNavigation) {
-                mHasUserStartedNonInitialNavigation = true;
-            }
             mShouldNotOverrideUrlLoadingOnCurrentRedirectChain = false;
             mShouldNotBlockOverrideUrlLoadingOnCurrentRedirectionChain = false;
         } else if (mInitialNavigationType != NAVIGATION_TYPE_NONE) {
@@ -306,13 +300,6 @@ public class RedirectHandler {
      */
     public int getLastCommittedEntryIndexBeforeStartingNavigation() {
         return mLastCommittedEntryIndexBeforeStartingNavigation;
-    }
-
-    /**
-     * @return whether the user has started a non-initial navigation.
-     */
-    public boolean hasUserStartedNonInitialNavigation() {
-        return mHasUserStartedNonInitialNavigation;
     }
 
     /**

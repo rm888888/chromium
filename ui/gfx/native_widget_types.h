@@ -157,7 +157,6 @@ class GFX_EXPORT NativeView {
   bool operator<(const NativeView& other) const {
     return ns_view_ < other.ns_view_;
   }
-
  private:
   NSView* ns_view_ = nullptr;
 };
@@ -247,7 +246,7 @@ constexpr AcceleratedWidget kNullAcceleratedWidget = 0;
 #elif defined(OS_ANDROID)
 typedef ANativeWindow* AcceleratedWidget;
 constexpr AcceleratedWidget kNullAcceleratedWidget = 0;
-#elif defined(USE_OZONE)
+#elif defined(USE_OZONE) || defined(USE_X11)
 typedef uint32_t AcceleratedWidget;
 constexpr AcceleratedWidget kNullAcceleratedWidget = 0;
 #else

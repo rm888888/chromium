@@ -16,10 +16,21 @@
 #include "ui/ozone/public/ozone_platform.h"
 #endif
 
+#if defined(USE_X11)
+#include "ui/base/ui_base_features.h"
+#include "ui/gl/init/gl_initializer_linux_x11.h"
+#endif
+
 namespace gl {
 namespace init {
 
 bool InitializeGLOneOffPlatform() {
+#if defined(USE_X11)
+  if (!features::IsUsingOzonePlatform())
+    return gl::init::InitializeGLOneOffPlatformX11();
+#endif
+
+#if defined(USE_OZONE)
   if (HasGLOzone()) {
     gl::GLDisplayEglUtil::SetInstance(gl::GLDisplayEglUtilOzone::GetInstance());
     return GetGLOzone()->InitializeGLOneOffPlatform();
@@ -32,10 +43,17 @@ bool InitializeGLOneOffPlatform() {
     default:
       NOTREACHED();
   }
+#endif
   return false;
 }
 
 bool InitializeStaticGLBindings(GLImplementationParts implementation) {
+#if defined(USE_X11)
+  if (!features::IsUsingOzonePlatform())
+    return gl::init::InitializeStaticGLBindingsX11(implementation);
+#endif
+
+#if defined(USE_OZONE)
   // Prevent reinitialization with a different implementation. Once the gpu
   // unit tests have initialized with kGLImplementationMock, we don't want to
   // later switch to another GL implementation.
@@ -55,16 +73,25 @@ bool InitializeStaticGLBindings(GLImplementationParts implementation) {
     default:
       NOTREACHED();
   }
+#endif
+
   return false;
 }
 
 void ShutdownGLPlatform() {
+#if defined(USE_X11)
+  if (!features::IsUsingOzonePlatform())
+    return gl::init::ShutdownGLPlatformX11();
+#endif
+
+#if defined(USE_OZONE)
   if (HasGLOzone()) {
     GetGLOzone()->ShutdownGL();
     return;
   }
 
   ClearBindingsGL();
+#endif
 }
 
 }  // namespace init

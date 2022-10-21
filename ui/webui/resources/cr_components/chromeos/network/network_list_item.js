@@ -191,15 +191,6 @@ Polymer({
       computed: 'computeIsESimInstallingProfile_(item, item.customItemType)',
     },
 
-    /** @private {boolean} */
-    isESimPolicyEnabled_: {
-      type: Boolean,
-      value() {
-        return loadTimeData.valueExists('esimPolicyEnabled') &&
-            loadTimeData.getBoolean('esimPolicyEnabled');
-      }
-    },
-
     /**
      * Indicates the network item is a blocked cellular network by policy.
      * @private
@@ -916,8 +907,7 @@ Polymer({
       return false;
     }
 
-    if (this.isESimPolicyEnabled_ &&
-        this.item.type === chromeos.networkConfig.mojom.NetworkType.kCellular &&
+    if (this.item.type === chromeos.networkConfig.mojom.NetworkType.kCellular &&
         !!this.globalPolicy.allowOnlyPolicyCellularNetworks) {
       return true;
     }

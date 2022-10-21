@@ -13,9 +13,7 @@ class Surface;
 class SeatObserver {
  public:
   // Called when a new surface receives keyboard focus.
-  virtual void OnSurfaceFocused(Surface* gained_focus,
-                                Surface* lost_focus,
-                                bool has_focused_client) = 0;
+  virtual void OnSurfaceFocused(Surface* gained_focus) = 0;
 
  protected:
   virtual ~SeatObserver() = default;

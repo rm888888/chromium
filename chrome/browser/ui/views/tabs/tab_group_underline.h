@@ -5,10 +5,8 @@
 #ifndef CHROME_BROWSER_UI_VIEWS_TABS_TAB_GROUP_UNDERLINE_H_
 #define CHROME_BROWSER_UI_VIEWS_TABS_TAB_GROUP_UNDERLINE_H_
 
-#include "base/memory/raw_ptr.h"
 #include "components/tab_groups/tab_group_id.h"
 #include "ui/base/metadata/metadata_header_macros.h"
-#include "ui/views/controls/focus_ring.h"
 #include "ui/views/view.h"
 
 class TabGroupViews;
@@ -20,9 +18,7 @@ class TabGroupUnderline : public views::View {
  public:
   METADATA_HEADER(TabGroupUnderline);
 
-  static constexpr int kStrokeThickness =
-      views::FocusRing::kDefaultHaloThickness;
-
+  static constexpr int kStrokeThickness = 3;
   static int GetStrokeInset();
 
   TabGroupUnderline(TabGroupViews* tab_group_views,
@@ -51,7 +47,7 @@ class TabGroupUnderline : public views::View {
   // represented using a fill path.
   SkPath GetPath() const;
 
-  const raw_ptr<TabGroupViews> tab_group_views_;
+  TabGroupViews* const tab_group_views_;
   const tab_groups::TabGroupId group_;
 };
 

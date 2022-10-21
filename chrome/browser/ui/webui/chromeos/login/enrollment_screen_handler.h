@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+#include "base/macros.h"
 #include "chrome/browser/ash/login/enrollment/enrollment_screen_view.h"
 #include "chrome/browser/ash/login/enrollment/enterprise_enrollment_helper.h"
 // TODO(https://crbug.com/1164001): move to forward declaration.
@@ -26,7 +27,7 @@ namespace chromeos {
 class CookieWaiter;
 
 // Possible error states of the Active Directory screen. Must be in the same
-// order as ActiveDirectoryErrorState ( in enterprise_enrollment.js ) values.
+// order as ACTIVE_DIRECTORY_ERROR_STATE enum values.
 enum class ActiveDirectoryErrorState {
   NONE = 0,
   MACHINE_NAME_INVALID = 1,

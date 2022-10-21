@@ -7,6 +7,7 @@
 
 #include <memory>
 
+#include "base/macros.h"
 #include "ui/ozone/platform/wayland/host/shell_popup_wrapper.h"
 
 namespace ui {
@@ -36,7 +37,7 @@ class ZXDGPopupV6WrapperImpl : public ShellPopupWrapper {
   void Grab(uint32_t serial) override;
 
  private:
-  wl::Object<zxdg_positioner_v6> CreatePositioner(WaylandWindow* parent_window);
+  struct zxdg_positioner_v6* CreatePositioner(WaylandWindow* parent_window);
 
   // zxdg_popup_v6_listener
   static void Configure(void* data,

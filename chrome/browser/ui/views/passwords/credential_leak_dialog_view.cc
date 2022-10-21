@@ -78,10 +78,7 @@ CredentialLeakDialogView::CredentialLeakDialogView(
                      &CredentialLeakDialogController::OnCloseDialog));
 }
 
-CredentialLeakDialogView::~CredentialLeakDialogView() {
-  if (controller_)
-    std::exchange(controller_, nullptr)->ResetDialog();
-}
+CredentialLeakDialogView::~CredentialLeakDialogView() = default;
 
 void CredentialLeakDialogView::ShowCredentialLeakPrompt() {
   InitWindow();

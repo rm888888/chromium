@@ -24,8 +24,6 @@ import org.robolectric.annotation.Config;
 
 import org.chromium.base.Callback;
 import org.chromium.base.test.BaseRobolectricTestRunner;
-import org.chromium.url.GURL;
-import org.chromium.url.JUnitTestGURLs;
 
 import jp.tomorrowkey.android.gifplayer.BaseGifImage;
 
@@ -35,8 +33,7 @@ import jp.tomorrowkey.android.gifplayer.BaseGifImage;
 @RunWith(BaseRobolectricTestRunner.class)
 @Config(manifest = Config.NONE)
 public class ImageFetcherTest {
-    private static final GURL URL = JUnitTestGURLs.getGURL(JUnitTestGURLs.EXAMPLE_URL);
-    private static final GURL URL_2 = JUnitTestGURLs.getGURL(JUnitTestGURLs.URL_2);
+    private static final String URL = "https://www.example.com/image";
     private static final String CLIENT_NAME = "client";
     private static final int WIDTH_PX = 100;
     private static final int HEIGHT_PX = 200;
@@ -122,7 +119,7 @@ public class ImageFetcherTest {
     public void testCreateParams() {
         // Verifies params without size specified.
         ImageFetcher.Params params = ImageFetcher.Params.create(URL, CLIENT_NAME);
-        assertEquals(URL.getSpec(), params.url);
+        assertEquals(URL, params.url);
         assertEquals(CLIENT_NAME, params.clientName);
         assertEquals(0, params.width);
         assertEquals(0, params.height);
@@ -130,7 +127,7 @@ public class ImageFetcherTest {
 
         // Verifies params with size.
         params = ImageFetcher.Params.create(URL, CLIENT_NAME, WIDTH_PX, HEIGHT_PX);
-        assertEquals(URL.getSpec(), params.url);
+        assertEquals(URL, params.url);
         assertEquals(CLIENT_NAME, params.clientName);
         assertEquals(WIDTH_PX, params.width);
         assertEquals(HEIGHT_PX, params.height);
@@ -142,7 +139,7 @@ public class ImageFetcherTest {
         // Verifies params with expiration interval.
         ImageFetcher.Params params = ImageFetcher.Params.createWithExpirationInterval(
                 URL, CLIENT_NAME, WIDTH_PX, HEIGHT_PX, EXPIRATION_INTERVAL);
-        assertEquals(URL.getSpec(), params.url);
+        assertEquals(URL, params.url);
         assertEquals(CLIENT_NAME, params.clientName);
         assertEquals(WIDTH_PX, params.width);
         assertEquals(HEIGHT_PX, params.height);
@@ -153,7 +150,7 @@ public class ImageFetcherTest {
     public void testParamsEqual() {
         // Different URLs.
         ImageFetcher.Params params1 = ImageFetcher.Params.create(URL, CLIENT_NAME);
-        ImageFetcher.Params params2 = ImageFetcher.Params.create(URL_2, CLIENT_NAME);
+        ImageFetcher.Params params2 = ImageFetcher.Params.create("Not the same URL", CLIENT_NAME);
         assertFalse(params1.equals(params2));
         assertFalse(params2.equals(params1));
         assertNotEquals(params1.hashCode(), params2.hashCode());

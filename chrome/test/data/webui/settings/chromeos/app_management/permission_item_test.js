@@ -31,11 +31,12 @@ suite('<app-management-permission-item>', () => {
       ])
     };
 
-    // Add an arc app, and pass it to permissionItem.
+    // Add an arc app, and make it the currently selected app.
     const app = await fakeHandler.addApp(null, arcOptions);
+    app_management.AppManagementStore.getInstance().dispatch(
+        app_management.actions.updateSelectedAppId(app.id));
 
     permissionItem = document.createElement('app-management-permission-item');
-    permissionItem.app_ = app;
   });
 
   test('Toggle permission', async () => {
@@ -43,15 +44,13 @@ suite('<app-management-permission-item>', () => {
 
     replaceBody(permissionItem);
     await fakeHandler.flushPipesForTesting();
-    assertTrue(getPermissionValueBool(
+    assertTrue(app_management.util.getPermissionValueBool(
         permissionItem.app_, permissionItem.permissionType));
 
     permissionItem.click();
     await test_util.flushTasks();
     await fakeHandler.flushPipesForTesting();
-    // Store gets updated permission.
-    const storeData = app_management.AppManagementStore.getInstance().data;
-    assertFalse(getPermissionValueBool(
-      storeData.apps[permissionItem.app_.id], permissionItem.permissionType));
+    assertFalse(app_management.util.getPermissionValueBool(
+        permissionItem.app_, permissionItem.permissionType));
   });
 });

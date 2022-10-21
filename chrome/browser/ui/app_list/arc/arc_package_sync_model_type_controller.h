@@ -8,6 +8,7 @@
 #include <memory>
 
 #include "base/callback_forward.h"
+#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "chrome/browser/ash/arc/session/arc_session_manager_observer.h"
 #include "chrome/browser/ui/app_list/arc/arc_app_list_prefs.h"
@@ -63,6 +64,7 @@ class ArcPackageSyncModelTypeController
   syncer::SyncService* const sync_service_;
   Profile* const profile_;
   ArcAppListPrefs* const arc_prefs_;
+  PrefChangeRegistrar pref_registrar_;
 };
 
 #endif  // CHROME_BROWSER_UI_APP_LIST_ARC_ARC_PACKAGE_SYNC_MODEL_TYPE_CONTROLLER_H_

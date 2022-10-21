@@ -7,6 +7,7 @@
 
 #include <string>
 
+#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "chrome/browser/ui/webui/conflicts/conflicts_data_fetcher.h"
 #include "content/public/browser/web_ui_message_handler.h"

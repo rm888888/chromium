@@ -4,7 +4,6 @@
 
 import {NativeEventTarget as EventTarget} from 'chrome://resources/js/cr/event_target.m.js';
 
-import {getPreferences} from '../../common/js/api.js';
 import {AsyncUtil} from '../../common/js/async_util.js';
 import {FilteredVolumeManager} from '../../common/js/filtered_volume_manager.js';
 import {metrics} from '../../common/js/metrics.js';
@@ -13,7 +12,7 @@ import {VolumeManagerCommon} from '../../common/js/volume_manager_types.js';
 import {xfm} from '../../common/js/xfm.js';
 
 /**
- * The drive mount path used in the persisted storage. It must be '/drive'.
+ * The drive mount path used in the xfm.storage. It must be '/drive'.
  * @type {string}
  */
 const STORED_DRIVE_MOUNT_PATH = '/drive';
@@ -21,10 +20,7 @@ const STORED_DRIVE_MOUNT_PATH = '/drive';
 /**
  * Model for the folder shortcuts. This object is ArrayDataModel-like
  * object with additional methods for the folder shortcut feature.
- * This used to use xfm.storage as backend. Now it's migrated to Chrome
- * preferences.
- *
- * Items are always sorted by URL.
+ * This uses xfm.storage as backend. Items are always sorted by URL.
  */
 export class FolderShortcutsDataModel extends EventTarget {
   /**
@@ -47,9 +43,13 @@ export class FolderShortcutsDataModel extends EventTarget {
     // Load the shortcuts. Runs within the queue.
     this.load_();
 
-    // The list of folder shortcuts is persisted in the preferences.
-    chrome.fileManagerPrivate.onPreferencesChanged.addListener(
-        this.reload_.bind(this));
+    // Listening for changes in the xfm.storage.
+    xfm.storage.onChanged.addListener((changes, namespace) => {
+      if (!(FolderShortcutsDataModel.NAME in changes) || namespace !== 'sync') {
+        return;
+      }
+      this.reload_();  // Runs within the queue.
+    });
 
     // If the volume info list is changed, then shortcuts have to be reloaded.
     this.volumeManager_.volumeInfoList.addEventListener(
@@ -141,8 +141,8 @@ export class FolderShortcutsDataModel extends EventTarget {
           }
         }
         // Not adding to the model nor to the |unresolvablePaths_| means
-        // that it will be removed from the persistent storage permanently after
-        // the next call to save_().
+        // that it will be removed from the xfm.storage permanently after the
+        // next call to save_().
       };
 
       // Resolve the items all at once, in parallel.
@@ -195,73 +195,26 @@ export class FolderShortcutsDataModel extends EventTarget {
    * Initializes the model and loads the shortcuts.
    * @private
    */
-  async load_() {
-    this.queue_.run(async (callback) => {
-      try {
-        const shortcutPaths = await this.getPersistedShortcutPaths_();
+  load_() {
+    this.queue_.run(callback => {
+      xfm.storage.sync.get(FolderShortcutsDataModel.NAME, value => {
+        if (chrome.runtime.lastError) {
+          console.error(
+              'Failed to load shortcut paths from xfm.storage: ' +
+              chrome.runtime.lastError.message);
+          callback();
+          return;
+        }
+        const shortcutPaths = value[FolderShortcutsDataModel.NAME] || [];
+
         // Record metrics.
         metrics.recordSmallCount('FolderShortcut.Count', shortcutPaths.length);
 
         // Resolve and add the entries to the model.
         this.processEntries_(shortcutPaths);  // Runs within a queue.
-      } finally {
         callback();
-      }
+      });
     });
-  }
-
-  /**
-   * Fetches the shortcut paths from the legacy chrome.storage.sync.
-   *
-   * This can be removed after M108, when we expect all users to have migrated
-   * to the SWA/prefs version.
-   *
-   * @return {!Promise<!Array<string>>}
-   * @private
-   */
-  async getPersistedShortcutPathsLegacy_() {
-    const value =
-        await xfm.storage.sync.getAsync(FolderShortcutsDataModel.NAME);
-    if (value) {
-      const shortcutPaths =
-          /** @type {!Array} */ (value[FolderShortcutsDataModel.NAME] || []);
-      return shortcutPaths;
-    }
-
-    return [];
-  }
-
-  /**
-   * Fetches the shortcut paths from the persistent storage (preferences) it
-   * migrates from the legacy storage.chrome.sync if needed.
-   *
-   * @return {!Promise<!Array<string>>}
-   * @private
-   */
-  async getPersistedShortcutPaths_() {
-    if (!window.isSWA) {
-      // Migration code works for non SWA.
-      const legacyPaths = await this.getPersistedShortcutPathsLegacy_();
-      if (legacyPaths.length) {
-        // Migrate to prefs. The onPreferencesChanged listener will make the
-        // value to be reloaded from prefs.
-        chrome.fileManagerPrivate.setPreferences(
-            {folderShortcuts: legacyPaths});
-
-        // Remove from legacy storage: xfm.storage.sync.
-        const prefs = {};
-        prefs[FolderShortcutsDataModel.NAME] = [];
-        xfm.storage.sync.setAsync(prefs);
-        return legacyPaths;
-      }
-    }
-
-    const prefs = await getPreferences();
-    if (prefs.folderShortcuts && prefs.folderShortcuts.length) {
-      return prefs.folderShortcuts;
-    }
-
-    return [];
   }
 
   /**
@@ -269,13 +222,13 @@ export class FolderShortcutsDataModel extends EventTarget {
    * @private
    */
   reload_() {
-    this.queue_.run(async (callback) => {
-      try {
-        const shortcutPaths = await this.getPersistedShortcutPaths_();
+    let shortcutPaths;
+    this.queue_.run(callback => {
+      xfm.storage.sync.get(FolderShortcutsDataModel.NAME, value => {
+        const shortcutPaths = value[FolderShortcutsDataModel.NAME] || [];
         this.processEntries_(shortcutPaths);  // Runs within a queue.
-      } finally {
         callback();
-      }
+      });
     });
   }
 
@@ -448,7 +401,7 @@ export class FolderShortcutsDataModel extends EventTarget {
   }
 
   /**
-   * Saves the current array to the persistent storage (Chrome prefs).
+   * Saves the current array to xfm.storage.
    * @private
    */
   save_() {
@@ -466,8 +419,9 @@ export class FolderShortcutsDataModel extends EventTarget {
                       .concat(Object.keys(this.pendingPaths_))
                       .concat(Object.keys(this.unresolvablePaths_));
 
-    const prefs = {folderShortcuts: paths};
-    chrome.fileManagerPrivate.setPreferences(prefs);
+    const prefs = {};
+    prefs[FolderShortcutsDataModel.NAME] = paths;
+    xfm.storage.sync.set(prefs, () => {});
   }
 
   /**

@@ -18,8 +18,6 @@ import org.chromium.base.ThreadUtils;
 import org.chromium.base.metrics.RecordHistogram;
 import org.chromium.build.BuildConfig;
 import org.chromium.components.variations.VariationsSwitches;
-import org.chromium.net.ChromiumNetworkAdapter;
-import org.chromium.net.NetworkTrafficAnnotationTag;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -38,29 +36,6 @@ import java.util.Date;
  */
 public class VariationsSeedFetcher {
     private static final String TAG = "VariationsSeedFetch";
-
-    private static final NetworkTrafficAnnotationTag TRAFFIC_ANNOTATION =
-            NetworkTrafficAnnotationTag.createComplete("chrome_variations_android",
-                    "semantics {"
-                            + "  sender: 'Chrome Variations Service (Android)'"
-                            + "  description:"
-                            + "      'The variations service is responsible for determining the '"
-                            + "      'state of field trials in Chrome. These field trials '"
-                            + "      'typically configure either A/B experiments, or launched '"
-                            + "      'features – oftentimes, critical security features.'"
-                            + "  trigger: 'This request is made once, on Chrome\'s first run, to '"
-                            + "           'determine the initial state Chrome should be in.'"
-                            + "  data: 'None.'"
-                            + "  destination: GOOGLE_OWNED_SERVICE"
-                            + "}"
-                            + "policy {"
-                            + "  cookies_allowed: NO"
-                            + "  setting: 'Cannot be disabled in Settings. Chrome Variations are '"
-                            + "           'an essential part of Chrome releases.'"
-                            + "  policy_exception_justification:"
-                            + "      'The ChromeVariations policy is only implemented on desktop '"
-                            + "      'and ChromeOS.'"
-                            + "}");
 
     @IntDef({VariationsPlatform.ANDROID, VariationsPlatform.ANDROID_WEBVIEW})
     @Retention(RetentionPolicy.SOURCE)
@@ -125,7 +100,7 @@ public class VariationsSeedFetcher {
             throws MalformedURLException, IOException {
         String urlString = getConnectionString(platform, restrictMode, milestone, channel);
         URL url = new URL(urlString);
-        return (HttpURLConnection) ChromiumNetworkAdapter.openConnection(url, TRAFFIC_ANNOTATION);
+        return (HttpURLConnection) url.openConnection();
     }
 
     @VisibleForTesting

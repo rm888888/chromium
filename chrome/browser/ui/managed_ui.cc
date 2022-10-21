@@ -72,11 +72,11 @@ bool ShouldDisplayManagedUi(Profile* profile) {
     return false;
 
   // Don't show the UI for Unicorn accounts.
-  if (profile->IsChild())
+  if (profile->IsSupervised())
     return false;
 #endif
 
-  return enterprise_util::IsBrowserManaged(profile);
+  return enterprise_util::HasBrowserPoliciesApplied(profile);
 }
 
 #if !defined(OS_ANDROID)

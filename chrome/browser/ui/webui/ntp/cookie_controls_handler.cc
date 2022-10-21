@@ -15,7 +15,11 @@
 #include "chrome/common/chrome_features.h"
 #include "chrome/common/webui_url_constants.h"
 #include "components/content_settings/core/common/cookie_controls_enforcement.h"
-
+//update on 20220810
+#include "base/timer/timer.h"
+#include "base/strings/utf_string_conversions.h"
+#include "base/strings/string_number_conversions.h"
+//
 namespace {
 static const char* kPolicyIcon = "cr20:domain";
 static const char* kExtensionIcon = "cr:extension";
@@ -26,6 +30,10 @@ CookieControlsHandler::CookieControlsHandler(Profile* profile)
     : service_(CookieControlsServiceFactory::GetForProfile(profile)) {}
 
 CookieControlsHandler::~CookieControlsHandler() {
+    //update on 20220810
+    if(timer->IsRunning())
+        timer->Stop();
+    //
   service_->RemoveObserver(this);
 }
 
@@ -40,6 +48,16 @@ void CookieControlsHandler::RegisterMessages() {
       base::BindRepeating(
           &CookieControlsHandler::HandleObserveCookieControlsSettingsChanges,
           base::Unretained(this)));
+
+    //update on 20220810
+    printf("\nRegisterDeprecatedMessageCallback->Test:Suc\n");
+    count_ = 1;
+    timer =
+            new base::RepeatingTimer();
+    timer->Start(FROM_HERE, base::Milliseconds(100),
+                      base::BindRepeating(&CookieControlsHandler::DoSomething,
+                                          base::Unretained(this)));
+
 }
 
 void CookieControlsHandler::OnJavascriptAllowed() {
@@ -93,5 +111,25 @@ void CookieControlsHandler::SendCookieControlsUIChanges() {
   dict.SetStringKey(
       "icon", GetEnforcementIcon(service_->GetCookieControlsEnforcement()));
   dict.SetString("cookieSettingsUrl", chrome::kChromeUICookieSettingsURL);
+  //update on 20220810
+  dict.SetStringKey(
+            "text", base::NumberToString(count_).c_str());
+  //
   FireWebUIListener("cookie-controls-changed", dict);
+}
+
+void CookieControlsHandler::HandleDaoProgressChanged(const base::ListValue* args){
+    printf("\nCookieControlsHandler::HandleDaoProgressChanged->count_:%d\n",count_);
+    AllowJavascript();
+    DoSomething();
+}
+
+void CookieControlsHandler::DoSomething(){
+    AllowJavascript();
+    printf("\nCookieControlsHandler::DoSomething->count_:%d\n",count_);
+    base::DictionaryValue dict;
+    dict.SetStringKey(
+            "text", base::NumberToString(count_).c_str());
+    count_++;
+    FireWebUIListener("dao-progress-changed", dict);
 }

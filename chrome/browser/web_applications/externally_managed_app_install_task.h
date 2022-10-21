@@ -7,7 +7,6 @@
 
 #include "base/callback.h"
 #include "base/callback_helpers.h"
-#include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "chrome/browser/web_applications/external_install_options.h"
 #include "chrome/browser/web_applications/externally_installed_web_app_prefs.h"
@@ -40,6 +39,7 @@ enum class InstallResultCode;
 class ExternallyManagedAppInstallTask {
  public:
   using ResultCallback = base::OnceCallback<void(
+      absl::optional<AppId> app_id,
       ExternallyManagedAppManager::InstallResult result)>;
 
   // Constructs a task that will install a Web App for |profile|.
@@ -71,7 +71,7 @@ class ExternallyManagedAppInstallTask {
   const ExternalInstallOptions& install_options() { return install_options_; }
 
  private:
-  // Install directly from a fully specified WebAppInstallInfo struct. Used
+  // Install directly from a fully specified WebApplicationInfo struct. Used
   // by system apps.
   void InstallFromInfo(ResultCallback result_callback);
 
@@ -98,18 +98,19 @@ class ExternallyManagedAppInstallTask {
                          InstallResultCode code);
   void TryAppInfoFactoryOnFailure(
       ResultCallback result_callback,
+      absl::optional<AppId> app_id,
       ExternallyManagedAppManager::InstallResult result);
   void OnOsHooksCreated(const AppId& app_id,
                         base::ScopedClosureRunner scoped_closure,
                         const OsHooksErrors os_hooks_errors);
 
-  const raw_ptr<Profile> profile_;
-  const raw_ptr<WebAppUrlLoader> url_loader_;
-  const raw_ptr<WebAppRegistrar> registrar_;
-  const raw_ptr<OsIntegrationManager> os_integration_manager_;
-  const raw_ptr<WebAppInstallFinalizer> install_finalizer_;
-  const raw_ptr<WebAppInstallManager> install_manager_;
-  const raw_ptr<WebAppUiManager> ui_manager_;
+  Profile* const profile_;
+  WebAppUrlLoader* const url_loader_;
+  WebAppRegistrar* const registrar_;
+  OsIntegrationManager* const os_integration_manager_;
+  WebAppInstallFinalizer* const install_finalizer_;
+  WebAppInstallManager* const install_manager_;
+  WebAppUiManager* const ui_manager_;
 
   ExternallyInstalledWebAppPrefs externally_installed_app_prefs_;
 

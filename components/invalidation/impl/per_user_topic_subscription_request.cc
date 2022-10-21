@@ -342,11 +342,12 @@ HttpRequestHeaders PerUserTopicSubscriptionRequest::Builder::BuildHeaders()
 }
 
 std::string PerUserTopicSubscriptionRequest::Builder::BuildBody() const {
-  base::Value request(base::Value::Type::DICTIONARY);
+  base::DictionaryValue request;
 
-  request.SetStringKey("public_topic_name", topic_);
-  if (topic_is_public_)
-    request.SetBoolKey("is_public", true);
+  request.SetString("public_topic_name", topic_);
+  if (topic_is_public_) {
+    request.SetBoolean("is_public", true);
+  }
 
   std::string request_json;
   bool success = base::JSONWriter::Write(request, &request_json);

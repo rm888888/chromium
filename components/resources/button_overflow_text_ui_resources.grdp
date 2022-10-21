@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<grit-part>
+  <include name="IDR_BUTTON_OVERFLOW_TEXT_UI_CSS" file="../pundix_button_overflow_text/resources/button_overflow_text_ui.css" type="BINDATA" />
+  <include name="IDR_BUTTON_OVERFLOW_TEXT_UI_HTML" file="../pundix_button_overflow_text/resources/button_overflow_text_ui.html" preprocess="true" type="BINDATA" />
+  <include name="IDR_BUTTON_OVERFLOW_TEXT_UI_JS" file="../pundix_button_overflow_text/resources/button_overflow_text_ui.js" preprocess="true" type="BINDATA" />
+</grit-part>

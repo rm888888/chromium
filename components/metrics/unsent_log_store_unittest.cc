@@ -9,6 +9,7 @@
 
 #include "base/base64.h"
 #include "base/hash/sha1.h"
+#include "base/macros.h"
 #include "base/rand_util.h"
 #include "base/values.h"
 #include "components/metrics/unsent_log_store_metrics_impl.h"
@@ -138,7 +139,7 @@ TEST_F(UnsentLogStoreTest, EmptyLogList) {
   TestUnsentLogStore unsent_log_store(&prefs_, kLogByteLimit);
 
   unsent_log_store.TrimAndPersistUnsentLogs();
-  const base::Value* list_value = prefs_.GetList(kTestPrefName);
+  const base::ListValue* list_value = prefs_.GetList(kTestPrefName);
   EXPECT_EQ(0U, list_value->GetList().size());
 
   TestUnsentLogStore result_unsent_log_store(&prefs_, kLogByteLimit);

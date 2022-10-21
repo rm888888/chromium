@@ -11,7 +11,6 @@
 #include <string>
 
 #include "base/android/scoped_java_ref.h"
-#include "base/memory/raw_ptr.h"
 #include "components/policy/policy_export.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 
@@ -80,7 +79,7 @@ class POLICY_EXPORT PolicyConverter {
   void SetPolicyValueForTesting(const std::string& key, base::Value raw_value);
 
  private:
-  const raw_ptr<const Schema> policy_schema_;
+  const Schema* const policy_schema_;
 
   std::unique_ptr<PolicyBundle> policy_bundle_;
 

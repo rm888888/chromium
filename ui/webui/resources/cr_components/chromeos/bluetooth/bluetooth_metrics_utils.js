@@ -17,7 +17,6 @@ export const BluetoothUiSurface = {
   CONNECTION_TOAST: 6,
   DISCONNECTED_TOAST: 7,
   OOBE_HID_DETECTION: 8,
-  PAIRED_TOAST: 9,
 };
 
 /**

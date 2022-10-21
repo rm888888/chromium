@@ -3,7 +3,6 @@
 // found in the LICENSE file.
 
 #include <algorithm>
-#include <string>
 #include <vector>
 
 #include "base/bind.h"
@@ -45,24 +44,14 @@ using ::testing::NiceMock;
 using ::testing::Ref;
 using ::testing::Return;
 
-namespace {
-
-// Returns an appropriate set of string replacements; passing the wrong number
-// of replacements for the body text of the IPH will cause a DCHECK.
-FeaturePromoSpecification::StringReplacements GetReplacementsForFeature(
-    const base::Feature& feature) {
-  if (&feature == &feature_engagement::kIPHDesktopPwaInstallFeature)
-    return {u"Placeholder Text"};
-  return {};
-}
-
-}  // namespace
-
 class FeaturePromoDialogTest : public DialogBrowserTest {
  public:
   FeaturePromoDialogTest() {
+    // TODO(crbug.com/1182859): Update this test to enable the
+    // kUseSodaForLiveCaption feature.
     scoped_feature_list_.InitWithFeatures(
-        {}, {media::kLiveCaption, feature_engagement::kIPHLiveCaptionFeature});
+        {}, {media::kLiveCaption, media::kUseSodaForLiveCaption,
+             feature_engagement::kIPHLiveCaptionFeature});
 
     // TODO(crbug.com/1141984): fix cause of bubbles overflowing the
     // screen and remove this.
@@ -105,8 +94,7 @@ class FeaturePromoDialogTest : public DialogBrowserTest {
     EXPECT_CALL(*mock_tracker, ShouldTriggerHelpUI(Ref(feature)))
         .Times(1)
         .WillOnce(Return(true));
-    ASSERT_TRUE(promo_controller->MaybeShowPromo(
-        feature, GetReplacementsForFeature(feature)));
+    ASSERT_TRUE(promo_controller->MaybeShowPromo(feature));
   }
 
  private:
@@ -277,12 +265,6 @@ IN_PROC_BROWSER_TEST_F(FeaturePromoDialogSideSearchTest,
 
 IN_PROC_BROWSER_TEST_F(FeaturePromoDialogTest, InvokeUi_IPH_TabSearch) {
   set_baseline("2991858");
-  ShowAndVerifyUi();
-}
-
-IN_PROC_BROWSER_TEST_F(FeaturePromoDialogTest,
-                       InvokeUi_IPH_DesktopSharedHighlighting) {
-  set_baseline("3253618");
   ShowAndVerifyUi();
 }
 

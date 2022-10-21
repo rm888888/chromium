@@ -63,10 +63,13 @@ void RegisterBrowserPrefs(PrefRegistrySimple* registry) {
 void RegisterBrowserUserPrefs(user_prefs::PrefRegistrySyncable* registry) {
   registry->RegisterBooleanPref(prefs::kHomePageIsNewTabPage, true,
                                 GetHomeButtonAndHomePageIsNewTabPageFlags());
-  registry->RegisterBooleanPref(prefs::kShowHomeButton, false,
-                                GetHomeButtonAndHomePageIsNewTabPageFlags());
+//  registry->RegisterBooleanPref(prefs::kShowHomeButton, false,
+//                                GetHomeButtonAndHomePageIsNewTabPageFlags());
+//update on 20220712
+    registry->RegisterBooleanPref(prefs::kShowHomeButton, true,
+                                  GetHomeButtonAndHomePageIsNewTabPageFlags());
 
-  registry->RegisterInt64Pref(prefs::kDefaultBrowserLastDeclined, 0);
+  registry->RegisterIntegerPref(prefs::kDefaultBrowserLastDeclined, 0);
   bool reset_check_default = false;
 #if defined(OS_WIN)
   reset_check_default = base::win::GetVersion() >= base::win::Version::WIN10;
@@ -85,9 +88,15 @@ void RegisterBrowserUserPrefs(user_prefs::PrefRegistrySyncable* registry) {
   registry->RegisterDictionaryPref(prefs::kBrowserWindowPlacement);
   registry->RegisterDictionaryPref(prefs::kBrowserWindowPlacementPopup);
   registry->RegisterDictionaryPref(prefs::kAppWindowPlacement);
-  registry->RegisterBooleanPref(
-      prefs::kEnableDoNotTrack, false,
-      user_prefs::PrefRegistrySyncable::SYNCABLE_PREF);
+//  registry->RegisterBooleanPref(
+//      prefs::kEnableDoNotTrack, false,
+//      user_prefs::PrefRegistrySyncable::SYNCABLE_PREF);
+//update on 20220712
+    registry->RegisterBooleanPref(
+            prefs::kEnableDoNotTrack, true,
+            user_prefs::PrefRegistrySyncable::SYNCABLE_PREF);
+    //registry->RegisterIntegerPref(prefs::kIncognitoModeAvailability,0);
+//
 #if !BUILDFLAG(IS_CHROMEOS_ASH) && !defined(OS_ANDROID)
   registry->RegisterBooleanPref(prefs::kPrintPreviewUseSystemDefaultPrinter,
                                 false);
@@ -162,4 +171,9 @@ void RegisterBrowserUserPrefs(user_prefs::PrefRegistrySyncable* registry) {
   registry->RegisterBooleanPref(
       prefs::kHttpsOnlyModeEnabled, false,
       user_prefs::PrefRegistrySyncable::SYNCABLE_PREF);
+
+  //update on 20220818
+//    registry->RegisterBooleanPref(prefs::kPurseBrowserFirstRun, true);
+//    registry->RegisterBooleanPref(prefs::kMessengerShow, false);
+//    registry->RegisterBooleanPref(prefs::kWhatsAppShow, false);
 }

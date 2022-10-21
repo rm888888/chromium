@@ -11,7 +11,6 @@
 #include "components/zucchini/algorithm.h"
 #include "components/zucchini/crc32.h"
 #include "components/zucchini/element_detection.h"
-#include "components/zucchini/version_info.h"
 
 namespace zucchini {
 

@@ -34,10 +34,8 @@ TabUIHelper::TabUIData::TabUIData(const GURL& url)
     : title(FormatUrlToSubdomain(url)), favicon(favicon::GetDefaultFavicon()) {}
 
 TabUIHelper::TabUIHelper(content::WebContents* contents)
-    : WebContentsObserver(contents),
-      content::WebContentsUserData<TabUIHelper>(*contents) {}
-
-TabUIHelper::~TabUIHelper() = default;
+    : WebContentsObserver(contents) {}
+TabUIHelper::~TabUIHelper() {}
 
 std::u16string TabUIHelper::GetTitle() const {
   const std::u16string& contents_title = web_contents()->GetTitle();

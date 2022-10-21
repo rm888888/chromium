@@ -7,6 +7,7 @@
 
 #include <memory>
 
+#include "base/macros.h"
 #include "components/proxy_config/proxy_config_export.h"
 
 namespace net {

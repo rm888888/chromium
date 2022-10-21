@@ -22,6 +22,7 @@ class ModelTypeControllerDelegate;
 }  // namespace syncer
 
 namespace send_tab_to_self {
+class FakeSendTabToSelfModel;
 class SendTabToSelfBridge;
 class SendTabToSelfModel;
 
@@ -39,18 +40,18 @@ class SendTabToSelfSyncService : public KeyedService {
 
   ~SendTabToSelfSyncService() override;
 
-  // Never returns null.
   virtual SendTabToSelfModel* GetSendTabToSelfModel();
 
   virtual base::WeakPtr<syncer::ModelTypeControllerDelegate>
   GetControllerDelegate();
 
  protected:
-  // Default constructor for unit tests.
+  // Default constructor for unit tests
   SendTabToSelfSyncService();
 
  private:
-  std::unique_ptr<SendTabToSelfBridge> const bridge_;
+  std::unique_ptr<SendTabToSelfBridge> bridge_;
+  std::unique_ptr<FakeSendTabToSelfModel> fake_model_;
 };
 
 }  // namespace send_tab_to_self

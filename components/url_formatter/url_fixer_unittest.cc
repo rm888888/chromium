@@ -415,7 +415,8 @@ struct FixupCase {
 };
 
 TEST(URLFixerTest, FixupURL) {
-  for (const auto& value : fixup_cases) {
+  for (size_t i = 0; i < base::size(fixup_cases); ++i) {
+    FixupCase value = fixup_cases[i];
     GURL actual_output = url_formatter::FixupURL(value.input, std::string());
     EXPECT_EQ(value.output, actual_output.possibly_invalid_spec())
         << "input: " << value.input;
@@ -463,10 +464,10 @@ TEST(URLFixerTest, FixupURL) {
       {"http://somedomainthatwillnotbeagtld:123",
        "http://www.somedomainthatwillnotbeagtld.com:123/"},
   };
-  for (const auto& value : tld_cases) {
-    EXPECT_EQ(
-        value.output,
-        url_formatter::FixupURL(value.input, "com").possibly_invalid_spec());
+  for (size_t i = 0; i < base::size(tld_cases); ++i) {
+    FixupCase value = tld_cases[i];
+    EXPECT_EQ(value.output, url_formatter::FixupURL(value.input, "com")
+                                .possibly_invalid_spec());
   }
 }
 
@@ -549,9 +550,10 @@ TEST(URLFixerTest, FixupFile) {
   };
 #endif
 
-  for (const auto& value : cases) {
-    EXPECT_EQ(value.output, url_formatter::FixupURL(value.input, std::string())
-                                .possibly_invalid_spec());
+  for (size_t i = 0; i < base::size(cases); i++) {
+    EXPECT_EQ(cases[i].output,
+              url_formatter::FixupURL(cases[i].input, std::string())
+                  .possibly_invalid_spec());
   }
 
   EXPECT_TRUE(base::DeleteFile(original));
@@ -568,7 +570,8 @@ TEST(URLFixerTest, FixupRelativeFile) {
   ASSERT_FALSE(full_path.empty());
 
   // make sure we pass through good URLs
-  for (const auto& value : fixup_cases) {
+  for (size_t i = 0; i < base::size(fixup_cases); ++i) {
+    FixupCase value = fixup_cases[i];
     base::FilePath input = base::FilePath::FromUTF8Unsafe(value.input);
     EXPECT_EQ(value.output,
               url_formatter::FixupRelativeFile(temp_dir_.GetPath(), input)

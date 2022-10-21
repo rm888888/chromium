@@ -8,6 +8,7 @@
 #include <iosfwd>
 #include <vector>
 
+#include "base/macros.h"
 #include "components/subresource_filter/core/browser/subresource_filter_features.h"
 
 namespace subresource_filter {

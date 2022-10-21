@@ -29,5 +29,4 @@ class SetTouchableAreaAction : public Action {
 };
 
 }  // namespace autofill_assistant
-
-#endif  // COMPONENTS_AUTOFILL_ASSISTANT_BROWSER_ACTIONS_SET_TOUCHABLE_AREA_ACTION_H_
+#endif  // COMPONENTS_AUTOFILL_ASSISTANT_BROWSER_ACTIONS_SHOW_CAST_ACTION_H_

@@ -4,8 +4,6 @@
 
 #include "ui/views/focus/widget_focus_manager.h"
 
-#include "base/no_destructor.h"
-
 namespace views {
 
 // WidgetFocusManager ----------------------------------------------------------

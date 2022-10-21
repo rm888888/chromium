@@ -6,7 +6,6 @@
 #define CHROME_UPDATER_WIN_UPDATE_SERVICE_PROXY_H_
 
 #include <string>
-#include <vector>
 
 #include "base/callback.h"
 #include "base/memory/scoped_refptr.h"
@@ -46,13 +45,10 @@ class UpdateServiceProxy : public UpdateService {
       base::OnceCallback<void(const base::Version&)> callback) const override;
   void RegisterApp(const RegistrationRequest& request,
                    RegisterAppCallback callback) override;
-  void GetAppStates(
-      base::OnceCallback<void(const std::vector<AppState>&)>) const override;
   void RunPeriodicTasks(base::OnceClosure callback) override;
   void UpdateAll(StateChangeCallback state_update, Callback callback) override;
   void Update(const std::string& app_id,
               Priority priority,
-              PolicySameVersionUpdate policy_same_version_update,
               StateChangeCallback state_update,
               Callback callback) override;
   void Uninitialize() override;
@@ -65,17 +61,14 @@ class UpdateServiceProxy : public UpdateService {
       base::OnceCallback<void(const base::Version&)> callback) const;
   void RegisterAppOnSTA(const RegistrationRequest& request,
                         RegisterAppCallback callback);
-  void GetAppStatesSTA(
-      base::OnceCallback<void(const std::vector<AppState>&)>) const;
   void RunPeriodicTasksOnSTA(base::OnceClosure callback);
   void UpdateAllOnSTA(StateChangeCallback state_update, Callback callback);
   void UpdateOnSTA(const std::string& app_id,
-                   PolicySameVersionUpdate policy_same_version_update,
                    StateChangeCallback state_update,
                    Callback callback);
 
   // Bound to the main sequence.
-  SEQUENCE_CHECKER(sequence_checker_main_);
+  SEQUENCE_CHECKER(sequence_checker_);
 
   UpdaterScope scope_;
 

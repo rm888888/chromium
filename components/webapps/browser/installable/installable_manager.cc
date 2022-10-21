@@ -206,7 +206,7 @@ void OnDidCompleteGetAllErrors(
 void OnDidCompleteGetPrimaryIcon(
     base::OnceCallback<void(const SkBitmap*)> callback,
     const InstallableData& data) {
-  std::move(callback).Run(data.primary_icon.get());
+  std::move(callback).Run(data.primary_icon);
 }
 
 }  // namespace
@@ -234,7 +234,6 @@ InstallableManager::IconProperty& InstallableManager::IconProperty::operator=(
 
 InstallableManager::InstallableManager(content::WebContents* web_contents)
     : content::WebContentsObserver(web_contents),
-      content::WebContentsUserData<InstallableManager>(*web_contents),
       eligibility_(std::make_unique<EligiblityProperty>()),
       manifest_(std::make_unique<ManifestProperty>()),
       valid_manifest_(std::make_unique<ValidManifestProperty>()),

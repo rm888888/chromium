@@ -17,7 +17,6 @@
 #include "components/content_settings/core/browser/host_content_settings_map.h"
 #include "components/content_settings/core/common/content_settings_types.h"
 #include "components/content_settings/core/common/content_settings_utils.h"
-#include "components/embedder_support/user_agent_utils.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/render_process_host.h"
 #include "services/network/public/cpp/client_hints.h"
@@ -85,12 +84,12 @@ ClientHints::ClientHints(
     network::NetworkQualityTracker* network_quality_tracker,
     HostContentSettingsMap* settings_map,
     scoped_refptr<content_settings::CookieSettings> cookie_settings,
-    PrefService* pref_service)
+    const blink::UserAgentMetadata& user_agent_metadata)
     : context_(context),
       network_quality_tracker_(network_quality_tracker),
       settings_map_(settings_map),
       cookie_settings_(cookie_settings),
-      pref_service_(pref_service) {
+      user_agent_metadata_(user_agent_metadata) {
   DCHECK(context_);
   DCHECK(network_quality_tracker_);
   DCHECK(settings_map_);
@@ -102,7 +101,8 @@ ClientHints::ClientHints(
     auto command_line_hints = ParseInitializeClientHintsStroage();
 
     for (const auto& origin_hints_pair : command_line_hints) {
-      PersistClientHints(origin_hints_pair.first, origin_hints_pair.second);
+      PersistClientHints(origin_hints_pair.first, origin_hints_pair.second,
+                         base::Days(1000000));
     }
   }
 }
@@ -138,12 +138,13 @@ bool ClientHints::AreThirdPartyCookiesBlocked(const GURL& url) {
 }
 
 blink::UserAgentMetadata ClientHints::GetUserAgentMetadata() {
-  return embedder_support::GetUserAgentMetadata(pref_service_);
+  return user_agent_metadata_;
 }
 
 void ClientHints::PersistClientHints(
     const url::Origin& primary_origin,
-    const std::vector<network::mojom::WebClientHintsType>& client_hints) {
+    const std::vector<network::mojom::WebClientHintsType>& client_hints,
+    base::TimeDelta expiration_duration) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
   const GURL primary_url = primary_origin.GetURL();
@@ -170,24 +171,43 @@ void ClientHints::PersistClientHints(
     return;
   }
 
-  base::Value::ListStorage client_hints_list;
-  client_hints_list.reserve(client_hints.size());
+  if (expiration_duration <= base::Seconds(0))
+    return;
+
+  base::Value::ListStorage expiration_times_list;
+  expiration_times_list.reserve(client_hints.size());
+
+  // Use wall clock since the expiration time would be persisted across embedder
+  // restarts.
+  double expiration_time =
+      (base::Time::Now() + expiration_duration).ToDoubleT();
 
   for (const auto& entry : client_hints)
-    client_hints_list.push_back(base::Value(static_cast<int>(entry)));
+    expiration_times_list.push_back(base::Value(static_cast<int>(entry)));
 
-  auto client_hints_dictionary = std::make_unique<base::DictionaryValue>();
-  client_hints_dictionary->SetKey(kClientHintsSettingKey,
-                                  base::Value(std::move(client_hints_list)));
+  auto expiration_times_dictionary = std::make_unique<base::DictionaryValue>();
+  expiration_times_dictionary->SetKey(
+      "client_hints", base::Value(std::move(expiration_times_list)));
+  expiration_times_dictionary->SetDoubleKey("expiration_time", expiration_time);
 
   // TODO(tbansal): crbug.com/735518. Disable updates to client hints settings
   // when cookies are disabled for |primary_origin|.
   settings_map_->SetWebsiteSettingDefaultScope(
       primary_url, GURL(), ContentSettingsType::CLIENT_HINTS,
-      std::move(client_hints_dictionary),
+      std::move(expiration_times_dictionary),
       {base::Time(), content_settings::SessionModel::UserSession});
 
   UMA_HISTOGRAM_EXACT_LINEAR("ClientHints.UpdateEventCount", 1, 2);
+  UMA_HISTOGRAM_CUSTOM_TIMES(
+      "ClientHints.PersistDuration", expiration_duration, base::Seconds(1),
+      // TODO(crbug.com/949034): Rename and fix this histogram to have some
+      // intended max value. We throw away the 32 most-significant bits of the
+      // 64-bit time delta in milliseconds. Before it happened silently in
+      // histogram.cc, now it is explicit here. The previous value of 365 days
+      // effectively turns into roughly 17 days when getting cast to int.
+      base::Milliseconds(static_cast<int>(base::Days(365).InMilliseconds())),
+      100);
+
   UMA_HISTOGRAM_COUNTS_100("ClientHints.UpdateSize", client_hints.size());
 }
 

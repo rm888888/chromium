@@ -8,6 +8,7 @@
 #include <string>
 
 #include "base/files/scoped_temp_dir.h"
+#include "base/macros.h"
 #include "base/pickle.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/test/task_environment.h"

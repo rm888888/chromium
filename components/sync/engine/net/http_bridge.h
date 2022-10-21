@@ -12,13 +12,14 @@
 
 #include "base/compiler_specific.h"
 #include "base/gtest_prod_util.h"
+#include "base/macros.h"
 #include "base/memory/scoped_refptr.h"
 #include "base/synchronization/lock.h"
 #include "base/synchronization/waitable_event.h"
 #include "base/threading/thread_checker.h"
 #include "base/timer/timer.h"
-#include "components/sync/engine/net/http_post_provider.h"
 #include "components/sync/engine/net/http_post_provider_factory.h"
+#include "components/sync/engine/net/http_post_provider_interface.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
 #include "url/gurl.h"
 
@@ -38,7 +39,7 @@ namespace syncer {
 // Provides a way for the sync backend to use Chromium directly for HTTP
 // requests rather than depending on a third party provider (e.g libcurl).
 // This is a one-time use bridge. Create one for each request you want to make.
-class HttpBridge : public HttpPostProvider {
+class HttpBridge : public HttpPostProviderInterface {
  public:
   HttpBridge(const std::string& user_agent,
              std::unique_ptr<network::PendingSharedURLLoaderFactory>
@@ -47,7 +48,7 @@ class HttpBridge : public HttpPostProvider {
   HttpBridge(const HttpBridge&) = delete;
   HttpBridge& operator=(const HttpBridge&) = delete;
 
-  // HttpPostProvider implementation.
+  // HttpPostProviderInterface implementation.
   void SetExtraRequestHeaders(const char* headers) override;
   void SetURL(const GURL& url) override;
   void SetPostPayload(const char* content_type,
@@ -196,7 +197,7 @@ class HttpBridgeFactory : public HttpPostProviderFactory {
   ~HttpBridgeFactory() override;
 
   // HttpPostProviderFactory:
-  scoped_refptr<HttpPostProvider> Create() override;
+  scoped_refptr<HttpPostProviderInterface> Create() override;
 
  private:
   // The user agent to use in all requests.

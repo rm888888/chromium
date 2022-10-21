@@ -29,10 +29,9 @@ namespace full_restore {
 
 namespace {
 
-//  These are temporary estimate of how long it takes full restore to launch
+//  This is a temporary estimate of how long it takes full restore to launch
 //  apps.
 constexpr base::TimeDelta kFullRestoreEstimateDuration = base::Seconds(5);
-constexpr base::TimeDelta kFullRestoreARCEstimateDuration = base::Minutes(5);
 
 }  // namespace
 
@@ -287,13 +286,14 @@ int32_t FullRestoreReadHandler::GetArcRestoreWindowIdForSessionId(
 }
 
 int32_t FullRestoreReadHandler::GetArcSessionId() {
-  return arc_read_handler_ ? arc_read_handler_->GetArcSessionId() : 0;
+  DCHECK(arc_read_handler_);
+  return arc_read_handler_->GetArcSessionId();
 }
 
 void FullRestoreReadHandler::SetArcSessionIdForWindowId(int32_t arc_session_id,
                                                         int32_t window_id) {
-  if (arc_read_handler_)
-    arc_read_handler_->SetArcSessionIdForWindowId(arc_session_id, window_id);
+  DCHECK(arc_read_handler_);
+  arc_read_handler_->SetArcSessionIdForWindowId(arc_session_id, window_id);
 }
 
 void FullRestoreReadHandler::SetStartTimeForProfile(
@@ -306,12 +306,9 @@ bool FullRestoreReadHandler::IsFullRestoreRunning() const {
   if (it == profile_path_to_start_time_data_.end())
     return false;
 
-  base::TimeDelta elapsed_time = base::TimeTicks::Now() - it->second;
   // We estimate that full restore is still running if it has been less than
-  // five seconds since it started, or five minutes if there is at least one ARC
-  // app.
-  return arc_read_handler_ ? elapsed_time < kFullRestoreARCEstimateDuration
-                           : elapsed_time < kFullRestoreEstimateDuration;
+  // five seconds since it started.
+  return (base::TimeTicks::Now() - it->second) < kFullRestoreEstimateDuration;
 }
 
 void FullRestoreReadHandler::AddChromeBrowserLaunchInfoForTesting(

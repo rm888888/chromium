@@ -4,6 +4,7 @@
 #ifndef COMPONENTS_BROWSER_WATCHER_EXIT_CODE_WATCHER_WIN_H_
 #define COMPONENTS_BROWSER_WATCHER_EXIT_CODE_WATCHER_WIN_H_
 
+#include "base/macros.h"
 #include "base/process/process.h"
 #include "base/threading/thread.h"
 #include "base/win/scoped_handle.h"

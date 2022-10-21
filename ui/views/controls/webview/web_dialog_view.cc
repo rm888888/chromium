@@ -75,7 +75,7 @@ WebDialogView::WebDialogView(content::BrowserContext* context,
   SetCanResize(!delegate_ || delegate_->can_resize());
   SetModalType(GetDialogModalType());
   web_view_->set_allow_accelerators(true);
-  AddChildView(web_view_.get());
+  AddChildView(web_view_);
   set_contents_view(web_view_);
   SetLayoutManager(std::make_unique<views::FillLayout>());
   // Pressing the Escape key will close the dialog.
@@ -410,7 +410,7 @@ void WebDialogView::AddNewContents(
 }
 
 void WebDialogView::LoadingStateChanged(content::WebContents* source,
-                                        bool should_show_loading_ui) {
+                                        bool to_different_document) {
   if (delegate_)
     delegate_->OnLoadingStateChanged(source);
 }

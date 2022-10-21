@@ -59,7 +59,7 @@ namespace {
 constexpr char kInDevModeKey[] = "inDevMode";
 constexpr char kShowActivityLogKey[] = "showActivityLog";
 constexpr char kLoadTimeClassesKey[] = "loadTimeClasses";
-constexpr char kEnableEnhancedSiteControls[] = "enableEnhancedSiteControls";
+constexpr char kUseNewSiteAccessPage[] = "useNewSiteAccessPage";
 
 std::string GetLoadTimeClasses(bool in_dev_mode) {
   return in_dev_mode ? "in-dev-mode" : std::string();
@@ -150,10 +150,6 @@ content::WebUIDataSource* CreateExtensionsSource(Profile* profile,
     {"itemDependencies", IDS_EXTENSIONS_ITEM_DEPENDENCIES},
     {"itemDependentEntry", IDS_EXTENSIONS_DEPENDENT_ENTRY},
     {"itemDetails", IDS_EXTENSIONS_ITEM_DETAILS},
-    {"itemDetailsBackButtonAriaLabel",
-     IDS_EXTENSIONS_DETAILS_BACK_BUTTON_ARIA_LABEL},
-    {"itemDetailsBackButtonRoleDescription",
-     IDS_EXTENSIONS_DETAILS_BACK_BUTTON_ARIA_ROLE_DESCRIPTION},
     {"itemErrors", IDS_EXTENSIONS_ITEM_ERRORS},
     {"accessibilityErrorLine", IDS_EXTENSIONS_ACCESSIBILITY_ERROR_LINE},
     {"accessibilityErrorMultiLine",
@@ -195,6 +191,7 @@ content::WebUIDataSource* CreateExtensionsSource(Profile* profile,
     {"itemPermissionsEmpty", IDS_EXTENSIONS_ITEM_PERMISSIONS_EMPTY},
     {"itemRemoveExtension", IDS_EXTENSIONS_ITEM_REMOVE_EXTENSION},
     {"itemSiteAccess", IDS_EXTENSIONS_ITEM_SITE_ACCESS},
+    {"itemSiteAccessSublabel", IDS_EXTENSIONS_ITEM_SITE_ACCESS_SUBLABEL},
     {"itemSiteAccessAddHost", IDS_EXTENSIONS_ITEM_SITE_ACCESS_ADD_HOST},
     {"itemSiteAccessEmpty", IDS_EXTENSIONS_ITEM_SITE_ACCESS_EMPTY},
     {"itemSource", IDS_EXTENSIONS_ITEM_SOURCE},
@@ -224,6 +221,7 @@ content::WebUIDataSource* CreateExtensionsSource(Profile* profile,
     {"loadErrorRetry", IDS_EXTENSIONS_LOAD_ERROR_RETRY},
     {"loadingActivities", IDS_EXTENSIONS_LOADING_ACTIVITIES},
     {"missingOrUninstalledExtension", IDS_MISSING_OR_UNINSTALLED_EXTENSION},
+    {"newItemSiteAccessTitle", IDS_EXTENSIONS_ITEM_SITE_ACCESS_NEW},
     {"noActivities", IDS_EXTENSIONS_NO_ACTIVITIES},
     {"noErrorsToShow", IDS_EXTENSIONS_ERROR_NO_ERRORS_CODE_MESSAGE},
     {"runtimeHostsDialogInputError",
@@ -241,8 +239,6 @@ content::WebUIDataSource* CreateExtensionsSource(Profile* profile,
     {"packDialogKeyFile", IDS_EXTENSIONS_PACK_DIALOG_KEY_FILE_LABEL},
     {"packDialogContent", IDS_EXTENSION_PACK_DIALOG_HEADING},
     {"packDialogConfirm", IDS_EXTENSIONS_PACK_DIALOG_CONFIRM_BUTTON},
-    {"sitePermissions", IDS_EXTENSIONS_SITE_PERMISSIONS},
-    {"sitePermissionsPageTitle", IDS_EXTENSIONS_SITE_PERMISSIONS_PAGE_TITLE},
     {"editShortcut", IDS_EXTENSIONS_EDIT_SHORTCUT},
     {"shortcutNotSet", IDS_EXTENSIONS_SHORTCUT_NOT_SET},
     {"shortcutScopeGlobal", IDS_EXTENSIONS_SHORTCUT_SCOPE_GLOBAL},
@@ -336,7 +332,7 @@ content::WebUIDataSource* CreateExtensionsSource(Profile* profile,
   source->AddString(kLoadTimeClassesKey, GetLoadTimeClasses(in_dev_mode));
 
   source->AddBoolean(
-      kEnableEnhancedSiteControls,
+      kUseNewSiteAccessPage,
       base::FeatureList::IsEnabled(features::kExtensionsMenuAccessControl));
 
   return source;

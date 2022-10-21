@@ -24,7 +24,6 @@
 
 #include <algorithm>
 #include <string>
-#include <tuple>
 
 #include "base/base_switches.h"
 #include "base/command_line.h"
@@ -33,6 +32,7 @@
 #include "base/lazy_instance.h"
 #include "base/linux_util.h"
 #include "base/logging.h"
+#include "base/macros.h"
 #include "base/path_service.h"
 #include "base/posix/eintr_wrapper.h"
 #include "base/posix/global_descriptors.h"
@@ -85,7 +85,7 @@
 // where we either a) know the call cannot fail, or b) there is nothing we
 // can do when a call fails, we mark the return code as ignored. This avoids
 // spurious compiler warnings.
-#define IGNORE_RET(x) std::ignore = x
+#define IGNORE_RET(x) ignore_result(x)
 
 using crash_reporter::GetCrashReporterClient;
 using google_breakpad::ExceptionHandler;

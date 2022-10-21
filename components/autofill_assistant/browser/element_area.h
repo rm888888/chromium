@@ -8,23 +8,23 @@
 #include <vector>
 
 #include "base/callback.h"
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "base/timer/timer.h"
 #include "components/autofill_assistant/browser/client_settings.h"
 #include "components/autofill_assistant/browser/rectf.h"
 #include "components/autofill_assistant/browser/selector.h"
-#include "components/autofill_assistant/browser/web/web_controller.h"
 
 namespace autofill_assistant {
+class ScriptExecutorDelegate;
 
 // A helper that keeps track of the area on the screen that correspond to an
 // changeable set of elements.
 class ElementArea {
  public:
-  // |settings| and |web_controller| must remain valid for the lifetime of this
+  // |delegate| and |settings| must remain valid for the lifetime of this
   // instance.
-  explicit ElementArea(ClientSettings* settings, WebController* web_controller);
+  explicit ElementArea(ScriptExecutorDelegate* delegate);
 
   ElementArea(const ElementArea&) = delete;
   ElementArea& operator=(const ElementArea&) = delete;
@@ -130,8 +130,7 @@ class ElementArea {
   void OnGetVisualViewport(const ClientStatus& status, const RectF& rect);
   void ReportUpdate();
 
-  const raw_ptr<ClientSettings> settings_;
-  const raw_ptr<WebController> web_controller_;
+  ScriptExecutorDelegate* const delegate_;
   std::vector<Rectangle> rectangles_;
 
   // If true, u pdate for the visual viewport position is currently scheduled.

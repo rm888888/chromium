@@ -14,6 +14,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
 #include "chrome/browser/profiles/profile.h"
+#include "chrome/browser/ui/webui/ntp/app_launcher_handler.h"
 #include "chrome/browser/ui/webui/ntp/cookie_controls_handler.h"
 #include "chrome/browser/ui/webui/ntp/core_app_launcher_handler.h"
 #include "chrome/browser/ui/webui/ntp/ntp_resource_cache.h"
@@ -33,10 +34,6 @@
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/native_theme/native_theme.h"
 #include "url/gurl.h"
-
-#if !defined(OS_CHROMEOS)
-#include "chrome/browser/ui/webui/ntp/app_launcher_handler.h"
-#endif
 
 namespace {
 
@@ -89,9 +86,7 @@ NewTabUI::~NewTabUI() {}
 void NewTabUI::RegisterProfilePrefs(
     user_prefs::PrefRegistrySyncable* registry) {
   CoreAppLauncherHandler::RegisterProfilePrefs(registry);
-#if !defined(OS_CHROMEOS)
   AppLauncherHandler::RegisterProfilePrefs(registry);
-#endif
 }
 
 // static
@@ -176,7 +171,7 @@ void NewTabUI::NewTabHTMLSource::StartDataRequest(
   Profile* profile_for_window_type =
       web_contents
           ? Profile::FromBrowserContext(web_contents->GetBrowserContext())
-          : profile_.get();
+          : profile_;
 
   NTPResourceCache::WindowType win_type =
       NTPResourceCache::GetWindowType(profile_for_window_type);

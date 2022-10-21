@@ -10,7 +10,6 @@
 #include <string>
 #include <vector>
 
-#include "base/memory/raw_ptr.h"
 #include "build/build_config.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/accessibility/ax_enums.mojom-forward.h"
@@ -71,7 +70,7 @@ class ViewAXPlatformNodeDelegate : public ViewAccessibility,
   // codebase.
   gfx::NativeViewAccessible GetNativeViewAccessible() const;
   gfx::NativeViewAccessible GetNativeViewAccessible() override;
-  gfx::NativeViewAccessible GetParent() const override;
+  gfx::NativeViewAccessible GetParent() override;
   bool IsLeaf() const override;
   bool IsInvisibleOrIgnored() const override;
   bool IsFocused() const override;
@@ -149,7 +148,7 @@ class ViewAXPlatformNodeDelegate : public ViewAccessibility,
 
   // We own this, but it is reference-counted on some platforms so we can't use
   // a unique_ptr. It is destroyed in the destructor.
-  raw_ptr<ui::AXPlatformNode> ax_platform_node_ = nullptr;
+  ui::AXPlatformNode* ax_platform_node_ = nullptr;
 
   mutable ui::AXNodeData data_;
 };

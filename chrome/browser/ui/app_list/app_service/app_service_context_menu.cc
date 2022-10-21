@@ -4,7 +4,6 @@
 
 #include "chrome/browser/ui/app_list/app_service/app_service_context_menu.h"
 
-#include "ash/public/cpp/app_list/app_list_types.h"
 #include "ash/public/cpp/app_menu_constants.h"
 #include "ash/public/cpp/new_window_delegate.h"
 #include "base/bind.h"
@@ -27,10 +26,6 @@
 #include "chrome/browser/profiles/profile.h"
 #include "chrome/browser/ui/app_list/app_context_menu_delegate.h"
 #include "chrome/browser/ui/app_list/app_list_controller_delegate.h"
-#include "chrome/browser/ui/app_list/app_list_model_updater.h"
-#include "chrome/browser/ui/app_list/app_list_syncable_service.h"
-#include "chrome/browser/ui/app_list/app_list_syncable_service_factory.h"
-#include "chrome/browser/ui/app_list/chrome_app_list_model_updater.h"
 #include "chrome/browser/ui/app_list/extension_app_utils.h"
 #include "chrome/browser/ui/ash/shelf/standalone_browser_extension_app_context_menu.h"
 #include "chrome/browser/ui/chrome_pages.h"
@@ -40,19 +35,10 @@
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/context_menu_params.h"
-#include "ui/base/l10n/l10n_util.h"
 #include "ui/display/scoped_display_for_new_windows.h"
 #include "ui/gfx/vector_icon_types.h"
 
 namespace {
-
-void RequestAppListSort(Profile* profile, ash::AppListSortOrder order) {
-  ChromeAppListModelUpdater* model_updater =
-      static_cast<ChromeAppListModelUpdater*>(
-          app_list::AppListSyncableServiceFactory::GetForProfile(profile)
-              ->GetModelUpdater());
-  model_updater->RequestAppListSort(order);
-}
 
 bool MenuItemHasLauncherContext(const extensions::MenuItem* item) {
   return item->contexts().Contains(extensions::MenuItem::LAUNCHER);
@@ -125,11 +111,9 @@ AppServiceContextMenu::AppServiceContextMenu(
     app_list::AppContextMenuDelegate* delegate,
     Profile* profile,
     const std::string& app_id,
-    AppListControllerDelegate* controller,
-    bool add_sort_options)
+    AppListControllerDelegate* controller)
     : AppContextMenu(delegate, profile, app_id, controller),
-      proxy_(apps::AppServiceProxyFactory::GetForProfile(profile)),
-      add_sort_options_(add_sort_options) {
+      proxy_(apps::AppServiceProxyFactory::GetForProfile(profile)) {
   proxy_->AppRegistryCache().ForOneApp(
       app_id, [this](const apps::AppUpdate& update) {
         app_type_ = apps_util::IsInstalled(update.Readiness())
@@ -137,7 +121,7 @@ AppServiceContextMenu::AppServiceContextMenu(
                         : apps::mojom::AppType::kUnknown;
       });
 
-  if (app_type_ == apps::mojom::AppType::kStandaloneBrowserChromeApp) {
+  if (app_type_ == apps::mojom::AppType::kStandaloneBrowserExtension) {
     standalone_browser_extension_menu_ =
         std::make_unique<StandaloneBrowserExtensionAppContextMenu>(
             app_id, StandaloneBrowserExtensionAppContextMenu::Source::kAppList);
@@ -154,7 +138,7 @@ void AppServiceContextMenu::GetMenuModel(GetMenuModelCallback callback) {
 
   // StandaloneBrowserExtension handles its own context menus. Forward to that
   // class.
-  if (app_type_ == apps::mojom::AppType::kStandaloneBrowserChromeApp) {
+  if (app_type_ == apps::mojom::AppType::kStandaloneBrowserExtension) {
     standalone_browser_extension_menu_->GetMenuModel(std::move(callback));
     return;
   }
@@ -211,8 +195,7 @@ void AppServiceContextMenu::ExecuteCommand(int command_id, int event_flags) {
       const bool is_incognito =
           command_id == ash::APP_CONTEXT_MENU_NEW_INCOGNITO_WINDOW;
       if (app_type_ == apps::mojom::AppType::kStandaloneBrowser) {
-        crosapi::BrowserManager::Get()->NewWindow(
-            is_incognito, /*should_trigger_session_restore=*/false);
+        crosapi::BrowserManager::Get()->NewWindow(is_incognito);
       } else {
         // Create browser asynchronously to prevent this AppServiceContextMenu
         // object to be deleted when the browser window is shown.
@@ -232,19 +215,6 @@ void AppServiceContextMenu::ExecuteCommand(int command_id, int event_flags) {
         LOG(ERROR) << "App " << app_id()
                    << " should not have a shutdown guest OS command.";
       }
-      break;
-
-    case ash::REORDER_BY_NAME_ALPHABETICAL:
-      RequestAppListSort(profile(), ash::AppListSortOrder::kNameAlphabetical);
-      break;
-
-    case ash::REORDER_BY_NAME_REVERSE_ALPHABETICAL:
-      RequestAppListSort(profile(),
-                         ash::AppListSortOrder::kNameReverseAlphabetical);
-      break;
-
-    case ash::REORDER_BY_COLOR:
-      RequestAppListSort(profile(), ash::AppListSortOrder::kColor);
       break;
 
     default:
@@ -300,7 +270,7 @@ bool AppServiceContextMenu::IsCommandIdChecked(int command_id) const {
       }
       return AppContextMenu::IsCommandIdChecked(command_id);
 
-    case apps::mojom::AppType::kChromeApp:
+    case apps::mojom::AppType::kExtension:
       if (command_id >= ash::USE_LAUNCH_TYPE_COMMAND_START &&
           command_id < ash::USE_LAUNCH_TYPE_COMMAND_END) {
         return static_cast<int>(
@@ -314,15 +284,15 @@ bool AppServiceContextMenu::IsCommandIdChecked(int command_id) const {
       return AppContextMenu::IsCommandIdChecked(command_id);
 
     case apps::mojom::AppType::kArc:
-      [[fallthrough]];
+      FALLTHROUGH;
     case apps::mojom::AppType::kCrostini:
-      [[fallthrough]];
+      FALLTHROUGH;
     case apps::mojom::AppType::kBuiltIn:
-      [[fallthrough]];
+      FALLTHROUGH;
     case apps::mojom::AppType::kPluginVm:
-      [[fallthrough]];
+      FALLTHROUGH;
     case apps::mojom::AppType::kBorealis:
-      [[fallthrough]];
+      FALLTHROUGH;
     default:
       return AppContextMenu::IsCommandIdChecked(command_id);
   }
@@ -357,7 +327,7 @@ void AppServiceContextMenu::OnGetMenuModel(
   // The special rule to ensure that FilesManager's first menu item is "New
   // window".
   const bool build_extension_menu_before_default =
-      (app_type_ == apps::mojom::AppType::kChromeApp &&
+      (app_type_ == apps::mojom::AppType::kExtension &&
        app_id() == extension_misc::kFilesManagerAppId);
 
   if (build_extension_menu_before_default)
@@ -386,29 +356,6 @@ void AppServiceContextMenu::OnGetMenuModel(
                                           menu_model.get(),
                                           app_shortcut_items_.get());
     }
-  }
-
-  if (add_sort_options_) {
-    reorder_submenu_ = std::make_unique<ui::SimpleMenuModel>(this);
-    // As all the options below are only for tests and are expected to change in
-    // the future, the strings are directly written as the parameters.
-    reorder_submenu_->AddItemWithIcon(
-        ash::REORDER_BY_NAME_ALPHABETICAL,
-        l10n_util::GetStringUTF16(IDS_APP_LIST_CONTEXT_MENU_REORDER_BY_NAME),
-        ui::ImageModel::FromVectorIcon(GetMenuItemVectorIcon(
-            ash::REORDER_BY_NAME_ALPHABETICAL, /*string_id=*/-1)));
-    reorder_submenu_->AddItemWithIcon(
-        ash::REORDER_BY_COLOR,
-        l10n_util::GetStringUTF16(IDS_APP_LIST_CONTEXT_MENU_REORDER_BY_COLOR),
-        ui::ImageModel::FromVectorIcon(
-            GetMenuItemVectorIcon(ash::REORDER_BY_COLOR, /*string_id=*/-1)));
-    menu_model->AddSeparator(ui::NORMAL_SEPARATOR);
-    menu_model->AddSubMenuWithIcon(
-        ash::REORDER_SUBMENU,
-        l10n_util::GetStringUTF16(IDS_APP_LIST_CONTEXT_MENU_REORDER_TITLE),
-        reorder_submenu_.get(),
-        ui::ImageModel::FromVectorIcon(
-            GetMenuItemVectorIcon(ash::REORDER_SUBMENU, /*string_id=*/-1)));
   }
 
   std::move(callback).Run(std::move(menu_model));
@@ -453,7 +400,7 @@ void AppServiceContextMenu::SetLaunchType(int command_id) {
         proxy_->SetWindowMode(app_id(), user_window_mode);
       return;
     }
-    case apps::mojom::AppType::kChromeApp: {
+    case apps::mojom::AppType::kExtension: {
       // Hosted apps can only toggle between LAUNCH_TYPE_WINDOW and
       // LAUNCH_TYPE_REGULAR.
       extensions::LaunchType launch_type =
@@ -465,15 +412,15 @@ void AppServiceContextMenu::SetLaunchType(int command_id) {
       return;
     }
     case apps::mojom::AppType::kArc:
-      [[fallthrough]];
+      FALLTHROUGH;
     case apps::mojom::AppType::kCrostini:
-      [[fallthrough]];
+      FALLTHROUGH;
     case apps::mojom::AppType::kBuiltIn:
-      [[fallthrough]];
+      FALLTHROUGH;
     case apps::mojom::AppType::kPluginVm:
-      [[fallthrough]];
+      FALLTHROUGH;
     case apps::mojom::AppType::kBorealis:
-      [[fallthrough]];
+      FALLTHROUGH;
     default:
       return;
   }

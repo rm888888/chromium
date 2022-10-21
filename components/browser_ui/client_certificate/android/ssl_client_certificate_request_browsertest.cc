@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "base/callback_forward.h"
-#include "base/run_loop.h"
 #include "components/browser_ui/client_certificate/android/ssl_client_certificate_request.h"
 #include "content/public/browser/client_certificate_delegate.h"
 #include "content/public/browser/content_browser_client.h"
@@ -71,24 +69,25 @@ class SSLClientCertPendingRequestsPrerenderTest
       net::ClientCertIdentityList client_certs,
       std::unique_ptr<content::ClientCertificateDelegate> delegate) {
     auto cancellation_closure = ShowSSLClientCertificateSelector(
-        web_contents, cert_request_info, std::move(delegate));
+        web_contents, cert_request_info, nullptr);
 
-    if (quit_closure_)
-      std::move(quit_closure_).Run();
+    base::ThreadTaskRunnerHandle::Get()->PostTask(
+        FROM_HERE,
+        base::BindOnce(
+            [](base::OnceClosure cancellation_closure,
+               std::unique_ptr<content::ClientCertificateDelegate> delegate) {
+              if (cancellation_closure)
+                std::move(cancellation_closure).Run();
+              delegate->ContinueWithCertificate(nullptr, nullptr);
+            },
+            std::move(cancellation_closure), std::move(delegate)));
 
-    return cancellation_closure;
+    return base::OnceClosure();
   }
 
-  net::EmbeddedTestServer& https_server() { return https_server_; }
-
-  void SetQuitClosure(base::OnceClosure quit_closure) {
-    quit_closure_ = std::move(quit_closure);
-  }
-
- private:
+ protected:
   net::EmbeddedTestServer https_server_{net::EmbeddedTestServer::TYPE_HTTPS};
   content::test::PrerenderTestHelper prerender_helper_;
-  base::OnceClosure quit_closure_;
 };
 
 // Verifies that a prerendering navigation will not reset the the client
@@ -96,7 +95,7 @@ class SSLClientCertPendingRequestsPrerenderTest
 IN_PROC_BROWSER_TEST_F(SSLClientCertPendingRequestsPrerenderTest,
                        PrerendersDontResetCertRequestState) {
   const GURL initial_url =
-      https_server().GetURL(kOriginHostname, "/title1.html");
+      https_server_.GetURL(kOriginHostname, "/title1.html");
 
   // Navigate to an initial page.
   ASSERT_TRUE(content::NavigateToURL(web_contents(), initial_url));
@@ -105,8 +104,8 @@ IN_PROC_BROWSER_TEST_F(SSLClientCertPendingRequestsPrerenderTest,
   net::SSLServerConfig ssl_config;
   ssl_config.client_cert_type =
       net::SSLServerConfig::ClientCertType::REQUIRE_CLIENT_CERT;
-  https_server().ResetSSLConfig(net::EmbeddedTestServer::CERT_TEST_NAMES,
-                                ssl_config);
+  https_server_.ResetSSLConfig(net::EmbeddedTestServer::CERT_TEST_NAMES,
+                               ssl_config);
 
   // Add an iframe.
   EXPECT_TRUE(ExecJs(
@@ -115,9 +114,7 @@ IN_PROC_BROWSER_TEST_F(SSLClientCertPendingRequestsPrerenderTest,
                          "iframe.src = $1; "
                          "document.body.appendChild(iframe);",
                          initial_url)));
-  base::RunLoop run_loop;
-  SetQuitClosure(run_loop.QuitClosure());
-  run_loop.Run();
+  EXPECT_TRUE(content::WaitForLoadStop(web_contents()));
 
   // Check that the client certificate's dialog has been shown.
   EXPECT_EQ(1u,
@@ -126,12 +123,12 @@ IN_PROC_BROWSER_TEST_F(SSLClientCertPendingRequestsPrerenderTest,
   // Reset do not request the client certificate.
   ssl_config.client_cert_type =
       net::SSLServerConfig::ClientCertType::NO_CLIENT_CERT;
-  https_server().ResetSSLConfig(net::EmbeddedTestServer::CERT_TEST_NAMES,
-                                ssl_config);
+  https_server_.ResetSSLConfig(net::EmbeddedTestServer::CERT_TEST_NAMES,
+                               ssl_config);
 
   // Load a page in the prerender.
   const GURL prerendering_url =
-      https_server().GetURL(kOriginHostname, "/empty.html");
+      https_server_.GetURL(kOriginHostname, "/empty.html");
   prerender_helper().AddPrerender(prerendering_url);
 
   // Check that the prerending navigation did not affect the client

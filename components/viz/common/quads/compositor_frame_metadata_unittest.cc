@@ -34,6 +34,9 @@ bool AreLatencyInfosEqual(const ui::LatencyInfo& a, const ui::LatencyInfo& b) {
   return a.began() == b.began() && a.terminated() == b.terminated() &&
          a.coalesced() == b.coalesced() && a.trace_id() == b.trace_id() &&
          a.ukm_source_id() == b.ukm_source_id() &&
+         std::abs(a.scroll_update_delta() - b.scroll_update_delta()) < 1e-6 &&
+         std::abs(a.predicted_scroll_update_delta() -
+                  b.predicted_scroll_update_delta()) < 1e-6 &&
          a.gesture_scroll_id() == b.gesture_scroll_id();
 }
 
@@ -58,7 +61,7 @@ TEST(CompositorFrameMetadata, Clone) {
 
   CompositorFrameMetadata metadata;
   metadata.device_scale_factor = 12.3f;
-  metadata.root_scroll_offset = gfx::PointF(4.f, 5.f);
+  metadata.root_scroll_offset = gfx::Vector2dF(4.f, 5.f);
   metadata.page_scale_factor = 6.7f;
   metadata.scrollable_viewport_size = gfx::SizeF(89.0f, 12.3f);
   metadata.content_color_usage = gfx::ContentColorUsage::kHDR;

@@ -12,7 +12,6 @@ import warnings
 
 # Import all known tests
 from policy import *
-from connector import *
 
 
 def ParseArgs():

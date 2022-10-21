@@ -11,6 +11,7 @@
 #include "base/callback_helpers.h"
 #include "base/i18n/time_formatting.h"
 #include "base/json/json_writer.h"
+#include "base/macros.h"
 #include "base/memory/ptr_util.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_piece.h"
@@ -85,8 +86,8 @@ CertNodeBuilder::CertNodeBuilder(int label_id)
     : CertNodeBuilder(l10n_util::GetStringUTF8(label_id)) {}
 
 CertNodeBuilder& CertNodeBuilder::Payload(base::StringPiece payload) {
-  DCHECK(!node_.FindPath("payload.val"));
-  node_.SetStringPath("payload.val", payload);
+  DCHECK(!node_.HasKey("payload.val"));
+  node_.SetString("payload.val", payload);
   return *this;
 }
 

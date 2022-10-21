@@ -7,6 +7,7 @@
 
 #include <wayland-server-protocol.h>
 
+#include "base/macros.h"
 #include "ui/ozone/platform/wayland/test/global_object.h"
 
 namespace wl {

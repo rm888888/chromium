@@ -59,14 +59,11 @@ void OnPaymentAppCreated(const JavaRef<jobject>& jcallback,
       payments::JniPaymentApp::Create(env, std::move(payment_app)));
 }
 
-void OnPaymentAppCreationError(
-    const JavaRef<jobject>& jcallback,
-    const std::string& error_message,
-    payments::AppCreationFailureReason error_reason) {
+void OnPaymentAppCreationError(const JavaRef<jobject>& jcallback,
+                               const std::string& error_message) {
   JNIEnv* env = AttachCurrentThread();
   Java_PaymentAppServiceCallback_onPaymentAppCreationError(
-      env, jcallback, ConvertUTF8ToJavaString(env, error_message),
-      static_cast<jint>(error_reason));
+      env, jcallback, ConvertUTF8ToJavaString(env, error_message));
 }
 
 void OnDoneCreatingPaymentApps(const JavaRef<jobject>& jcallback) {
@@ -339,9 +336,8 @@ bool PaymentAppServiceBridge::SkipCreatingNativePaymentApps() const {
 }
 
 void PaymentAppServiceBridge::OnPaymentAppCreationError(
-    const std::string& error_message,
-    AppCreationFailureReason error_reason) {
-  payment_app_creation_error_callback_.Run(error_message, error_reason);
+    const std::string& error_message) {
+  payment_app_creation_error_callback_.Run(error_message);
 }
 
 void PaymentAppServiceBridge::OnDoneCreatingPaymentApps() {

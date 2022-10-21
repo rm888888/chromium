@@ -11,13 +11,11 @@
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/location.h"
-#include "base/memory/raw_ptr.h"
 #include "base/metrics/histogram_macros.h"
 #include "base/threading/sequenced_task_runner_handle.h"
 #include "base/threading/thread_restrictions.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "base/time/time.h"
-#include "build/build_config.h"
 #include "components/cronet/host_cache_persistence_manager.h"
 #include "components/prefs/json_pref_store.h"
 #include "components/prefs/pref_change_registrar.h"
@@ -134,7 +132,7 @@ class PrefServiceAdapter : public net::HttpServerProperties::PrefDelegate {
   }
 
  private:
-  raw_ptr<PrefService> pref_service_;
+  PrefService* pref_service_;
   const std::string path_;
   PrefChangeRegistrar pref_change_registrar_;
 };  // class PrefServiceAdapter
@@ -179,12 +177,11 @@ class NetworkQualitiesPrefDelegateImpl
             weak_ptr_factory_.GetWeakPtr()),
         base::Seconds(kUpdatePrefsDelaySeconds));
   }
-  // TODO(crbug.com/1187061): Refactor this to remove DictionaryValue.
   std::unique_ptr<base::DictionaryValue> GetDictionaryValue() override {
     DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
     UMA_HISTOGRAM_EXACT_LINEAR("NQE.Prefs.ReadCount", 1, 2);
-    return base::DictionaryValue::From(base::Value::ToUniquePtrValue(
-        pref_service_->GetDictionary(kNetworkQualitiesPref)->Clone()));
+    return pref_service_->GetDictionary(kNetworkQualitiesPref)
+        ->CreateDeepCopy();
   }
 
  private:
@@ -196,7 +193,7 @@ class NetworkQualitiesPrefDelegateImpl
     lossy_prefs_writing_task_posted_ = false;
   }
 
-  raw_ptr<PrefService> pref_service_;
+  PrefService* pref_service_;
 
   // True if the task that schedules the writing of the lossy prefs has been
   // posted.

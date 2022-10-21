@@ -21,8 +21,6 @@ class Profile;
 
 namespace web_app {
 
-class WebAppProvider;
-
 // Returns the system app type for the given App ID.
 absl::optional<SystemAppType> GetSystemWebAppTypeForAppId(Profile* profile,
                                                           AppId app_id);
@@ -42,7 +40,7 @@ struct SystemAppLaunchParams {
   ~SystemAppLaunchParams();
 
   // If provided launches System Apps into |url|, instead of its start_url (as
-  // specified its WebAppInstallInfo). Mutually exclusive with non-empty
+  // specified its WebApplicationInfo). Mutually exclusive with non-empty
   // |launch_paths|.
   absl::optional<GURL> url;
 
@@ -52,7 +50,7 @@ struct SystemAppLaunchParams {
 
   // If non-empty, specifies files passed to Web File Handling. Apps need to
   // have "FileHandling" origin trial in its SystemAppInfo, and file handlers
-  // in its WebAppInstallInfo. Mutually exclusive with |url|.
+  // in its WebApplicationInfo. Mutually exclusive with |url|.
   std::vector<base::FilePath> launch_paths;
 };
 
@@ -83,12 +81,6 @@ void LaunchSystemWebAppAsync(
 // executing). Useful for testing SWA launch behaviors.
 void FlushSystemWebAppLaunchesForTesting(Profile* profile);
 
-// Utility function to set up launch files and launch directory as appropriate.
-void SetLaunchFiles(bool should_include_launch_directory,
-                    const apps::AppLaunchParams& params,
-                    content::WebContents* web_contents,
-                    WebAppProvider* provider);
-
 // Implementation of LaunchSystemWebApp. Do not use this before discussing your
 // use case with the System Web Apps team.
 Browser* LaunchSystemWebAppImpl(Profile* profile,
@@ -96,12 +88,12 @@ Browser* LaunchSystemWebAppImpl(Profile* profile,
                                 const GURL& url,
                                 const apps::AppLaunchParams& params);
 
-// Returns a browser that is hosting the given system |app_type|,
-// |browser_type| and |url| (if not empty) or nullptr if not found.
-Browser* FindSystemWebAppBrowser(Profile* profile,
-                                 SystemAppType app_type,
-                                 Browser::Type browser_type = Browser::TYPE_APP,
-                                 const GURL& url = GURL());
+// Returns a browser that is hosting the given system app type and browser type,
+// or nullptr if not found.
+Browser* FindSystemWebAppBrowser(
+    Profile* profile,
+    SystemAppType app_type,
+    Browser::Type browser_type = Browser::TYPE_APP);
 
 // Returns true if the |browser| is a system web app.
 bool IsSystemWebApp(Browser* browser);

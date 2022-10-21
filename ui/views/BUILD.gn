@@ -496,7 +496,10 @@ component("views") {
   ]
 
   sources += get_target_outputs(":views_vector_icons")
-  configs += [ "//build/config:precompiled_headers" ]
+  configs += [
+    "//build/config:precompiled_headers",
+    "//build/config/compiler:noshadowing",
+  ]
   defines = [ "VIEWS_IMPLEMENTATION" ]
 
   deps = [
@@ -534,7 +537,7 @@ component("views") {
     "//ui/accessibility:ax_enums_mojo",
     "//ui/base",
     "//ui/base/clipboard",
-    "//ui/base/cursor",
+    "//ui/base/cursor:cursor_base",
     "//ui/base/dragdrop:types",
     "//ui/base/dragdrop/mojom:mojom_headers",
     "//ui/base/ime/init",
@@ -609,8 +612,6 @@ component("views") {
       "accessibility/ax_virtual_view_mac.mm",
       "cocoa/drag_drop_client_mac.h",
       "cocoa/drag_drop_client_mac.mm",
-      "cocoa/native_widget_mac_event_monitor.h",
-      "cocoa/native_widget_mac_event_monitor.mm",
       "cocoa/native_widget_mac_ns_window_host.mm",
       "cocoa/text_input_host.h",
       "cocoa/text_input_host.mm",
@@ -766,7 +767,6 @@ component("views") {
     }
     deps += [
       "//ui/aura",
-      "//ui/base/cursor/mojom:cursor_type_shared",
       "//ui/events",
       "//ui/platform_window",
       "//ui/platform_window/wm",
@@ -795,7 +795,10 @@ component("views") {
         "widget/desktop_aura/desktop_screen_position_client.cc",
         "widget/desktop_aura/desktop_window_tree_host.cc",
       ]
-      public_deps += [ "//ui/aura/cursor" ]
+      public_deps += [
+        "//ui/base/cursor",
+        "//ui/base/cursor/mojom:cursor_type",
+      ]
       if (is_win) {
         public += [ "widget/desktop_aura/desktop_window_tree_host_win.h" ]
         sources += [

@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "ash/components/drivefs/mojom/drivefs.mojom.h"
+#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "base/sequence_checker.h"
 #include "base/task/sequenced_task_runner.h"
@@ -16,6 +17,7 @@
 #include "chrome/browser/ash/drive/drive_integration_service.h"
 #include "chrome/browser/ui/app_list/search/files/file_result.h"
 #include "chrome/browser/ui/app_list/search/files/item_suggest_cache.h"
+#include "chrome/browser/ui/app_list/search/ranking/score_normalizer.h"
 #include "chrome/browser/ui/app_list/search/search_provider.h"
 #include "chromeos/dbus/power/power_manager_client.h"
 #include "components/session_manager/core/session_manager.h"
@@ -53,10 +55,9 @@ class ZeroStateDriveProvider : public SearchProvider,
       const power_manager::ScreenIdleState& proto) override;
 
   // SearchProvider:
-  void StartZeroState() override;
   void AppListShown() override;
-  ash::AppListSearchResultType ResultType() const override;
-  bool ShouldBlockZeroState() const override;
+  ash::AppListSearchResultType ResultType() override;
+  void Start(const std::u16string& query) override;
 
   void set_session_manager_for_testing(
       session_manager::SessionManager* session_manager) {
@@ -121,6 +122,9 @@ class ZeroStateDriveProvider : public SearchProvider,
   // Whether the suggested files feature is enabled. True if both the experiment
   // is enabled, and the suggested content toggle is enabled.
   const bool suggested_files_enabled_;
+
+  // Score normalizer for Finch experiment. Nullopt if experiment disabled.
+  absl::optional<ScoreNormalizer> normalizer_;
 
   // Whether we have sent at least one request to ItemSuggest to warm up the
   // results cache.

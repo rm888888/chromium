@@ -6,7 +6,6 @@ import("//build/buildflag_header.gni")
 import("//build/config/ui.gni")
 import("//components/vector_icons/vector_icons.gni")
 import("//device/vr/buildflags/buildflags.gni")
-import("//extensions/buildflags/buildflags.gni")
 import("//testing/libfuzzer/fuzzer_test.gni")
 import("//third_party/protobuf/proto_library.gni")
 
@@ -49,6 +48,10 @@ aggregate_vector_icons("omnibox_vector_icons") {
     "drive_video.icon",
     "extension_app.icon",
     "find_in_page.icon",
+    "google_calendar.icon",
+    "google_keep_note.icon",
+    "google_sites.icon",
+    "google_super_g.icon",
     "http.icon",
     "https_valid_in_chip.icon",
     "incognito.icon",
@@ -290,15 +293,6 @@ static_library("browser") {
     deps += [ "//components/keyed_service/content" ]
   }
 
-  if (enable_extensions) {
-    sources += [
-      "omnibox_input_watcher.cc",
-      "omnibox_input_watcher.h",
-      "omnibox_suggestions_watcher.cc",
-      "omnibox_suggestions_watcher.h",
-    ]
-  }
-
   if (is_android) {
     sources += [
       "autocomplete_match_android.cc",
@@ -337,7 +331,6 @@ static_library("location_bar") {
   ]
   deps = [
     ":buildflags",
-    "//build:chromeos_buildflags",
     "//components/dom_distiller/core:core",
     "//components/search_engines",
     "//components/strings",
@@ -348,10 +341,6 @@ static_library("location_bar") {
     "//ui/base",
     "//ui/gfx",
   ]
-
-  if (is_chromeos) {
-    deps += [ "//chromeos/crosapi/cpp:cpp" ]
-  }
 
   if ((!is_android || enable_vr) && !is_ios) {
     deps += [ ":vector_icons" ]
@@ -407,7 +396,6 @@ if (is_android) {
       "android/java/src/org/chromium/components/omnibox/SecurityButtonAnimationDelegate.java",
       "android/java/src/org/chromium/components/omnibox/SecurityStatusIcon.java",
       "android/java/src/org/chromium/components/omnibox/SuggestionAnswer.java",
-      "android/java/src/org/chromium/components/omnibox/action/OmniboxPedal.java",
     ]
 
     resources_package = "org.chromium.components.omnibox"
@@ -432,7 +420,6 @@ if (is_android) {
 
   java_cpp_enum("browser_java_enums_srcjar") {
     sources = [
-      "actions/omnibox_pedal_concepts.h",
       "autocomplete_match.h",
       "autocomplete_match_type.h",
       "suggestion_answer.h",
@@ -446,7 +433,6 @@ if (is_android) {
       "android/java/src/org/chromium/components/omnibox/AutocompleteSchemeClassifier.java",
       "android/java/src/org/chromium/components/omnibox/OmniboxUrlEmphasizer.java",
       "android/java/src/org/chromium/components/omnibox/SuggestionAnswer.java",
-      "android/java/src/org/chromium/components/omnibox/action/OmniboxPedal.java",
     ]
   }
 }

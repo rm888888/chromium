@@ -6,7 +6,6 @@
 #define CHROME_UPDATER_PREFS_IMPL_H_
 
 #include <memory>
-#include <string>
 
 #include "chrome/updater/prefs.h"
 
@@ -47,11 +46,9 @@ class UpdaterPrefsImpl : public LocalPrefs, public GlobalPrefs {
 
   // Overrides for GlobalPrefs
   std::string GetActiveVersion() const override;
-  void SetActiveVersion(const std::string& value) override;
+  void SetActiveVersion(std::string value) override;
   bool GetSwapping() const override;
   void SetSwapping(bool value) override;
-  bool GetMigratedLegacyUpdaters() const override;
-  void SetMigratedLegacyUpdaters() override;
   int CountServerStarts() override;
 
  protected:

@@ -99,7 +99,7 @@ CommandSource::CommandResults WindowCommandSource::GetCommands(
     results.push_back(std::move(verb));
   }
   score = finder.Find(merge_title, &ranges);
-  if (score > 0 && !browser->is_type_devtools()) {
+  if (score > 0) {
     auto verb = std::make_unique<CommandItem>(merge_title, score, ranges);
     verb->command = std::make_pair(
         merge_title, base::BindRepeating(&MergeCommandsForWindowsMatching,

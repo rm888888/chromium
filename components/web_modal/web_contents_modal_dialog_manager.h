@@ -8,7 +8,7 @@
 #include <memory>
 
 #include "base/containers/circular_deque.h"
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "build/build_config.h"
 #include "components/web_modal/single_web_contents_dialog_manager.h"
 #include "components/web_modal/web_modal_export.h"
@@ -67,7 +67,7 @@ class WEB_MODAL_EXPORT WebContentsModalDialogManager
     }
 
    private:
-    raw_ptr<WebContentsModalDialogManager> manager_;
+    WebContentsModalDialogManager* manager_;
   };
 
   // Closes all WebContentsModalDialogs.
@@ -100,7 +100,7 @@ class WEB_MODAL_EXPORT WebContentsModalDialogManager
   void WebContentsDestroyed() override;
 
   // Delegate for notifying our owner about stuff. Not owned by us.
-  raw_ptr<WebContentsModalDialogManagerDelegate> delegate_ = nullptr;
+  WebContentsModalDialogManagerDelegate* delegate_;
 
   // All active dialogs.
   base::circular_deque<DialogState> child_dialogs_;
@@ -109,7 +109,7 @@ class WEB_MODAL_EXPORT WebContentsModalDialogManager
   bool web_contents_is_hidden_;
 
   // True while closing the dialogs on WebContents close.
-  bool closing_all_dialogs_ = false;
+  bool closing_all_dialogs_;
 
   WEB_CONTENTS_USER_DATA_KEY_DECL();
 };

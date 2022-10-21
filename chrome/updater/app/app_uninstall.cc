@@ -10,6 +10,7 @@
 
 #include "base/bind.h"
 #include "base/command_line.h"
+#include "base/containers/contains.h"
 #include "base/files/file_enumerator.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
@@ -18,7 +19,6 @@
 #include "base/process/launch.h"
 #include "base/task/task_traits.h"
 #include "base/task/thread_pool.h"
-#include "base/threading/sequenced_task_runner_handle.h"
 #include "build/build_config.h"
 #include "chrome/updater/app/app.h"
 #include "chrome/updater/app/app_utils.h"
@@ -30,10 +30,10 @@
 
 #if defined(OS_WIN)
 #include "chrome/updater/win/setup/uninstall.h"
-#elif defined(OS_MAC)
+#endif
+
+#if defined(OS_MAC)
 #include "chrome/updater/mac/setup/setup.h"
-#elif defined(OS_LINUX)
-#include "chrome/updater/linux/setup/setup.h"
 #endif
 
 namespace updater {
@@ -84,7 +84,6 @@ class AppUninstall : public App {
  private:
   ~AppUninstall() override = default;
   void Initialize() override;
-  void Uninitialize() override;
   void FirstTaskRun() override;
 
   // Conditionally set, if prefs must be acquired for some uninstall scenarios.
@@ -98,10 +97,6 @@ void AppUninstall::Initialize() {
       base::CommandLine::ForCurrentProcess();
   if (command_line->HasSwitch(kUninstallIfUnusedSwitch))
     global_prefs_ = CreateGlobalPrefs(updater_scope());
-}
-
-void AppUninstall::Uninitialize() {
-  global_prefs_ = nullptr;
 }
 
 void AppUninstall::FirstTaskRun() {
@@ -119,7 +114,6 @@ void AppUninstall::FirstTaskRun() {
             },
             updater_scope()),
         base::BindOnce(&AppUninstall::Shutdown, this));
-    return;
   }
 
   if (command_line->HasSwitch(kUninstallSelfSwitch)) {
@@ -133,24 +127,22 @@ void AppUninstall::FirstTaskRun() {
 
   if (command_line->HasSwitch(kUninstallIfUnusedSwitch)) {
     CHECK(global_prefs_);
-    const bool should_uninstall = ShouldUninstall(
-        base::MakeRefCounted<PersistedData>(global_prefs_->GetPrefService())
-            ->GetAppIds(),
-        global_prefs_->CountServerStarts());
-    VLOG(1) << "ShouldUninstall returned: " << should_uninstall;
-    if (should_uninstall) {
+    if (ShouldUninstall(
+            base::MakeRefCounted<PersistedData>(global_prefs_->GetPrefService())
+                ->GetAppIds(),
+            global_prefs_->CountServerStarts())) {
       base::ThreadPool::PostTaskAndReplyWithResult(
           FROM_HERE, {base::MayBlock()},
           base::BindOnce(&Uninstall, updater_scope()),
-          base::BindOnce(&AppUninstall::Shutdown, this));
-    } else {
-      base::SequencedTaskRunnerHandle::Get()->PostTask(
-          FROM_HERE, base::BindOnce(&AppUninstall::Shutdown, this, 0));
+          base::BindOnce(
+              [](base::OnceCallback<void(int)> shutdown, int exit_code) {
+                // global_prefs is captured so that this process holds the prefs
+                // lock through uninstallation.
+                std::move(shutdown).Run(exit_code);
+              },
+              base::BindOnce(&AppUninstall::Shutdown, this)));
     }
-    return;
   }
-
-  NOTREACHED();
 }
 
 scoped_refptr<App> MakeAppUninstall() {

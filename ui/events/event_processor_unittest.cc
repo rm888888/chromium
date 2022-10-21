@@ -2,13 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include <tuple>
 #include <utility>
 #include <vector>
 
 #include "base/cxx17_backports.h"
 #include "base/memory/ptr_util.h"
-#include "base/memory/raw_ptr.h"
 #include "testing/gtest/include/gtest/gtest.h"
 #include "ui/events/event.h"
 #include "ui/events/event_target_iterator.h"
@@ -155,8 +153,8 @@ class ReDispatchEventHandler : public TestEventHandler {
   }
 
  private:
-  raw_ptr<EventProcessor> processor_;
-  raw_ptr<EventTarget> expected_target_;
+  EventProcessor* processor_;
+  EventTarget* expected_target_;
 };
 
 // Verifies that the phase and target information of an event is not mutated
@@ -186,7 +184,7 @@ TEST_F(EventProcessorTest, NestedEventProcessing) {
   // first event processor should be handled by |target_handler| instead.
   std::unique_ptr<TestEventHandler> target_handler(
       new ReDispatchEventHandler(second_processor.get(), root()->child_at(0)));
-  std::ignore = root()->child_at(0)->SetTargetHandler(target_handler.get());
+  ignore_result(root()->child_at(0)->SetTargetHandler(target_handler.get()));
 
   // Dispatch a mouse event to the tree of event targets owned by the first
   // event processor, checking in ReDispatchEventHandler that the phase and

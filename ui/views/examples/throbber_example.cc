@@ -6,7 +6,7 @@
 
 #include <memory>
 
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/views/controls/throbber.h"
 #include "ui/views/examples/grit/views_examples_resources.h"
@@ -54,7 +54,7 @@ class ThrobberView : public View {
   }
 
  private:
-  raw_ptr<Throbber> throbber_;
+  Throbber* throbber_;
   bool is_checked_ = false;
 };
 

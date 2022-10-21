@@ -10,6 +10,7 @@
 #include <string>
 
 #include "base/callback.h"
+#include "base/macros.h"
 #include "components/browsing_data/content/file_system_helper.h"
 
 namespace content {

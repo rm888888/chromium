@@ -714,9 +714,6 @@ bool TemplateURLRef::ParseParameter(size_t start,
                                         start));
   } else if (parameter == "google:pageClassification") {
     replacements->push_back(Replacement(GOOGLE_PAGE_CLASSIFICATION, start));
-  } else if (parameter == "google:clientCacheTimeToLive") {
-    replacements->push_back(
-        Replacement(GOOGLE_CLIENT_CACHE_TIME_TO_LIVE, start));
   } else if (parameter == "google:pathWildcard") {
     // Do nothing, we just want the path wildcard removed from the URL.
   } else if (parameter == "google:prefetchQuery") {
@@ -1136,17 +1133,6 @@ std::string TemplateURLRef::HandleReplacements(
         }
         break;
 
-      case GOOGLE_CLIENT_CACHE_TIME_TO_LIVE:
-        if (search_terms_args.search_terms.size() == 0 &&
-            search_terms_args.zero_suggest_cache_duration_sec > 0) {
-          HandleReplacement(
-              "ccttl",
-              base::NumberToString(
-                  search_terms_args.zero_suggest_cache_duration_sec),
-              *i, &url);
-        }
-        break;
-
       case GOOGLE_PREFETCH_QUERY: {
         const std::string& query = search_terms_args.prefetch_query;
         const std::string& type = search_terms_args.prefetch_query_type;
@@ -1424,9 +1410,10 @@ GURL TemplateURL::GenerateFaviconURL(const GURL& url) {
   DCHECK(url.is_valid());
   GURL::Replacements rep;
 
-  static const char kFaviconPath[] = "/favicon.ico";
+  const char favicon_path[] = "/favicon.ico";
+  int favicon_path_len = base::size(favicon_path) - 1;
 
-  rep.SetPathStr(kFaviconPath);
+  rep.SetPath(favicon_path, url::Component(0, favicon_path_len));
   rep.ClearUsername();
   rep.ClearPassword();
   rep.ClearQuery();

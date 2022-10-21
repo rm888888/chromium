@@ -11,19 +11,20 @@
 #include "ui/base/theme_provider.h"
 #include "ui/gfx/canvas.h"
 
-TopContainerBackground::TopContainerBackground(BrowserView* browser_view)
-    : browser_view_(browser_view) {}
+TopContainerBackground::TopContainerBackground(BrowserView* browser_view,int type)
+    : type_(type), browser_view_(browser_view) {}
 
 void TopContainerBackground::Paint(gfx::Canvas* canvas,
                                    views::View* view) const {
   PaintBackground(canvas, view, browser_view_,
-                  /*translate_view_coordinates=*/false);
+                  /*translate_view_coordinates=*/false,type_);
 }
 
 void TopContainerBackground::PaintBackground(gfx::Canvas* canvas,
                                              const views::View* view,
                                              const BrowserView* browser_view,
-                                             bool translate_view_coordinates) {
+                                             bool translate_view_coordinates,
+                                             int type) {
   const ui::ThemeProvider* const theme_provider = view->GetThemeProvider();
   if (theme_provider->HasCustomImage(IDR_THEME_TOOLBAR)) {
     // This is a recapitulation of the logic originally used to place the
@@ -47,6 +48,10 @@ void TopContainerBackground::PaintBackground(gfx::Canvas* canvas,
                          bounds.width(), bounds.height(), 1.0f,
                          SkTileMode::kRepeat, SkTileMode::kMirror);
   } else {
+      if(type == 0)
     canvas->DrawColor(theme_provider->GetColor(ThemeProperties::COLOR_TOOLBAR));
+    //update on 20220512
+    else
+      canvas->DrawColor(theme_provider->GetColor(ThemeProperties::COLOR_FRAME_ACTIVE));
   }
 }

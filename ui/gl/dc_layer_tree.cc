@@ -13,7 +13,6 @@
 #include "base/trace_event/trace_event.h"
 #include "ui/gl/direct_composition_child_surface_win.h"
 #include "ui/gl/direct_composition_surface_win.h"
-#include "ui/gl/gl_angle_util_win.h"
 #include "ui/gl/swap_chain_presenter.h"
 
 namespace gl {
@@ -41,15 +40,16 @@ DCLayerTree::DCLayerTree(bool disable_nv12_dynamic_textures,
 
 DCLayerTree::~DCLayerTree() = default;
 
-bool DCLayerTree::Initialize(HWND window) {
+bool DCLayerTree::Initialize(
+    HWND window,
+    Microsoft::WRL::ComPtr<ID3D11Device> d3d11_device,
+    Microsoft::WRL::ComPtr<IDCompositionDevice2> dcomp_device) {
+  DCHECK(window);
   window_ = window;
-  DCHECK(window_);
-
-  d3d11_device_ = QueryD3D11DeviceObjectFromANGLE();
-  DCHECK(d3d11_device_);
-
-  dcomp_device_ = DirectCompositionSurfaceWin::GetDirectCompositionDevice();
-  DCHECK(dcomp_device_);
+  DCHECK(d3d11_device);
+  d3d11_device_ = std::move(d3d11_device);
+  DCHECK(dcomp_device);
+  dcomp_device_ = std::move(dcomp_device);
 
   Microsoft::WRL::ComPtr<IDCompositionDesktopDevice> desktop_device;
   dcomp_device_.As(&desktop_device);

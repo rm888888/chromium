@@ -27,10 +27,8 @@
 #include "storage/browser/file_system/file_system_context.h"
 
 namespace ash {
-namespace {
 
-using ItemFailureToLaunchReason =
-    holding_space_metrics::ItemFailureToLaunchReason;
+namespace {
 
 // Helpers ---------------------------------------------------------------------
 
@@ -59,25 +57,6 @@ void GetFileInfo(Profile* profile,
                                         : absl::nullopt);
           },
           std::move(callback)));
-}
-
-// Returns the reason for failing to launch a holding space item for the
-// specified open operation `result`. Returns `absl::nullopt` on success.
-absl::optional<ItemFailureToLaunchReason> ToItemFailureToLaunchReason(
-    platform_util::OpenOperationResult result) {
-  switch (result) {
-    case platform_util::OpenOperationResult::OPEN_SUCCEEDED:
-      return absl::nullopt;
-    case platform_util::OpenOperationResult::OPEN_FAILED_PATH_NOT_FOUND:
-      return ItemFailureToLaunchReason::kPathNotFound;
-    case platform_util::OpenOperationResult::OPEN_FAILED_INVALID_TYPE:
-      return ItemFailureToLaunchReason::kInvalidType;
-    case platform_util::OpenOperationResult::
-        OPEN_FAILED_NO_HANLDER_FOR_FILE_TYPE:
-      return ItemFailureToLaunchReason::kNoHandlerForFileType;
-    case platform_util::OpenOperationResult::OPEN_FAILED_FILE_ERROR:
-      return ItemFailureToLaunchReason::kFileError;
-  }
 }
 
 }  // namespace
@@ -188,21 +167,20 @@ void HoldingSpaceClientImpl::OpenItems(
 
   for (const HoldingSpaceItem* item : items) {
     if (item->file_path().empty()) {
-      holding_space_metrics::RecordItemFailureToLaunch(
-          item->type(), item->file_path(),
-          ItemFailureToLaunchReason::kPathEmpty);
+      holding_space_metrics::RecordItemFailureToLaunch(item->type(),
+                                                       item->file_path());
       *complete_success_ptr = false;
       barrier_closure.Run();
       continue;
     }
     if (!item->progress().IsComplete()) {
-      const absl::optional<ItemFailureToLaunchReason> failure_to_launch_reason =
+      const bool success =
           GetHoldingSpaceKeyedService(profile_)->OpenItemWhenComplete(item);
-      if (failure_to_launch_reason) {
-        holding_space_metrics::RecordItemFailureToLaunch(
-            item->type(), item->file_path(), failure_to_launch_reason.value());
+      if (!success) {
+        holding_space_metrics::RecordItemFailureToLaunch(item->type(),
+                                                         item->file_path());
       }
-      *complete_success_ptr &= !failure_to_launch_reason.has_value();
+      *complete_success_ptr &= success;
       barrier_closure.Run();
       continue;
     }
@@ -214,10 +192,8 @@ void HoldingSpaceClientImpl::OpenItems(
                const base::FilePath& file_path, HoldingSpaceItem::Type type,
                const absl::optional<base::File::Info>& info) {
               if (!weak_ptr || !info.has_value()) {
-                holding_space_metrics::RecordItemFailureToLaunch(
-                    type, file_path,
-                    weak_ptr ? ItemFailureToLaunchReason::kFileInfoError
-                             : ItemFailureToLaunchReason::kShutdown);
+                holding_space_metrics::RecordItemFailureToLaunch(type,
+                                                                 file_path);
                 *complete_success = false;
                 barrier_closure.Run();
                 return;
@@ -235,8 +211,7 @@ void HoldingSpaceClientImpl::OpenItems(
                             result == platform_util::OPEN_SUCCEEDED;
                         if (!success) {
                           holding_space_metrics::RecordItemFailureToLaunch(
-                              type, file_path,
-                              ToItemFailureToLaunchReason(result).value());
+                              type, file_path);
                           *complete_success = false;
                         }
                         barrier_closure.Run();

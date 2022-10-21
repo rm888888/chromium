@@ -110,8 +110,8 @@ class PluginVmInstallerViewBrowserTest : public DialogBrowserTest {
   }
 
   void SetPluginVmImagePref(std::string url, std::string hash) {
-    DictionaryPrefUpdateDeprecated update(browser()->profile()->GetPrefs(),
-                                          plugin_vm::prefs::kPluginVmImage);
+    DictionaryPrefUpdate update(browser()->profile()->GetPrefs(),
+                                plugin_vm::prefs::kPluginVmImage);
     base::DictionaryValue* plugin_vm_image = update.Get();
     plugin_vm_image->SetKey("url", base::Value(url));
     plugin_vm_image->SetKey("hash", base::Value(hash));
@@ -168,8 +168,8 @@ class PluginVmInstallerViewBrowserTest : public DialogBrowserTest {
     browser()->profile()->GetPrefs()->SetBoolean(
         plugin_vm::prefs::kPluginVmAllowed, true);
     // Device policies.
-    scoped_testing_cros_settings_.device_settings()->Set(ash::kPluginVmAllowed,
-                                                         base::Value(true));
+    scoped_testing_cros_settings_.device_settings()->Set(
+        chromeos::kPluginVmAllowed, base::Value(true));
   }
 
   void SetUserWithAffiliation() {

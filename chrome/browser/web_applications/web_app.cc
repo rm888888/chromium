@@ -42,15 +42,6 @@ std::string ApiApprovalStateToString(ApiApprovalState state) {
   }
 }
 
-std::string OsIntegrationStateToString(OsIntegrationState state) {
-  switch (state) {
-    case OsIntegrationState::kEnabled:
-      return "kEnabled";
-    case OsIntegrationState::kDisabled:
-      return "kDisabled";
-  }
-}
-
 }  // namespace
 
 WebApp::WebApp(const AppId& app_id)
@@ -91,13 +82,9 @@ bool WebApp::HasAnySources() const {
 }
 
 bool WebApp::HasOnlySource(Source::Type source) const {
-  WebAppSources specified_sources;
+  Sources specified_sources;
   specified_sources[source] = true;
-  return HasAnySpecifiedSourcesAndNoOtherSources(sources_, specified_sources);
-}
-
-WebAppSources WebApp::GetSources() const {
-  return sources_;
+  return HasAnySpecifiedSourcesAndNoOtherSources(specified_sources);
 }
 
 bool WebApp::IsSynced() const {
@@ -125,7 +112,18 @@ bool WebApp::IsSubAppInstalledApp() const {
 }
 
 bool WebApp::CanUserUninstallWebApp() const {
-  return web_app::CanUserUninstallWebApp(sources_);
+  Sources specified_sources;
+  specified_sources[Source::kDefault] = true;
+  specified_sources[Source::kSync] = true;
+  specified_sources[Source::kWebAppStore] = true;
+  return HasAnySpecifiedSourcesAndNoOtherSources(specified_sources);
+}
+
+bool WebApp::HasAnySpecifiedSourcesAndNoOtherSources(
+    Sources specified_sources) const {
+  bool has_any_specified_sources = (sources_ & specified_sources).any();
+  bool has_no_other_sources = (sources_ & ~specified_sources).none();
+  return has_any_specified_sources && has_no_other_sources;
 }
 
 bool WebApp::WasInstalledByUser() const {
@@ -197,7 +195,7 @@ void WebApp::SetUserDisplayMode(DisplayMode user_display_mode) {
     case DisplayMode::kFullscreen:
     case DisplayMode::kWindowControlsOverlay:
       NOTREACHED();
-      [[fallthrough]];
+      FALLTHROUGH;
     case DisplayMode::kStandalone:
       user_display_mode_ = DisplayMode::kStandalone;
       break;
@@ -266,10 +264,6 @@ void WebApp::SetFileHandlerApprovalState(ApiApprovalState approval_state) {
   file_handler_approval_state_ = approval_state;
 }
 
-void WebApp::SetFileHandlerOsIntegrationState(OsIntegrationState state) {
-  file_handler_os_integration_state_ = state;
-}
-
 void WebApp::SetShareTarget(absl::optional<apps::ShareTarget> share_target) {
   share_target_ = std::move(share_target);
 }
@@ -305,7 +299,8 @@ void WebApp::SetNoteTakingNewNoteUrl(const GURL& note_taking_new_note_url) {
 }
 
 void WebApp::SetShortcutsMenuItemInfos(
-    std::vector<WebAppShortcutsMenuItemInfo> shortcuts_menu_item_infos) {
+    std::vector<WebApplicationShortcutsMenuItemInfo>
+        shortcuts_menu_item_infos) {
   shortcuts_menu_item_infos_ = std::move(shortcuts_menu_item_infos);
 }
 
@@ -353,6 +348,10 @@ void WebApp::SetManifestUrl(const GURL& manifest_url) {
 
 void WebApp::SetManifestId(const absl::optional<std::string>& manifest_id) {
   manifest_id_ = manifest_id;
+}
+
+void WebApp::SetFileHandlerPermissionBlocked(bool permission_blocked) {
+  file_handler_permission_blocked_ = permission_blocked;
 }
 
 void WebApp::SetWindowControlsOverlayEnabled(bool enabled) {
@@ -458,8 +457,8 @@ bool WebApp::operator==(const WebApp& other) const {
         app.manifest_url_,
         app.manifest_id_,
         app.client_data_.system_web_app_data,
+        app.file_handler_permission_blocked_,
         app.file_handler_approval_state_,
-        app.file_handler_os_integration_state_,
         app.window_controls_overlay_enabled_,
         app.is_storage_isolated_,
         app.launch_handler_,
@@ -562,12 +561,11 @@ base::Value WebApp::AsDebugValue() const {
     downloaded_shortcuts_menu_icons_sizes.Append(std::move(entry));
   }
 
+  root.SetBoolKey("file_handler_permission_blocked",
+                  file_handler_permission_blocked_);
+
   root.SetStringKey("file_handler_approval_state",
                     ApiApprovalStateToString(file_handler_approval_state_));
-
-  root.SetStringKey(
-      "file_handler_os_integration_state",
-      OsIntegrationStateToString(file_handler_os_integration_state_));
 
   root.SetKey("file_handlers", ConvertDebugValueList(file_handlers_));
 

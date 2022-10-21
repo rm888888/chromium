@@ -43,9 +43,9 @@ using ThrottleInterval = ZeroStateDriveProvider::ThrottleInterval;
 constexpr char kListSchema[] = "zero_state_drive://";
 constexpr char kChipSchema[] = "drive_chip://";
 
-// Outcome of a call to DriverZeroStateProvider::StartZeroState. These values
-// persist to logs. Entries should not be renumbered and numeric values should
-// never be reused.
+// Outcome of a call to DriverZeroStateProvider::Start. These values persist to
+// logs. Entries should not be renumbered and numeric values should never be
+// reused.
 enum class Status {
   kOk = 0,
   kDriveFSNotMounted = 1,
@@ -142,6 +142,18 @@ ZeroStateDriveProvider::ZeroStateDriveProvider(
   auto* power_manager = chromeos::PowerManagerClient::Get();
   if (power_manager)
     power_observation_.Observe(power_manager);
+
+  // Normalize scores if the launcher search normalization experiment is
+  // enabled, but don't if the categorical search experiment is also enabled.
+  // This is because categorical search normalizes scores from all providers
+  // during ranking, and we don't want to do it twice.
+  if (base::FeatureList::IsEnabled(
+          app_list_features::kEnableLauncherSearchNormalization) &&
+      !app_list_features::IsCategoricalSearchEnabled()) {
+    auto path =
+        RankerStateDirectory(profile).AppendASCII("score_norm_drive.pb");
+    normalizer_.emplace(path, ScoreNormalizer::Params());
+  }
 }
 
 ZeroStateDriveProvider::~ZeroStateDriveProvider() = default;
@@ -192,22 +204,23 @@ void ZeroStateDriveProvider::AppListShown() {
   item_suggest_cache_.UpdateCache();
 }
 
-ash::AppListSearchResultType ZeroStateDriveProvider::ResultType() const {
+ash::AppListSearchResultType ZeroStateDriveProvider::ResultType() {
   return ash::AppListSearchResultType::kZeroStateDrive;
 }
 
-bool ZeroStateDriveProvider::ShouldBlockZeroState() const {
-  return true;
-}
-
-void ZeroStateDriveProvider::StartZeroState() {
+void ZeroStateDriveProvider::Start(const std::u16string& query) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   ClearResultsSilently();
 
   // TODO(crbug.com/1034842): Add query latency metrics.
 
-  // Exit if drive fs isn't mounted, as we launch results via drive fs.
-  if (!drive_service_ || !drive_service_->IsMounted()) {
+  // Exit in three cases:
+  //  - this search has a non-empty query, we only handle zero-state.
+  //  - drive fs isn't mounted, as we launch results via drive fs.
+  const bool drive_fs_mounted = drive_service_ && drive_service_->IsMounted();
+  if (!query.empty()) {
+    return;
+  } else if (!drive_fs_mounted) {
     LogStatus(Status::kDriveFSNotMounted);
     return;
   }
@@ -263,6 +276,10 @@ void ZeroStateDriveProvider::OnFilePathsLocated(
     double score = 1.0 - (item_index / total_items);
     ++item_index;
 
+    if (normalizer_.has_value()) {
+      score = normalizer_->UpdateAndNormalize("results", score);
+    }
+
     // TODO(crbug.com/1034842): Use |cache_results_| to attach the session id to
     // the result.
 
@@ -296,7 +313,7 @@ std::unique_ptr<FileResult> ZeroStateDriveProvider::MakeListResult(
   return std::make_unique<FileResult>(
       kListSchema, ReparentToDriveMount(filepath, drive_service_),
       ash::AppListSearchResultType::kZeroStateDrive, GetDisplayType(),
-      relevance, std::u16string(), FileResult::Type::kFile, profile_);
+      relevance, profile_);
 }
 
 std::unique_ptr<FileResult> ZeroStateDriveProvider::MakeChipResult(
@@ -305,8 +322,7 @@ std::unique_ptr<FileResult> ZeroStateDriveProvider::MakeChipResult(
   return std::make_unique<FileResult>(
       kChipSchema, ReparentToDriveMount(filepath, drive_service_),
       ash::AppListSearchResultType::kDriveChip,
-      ash::SearchResultDisplayType::kChip, relevance, std::u16string(),
-      FileResult::Type::kFile, profile_);
+      ash::SearchResultDisplayType::kChip, relevance, profile_);
 }
 
 void ZeroStateDriveProvider::MaybeLogHypotheticalQuery() {

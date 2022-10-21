@@ -7,7 +7,6 @@
 
 #include <string>
 
-#include "base/memory/raw_ptr.h"
 #include "build/chromeos_buildflags.h"
 #include "components/sync/driver/sync_user_settings.h"
 
@@ -40,6 +39,9 @@ class TestSyncUserSettings : public SyncUserSettings {
   void SetSelectedOsTypes(bool sync_all_os_types,
                           UserSelectableOsTypeSet types) override;
   UserSelectableOsTypeSet GetRegisteredSelectableOsTypes() const override;
+
+  bool IsOsSyncFeatureEnabled() const override;
+  void SetOsSyncFeatureEnabled(bool enabled) override;
 #endif
 
   bool IsCustomPassphraseAllowed() const override;
@@ -71,11 +73,12 @@ class TestSyncUserSettings : public SyncUserSettings {
   void SetIsUsingExplicitPassphrase(bool enabled);
 
  private:
-  raw_ptr<TestSyncService> service_;
+  TestSyncService* service_;
 
   bool first_setup_complete_ = true;
   bool sync_everything_enabled_ = true;
 #if BUILDFLAG(IS_CHROMEOS_ASH)
+  bool os_sync_feature_enabled_ = true;
   bool sync_all_os_types_enabled_ = true;
 #endif
 

@@ -46,19 +46,16 @@ class MockPasswordStoreInterface : public PasswordStoreInterface {
               (override));
   MOCK_METHOD(void,
               GetLogins,
-              (const PasswordFormDigest&, base::WeakPtr<PasswordStoreConsumer>),
+              (const PasswordFormDigest&, PasswordStoreConsumer*),
               (override));
   MOCK_METHOD(void,
               GetAutofillableLogins,
-              (base::WeakPtr<PasswordStoreConsumer>),
+              (PasswordStoreConsumer*),
               (override));
-  MOCK_METHOD(void,
-              GetAllLogins,
-              (base::WeakPtr<PasswordStoreConsumer>),
-              (override));
+  MOCK_METHOD(void, GetAllLogins, (PasswordStoreConsumer*), (override));
   MOCK_METHOD(void,
               GetAllLoginsWithAffiliationAndBrandingInformation,
-              (base::WeakPtr<PasswordStoreConsumer>),
+              (PasswordStoreConsumer*),
               (override));
   MOCK_METHOD(void, AddObserver, (Observer*), (override));
   MOCK_METHOD(void, RemoveObserver, (Observer*), (override));

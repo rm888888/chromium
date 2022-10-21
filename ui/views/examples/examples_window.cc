@@ -3,7 +3,6 @@
 // found in the LICENSE file.
 
 #include "ui/views/examples/examples_window.h"
-#include "base/memory/raw_ptr.h"
 
 #include <algorithm>
 #include <iostream>
@@ -14,6 +13,7 @@
 
 #include "base/command_line.h"
 #include "base/containers/cxx20_erase.h"
+#include "base/macros.h"
 #include "base/run_loop.h"
 #include "base/stl_util.h"
 #include "base/strings/string_split.h"
@@ -215,12 +215,12 @@ class ExamplesWindowContents : public WidgetDelegateView {
   }
 
   static ExamplesWindowContents* instance_;
-  raw_ptr<View> example_shown_ = nullptr;
-  raw_ptr<Label> status_label_ = nullptr;
+  View* example_shown_ = nullptr;
+  Label* status_label_ = nullptr;
   base::OnceClosure on_close_;
-  raw_ptr<Combobox> combobox_ = nullptr;
+  Combobox* combobox_ = nullptr;
   // Owned by |combobox_|.
-  raw_ptr<ComboboxModelExampleList> combobox_model_ = nullptr;
+  ComboboxModelExampleList* combobox_model_ = nullptr;
 };
 
 // static

@@ -214,7 +214,8 @@ void SyncEngineBackend::DoInitialize(
   sync_encryption_handler_ = std::make_unique<NigoriSyncBridgeImpl>(
       std::move(nigori_processor),
       std::make_unique<NigoriStorageImpl>(
-          sync_data_folder_.Append(kNigoriStorageFilename)));
+          sync_data_folder_.Append(kNigoriStorageFilename)),
+      params.encryption_bootstrap_token);
 
   sync_manager_ = params.sync_manager_factory->CreateSyncManager(name_);
   sync_manager_->AddObserver(this);
@@ -316,11 +317,10 @@ void SyncEngineBackend::DoInitialProcessControlTypes() {
              sync_manager_->birthday(), sync_manager_->bag_of_chips());
 }
 
-void SyncEngineBackend::DoSetExplicitPassphraseDecryptionKey(
-    std::unique_ptr<Nigori> key) {
+void SyncEngineBackend::DoSetDecryptionPassphrase(
+    const std::string& passphrase) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-  sync_manager_->GetEncryptionHandler()->SetExplicitPassphraseDecryptionKey(
-      std::move(key));
+  sync_manager_->GetEncryptionHandler()->SetDecryptionPassphrase(passphrase);
 }
 
 void SyncEngineBackend::ShutdownOnUIThread() {

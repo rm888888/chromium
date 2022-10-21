@@ -11,29 +11,16 @@
 
 // Represents tab data at startup.
 struct StartupTab {
-  enum class Type {
-    kNormal,
-    // The tab is pinned.
-    kPinned,
-  };
-
-  explicit StartupTab(const GURL& url, Type type = Type::kNormal);
+  StartupTab(const GURL& url, bool is_pinned);
   ~StartupTab();
 
   // The url to load.
   GURL url;
 
-  Type type;
+  // True if the is tab pinned.
+  bool is_pinned;
 };
 
-using StartupTabs = std::vector<StartupTab>;
-
-// Indicates whether the command line arguments includes tabs to be opened on
-// startup.
-enum class CommandLineTabsPresent {
-  kUnknown = -1,
-  kNo = 0,
-  kYes = 1,
-};
+typedef std::vector<StartupTab> StartupTabs;
 
 #endif  // CHROME_BROWSER_UI_STARTUP_STARTUP_TAB_H_

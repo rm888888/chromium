@@ -31,25 +31,29 @@
 #include "content/public/browser/web_ui.h"
 
 using base::DictionaryValue;
+using base::ListValue;
+using base::Value;
 using syncer::SyncInvalidationsService;
 using syncer::SyncService;
 
 namespace {
 
 // Converts the string at |index| in |list| to an int, defaulting to 0 on error.
-int64_t StringAtIndexToInt64(base::Value::ConstListView list, size_t index) {
-  if (list.size() > index && list[index].is_string()) {
+int64_t StringAtIndexToInt64(const base::ListValue* list, int index) {
+  std::string str;
+  if (list->GetString(index, &str)) {
     int64_t integer = 0;
-    if (base::StringToInt64(list[index].GetString(), &integer))
+    if (base::StringToInt64(str, &integer))
       return integer;
   }
   return 0;
 }
 
 // Returns whether the there is any value at the given |index|.
-bool HasSomethingAtIndex(base::Value::ConstListView list, size_t index) {
-  if (list.size() > index && list[index].is_string()) {
-    return !list[index].GetString().empty();
+bool HasSomethingAtIndex(const base::ListValue* list, int index) {
+  std::string str;
+  if (list->GetString(index, &str)) {
+    return !str.empty();
   }
   return false;
 }
@@ -92,66 +96,66 @@ void SyncInternalsMessageHandler::OnJavascriptDisallowed() {
 void SyncInternalsMessageHandler::RegisterMessages() {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
-  web_ui()->RegisterMessageCallback(
+  web_ui()->RegisterDeprecatedMessageCallback(
       syncer::sync_ui_util::kRequestDataAndRegisterForUpdates,
       base::BindRepeating(
           &SyncInternalsMessageHandler::HandleRequestDataAndRegisterForUpdates,
           base::Unretained(this)));
 
-  web_ui()->RegisterMessageCallback(
+  web_ui()->RegisterDeprecatedMessageCallback(
       syncer::sync_ui_util::kRequestListOfTypes,
       base::BindRepeating(
           &SyncInternalsMessageHandler::HandleRequestListOfTypes,
           base::Unretained(this)));
 
-  web_ui()->RegisterMessageCallback(
+  web_ui()->RegisterDeprecatedMessageCallback(
       syncer::sync_ui_util::kRequestIncludeSpecificsInitialState,
       base::BindRepeating(&SyncInternalsMessageHandler::
                               HandleRequestIncludeSpecificsInitialState,
                           base::Unretained(this)));
 
-  web_ui()->RegisterMessageCallback(
+  web_ui()->RegisterDeprecatedMessageCallback(
       syncer::sync_ui_util::kSetIncludeSpecifics,
       base::BindRepeating(
           &SyncInternalsMessageHandler::HandleSetIncludeSpecifics,
           base::Unretained(this)));
 
-  web_ui()->RegisterMessageCallback(
+  web_ui()->RegisterDeprecatedMessageCallback(
       syncer::sync_ui_util::kWriteUserEvent,
       base::BindRepeating(&SyncInternalsMessageHandler::HandleWriteUserEvent,
                           base::Unretained(this)));
 
-  web_ui()->RegisterMessageCallback(
+  web_ui()->RegisterDeprecatedMessageCallback(
       syncer::sync_ui_util::kRequestStart,
       base::BindRepeating(&SyncInternalsMessageHandler::HandleRequestStart,
                           base::Unretained(this)));
 
-  web_ui()->RegisterMessageCallback(
+  web_ui()->RegisterDeprecatedMessageCallback(
       syncer::sync_ui_util::kRequestStopKeepData,
       base::BindRepeating(
           &SyncInternalsMessageHandler::HandleRequestStopKeepData,
           base::Unretained(this)));
 
-  web_ui()->RegisterMessageCallback(
+  web_ui()->RegisterDeprecatedMessageCallback(
       syncer::sync_ui_util::kRequestStopClearData,
       base::BindRepeating(
           &SyncInternalsMessageHandler::HandleRequestStopClearData,
           base::Unretained(this)));
 
-  web_ui()->RegisterMessageCallback(
+  web_ui()->RegisterDeprecatedMessageCallback(
       syncer::sync_ui_util::kTriggerRefresh,
       base::BindRepeating(&SyncInternalsMessageHandler::HandleTriggerRefresh,
                           base::Unretained(this)));
 
-  web_ui()->RegisterMessageCallback(
+  web_ui()->RegisterDeprecatedMessageCallback(
       syncer::sync_ui_util::kGetAllNodes,
       base::BindRepeating(&SyncInternalsMessageHandler::HandleGetAllNodes,
                           base::Unretained(this)));
 }
 
 void SyncInternalsMessageHandler::HandleRequestDataAndRegisterForUpdates(
-    base::Value::ConstListView args) {
-  DCHECK(args.empty());
+    const ListValue* args) {
+  DCHECK(args->GetList().empty());
   AllowJavascript();
 
   // is_registered_ flag protects us from double-registering.  This could
@@ -175,12 +179,12 @@ void SyncInternalsMessageHandler::HandleRequestDataAndRegisterForUpdates(
 }
 
 void SyncInternalsMessageHandler::HandleRequestListOfTypes(
-    base::Value::ConstListView args) {
-  DCHECK(args.empty());
+    const ListValue* args) {
+  DCHECK(args->GetList().empty());
   AllowJavascript();
 
   DictionaryValue event_details;
-  base::Value type_list(base::Value::Type::LIST);
+  ListValue type_list;
   syncer::ModelTypeSet protocol_types = syncer::ProtocolTypes();
   for (syncer::ModelType type : protocol_types) {
     type_list.Append(ModelTypeToString(type));
@@ -191,8 +195,8 @@ void SyncInternalsMessageHandler::HandleRequestListOfTypes(
 }
 
 void SyncInternalsMessageHandler::HandleRequestIncludeSpecificsInitialState(
-    base::Value::ConstListView args) {
-  DCHECK(args.empty());
+    const ListValue* args) {
+  DCHECK(args->GetList().empty());
   AllowJavascript();
 
   DictionaryValue value;
@@ -203,12 +207,13 @@ void SyncInternalsMessageHandler::HandleRequestIncludeSpecificsInitialState(
       syncer::sync_ui_util::kOnReceivedIncludeSpecificsInitialState, value);
 }
 
-void SyncInternalsMessageHandler::HandleGetAllNodes(
-    base::Value::ConstListView args) {
-  DCHECK_EQ(1U, args.size());
+void SyncInternalsMessageHandler::HandleGetAllNodes(const ListValue* args) {
+  DCHECK_EQ(1U, args->GetList().size());
   AllowJavascript();
 
-  const std::string& callback_id = args[0].GetString();
+  std::string callback_id;
+  bool success = args->GetString(0, &callback_id);
+  DCHECK(success);
 
   SyncService* service = GetSyncService();
   if (service) {
@@ -223,15 +228,15 @@ void SyncInternalsMessageHandler::HandleGetAllNodes(
 }
 
 void SyncInternalsMessageHandler::HandleSetIncludeSpecifics(
-    base::Value::ConstListView args) {
-  DCHECK_EQ(1U, args.size());
+    const ListValue* args) {
+  DCHECK_EQ(1U, args->GetList().size());
   AllowJavascript();
-  include_specifics_ = args[0].GetBool();
+  include_specifics_ = args->GetList()[0].GetBool();
 }
 
 void SyncInternalsMessageHandler::HandleWriteUserEvent(
-    base::Value::ConstListView args) {
-  DCHECK_EQ(2U, args.size());
+    const base::ListValue* args) {
+  DCHECK_EQ(2U, args->GetList().size());
   AllowJavascript();
 
   Profile* profile = Profile::FromWebUI(web_ui());
@@ -244,19 +249,19 @@ void SyncInternalsMessageHandler::HandleWriteUserEvent(
   event_specifics.mutable_test_event();
 
   // |event_time_usec| is required.
-  event_specifics.set_event_time_usec(StringAtIndexToInt64(args, 0u));
+  event_specifics.set_event_time_usec(StringAtIndexToInt64(args, 0));
 
   // |navigation_id| is optional, treat empty string and 0 differently.
   if (HasSomethingAtIndex(args, 1)) {
-    event_specifics.set_navigation_id(StringAtIndexToInt64(args, 1u));
+    event_specifics.set_navigation_id(StringAtIndexToInt64(args, 1));
   }
 
   user_event_service->RecordUserEvent(event_specifics);
 }
 
 void SyncInternalsMessageHandler::HandleRequestStart(
-    base::Value::ConstListView args) {
-  DCHECK_EQ(0U, args.size());
+    const base::ListValue* args) {
+  DCHECK_EQ(0U, args->GetList().size());
 
   SyncService* service = GetSyncService();
   if (!service)
@@ -271,8 +276,8 @@ void SyncInternalsMessageHandler::HandleRequestStart(
 }
 
 void SyncInternalsMessageHandler::HandleRequestStopKeepData(
-    base::Value::ConstListView args) {
-  DCHECK_EQ(0U, args.size());
+    const base::ListValue* args) {
+  DCHECK_EQ(0U, args->GetList().size());
 
   SyncService* service = GetSyncService();
   if (!service)
@@ -282,8 +287,8 @@ void SyncInternalsMessageHandler::HandleRequestStopKeepData(
 }
 
 void SyncInternalsMessageHandler::HandleRequestStopClearData(
-    base::Value::ConstListView args) {
-  DCHECK_EQ(0U, args.size());
+    const base::ListValue* args) {
+  DCHECK_EQ(0U, args->GetList().size());
 
   SyncService* service = GetSyncService();
   if (!service)
@@ -293,7 +298,7 @@ void SyncInternalsMessageHandler::HandleRequestStopClearData(
 }
 
 void SyncInternalsMessageHandler::HandleTriggerRefresh(
-    base::Value::ConstListView args) {
+    const base::ListValue* args) {
   SyncService* service = GetSyncService();
   if (!service)
     return;
@@ -303,7 +308,7 @@ void SyncInternalsMessageHandler::HandleTriggerRefresh(
 
 void SyncInternalsMessageHandler::OnReceivedAllNodes(
     const std::string& callback_id,
-    std::unique_ptr<base::ListValue> nodes) {
+    std::unique_ptr<ListValue> nodes) {
   ResolveJavascriptCallback(base::Value(callback_id), *nodes);
 }
 
@@ -324,7 +329,7 @@ void SyncInternalsMessageHandler::OnInvalidationReceived(
     return;
   }
 
-  base::Value data_types_list(base::Value::Type::LIST);
+  base::ListValue data_types_list;
   for (const auto& data_type_invalidation :
        payload_message.data_type_invalidations()) {
     const int field_number = data_type_invalidation.data_type_id();
@@ -356,7 +361,7 @@ void SyncInternalsMessageHandler::SendAboutInfoAndEntityCounts() {
 
 void SyncInternalsMessageHandler::OnGotEntityCounts(
     const std::vector<syncer::TypeEntitiesCount>& entity_counts) {
-  base::Value count_list(base::Value::Type::LIST);
+  ListValue count_list;
   for (const syncer::TypeEntitiesCount& count : entity_counts) {
     DictionaryValue count_dictionary;
     count_dictionary.SetStringPath(syncer::sync_ui_util::kModelType,

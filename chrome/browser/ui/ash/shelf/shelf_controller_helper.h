@@ -9,6 +9,7 @@
 #include <string>
 
 #include "ash/public/cpp/shelf_types.h"
+#include "base/macros.h"
 #include "chrome/browser/ui/extensions/extension_enable_flow_delegate.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 
@@ -40,10 +41,6 @@ class ShelfControllerHelper : public ExtensionEnableFlowDelegate {
   // paused, return AppStatus::kPaused. Otherwise, return AppStatus::kReady.
   static ash::AppStatus GetAppStatus(Profile* profile,
                                      const std::string& app_id);
-
-  // Helper function to return whether the app with `app_id` should explicitly
-  // be hidden from shelf, as indicated by `AppUpdate::ShowInShelf()` app state.
-  static bool IsAppHiddenFromShelf(Profile* profile, const std::string& app_id);
 
   // Returns the app id of the specified tab, or an empty string if there is
   // no app. All known profiles will be queried for this.

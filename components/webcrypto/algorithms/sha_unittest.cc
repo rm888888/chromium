@@ -22,16 +22,14 @@ namespace {
 class WebCryptoShaTest : public WebCryptoTestBase {};
 
 TEST_F(WebCryptoShaTest, DigestSampleSets) {
-  base::Value tests;
-  ASSERT_TRUE(ReadJsonTestFileAsList("sha.json", &tests));
+  base::ListValue tests;
+  ASSERT_TRUE(ReadJsonTestFileToList("sha.json", &tests));
 
   for (size_t test_index = 0; test_index < tests.GetList().size();
        ++test_index) {
     SCOPED_TRACE(test_index);
-    const base::Value& test_value = tests.GetList()[test_index];
-    ASSERT_TRUE(test_value.is_dict());
-    const base::DictionaryValue* test =
-        &base::Value::AsDictionaryValue(test_value);
+    base::DictionaryValue* test;
+    ASSERT_TRUE(tests.GetDictionary(test_index, &test));
 
     blink::WebCryptoAlgorithm test_algorithm =
         GetDigestAlgorithm(test, "algorithm");

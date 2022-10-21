@@ -5,6 +5,7 @@
 #ifndef COMPONENTS_DOWNLOAD_INTERNAL_BACKGROUND_SERVICE_NOOP_STORE_H_
 #define COMPONENTS_DOWNLOAD_INTERNAL_BACKGROUND_SERVICE_NOOP_STORE_H_
 
+#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "components/download/internal/background_service/store.h"
 

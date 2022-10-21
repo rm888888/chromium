@@ -273,7 +273,9 @@ class ExtensionHooksDelegateMV3Test : public ExtensionHooksDelegateTest {
   ~ExtensionHooksDelegateMV3Test() override = default;
 
   scoped_refptr<const Extension> BuildExtension() override {
-    return ExtensionBuilder("foo").SetManifestVersion(3).Build();
+    return ExtensionBuilder("foo")
+        .SetManifestKey("manifest_version", 3)
+        .Build();
   }
 };
 

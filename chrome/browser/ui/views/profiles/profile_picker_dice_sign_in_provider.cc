@@ -5,10 +5,10 @@
 #include "chrome/browser/ui/views/profiles/profile_picker_dice_sign_in_provider.h"
 
 #include "chrome/browser/browser_process.h"
-#include "chrome/browser/profiles/keep_alive/profile_keep_alive_types.h"
 #include "chrome/browser/profiles/profile_attributes_entry.h"
 #include "chrome/browser/profiles/profile_attributes_storage.h"
 #include "chrome/browser/profiles/profile_avatar_icon_util.h"
+#include "chrome/browser/profiles/profile_keep_alive_types.h"
 #include "chrome/browser/profiles/profile_manager.h"
 #include "chrome/browser/signin/dice_tab_helper.h"
 #include "chrome/browser/signin/identity_manager_factory.h"
@@ -59,16 +59,14 @@ ProfilePickerDiceSignInProvider::ProfilePickerDiceSignInProvider(
     : host_(host), toolbar_(toolbar) {}
 
 ProfilePickerDiceSignInProvider::~ProfilePickerDiceSignInProvider() {
-  // Handle unfinished signed-in profile creation (i.e. when callback was not
+  // Record unfinished signed-in profile creation (i.e. when callback was not
   // called yet).
   if (callback_) {
-    if (IsInitialized()) {
-      contents()->SetDelegate(nullptr);
-
-      // Schedule the profile for deletion, it's not needed any more.
-      g_browser_process->profile_manager()->ScheduleEphemeralProfileForDeletion(
-          profile_->GetPath());
-    }
+    contents()->SetDelegate(nullptr);
+    // TODO(crbug.com/1227699): Schedule the profile for deletion here, it's not
+    // needed any more. This triggers a crash if the browser is shutting down
+    // completely. Figure a way how to delete the profile only if that does not
+    // compete with a shutdown.
 
     ProfileMetrics::LogProfileAddSignInFlowOutcome(
         ProfileMetrics::ProfileAddSignInFlowOutcome::kAbortedBeforeSignIn);
@@ -122,8 +120,8 @@ void ProfilePickerDiceSignInProvider::NavigateBack() {
 
   // Move from sign-in back to the previous screen of profile creation.
   // Do not load any url because the desired screen is still loaded in the
-  // picker contents.
-  host_->ShowScreenInPickerContents(GURL());
+  // system contents.
+  host_->ShowScreenInSystemContents(GURL());
   toolbar_->SetVisible(false);
 }
 
@@ -300,5 +298,5 @@ void ProfilePickerDiceSignInProvider::FinishFlow(bool is_saml) {
   // Stop the sign-in: hide and clear the toolbar.
   toolbar_->ClearToolbar();
   toolbar_->SetVisible(false);
-  std::move(callback_).Run(profile_.get(), std::move(contents_), is_saml);
+  std::move(callback_).Run(profile_, std::move(contents_), is_saml);
 }

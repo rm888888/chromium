@@ -10,7 +10,7 @@
 #include <vector>
 
 #include "base/callback.h"
-#include "base/memory/raw_ptr.h"
+#include "base/no_destructor.h"
 #include "base/types/pass_key.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/compositor/layer_animation_observer.h"
@@ -19,6 +19,9 @@
 #include "ui/views/animation/animation_key.h"
 #include "ui/views/animation/animation_sequence_block.h"
 #include "ui/views/views_export.h"
+
+// This AnimationBuilder API is currently in the experimental phase and only
+// used within ui/views/examples/.
 
 namespace ui {
 class Layer;
@@ -77,7 +80,7 @@ class VIEWS_EXPORT AnimationBuilder {
     // can return true before a sequence is started if the duration is zero.
     int sequences_to_run_ = 0;
 
-    raw_ptr<AnimationAbortHandle> abort_handle_ = nullptr;
+    AnimationAbortHandle* abort_handle_ = nullptr;
   };
 
   AnimationBuilder();
@@ -162,7 +165,7 @@ class VIEWS_EXPORT AnimationBuilder {
   // Each vector is kept in sorted order.
   std::map<AnimationKey, std::vector<Value>> values_;
 
-  raw_ptr<AnimationAbortHandle> abort_handle_ = nullptr;
+  AnimationAbortHandle* abort_handle_ = nullptr;
 };
 
 }  // namespace views

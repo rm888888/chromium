@@ -31,6 +31,8 @@ std::unique_ptr<SyncItem> MakeSyncItem(
   return item;
 }
 
+const char kLegacyCameraAppId[] = "ngmkobaiicipbagcngcmilfkhejlnfci";
+
 // A fake for AppListSyncableService that allows easy modifications.
 class AppListSyncableServiceFake : public app_list::AppListSyncableService {
  public:
@@ -106,7 +108,7 @@ class ChromeShelfPrefsFake : public ChromeShelfPrefs {
     return app_type_map_[app_id];
   }
   bool IsAshExtensionApp(const std::string& app_id) override {
-    return app_type_map_[app_id] == apps::mojom::AppType::kChromeApp;
+    return app_type_map_[app_id] == apps::mojom::AppType::kExtension;
   }
   bool IsAshKeepListApp(const std::string& app_id) override { return false; }
 
@@ -153,6 +155,29 @@ class ChromeShelfPrefsTest : public testing::Test {
   AppListSyncableServiceFake syncable_service_;
   std::unique_ptr<ChromeShelfPrefsFake> shelf_prefs_;
 };
+
+TEST_F(ChromeShelfPrefsTest, MigrateLegacyCameraApp) {
+  // Set up the initial ordinals.
+  syncer::StringOrdinal initial_ordinal =
+      syncer::StringOrdinal::CreateInitialOrdinal();
+  syncer::StringOrdinal next_ordinal = initial_ordinal.CreateAfter();
+  syncable_service_.item_map_[kLegacyCameraAppId] =
+      MakeSyncItem(kLegacyCameraAppId, next_ordinal);
+  syncable_service_.item_map_[extension_misc::kCameraAppId] =
+      MakeSyncItem(kLegacyCameraAppId, syncer::StringOrdinal());
+
+  // Migrate.
+  shelf_prefs_->MigrateLegacyCameraApp(&syncable_service_);
+
+  // Check that the legacy camera app now has an invalid ordinal.
+  EXPECT_FALSE(syncable_service_.item_map_[kLegacyCameraAppId]
+                   ->item_pin_ordinal.IsValid());
+
+  // Check that the new camera app has the ordinal of the legacy camera app.
+  auto& pin_ordinal = syncable_service_.item_map_[extension_misc::kCameraAppId]
+                          ->item_pin_ordinal;
+  EXPECT_TRUE(pin_ordinal.Equals(next_ordinal));
+}
 
 TEST_F(ChromeShelfPrefsTest, AddChromePinNoExistingOrdinal) {
   shelf_prefs_->EnsureChromePinned(&syncable_service_);
@@ -240,9 +265,9 @@ TEST_F(ChromeShelfPrefsTest, TransformationForStandaloneBrowserChromeApps) {
   syncable_service_.item_map_[kNeitherId] = MakeSyncItem(kNeitherId, ordinal3);
 
   shelf_prefs_->app_type_map_[kAshChromeAppId] =
-      apps::mojom::AppType::kChromeApp;
+      apps::mojom::AppType::kExtension;
   shelf_prefs_->app_type_map_[kLacrosChromeAppIdWithUsualPrefix] =
-      apps::mojom::AppType::kStandaloneBrowserChromeApp;
+      apps::mojom::AppType::kStandaloneBrowserExtension;
 
   std::vector<ash::ShelfID> pinned_apps =
       shelf_prefs_->GetPinnedAppsFromSync(nullptr);

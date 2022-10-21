@@ -28,7 +28,7 @@ const base::DictionaryValue* GetWebAppDictionary(
     const PrefService* pref_service,
     const AppId& app_id) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
-  const base::Value* web_apps_prefs =
+  const base::DictionaryValue* web_apps_prefs =
       pref_service->GetDictionary(prefs::kWebAppsPreferences);
   if (!web_apps_prefs)
     return nullptr;
@@ -66,9 +66,11 @@ bool TimeOccurredWithinDays(absl::optional<base::Time> time, int days) {
 //   "web_app_ids": {
 //     "<app_id_1>": {
 //       "was_external_app_uninstalled_by_user": true,
+//       "file_handlers_enabled": true,
 //       A double representing the number of seconds since epoch, in local time.
 //       Convert from/to using base::Time::FromDoubleT() and
 //       base::Time::ToDoubleT().
+//       "file_handling_origin_trial_expiry_time": 1580475600000,
 //       "IPH_num_of_consecutive_ignore": 2,
 //       A string-flavored base::value representing the int64_t number of
 //       microseconds since the Windows epoch, using base::TimeToValue().
@@ -76,6 +78,8 @@ bool TimeOccurredWithinDays(absl::optional<base::Time> time, int days) {
 //     },
 //     "<app_id_N>": {
 //       "was_external_app_uninstalled_by_user": false,
+//       "file_handlers_enabled": false,
+//       "file_handling_origin_trial_expiry_time": 0
 //     }
 //   },
 //   "app_agnostic_iph_state": {
@@ -95,6 +99,11 @@ bool TimeOccurredWithinDays(absl::optional<base::Time> time, int days) {
 const char kWasExternalAppUninstalledByUser[] =
     "was_external_app_uninstalled_by_user";
 
+const char kFileHandlersEnabled[] = "file_handlers_enabled";
+
+const char kFileHandlingOriginTrialExpiryTime[] =
+    "file_handling_origin_trial_expiry_time";
+
 const char kLatestWebAppInstallSource[] = "latest_web_app_install_source";
 
 const char kIphIgnoreCount[] = "IPH_num_of_consecutive_ignore";
@@ -110,11 +119,12 @@ void WebAppPrefsUtilsRegisterProfilePrefs(
 bool GetBoolWebAppPref(const PrefService* pref_service,
                        const AppId& app_id,
                        base::StringPiece path) {
-  if (const base::DictionaryValue* web_app_prefs =
-          GetWebAppDictionary(pref_service, app_id)) {
-    return web_app_prefs->FindBoolPath(path).value_or(false);
-  }
-  return false;
+  const base::DictionaryValue* web_app_prefs =
+      GetWebAppDictionary(pref_service, app_id);
+  bool pref_value = false;
+  if (web_app_prefs)
+    web_app_prefs->GetBoolean(path, &pref_value);
+  return pref_value;
 }
 
 void UpdateBoolWebAppPref(PrefService* pref_service,

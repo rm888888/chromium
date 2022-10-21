@@ -4,8 +4,6 @@
 
 #include "chrome/updater/device_management/dm_response_validator.h"
 
-#include <inttypes.h>
-
 #include <algorithm>
 #include <string>
 
@@ -107,7 +105,7 @@ void OmahaPolicyValidator::ValidateAutoUpdateCheckPeriodPolicy(
     validation_result.issues.emplace_back(
         "auto_update_check_period_minutes",
         PolicyValueValidationIssue::Severity::kError,
-        base::StringPrintf("Value out of range (0 - %d): %" PRId64,
+        base::StringPrintf("Value out of range (0 - %d): %lld",
                            kMaxAutoUpdateCheckPeriodMinutes,
                            omaha_settings_.auto_update_check_period_minutes()));
   }
@@ -136,7 +134,7 @@ void OmahaPolicyValidator::ValidateUpdatesSuppressedPolicies(
     validation_result.issues.emplace_back(
         "updates_suppressed.start_hour",
         PolicyValueValidationIssue::Severity::kError,
-        base::StringPrintf("Value out of range(0 - 23): %" PRId64,
+        base::StringPrintf("Value out of range(0 - 23): %lld",
                            omaha_settings_.updates_suppressed().start_hour()));
   }
   if (omaha_settings_.updates_suppressed().start_minute() < 0 ||
@@ -145,7 +143,7 @@ void OmahaPolicyValidator::ValidateUpdatesSuppressedPolicies(
         "updates_suppressed.start_minute",
         PolicyValueValidationIssue::Severity::kError,
         base::StringPrintf(
-            "Value out of range(0 - 59): %" PRId64,
+            "Value out of range(0 - 59): %lld",
             omaha_settings_.updates_suppressed().start_minute()));
   }
   if (omaha_settings_.updates_suppressed().duration_min() < 0 ||
@@ -155,7 +153,7 @@ void OmahaPolicyValidator::ValidateUpdatesSuppressedPolicies(
         "updates_suppressed.duration_min",
         PolicyValueValidationIssue::Severity::kError,
         base::StringPrintf(
-            "Value out of range(0 - %d): %" PRId64,
+            "Value out of range(0 - %d): %lld",
             kMaxUpdatesSuppressedDurationMinutes,
             omaha_settings_.updates_suppressed().duration_min()));
   }

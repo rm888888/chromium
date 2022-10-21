@@ -327,8 +327,8 @@ ui::EventDispatchDetails WindowEventDispatcher::DispatchMouseEnterOrExit(
   // coordinate system.
   if (!target)
     target = window();
-  ui::MouseEvent translated_event(event, target, mouse_moved_handler_.get(),
-                                  type, event.flags() | ui::EF_IS_SYNTHESIZED);
+  ui::MouseEvent translated_event(event, target, mouse_moved_handler_, type,
+                                  event.flags() | ui::EF_IS_SYNTHESIZED);
   return DispatchEvent(mouse_moved_handler_, &translated_event);
 }
 
@@ -515,6 +515,11 @@ ui::EventDispatchDetails WindowEventDispatcher::PreDispatchEvent(
     ui::Event* event) {
   Window* target_window = static_cast<Window*>(target);
   CHECK(window()->Contains(target_window));
+
+  if (!(event->flags() & ui::EF_IS_SYNTHESIZED)) {
+    fraction_of_time_without_user_input_recorder_.RecordEventAtTime(
+        event->time_stamp());
+  }
 
   WindowTracker target_window_tracker;
   target_window_tracker.Add(target_window);

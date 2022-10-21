@@ -10,7 +10,6 @@
 #include "base/memory/ref_counted.h"
 #include "build/build_config.h"
 #include "chrome/updater/test/integration_tests_impl.h"
-#include "chrome/updater/update_service.h"
 
 class GURL;
 
@@ -60,22 +59,16 @@ class IntegrationTestCommands
   virtual void UpdateAll() const = 0;
   virtual void PrintLog() const = 0;
   virtual base::FilePath GetDifferentUserPath() const = 0;
-  virtual void WaitForUpdaterExit() const = 0;
+  virtual void WaitForServerExit() const = 0;
 #if defined(OS_WIN)
   virtual void ExpectInterfacesRegistered() const = 0;
   virtual void ExpectLegacyUpdate3WebSucceeds(
-      const std::string& app_id,
-      int expected_final_state,
-      int expected_error_code) const = 0;
+      const std::string& app_id) const = 0;
   virtual void ExpectLegacyProcessLauncherSucceeds() const = 0;
-  virtual void RunUninstallCmdLine() const = 0;
   virtual void SetUpTestService() const = 0;
   virtual void TearDownTestService() const = 0;
 #endif  // OS_WIN
   virtual void StressUpdateService() const = 0;
-  virtual void CallServiceUpdate(const std::string& app_id,
-                                 UpdateService::PolicySameVersionUpdate
-                                     policy_same_version_update) const = 0;
 
  protected:
   friend class base::RefCountedThreadSafe<IntegrationTestCommands>;

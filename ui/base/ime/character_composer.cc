@@ -123,7 +123,6 @@ bool CharacterComposer::FilterKeyPressSequenceMode(const KeyEvent& event) {
       compose_buffer_.clear();
       UTF32CharacterToUTF16(composed_character_utf32, &composed_character_);
     }
-    UpdatePreeditStringSequenceMode();
     return true;
   }
   // Key press is not a part of composition.
@@ -150,25 +149,9 @@ bool CharacterComposer::FilterKeyPressSequenceMode(const KeyEvent& event) {
       }
     }
     compose_buffer_.clear();
-    UpdatePreeditStringSequenceMode();
     return true;
   }
   return false;
-}
-
-void CharacterComposer::UpdatePreeditStringSequenceMode() {
-  for (auto key : compose_buffer_) {
-    if (key.IsCharacter()) {
-      base::WriteUnicodeCharacter(key.ToCharacter(), &preedit_string_);
-    } else if (key.IsDeadKey()) {
-      base::WriteUnicodeCharacter(key.ToDeadKeyCombiningCharacter(),
-                                  &preedit_string_);
-    } else if (key.IsComposeKey() && (compose_buffer_.size() == 1)) {
-      // The U+00B7 "middle dot" character is also used by GTK to represent the
-      // compose key in preedit strings.
-      base::WriteUnicodeCharacter(0xB7, &preedit_string_);
-    }
-  }
 }
 
 bool CharacterComposer::FilterKeyPressHexMode(const KeyEvent& event) {
@@ -251,17 +234,12 @@ ComposeChecker::CheckSequenceResult TreeComposeChecker::CheckSequence(
   for (const auto& keystroke : sequence) {
     DCHECK(tree_index < data_.tree_entries);
 
-    // If we are looking up a dead key or the Compose key, skip over the
-    // character tables.
+    // If we are looking up a dead key, skip over the character tables.
     int32_t character = -1;
-    if (keystroke.IsDeadKey() || keystroke.IsComposeKey()) {
+    if (keystroke.IsDeadKey()) {
       tree_index += 2 * data_.tree[tree_index] + 1;  // internal unicode table
       tree_index += 2 * data_.tree[tree_index] + 1;  // leaf unicode table
-      // The generate_character_composer_data.py script assigns 0 to the Compose
-      // key.
-      character = keystroke.IsComposeKey()
-                      ? 0
-                      : keystroke.ToDeadKeyCombiningCharacter();
+      character = keystroke.ToDeadKeyCombiningCharacter();
     } else if (keystroke.IsCharacter()) {
       character = keystroke.ToCharacter();
     }

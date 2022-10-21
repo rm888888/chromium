@@ -65,6 +65,8 @@ std::unique_ptr<views::ImageButton> CreateControlButton(
                                                               icon, dip_size);
   button->SetTooltipText(tooltip_text);
   button->SetImageHorizontalAlignment(views::ImageButton::ALIGN_CENTER);
+  button->SetBackground(
+      views::CreateThemedSolidBackground(host, ui::kColorWindowBackground));
   button->SetProperty(views::kMarginsKey, margin_insets);
   return button;
 }
@@ -76,13 +78,6 @@ namespace lens {
 constexpr int kDefaultSidePanelHeaderHeight = 40;
 constexpr int kGoogleLensLogoWidth = 87;
 constexpr int kGoogleLensLogoHeight = 16;
-const char kStaticGhostCardDataURL[] =
-    "data:text/html;charset=utf-8,"
-    "<!DOCTYPE html>"
-    "<style>"
-    "html, body {"
-    "background-image: url('https://www.gstatic.com/lens/web/ui/side_panel_loading.gif');"
-    "}</style>";
 
 LensSidePanelView::LensSidePanelView(content::BrowserContext* browser_context,
                                      base::RepeatingClosure close_callback,
@@ -94,12 +89,7 @@ LensSidePanelView::LensSidePanelView(content::BrowserContext* browser_context,
   SetCrossAxisAlignment(views::LayoutAlignment::kStretch);
   CreateAndInstallHeader(close_callback, launch_callback);
   separator_ = AddChildView(std::make_unique<views::Separator>());
-  loading_indicator_web_view_ = AddChildView(CreateWebView(this, browser_context));
-  loading_indicator_web_view_->GetWebContents()->GetController().LoadURL(
-        GURL(kStaticGhostCardDataURL), content::Referrer(), ui::PAGE_TRANSITION_FROM_API,
-        std::string());
   web_view_ = AddChildView(CreateWebView(this, browser_context));
-  web_view_->SetVisible(false);
 }
 
 content::WebContents* LensSidePanelView::GetWebContents() {
@@ -111,16 +101,13 @@ void LensSidePanelView::OnThemeChanged() {
   const auto* color_provider = GetColorProvider();
   separator_->SetColor(color_provider->GetColor(ui::kColorMenuSeparator));
 
+  const SkColor color = color_provider->GetColor(ui::kColorIcon);
   // kGoogleLensFullLogoIcon is rectangular. We should create a tiled image so
   // that the coordinates and scale are correct. The vector icon should have its
-  // own fill color. The same applies to the dark mode icon.
-  const SkColor color = color_provider->GetColor(ui::kColorIcon);
-  const gfx::VectorIcon& icon = GetNativeTheme()->ShouldUseDarkColors()
-                                    ? kGoogleLensFullLogoDarkIcon
-                                    : kGoogleLensFullLogoIcon;
-  const gfx::ImageSkia image = gfx::ImageSkiaOperations::CreateTiledImage(
-      gfx::CreateVectorIcon(icon, color), 0, 0, kGoogleLensLogoWidth,
-      kGoogleLensLogoHeight);
+  // own fill color.
+  gfx::ImageSkia image = gfx::ImageSkiaOperations::CreateTiledImage(
+      gfx::CreateVectorIcon(kGoogleLensFullLogoIcon, color), 0, 0,
+      kGoogleLensLogoWidth, kGoogleLensLogoHeight);
   branding_->SetImage(image);
 }
 
@@ -128,13 +115,12 @@ void LensSidePanelView::CreateAndInstallHeader(
     base::RepeatingClosure close_callback,
     base::RepeatingClosure launch_callback) {
   auto header = std::make_unique<views::FlexLayoutView>();
-  // ChromeLayoutProvider for providing margins.
-  ChromeLayoutProvider* const chrome_layout_provider =
-      ChromeLayoutProvider::Get();
+  // LayoutProvider for providing margins.
+  views::LayoutProvider* const layout_provider = views::LayoutProvider::Get();
 
   // Set the interior margins of the header on the left and right sides.
   header->SetInteriorMargin(gfx::Insets(
-      0, chrome_layout_provider->GetDistanceMetric(
+      0, layout_provider->GetDistanceMetric(
              views::DistanceMetric::DISTANCE_RELATED_CONTROL_HORIZONTAL)));
   // Set alignments for horizontal (main) and vertical (cross) axes.
   header->SetMainAxisAlignment(views::LayoutAlignment::kStart);
@@ -162,24 +148,19 @@ void LensSidePanelView::CreateAndInstallHeader(
       this, launch_callback, views::kLaunchIcon,
       gfx::Insets(
           0, 0, 0,
-          chrome_layout_provider->GetDistanceMetric(
+          layout_provider->GetDistanceMetric(
               views::DistanceMetric::DISTANCE_RELATED_CONTROL_HORIZONTAL)),
       l10n_util::GetStringUTF16(IDS_ACCNAME_OPEN),
       ChromeLayoutProvider::Get()->GetDistanceMetric(
-          ChromeDistanceMetric::DISTANCE_SIDE_PANEL_HEADER_VECTOR_ICON_SIZE)));
+          ChromeDistanceMetric::DISTANCE_BUBBLE_HEADER_VECTOR_ICON_SIZE)));
   close_button_ = header->AddChildView(CreateControlButton(
       this, close_callback, views::kIcCloseIcon, gfx::Insets(),
       l10n_util::GetStringUTF16(IDS_ACCNAME_CLOSE),
       ChromeLayoutProvider::Get()->GetDistanceMetric(
-          ChromeDistanceMetric::DISTANCE_SIDE_PANEL_HEADER_VECTOR_ICON_SIZE)));
+          ChromeDistanceMetric::DISTANCE_BUBBLE_HEADER_VECTOR_ICON_SIZE)));
 
   // Install header.
   AddChildView(std::move(header));
-}
-
-void LensSidePanelView::SetContentVisible(bool visible) {
-  web_view_->SetVisible(visible);
-  loading_indicator_web_view_->SetVisible(!visible);
 }
 
 LensSidePanelView::~LensSidePanelView() = default;

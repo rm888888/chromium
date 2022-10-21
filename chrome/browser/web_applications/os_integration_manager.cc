@@ -45,21 +45,6 @@ bool g_suppress_os_hooks_for_testing_ = false;
 
 namespace web_app {
 
-OsIntegrationManager::ScopedSuppressForTesting::ScopedSuppressForTesting()
-    :
-// Creating OS hooks on ChromeOS doesn't write files to disk, so it's
-// unnecessary to suppress and it provides better crash coverage.
-#if !BUILDFLAG(IS_CHROMEOS_ASH)
-      scope_(&g_suppress_os_hooks_for_testing_, true)
-#else
-      scope_(&g_suppress_os_hooks_for_testing_, false)
-#endif
-{
-}
-
-OsIntegrationManager::ScopedSuppressForTesting::~ScopedSuppressForTesting() =
-    default;
-
 // This barrier is designed to accumulate errors from calls to OS hook
 // operations, and call the completion callback when all OS hook operations
 // have completed. The |callback| is called when all copies of this object and
@@ -115,15 +100,12 @@ OsIntegrationManager::OsIntegrationManager(
 
 OsIntegrationManager::~OsIntegrationManager() = default;
 
-void OsIntegrationManager::SetSubsystems(WebAppSyncBridge* sync_bridge,
-                                         WebAppRegistrar* registrar,
+void OsIntegrationManager::SetSubsystems(WebAppRegistrar* registrar,
                                          WebAppUiManager* ui_manager,
                                          WebAppIconManager* icon_manager) {
-  // TODO(estade): fetch the registrar from `sync_bridge` instead of passing
-  // both as arguments.
   registrar_ = registrar;
   ui_manager_ = ui_manager;
-  file_handler_manager_->SetSubsystems(sync_bridge);
+  file_handler_manager_->SetSubsystems(registrar);
   shortcut_manager_->SetSubsystems(icon_manager, registrar);
   if (protocol_handler_manager_)
     protocol_handler_manager_->SetSubsystems(registrar);
@@ -134,8 +116,6 @@ void OsIntegrationManager::SetSubsystems(WebAppSyncBridge* sync_bridge,
 void OsIntegrationManager::Start() {
   DCHECK(registrar_);
   DCHECK(file_handler_manager_);
-
-  registrar_observation_.Observe(registrar_.get());
 
 #if defined(OS_MAC)
   // Ensure that all installed apps are included in the AppShimRegistry when the
@@ -158,7 +138,7 @@ void OsIntegrationManager::Start() {
 void OsIntegrationManager::InstallOsHooks(
     const AppId& app_id,
     InstallOsHooksCallback callback,
-    std::unique_ptr<WebAppInstallInfo> web_app_info,
+    std::unique_ptr<WebApplicationInfo> web_app_info,
     InstallOsHooksOptions options) {
   if (g_suppress_os_hooks_for_testing_) {
     OsHooksErrors os_hooks_errors;
@@ -179,16 +159,6 @@ void OsIntegrationManager::InstallOsHooks(
   auto shortcuts_callback = base::BindOnce(
       &OsIntegrationManager::OnShortcutsCreated, weak_ptr_factory_.GetWeakPtr(),
       app_id, std::move(web_app_info), options, barrier);
-
-#if defined(OS_MAC)
-  // This has to happen before creating shortcuts on Mac because the shortcut
-  // creation step uses the file type associations which are marked for enabling
-  // by `RegisterFileHandlers()`.
-  if (options.os_hooks[OsHookType::kFileHandlers]) {
-    RegisterFileHandlers(app_id, barrier->CreateBarrierCallbackForType(
-                                     OsHookType::kFileHandlers));
-  }
-#endif
 
   // TODO(ortuno): Make adding a shortcut to the applications menu independent
   // from adding a shortcut to desktop.
@@ -272,38 +242,16 @@ void OsIntegrationManager::UpdateOsHooks(
     const AppId& app_id,
     base::StringPiece old_name,
     FileHandlerUpdateAction file_handlers_need_os_update,
-    const WebAppInstallInfo& web_app_info,
-    UpdateOsHooksCallback callback) {
-  if (g_suppress_os_hooks_for_testing_) {
-    OsHooksErrors os_hooks_errors;
-    base::SequencedTaskRunnerHandle::Get()->PostTask(
-        FROM_HERE, base::BindOnce(std::move(callback), os_hooks_errors));
+    const WebApplicationInfo& web_app_info) {
+  if (g_suppress_os_hooks_for_testing_)
     return;
-  }
 
-  OsHooksErrors os_hooks_errors;
-  scoped_refptr<OsHooksBarrier> barrier = base::MakeRefCounted<OsHooksBarrier>(
-      os_hooks_errors, std::move(callback));
-
-  UpdateFileHandlers(app_id, file_handlers_need_os_update,
-                     base::BindOnce(barrier->CreateBarrierCallbackForType(
-                         OsHookType::kFileHandlers)));
-  UpdateShortcuts(app_id, old_name,
-                  base::BindOnce(barrier->CreateBarrierCallbackForType(
-                                     OsHookType::kShortcuts),
-                                 Result::kOk));
+  UpdateFileHandlers(app_id, file_handlers_need_os_update, base::DoNothing());
+  UpdateShortcuts(app_id, old_name, base::DoNothing());
   UpdateShortcutsMenu(app_id, web_app_info);
-  UpdateUrlHandlers(
-      app_id,
-      base::BindOnce(
-          [](ResultCallback callback, bool success) {
-            std::move(callback).Run(success ? Result::kOk : Result::kError);
-          },
-          barrier->CreateBarrierCallbackForType(OsHookType::kUrlHandlers)));
+  UpdateUrlHandlers(app_id, base::DoNothing());
   UpdateProtocolHandlers(app_id, /*force_shortcut_updates_if_needed=*/false,
-                         base::BindOnce(barrier->CreateBarrierCallbackForType(
-                                            OsHookType::kProtocolHandlers),
-                                        Result::kOk));
+                         base::DoNothing());
 }
 
 void OsIntegrationManager::GetAppExistingShortCutLocation(
@@ -337,6 +285,27 @@ const absl::optional<GURL> OsIntegrationManager::GetMatchingFileHandlerURL(
     const std::vector<base::FilePath>& launch_files) {
   DCHECK(file_handler_manager_);
   return file_handler_manager_->GetMatchingFileHandlerURL(app_id, launch_files);
+}
+
+void OsIntegrationManager::MaybeUpdateFileHandlingOriginTrialExpiry(
+    content::WebContents* web_contents,
+    const AppId& app_id) {
+  DCHECK(file_handler_manager_);
+  return file_handler_manager_->MaybeUpdateFileHandlingOriginTrialExpiry(
+      web_contents, app_id);
+}
+
+void OsIntegrationManager::ForceEnableFileHandlingOriginTrial(
+    const AppId& app_id) {
+  DCHECK(file_handler_manager_);
+  return file_handler_manager_->ForceEnableFileHandlingOriginTrial(app_id);
+}
+
+void OsIntegrationManager::DisableForceEnabledFileHandlingOriginTrial(
+    const AppId& app_id) {
+  DCHECK(file_handler_manager_);
+  return file_handler_manager_->DisableForceEnabledFileHandlingOriginTrial(
+      app_id);
 }
 
 absl::optional<GURL> OsIntegrationManager::TranslateProtocolUrl(
@@ -399,6 +368,18 @@ OsIntegrationManager::protocol_handler_manager_for_testing() {
   return *protocol_handler_manager_;
 }
 
+ScopedOsHooksSuppress OsIntegrationManager::ScopedSuppressOsHooksForTesting() {
+// Creating OS hooks on ChromeOS doesn't write files to disk, so it's
+// unnecessary to suppress and it provides better crash coverage.
+#if !BUILDFLAG(IS_CHROMEOS_ASH)
+  return std::make_unique<base::AutoReset<bool>>(
+      &g_suppress_os_hooks_for_testing_, true);
+#else
+  return std::make_unique<base::AutoReset<bool>>(
+      &g_suppress_os_hooks_for_testing_, false);
+#endif
+}
+
 FakeOsIntegrationManager* OsIntegrationManager::AsTestOsIntegrationManager() {
   return nullptr;
 }
@@ -457,7 +438,8 @@ void OsIntegrationManager::RegisterUrlHandlers(const AppId& app_id,
 
 void OsIntegrationManager::RegisterShortcutsMenu(
     const AppId& app_id,
-    const std::vector<WebAppShortcutsMenuItemInfo>& shortcuts_menu_item_infos,
+    const std::vector<WebApplicationShortcutsMenuItemInfo>&
+        shortcuts_menu_item_infos,
     const ShortcutsMenuIconBitmaps& shortcuts_menu_icon_bitmaps,
     ResultCallback callback) {
   if (!ShouldRegisterShortcutsMenuWithOs()) {
@@ -602,7 +584,7 @@ void OsIntegrationManager::UpdateShortcuts(const AppId& app_id,
 
 void OsIntegrationManager::UpdateShortcutsMenu(
     const AppId& app_id,
-    const WebAppInstallInfo& web_app_info) {
+    const WebApplicationInfo& web_app_info) {
   DCHECK(shortcut_manager_);
   if (web_app_info.shortcuts_menu_item_infos.empty()) {
     shortcut_manager_->UnregisterShortcutsMenuWithOs(app_id);
@@ -625,12 +607,18 @@ void OsIntegrationManager::UpdateUrlHandlers(
 void OsIntegrationManager::UpdateFileHandlers(
     const AppId& app_id,
     FileHandlerUpdateAction file_handlers_need_os_update,
-    ResultCallback finished_callback) {
+    base::OnceClosure finished_callback) {
   if (!IsFileHandlingAPIAvailable(app_id) ||
       file_handlers_need_os_update == FileHandlerUpdateAction::kNoUpdate) {
-    std::move(finished_callback).Run(Result::kOk);
+    std::move(finished_callback).Run();
     return;
   }
+
+  // Convert `finished_callback` to a format that takes a Result.
+  auto finished_callback_with_Result =
+      base::BindOnce([](base::OnceClosure finished_callback,
+                        Result result) { std::move(finished_callback).Run(); },
+                     std::move(finished_callback));
 
   ResultCallback callback_after_removal;
   if (file_handlers_need_os_update == FileHandlerUpdateAction::kUpdate) {
@@ -648,10 +636,11 @@ void OsIntegrationManager::UpdateFileHandlers(
           os_integration_manager->RegisterFileHandlers(
               app_id, std::move(finished_callback));
         },
-        weak_ptr_factory_.GetWeakPtr(), app_id, std::move(finished_callback));
+        weak_ptr_factory_.GetWeakPtr(), app_id,
+        std::move(finished_callback_with_Result));
   } else {
     DCHECK_EQ(file_handlers_need_os_update, FileHandlerUpdateAction::kRemove);
-    callback_after_removal = std::move(finished_callback);
+    callback_after_removal = std::move(finished_callback_with_Result);
   }
 
   // Update file handlers via complete uninstallation, then potential
@@ -730,10 +719,6 @@ void OsIntegrationManager::OnShortcutsUpdatedForProtocolHandlers(
   UnregisterProtocolHandlers(app_id, std::move(unregister_callback));
 }
 
-void OsIntegrationManager::OnWebAppProfileWillBeDeleted(const AppId& app_id) {
-  UninstallAllOsHooks(app_id, base::DoNothing());
-}
-
 std::unique_ptr<ShortcutInfo> OsIntegrationManager::BuildShortcutInfo(
     const AppId& app_id) {
   DCHECK(shortcut_manager_);
@@ -742,7 +727,7 @@ std::unique_ptr<ShortcutInfo> OsIntegrationManager::BuildShortcutInfo(
 
 void OsIntegrationManager::OnShortcutsCreated(
     const AppId& app_id,
-    std::unique_ptr<WebAppInstallInfo> web_app_info,
+    std::unique_ptr<WebApplicationInfo> web_app_info,
     InstallOsHooksOptions options,
     scoped_refptr<OsHooksBarrier> barrier,
     bool shortcuts_created) {
@@ -754,13 +739,10 @@ void OsIntegrationManager::OnShortcutsCreated(
   if (shortcut_creation_failure)
     barrier->OnError(OsHookType::kShortcuts);
 
-#if !defined(OS_MAC)
-  // This step happens before shortcut creation on Mac.
   if (options.os_hooks[OsHookType::kFileHandlers]) {
     RegisterFileHandlers(app_id, barrier->CreateBarrierCallbackForType(
                                      OsHookType::kFileHandlers));
   }
-#endif
 
   if (options.os_hooks[OsHookType::kProtocolHandlers]) {
     RegisterProtocolHandlers(app_id, barrier->CreateBarrierCallbackForType(
@@ -800,8 +782,7 @@ void OsIntegrationManager::OnShortcutsCreated(
   if (options.os_hooks[OsHookType::kUninstallationViaOsSettings] &&
       base::FeatureList::IsEnabled(
           features::kEnableWebAppUninstallFromOsSettings)) {
-    RegisterWebAppOsUninstallation(
-        app_id, registrar_ ? registrar_->GetAppShortName(app_id) : "");
+    RegisterWebAppOsUninstallation(app_id, registrar_->GetAppShortName(app_id));
   }
 }
 

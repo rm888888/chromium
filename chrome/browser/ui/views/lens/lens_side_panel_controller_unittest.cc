@@ -5,11 +5,10 @@
 #include "chrome/browser/ui/views/lens/lens_side_panel_controller.h"
 
 #include "base/feature_list.h"
-#include "base/memory/raw_ptr.h"
 #include "base/test/metrics/user_action_tester.h"
 #include "chrome/browser/ui/views/frame/browser_view.h"
 #include "chrome/browser/ui/views/frame/test_with_browser_view.h"
-#include "chrome/browser/ui/views/side_panel/side_panel.h"
+#include "chrome/browser/ui/views/side_panel.h"
 #include "components/lens/lens_features.h"
 #include "components/reading_list/features/reading_list_switches.h"
 #include "testing/gtest/include/gtest/gtest.h"
@@ -29,11 +28,9 @@ class LensSidePanelControllerTest : public TestWithBrowserView {
  public:
   void SetUp() override {
     base::test::ScopedFeatureList features;
-    features.InitWithFeaturesAndParameters(
-        {{features::kLensRegionSearch,
-          {{"region-search-enable-side-panel", "true"}}},
-         {::features::kSidePanel, {}},
-         {reading_list::switches::kReadLater, {}}},
+    features.InitWithFeatures(
+        {features::kLensRegionSearch, ::features::kSidePanel,
+         reading_list::switches::kReadLater},
         {});
     TestWithBrowserView::SetUp();
     // Create the lens side panel controller in BrowserView.
@@ -45,7 +42,7 @@ class LensSidePanelControllerTest : public TestWithBrowserView {
   }
 
  protected:
-  raw_ptr<LensSidePanelController> controller_;
+  LensSidePanelController* controller_;
 };
 
 TEST_F(LensSidePanelControllerTest, OpenWithURLShowsLensSidePanel) {

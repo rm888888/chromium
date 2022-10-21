@@ -4,6 +4,7 @@
 
 #include "chrome/browser/ui/toolbar/app_menu_model.h"
 
+#include "base/macros.h"
 #include "base/memory/ptr_util.h"
 #include "build/branding_buildflags.h"
 #include "build/chromeos_buildflags.h"
@@ -25,10 +26,10 @@
 #include "testing/gtest/include/gtest/gtest.h"
 #include "ui/gfx/color_palette.h"
 
-#if defined(OS_CHROMEOS)
-#include "chrome/browser/policy/system_features_disable_list_policy_handler.h"
+#if BUILDFLAG(IS_CHROMEOS_ASH)
+#include "chrome/browser/ash/policy/handlers/system_features_disable_list_policy_handler.h"
 #include "components/policy/core/common/policy_pref_names.h"
-#endif  // defined(OS_CHROMEOS)
+#endif  // BUILDFLAG(IS_CHROMEOS_ASH)
 
 namespace {
 
@@ -226,7 +227,7 @@ TEST_F(AppMenuModelTest, GlobalError) {
   EXPECT_EQ(1, error1->execute_count());
 }
 
-#if defined(OS_CHROMEOS)
+#if BUILDFLAG(IS_CHROMEOS_ASH)
 // Tests settings menu items is disabled in the app menu when
 // kSystemFeaturesDisableList is set.
 TEST_F(AppMenuModelTest, DisableSettingsItem) {
@@ -247,9 +248,8 @@ TEST_F(AppMenuModelTest, DisableSettingsItem) {
 #endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
 
   {
-    ListPrefUpdateDeprecated update(
-        TestingBrowserProcess::GetGlobal()->local_state(),
-        policy::policy_prefs::kSystemFeaturesDisableList);
+    ListPrefUpdate update(TestingBrowserProcess::GetGlobal()->local_state(),
+                          policy::policy_prefs::kSystemFeaturesDisableList);
     base::ListValue* list = update.Get();
     list->Append(policy::SystemFeature::kBrowserSettings);
   }
@@ -262,9 +262,8 @@ TEST_F(AppMenuModelTest, DisableSettingsItem) {
 #endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
 
   {
-    ListPrefUpdateDeprecated update(
-        TestingBrowserProcess::GetGlobal()->local_state(),
-        policy::policy_prefs::kSystemFeaturesDisableList);
+    ListPrefUpdate update(TestingBrowserProcess::GetGlobal()->local_state(),
+                          policy::policy_prefs::kSystemFeaturesDisableList);
     base::ListValue* list = update.Get();
     list->ClearList();
   }
@@ -277,4 +276,4 @@ TEST_F(AppMenuModelTest, DisableSettingsItem) {
 #endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
 }
 
-#endif  // defined(OS_CHROMEOS)
+#endif  // BUILDFLAG(IS_CHROMEOS_ASH)

@@ -10,7 +10,8 @@
 #include <string>
 #include <vector>
 
-#include "base/memory/raw_ptr.h"
+#include "base/compiler_specific.h"
+#include "base/macros.h"
 #include "ui/views/animation/scroll_animator.h"
 #include "ui/views/controls/menu/menu_delegate.h"
 #include "ui/views/controls/menu/menu_host.h"
@@ -204,21 +205,21 @@ class VIEWS_EXPORT SubmenuView : public View,
   bool OnScroll(float dx, float dy) override;
 
   // Parent menu item.
-  raw_ptr<MenuItemView> parent_menu_item_;
+  MenuItemView* parent_menu_item_;
 
   // Widget subclass used to show the children. This is deleted when we invoke
   // |DestroyMenuHost|, or |MenuHostDestroyed| is invoked back on us.
-  raw_ptr<MenuHost> host_;
+  MenuHost* host_;
 
   // If non-null, indicates a drop is in progress and drop_item is the item
   // the drop is over.
-  raw_ptr<MenuItemView> drop_item_;
+  MenuItemView* drop_item_;
 
   // Position of the drop.
   MenuDelegate::DropPosition drop_position_;
 
   // Ancestor of the SubmenuView, lazily created.
-  raw_ptr<MenuScrollViewContainer> scroll_view_container_;
+  MenuScrollViewContainer* scroll_view_container_;
 
   // See description above getter.
   mutable int max_minor_text_width_;

@@ -19,6 +19,7 @@
 #include "base/files/file_enumerator.h"
 #include "base/files/file_util.h"
 #include "base/format_macros.h"
+#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "base/path_service.h"
 #include "base/process/launch.h"
@@ -263,36 +264,36 @@ class DriveInternalsWebUIHandler : public content::WebUIMessageHandler {
 
   // WebUIMessageHandler override.
   void RegisterMessages() override {
-    web_ui()->RegisterMessageCallback(
+    web_ui()->RegisterDeprecatedMessageCallback(
         "pageLoaded",
         base::BindRepeating(&DriveInternalsWebUIHandler::OnPageLoaded,
                             weak_ptr_factory_.GetWeakPtr()));
-    web_ui()->RegisterMessageCallback(
+    web_ui()->RegisterDeprecatedMessageCallback(
         "periodicUpdate",
         base::BindRepeating(&DriveInternalsWebUIHandler::OnPeriodicUpdate,
                             weak_ptr_factory_.GetWeakPtr()));
-    web_ui()->RegisterMessageCallback(
+    web_ui()->RegisterDeprecatedMessageCallback(
         "setVerboseLoggingEnabled",
         base::BindRepeating(
             &DriveInternalsWebUIHandler::SetVerboseLoggingEnabled,
             weak_ptr_factory_.GetWeakPtr()));
-    web_ui()->RegisterMessageCallback(
+    web_ui()->RegisterDeprecatedMessageCallback(
         "enableTracing",
         base::BindRepeating(&DriveInternalsWebUIHandler::SetTracingEnabled,
                             weak_ptr_factory_.GetWeakPtr(), true));
-    web_ui()->RegisterMessageCallback(
+    web_ui()->RegisterDeprecatedMessageCallback(
         "disableTracing",
         base::BindRepeating(&DriveInternalsWebUIHandler::SetTracingEnabled,
                             weak_ptr_factory_.GetWeakPtr(), false));
-    web_ui()->RegisterMessageCallback(
+    web_ui()->RegisterDeprecatedMessageCallback(
         "restartDrive",
         base::BindRepeating(&DriveInternalsWebUIHandler::RestartDrive,
                             weak_ptr_factory_.GetWeakPtr()));
-    web_ui()->RegisterMessageCallback(
+    web_ui()->RegisterDeprecatedMessageCallback(
         "resetDriveFileSystem",
         base::BindRepeating(&DriveInternalsWebUIHandler::ResetDriveFileSystem,
                             weak_ptr_factory_.GetWeakPtr()));
-    web_ui()->RegisterMessageCallback(
+    web_ui()->RegisterDeprecatedMessageCallback(
         "zipLogs",
         base::BindRepeating(&DriveInternalsWebUIHandler::ZipDriveFsLogs,
                             weak_ptr_factory_.GetWeakPtr()));
@@ -300,38 +301,38 @@ class DriveInternalsWebUIHandler : public content::WebUIMessageHandler {
 
   void RegisterDeveloperMessages() {
     CHECK(developer_mode_);
-    web_ui()->RegisterMessageCallback(
+    web_ui()->RegisterDeprecatedMessageCallback(
         "setStartupArguments",
         base::BindRepeating(&DriveInternalsWebUIHandler::SetStartupArguments,
                             weak_ptr_factory_.GetWeakPtr()));
-    web_ui()->RegisterMessageCallback(
+    web_ui()->RegisterDeprecatedMessageCallback(
         "enableNetworking",
         base::BindRepeating(&DriveInternalsWebUIHandler::SetNetworkingEnabled,
                             weak_ptr_factory_.GetWeakPtr(), true));
-    web_ui()->RegisterMessageCallback(
+    web_ui()->RegisterDeprecatedMessageCallback(
         "disableNetworking",
         base::BindRepeating(&DriveInternalsWebUIHandler::SetNetworkingEnabled,
                             weak_ptr_factory_.GetWeakPtr(), false));
-    web_ui()->RegisterMessageCallback(
+    web_ui()->RegisterDeprecatedMessageCallback(
         "enableForcePauseSyncing",
         base::BindRepeating(&DriveInternalsWebUIHandler::ForcePauseSyncing,
                             weak_ptr_factory_.GetWeakPtr(), true));
-    web_ui()->RegisterMessageCallback(
+    web_ui()->RegisterDeprecatedMessageCallback(
         "disableForcePauseSyncing",
         base::BindRepeating(&DriveInternalsWebUIHandler::ForcePauseSyncing,
                             weak_ptr_factory_.GetWeakPtr(), false));
-    web_ui()->RegisterMessageCallback(
+    web_ui()->RegisterDeprecatedMessageCallback(
         "dumpAccountSettings",
         base::BindRepeating(&DriveInternalsWebUIHandler::DumpAccountSettings,
                             weak_ptr_factory_.GetWeakPtr()));
-    web_ui()->RegisterMessageCallback(
+    web_ui()->RegisterDeprecatedMessageCallback(
         "loadAccountSettings",
         base::BindRepeating(&DriveInternalsWebUIHandler::LoadAccountSettings,
                             weak_ptr_factory_.GetWeakPtr()));
   }
 
   // Called when the page is first loaded.
-  void OnPageLoaded(base::Value::ConstListView args) {
+  void OnPageLoaded(const base::ListValue* args) {
     AllowJavascript();
 
     drive::DriveIntegrationService* integration_service =
@@ -366,7 +367,7 @@ class DriveInternalsWebUIHandler : public content::WebUIMessageHandler {
   }
 
   // Called when the page requests periodic update.
-  void OnPeriodicUpdate(base::Value::ConstListView args) {
+  void OnPeriodicUpdate(const base::ListValue* args) {
     DCHECK_CURRENTLY_ON(BrowserThread::UI);
 
     drive::DriveIntegrationService* integration_service =
@@ -645,7 +646,7 @@ class DriveInternalsWebUIHandler : public content::WebUIMessageHandler {
   }
 
   // Called when the "Verbose Logging" checkbox on the page is changed.
-  void SetVerboseLoggingEnabled(base::Value::ConstListView args) {
+  void SetVerboseLoggingEnabled(const base::ListValue* args) {
     AllowJavascript();
     drive::DriveIntegrationService* integration_service =
         GetIntegrationService();
@@ -653,21 +654,21 @@ class DriveInternalsWebUIHandler : public content::WebUIMessageHandler {
       return;
     }
 
-    if (args.size() == 1 && args[0].is_bool()) {
-      bool enabled = args[0].GetBool();
+    if (args->GetList().size() == 1 && args->GetList()[0].is_bool()) {
+      bool enabled = args->GetList()[0].GetBool();
       profile()->GetPrefs()->SetBoolean(
           drive::prefs::kDriveFsEnableVerboseLogging, enabled);
-      RestartDrive(base::Value::ConstListView());
+      RestartDrive(nullptr);
     }
   }
 
   // Called when the "Startup Arguments" field on the page is submitted.
-  void SetStartupArguments(base::Value::ConstListView args) {
+  void SetStartupArguments(const base::ListValue* args) {
     AllowJavascript();
 
     CHECK(developer_mode_);
 
-    if (args.size() < 1 || !args[0].is_string()) {
+    if (args->GetList().size() < 1 || !args->GetList()[0].is_string()) {
       OnSetStartupArguments(false);
       return;
     }
@@ -680,7 +681,7 @@ class DriveInternalsWebUIHandler : public content::WebUIMessageHandler {
     }
 
     integration_service->SetStartupArguments(
-        args[0].GetString(),
+        args->GetList()[0].GetString(),
         base::BindOnce(&DriveInternalsWebUIHandler::OnSetStartupArguments,
                        weak_ptr_factory_.GetWeakPtr()));
   }
@@ -689,12 +690,12 @@ class DriveInternalsWebUIHandler : public content::WebUIMessageHandler {
     DCHECK_CURRENTLY_ON(BrowserThread::UI);
     DCHECK(developer_mode_);
     if (success) {
-      RestartDrive(base::Value::ConstListView());
+      RestartDrive(nullptr);
     }
     MaybeCallJavascript("updateStartupArgumentsStatus", base::Value(success));
   }
 
-  void SetTracingEnabled(bool enabled, base::Value::ConstListView args) {
+  void SetTracingEnabled(bool enabled, const base::ListValue* args) {
     AllowJavascript();
     drive::DriveIntegrationService* integration_service =
         GetIntegrationService();
@@ -703,7 +704,7 @@ class DriveInternalsWebUIHandler : public content::WebUIMessageHandler {
     }
   }
 
-  void SetNetworkingEnabled(bool enabled, base::Value::ConstListView args) {
+  void SetNetworkingEnabled(bool enabled, const base::ListValue* args) {
     AllowJavascript();
     CHECK(developer_mode_);
     drive::DriveIntegrationService* integration_service =
@@ -713,7 +714,7 @@ class DriveInternalsWebUIHandler : public content::WebUIMessageHandler {
     }
   }
 
-  void ForcePauseSyncing(bool enabled, base::Value::ConstListView args) {
+  void ForcePauseSyncing(bool enabled, const base::ListValue* args) {
     AllowJavascript();
     CHECK(developer_mode_);
     drive::DriveIntegrationService* integration_service =
@@ -723,7 +724,7 @@ class DriveInternalsWebUIHandler : public content::WebUIMessageHandler {
     }
   }
 
-  void DumpAccountSettings(base::Value::ConstListView args) {
+  void DumpAccountSettings(const base::ListValue* args) {
     AllowJavascript();
     CHECK(developer_mode_);
     drive::DriveIntegrationService* integration_service =
@@ -733,7 +734,7 @@ class DriveInternalsWebUIHandler : public content::WebUIMessageHandler {
     }
   }
 
-  void LoadAccountSettings(base::Value::ConstListView args) {
+  void LoadAccountSettings(const base::ListValue* args) {
     AllowJavascript();
     CHECK(developer_mode_);
     drive::DriveIntegrationService* integration_service =
@@ -744,7 +745,7 @@ class DriveInternalsWebUIHandler : public content::WebUIMessageHandler {
   }
 
   // Called when the "Restart Drive" button on the page is pressed.
-  void RestartDrive(base::Value::ConstListView args) {
+  void RestartDrive(const base::ListValue* args) {
     AllowJavascript();
 
     drive::DriveIntegrationService* integration_service =
@@ -755,7 +756,7 @@ class DriveInternalsWebUIHandler : public content::WebUIMessageHandler {
   }
 
   // Called when the corresponding button on the page is pressed.
-  void ResetDriveFileSystem(base::Value::ConstListView args) {
+  void ResetDriveFileSystem(const base::ListValue* args) {
     AllowJavascript();
 
     drive::DriveIntegrationService* integration_service =
@@ -767,7 +768,7 @@ class DriveInternalsWebUIHandler : public content::WebUIMessageHandler {
     }
   }
 
-  void ZipDriveFsLogs(base::Value::ConstListView args) {
+  void ZipDriveFsLogs(const base::ListValue* args) {
     AllowJavascript();
 
     drive::DriveIntegrationService* integration_service =

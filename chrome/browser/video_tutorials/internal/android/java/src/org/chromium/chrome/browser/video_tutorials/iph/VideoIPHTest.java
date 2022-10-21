@@ -29,7 +29,6 @@ import org.mockito.MockitoAnnotations;
 
 import org.chromium.base.Callback;
 import org.chromium.base.FeatureList;
-import org.chromium.base.test.BaseActivityTestRule;
 import org.chromium.chrome.browser.video_tutorials.FeatureType;
 import org.chromium.chrome.browser.video_tutorials.R;
 import org.chromium.chrome.browser.video_tutorials.Tutorial;
@@ -37,6 +36,7 @@ import org.chromium.chrome.browser.video_tutorials.test.TestImageFetcher;
 import org.chromium.chrome.test.ChromeJUnit4ClassRunner;
 import org.chromium.content_public.browser.test.util.TestThreadUtils;
 import org.chromium.ui.test.util.DummyUiActivity;
+import org.chromium.ui.test.util.ThemedDummyUiActivityTestRule;
 
 import java.util.HashMap;
 
@@ -46,8 +46,9 @@ import java.util.HashMap;
 @RunWith(ChromeJUnit4ClassRunner.class)
 public class VideoIPHTest {
     @Rule
-    public BaseActivityTestRule<DummyUiActivity> mActivityTestRule =
-            new BaseActivityTestRule<>(DummyUiActivity.class);
+    public ThemedDummyUiActivityTestRule<DummyUiActivity> mActivityTestRule =
+            new ThemedDummyUiActivityTestRule<>(
+                    DummyUiActivity.class, R.style.ColorOverlay_ChromiumAndroid);
 
     private Activity mActivity;
     private VideoIPHCoordinator mCoordinator;

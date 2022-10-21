@@ -251,12 +251,6 @@ var defaultTests = [
     chrome.autotestPrivate.importCrostini('backup', chrome.test.callbackFail(
         'Crostini is not available for the current user'));
   },
-  function couldAllowCrostini() {
-    chrome.autotestPrivate.couldAllowCrostini(chrome.test.callbackPass(
-        result => {
-          chrome.test.assertFalse(result);
-        }));
-  },
   function takeScreenshot() {
     chrome.autotestPrivate.takeScreenshot(
       function(base64Png) {
@@ -926,19 +920,6 @@ var defaultTests = [
       });
     });
   },
-  function startSmoothnessTrackingExplicitThroughputInterval() {
-    chrome.autotestPrivate.startSmoothnessTracking(100, async function() {
-      chrome.test.assertNoLastError();
-
-      await sleep(200);
-
-      chrome.autotestPrivate.stopSmoothnessTracking(function(data) {
-        chrome.test.assertNoLastError();
-        chrome.test.assertTrue(data.hasOwnProperty('throughput'));
-        chrome.test.succeed();
-      });
-    });
-  },
   function startSmoothnessTrackingExplicitDisplay() {
     const badDisplay = '-1';
     chrome.autotestPrivate.startSmoothnessTracking(badDisplay, function() {
@@ -987,15 +968,6 @@ var defaultTests = [
         } catch(error) {}
       }
       chrome.test.assertEq(success, 1);
-      chrome.test.succeed();
-    });
-  },
-
-  function getDisplaySmoothness() {
-    chrome.autotestPrivate.getDisplaySmoothness(function(smoothness) {
-      chrome.test.assertNoLastError();
-
-      chrome.test.assertTrue(smoothness >= 0);
       chrome.test.succeed();
     });
   },
@@ -1387,7 +1359,7 @@ var scrollableShelfTests = [
 
   async function pinThenUnpinFileApp() {
     // Pin the File app.
-    var fileID = 'unique-file-id-123'
+    var fileID = 'hhaomjibdihmijegdhdafkllkbggdgoj'
     var pinResults = await promisify(
         chrome.autotestPrivate.setShelfIconPin,
         [{appId: fileID, pinned: true}]);
@@ -1409,7 +1381,7 @@ var scrollableShelfTests = [
     // Because the File app has been unpinned, there is no update in pin state.
     chrome.test.assertEq([], unpinResults);
 
-    chrome.test.succeed();
+    chrome.test.succeed()
   }
 ];
 
@@ -1423,14 +1395,6 @@ var shelfTests = [function fetchShelfUIInfo() {
             }));
       }));
 }];
-
-var holdingSpaceTests = [
-  function resetHoldingSpace(options) {
-    // State after this call is checked in C++ test code.
-    chrome.autotestPrivate.resetHoldingSpace(options,
-      chrome.test.callbackPass());
-  },
-];
 
 // Tests that requires a concrete system web app installation.
 var systemWebAppsTests = [
@@ -1483,22 +1447,13 @@ var test_suites = {
   'splitviewLeftSnapped': splitviewLeftSnappedTests,
   'scrollableShelf': scrollableShelfTests,
   'shelf': shelfTests,
-  'holdingSpace': holdingSpaceTests,
   'systemWebApps': systemWebAppsTests,
 };
 
 chrome.test.getConfig(function(config) {
-  var customArg = JSON.parse(config.customArg);
-  // In the customArg object, we expect the name of the test suite at the
-  // 'testSuite' key, and the arguments to be passed to the test functions as an
-  // array at the 'args' key.
-  var [suite_name, args] = [customArg['testSuite'], customArg['args']];
-
-  chrome.test.assertTrue(Array.isArray(args));
-
-  if (suite_name in test_suites) {
-    var suite = test_suites[suite_name].map(f => f.bind({}, ...args));
-    chrome.test.runTests(suite);
+  var suite = test_suites[config.customArg];
+  if (config.customArg in test_suites) {
+    chrome.test.runTests(test_suites[config.customArg]);
   } else {
     chrome.test.fail('Invalid test suite');
   }

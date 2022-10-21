@@ -122,6 +122,17 @@ void MediaRouterAndroid::CreateRoute(const MediaSource::Id& source_id,
                        web_contents, route_request_id);
 }
 
+void MediaRouterAndroid::ConnectRouteByRouteId(
+    const MediaSource::Id& source,
+    const MediaRoute::Id& route_id,
+    const url::Origin& origin,
+    content::WebContents* web_contents,
+    MediaRouteResponseCallback callback,
+    base::TimeDelta timeout,
+    bool incognito) {
+  NOTIMPLEMENTED();
+}
+
 void MediaRouterAndroid::JoinRoute(const MediaSource::Id& source_id,
                                    const std::string& presentation_id,
                                    const url::Origin& origin,
@@ -198,6 +209,9 @@ void MediaRouterAndroid::UnregisterMediaSinksObserver(
 void MediaRouterAndroid::RegisterMediaRoutesObserver(
     MediaRoutesObserver* observer) {
   DVLOG(2) << "Added MediaRoutesObserver: " << observer;
+  if (!observer->source_id().empty())
+    NOTIMPLEMENTED() << "Joinable routes query not implemented.";
+
   routes_observers_.AddObserver(observer);
 }
 
@@ -237,7 +251,7 @@ void MediaRouterAndroid::OnRouteCreated(const MediaRoute::Id& route_id,
     return;
 
   MediaRoute route(route_id, request->media_source, sink_id, std::string(),
-                   is_local);
+                   is_local, true);  // TODO(avayvod): Populate for_display.
 
   std::unique_ptr<RouteRequestResult> result =
       RouteRequestResult::FromSuccess(route, request->presentation_id);
@@ -251,7 +265,7 @@ void MediaRouterAndroid::OnRouteCreated(const MediaRoute::Id& route_id,
 
   active_routes_.push_back(route);
   for (auto& observer : routes_observers_)
-    observer.OnRoutesUpdated(active_routes_);
+    observer.OnRoutesUpdated(active_routes_, std::vector<MediaRoute::Id>());
   if (is_local) {
     MediaRouterMetrics::RecordCreateRouteResultCode(
         result->result_code(), mojom::MediaRouteProviderId::ANDROID_CAF);
@@ -338,7 +352,7 @@ void MediaRouterAndroid::RemoveRoute(const MediaRoute::Id& route_id) {
     }
 
   for (auto& observer : routes_observers_)
-    observer.OnRoutesUpdated(active_routes_);
+    observer.OnRoutesUpdated(active_routes_, std::vector<MediaRoute::Id>());
 }
 
 std::unique_ptr<media::FlingingController>

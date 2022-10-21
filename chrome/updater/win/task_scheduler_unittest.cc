@@ -38,9 +38,6 @@ namespace {
 const wchar_t kTaskName1[] = L"Chrome Updater Test task 1 (delete me)";
 const wchar_t kTaskName2[] = L"Chrome Updater Test task 2 (delete me)";
 
-const wchar_t kPrefixTaskName1[] = L"Chrome Updater Test task 1";
-const wchar_t kPrefixTaskName2[] = L"Chrome Updater Test task 2";
-
 // Optional descriptions for the tasks above.
 const wchar_t kTaskDescription1[] =
     L"Task 1 used only for Chrome Updater unit testing.";
@@ -65,26 +62,6 @@ class TaskSchedulerTests : public ::testing::Test {
 
     // Make sure every processes launched with scheduled task are completed.
     ASSERT_TRUE(WaitForProcessesStopped(kTestProcessExecutableName));
-  }
-
-  // Converts a base::Time that is in UTC and returns the corresponding local
-  // time on the current system.
-  base::Time UTCTimeToLocalTime(const base::Time& time_utc) {
-    const FILETIME file_time_utc = time_utc.ToFileTime();
-    FILETIME file_time_local = {};
-    SYSTEMTIME system_time_utc = {};
-    SYSTEMTIME system_time_local = {};
-
-    // We do not use ::FileTimeToLocalFileTime, since it uses the current
-    // settings for the time zone and daylight saving time, instead of the
-    // settings at the time of `time_utc`.
-    if (!::FileTimeToSystemTime(&file_time_utc, &system_time_utc) ||
-        !::SystemTimeToTzSpecificLocalTime(nullptr, &system_time_utc,
-                                           &system_time_local) ||
-        !::SystemTimeToFileTime(&system_time_local, &file_time_local)) {
-      return base::Time();
-    }
-    return base::Time::FromFileTime(file_time_local);
   }
 
  protected:
@@ -164,8 +141,8 @@ TEST_F(TaskSchedulerTests, Hourly) {
 
   base::Time next_run_time;
   EXPECT_TRUE(task_scheduler_->GetNextTaskRunTime(kTaskName1, &next_run_time));
-  EXPECT_LT(next_run_time, UTCTimeToLocalTime(now + one_hour + one_minute));
-  EXPECT_GT(next_run_time, UTCTimeToLocalTime(now + one_hour - one_minute));
+  EXPECT_LT(next_run_time, now + one_hour + one_minute);
+  EXPECT_GT(next_run_time, now + one_hour - one_minute);
 
   EXPECT_TRUE(task_scheduler_->DeleteTask(kTaskName1));
   EXPECT_FALSE(task_scheduler_->IsTaskRegistered(kTaskName1));
@@ -184,13 +161,13 @@ TEST_F(TaskSchedulerTests, EveryFiveHours) {
       TaskScheduler::TRIGGER_TYPE_EVERY_FIVE_HOURS, false));
   EXPECT_TRUE(task_scheduler_->IsTaskRegistered(kTaskName1));
 
-  base::TimeDelta five_hours(base::Hours(5));
+  base::TimeDelta six_hours(base::Hours(5));
   base::TimeDelta one_minute(base::Minutes(1));
 
   base::Time next_run_time;
   EXPECT_TRUE(task_scheduler_->GetNextTaskRunTime(kTaskName1, &next_run_time));
-  EXPECT_LT(next_run_time, UTCTimeToLocalTime(now + five_hours + one_minute));
-  EXPECT_GT(next_run_time, UTCTimeToLocalTime(now + five_hours - one_minute));
+  EXPECT_LT(next_run_time, now + six_hours + one_minute);
+  EXPECT_GT(next_run_time, now + six_hours - one_minute);
 
   EXPECT_TRUE(task_scheduler_->DeleteTask(kTaskName1));
   EXPECT_FALSE(task_scheduler_->IsTaskRegistered(kTaskName1));
@@ -238,30 +215,6 @@ TEST_F(TaskSchedulerTests, GetTaskNameList) {
   EXPECT_TRUE(task_scheduler_->GetTaskNameList(&task_names));
   EXPECT_TRUE(base::Contains(task_names, kTaskName1));
   EXPECT_TRUE(base::Contains(task_names, kTaskName2));
-
-  EXPECT_TRUE(task_scheduler_->DeleteTask(kTaskName1));
-  EXPECT_TRUE(task_scheduler_->DeleteTask(kTaskName2));
-}
-
-TEST_F(TaskSchedulerTests, FindFirstTaskName) {
-  base::FilePath executable_path;
-  ASSERT_TRUE(base::PathService::Get(base::DIR_EXE, &executable_path));
-  base::CommandLine command_line(
-      executable_path.Append(kTestProcessExecutableName));
-
-  EXPECT_TRUE(task_scheduler_->RegisterTask(
-      GetTestScope(), kTaskName1, kTaskDescription1, command_line,
-      TaskScheduler::TRIGGER_TYPE_HOURLY, false));
-  EXPECT_TRUE(task_scheduler_->IsTaskRegistered(kTaskName1));
-  EXPECT_TRUE(task_scheduler_->RegisterTask(
-      GetTestScope(), kTaskName2, kTaskDescription2, command_line,
-      TaskScheduler::TRIGGER_TYPE_HOURLY, false));
-  EXPECT_TRUE(task_scheduler_->IsTaskRegistered(kTaskName2));
-
-  EXPECT_STREQ(kTaskName1,
-               task_scheduler_->FindFirstTaskName(kPrefixTaskName1).c_str());
-  EXPECT_STREQ(kTaskName2,
-               task_scheduler_->FindFirstTaskName(kPrefixTaskName2).c_str());
 
   EXPECT_TRUE(task_scheduler_->DeleteTask(kTaskName1));
   EXPECT_TRUE(task_scheduler_->DeleteTask(kTaskName2));

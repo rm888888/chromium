@@ -3,7 +3,6 @@
 // found in the LICENSE file.
 
 #include "ui/aura/test/aura_test_utils.h"
-#include "base/memory/raw_ptr.h"
 
 #include <utility>
 
@@ -31,12 +30,8 @@ class WindowTreeHostTestApi {
 
   void disable_ime() { host_->dispatcher_->set_skip_ime(true); }
 
-  static const base::flat_set<WindowTreeHost*>& GetThrottledHosts() {
-    return WindowTreeHost::GetThrottledHostsForTesting();
-  }
-
  private:
-  raw_ptr<WindowTreeHost> host_;
+  WindowTreeHost* host_;
 };
 
 const gfx::Point& QueryLatestMousePositionRequestInHost(WindowTreeHost* host) {
@@ -56,10 +51,6 @@ void DisableIME(WindowTreeHost* host) {
 
 void DisableNativeWindowOcclusionTracking(WindowTreeHost* host) {
   NativeWindowOcclusionTracker::DisableNativeWindowOcclusionTracking(host);
-}
-
-const base::flat_set<WindowTreeHost*>& GetThrottledHosts() {
-  return WindowTreeHostTestApi::GetThrottledHosts();
 }
 
 }  // namespace test

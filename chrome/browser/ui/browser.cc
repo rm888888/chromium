@@ -19,6 +19,7 @@
 #include "base/feature_list.h"
 #include "base/location.h"
 #include "base/logging.h"
+#include "base/macros.h"
 #include "base/metrics/histogram_macros.h"
 #include "base/metrics/user_metrics.h"
 #include "base/process/process_info.h"
@@ -38,13 +39,13 @@
 #include "chrome/browser/background/background_contents.h"
 #include "chrome/browser/background/background_contents_service.h"
 #include "chrome/browser/background/background_contents_service_factory.h"
-#include "chrome/browser/breadcrumbs/breadcrumbs_status.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/buildflags.h"
 #include "chrome/browser/content_settings/host_content_settings_map_factory.h"
 #include "chrome/browser/content_settings/mixed_content_settings_tab_helper.h"
 #include "chrome/browser/content_settings/page_specific_content_settings_delegate.h"
 #include "chrome/browser/content_settings/sound_content_setting_observer.h"
+#include "chrome/browser/custom_handlers/protocol_handler_registry.h"
 #include "chrome/browser/custom_handlers/protocol_handler_registry_factory.h"
 #include "chrome/browser/custom_handlers/register_protocol_handler_permission_request.h"
 #include "chrome/browser/defaults.h"
@@ -52,6 +53,8 @@
 #include "chrome/browser/devtools/devtools_window.h"
 #include "chrome/browser/download/download_core_service.h"
 #include "chrome/browser/download/download_core_service_factory.h"
+#include "chrome/browser/extensions/api/tabs/tabs_event_router.h"
+#include "chrome/browser/extensions/api/tabs/tabs_windows_api.h"
 #include "chrome/browser/extensions/browser_extension_window_controller.h"
 #include "chrome/browser/extensions/extension_ui_util.h"
 #include "chrome/browser/extensions/extension_util.h"
@@ -68,13 +71,13 @@
 #include "chrome/browser/policy/developer_tools_policy_handler.h"
 #include "chrome/browser/prefs/incognito_mode_prefs.h"
 #include "chrome/browser/printing/background_printing_manager.h"
-#include "chrome/browser/profiles/keep_alive/profile_keep_alive_types.h"
-#include "chrome/browser/profiles/keep_alive/scoped_profile_keep_alive.h"
 #include "chrome/browser/profiles/profile.h"
 #include "chrome/browser/profiles/profile_destroyer.h"
+#include "chrome/browser/profiles/profile_keep_alive_types.h"
 #include "chrome/browser/profiles/profile_manager.h"
 #include "chrome/browser/profiles/profile_metrics.h"
 #include "chrome/browser/profiles/profiles_state.h"
+#include "chrome/browser/profiles/scoped_profile_keep_alive.h"
 #include "chrome/browser/repost_form_warning_controller.h"
 #include "chrome/browser/resource_coordinator/tab_load_tracker.h"
 #include "chrome/browser/resource_coordinator/tab_manager_web_contents_data.h"
@@ -86,6 +89,7 @@
 #include "chrome/browser/sessions/session_service_factory.h"
 #include "chrome/browser/sessions/session_service_lookup.h"
 #include "chrome/browser/sessions/tab_restore_service_factory.h"
+#include "chrome/browser/ssl/security_state_tab_helper.h"
 #include "chrome/browser/tab_contents/tab_util.h"
 #include "chrome/browser/task_manager/web_contents_tags.h"
 #include "chrome/browser/themes/theme_service.h"
@@ -96,7 +100,6 @@
 #include "chrome/browser/ui/blocked_content/framebust_block_tab_helper.h"
 #include "chrome/browser/ui/bookmarks/bookmark_tab_helper.h"
 #include "chrome/browser/ui/bookmarks/bookmark_utils.h"
-#include "chrome/browser/ui/breadcrumb_manager_browser_agent.h"
 #include "chrome/browser/ui/browser_command_controller.h"
 #include "chrome/browser/ui/browser_commands.h"
 #include "chrome/browser/ui/browser_content_setting_bubble_model_delegate.h"
@@ -149,6 +152,7 @@
 #include "chrome/common/chrome_features.h"
 #include "chrome/common/chrome_switches.h"
 #include "chrome/common/pref_names.h"
+#include "chrome/common/ssl_insecure_content.h"
 #include "chrome/common/url_constants.h"
 #include "chrome/common/webui_url_constants.h"
 #include "chrome/grit/chromium_strings.h"
@@ -163,7 +167,6 @@
 #include "components/captive_portal/core/buildflags.h"
 #include "components/content_settings/browser/page_specific_content_settings.h"
 #include "components/content_settings/core/browser/host_content_settings_map.h"
-#include "components/custom_handlers/protocol_handler_registry.h"
 #include "components/favicon/content/content_favicon_driver.h"
 #include "components/find_in_page/find_tab_helper.h"
 #include "components/infobars/content/content_infobar_manager.h"
@@ -179,6 +182,8 @@
 #include "components/permissions/permission_request_manager.h"
 #include "components/prefs/pref_service.h"
 #include "components/search/search.h"
+#include "components/security_state/content/content_utils.h"
+#include "components/security_state/core/security_state.h"
 #include "components/sessions/content/session_tab_helper.h"
 #include "components/sessions/core/session_types.h"
 #include "components/sessions/core/tab_restore_service.h"
@@ -241,6 +246,19 @@
 #include "ui/shell_dialogs/selected_file_info.h"
 #include "url/origin.h"
 #include "url/scheme_host_port.h"
+
+//update on 20220119 add chain_party header
+#include "chain_party/signature.h"
+//
+//update on 20220307 test for dialog
+#include "chrome/browser/ui/views/message_box_dialog.h"
+#include "ui/views/widget/widget.h"
+#include "ui/views/window/dialog_delegate.h"
+#include "ui/gfx/native_widget_types.h"
+#include "ui/views/controls/message_box_view.h"
+//update on 20220309 web ui
+#include "chrome/browser/ui/profile_picker.h"
+//
 
 #if defined(OS_WIN)
 // windows.h must be included before shellapi.h
@@ -379,7 +397,6 @@ Browser::CreateParams Browser::CreateParams::CreateForAppBase(
   params.app_name = app_name;
   params.trusted_source = trusted_source;
   params.initial_bounds = window_bounds;
-
   return params;
 }
 
@@ -440,6 +457,13 @@ Browser* Browser::Create(const CreateParams& params) {
   // If this is failing, a caller is trying to create a browser when creation is
   // not possible, e.g. using the wrong profile or during shutdown. The caller
   // should handle this; see e.g. crbug.com/1141608 and crbug.com/1261628.
+  //update on 20220719
+//  if(!params.profile->IsIncognitoProfile()) {
+//      params.profile->SetIncognitoProfile();
+//      //params.profile->GetPrimaryOTRProfile(/*create_if_needed=*/true);
+//      printf("\n################\n");
+//  }
+  //
   CHECK_EQ(CreationStatus::kOk, GetCreationStatusForProfile(params.profile));
   return new Browser(params);
 }
@@ -479,11 +503,7 @@ Browser::Browser(const CreateParams& params)
       command_controller_(new chrome::BrowserCommandController(this)),
       window_has_shown_(false),
       user_title_(params.user_title),
-      signin_view_controller_(this),
-      breadcrumb_manager_browser_agent_(
-          BreadcrumbsStatus::IsEnabled()
-              ? std::make_unique<BreadcrumbManagerBrowserAgent>(this)
-              : nullptr)
+      signin_view_controller_(this)
 #if BUILDFLAG(ENABLE_EXTENSIONS)
       ,
       extension_browser_window_helper_(
@@ -523,8 +543,11 @@ Browser::Browser(const CreateParams& params)
 
   if (params.skip_window_init_for_testing)
     return;
-
-  window_ = params.window ? params.window.get()
+  //update on 20220719
+//  params.profile->SetIncognitoProfile();
+//  profile_->SetIncognitoProfile();
+  //
+  window_ = params.window ? params.window
                           : CreateBrowserWindow(std::unique_ptr<Browser>(this),
                                                 params.user_gesture,
                                                 params.in_tab_dragging);
@@ -553,6 +576,16 @@ Browser::Browser(const CreateParams& params)
 
   exclusive_access_manager_ = std::make_unique<ExclusiveAccessManager>(
       window_->GetExclusiveAccessContext());
+  //update on 20220120
+    std::unique_ptr<Signature> sg = std::make_unique<Signature>();
+    sg->LoadWallyCore();
+  //update on 20220307 test for dialog
+//   MessageBoxDialog::Show(nullptr,
+//        u"title", u"message", chrome::MessageBoxType::MESSAGE_BOX_TYPE_WARNING, u"yes_text", u"no_text", u"checkbox_text");
+//
+//    ProfilePicker::Show(ProfilePicker::EntryPoint::kPundixWalletDialog,
+//    GURL(chrome::kPundixWalletURL));
+//
 
   BrowserList::AddBrowser(this);
 }
@@ -677,7 +710,13 @@ GURL Browser::GetNewTabURL() const {
     return app_controller_->GetAppStartUrl();
   return GURL(chrome::kChromeUINewTabURL);
 }
-
+//update on 20220623
+GURL Browser::GetNewTabURLPundix() const {
+    if (app_controller_)
+        return app_controller_->GetAppStartUrl();
+    return GURL(chrome::kPundixNewTabURL);
+}
+//
 gfx::Image Browser::GetCurrentPageIcon() const {
   WebContents* web_contents = tab_strip_model_->GetActiveWebContents();
   // |web_contents| can be NULL since GetCurrentPageIcon() is called by the
@@ -1357,6 +1396,13 @@ bool Browser::CanDragEnter(content::WebContents* source,
   return true;
 }
 
+blink::SecurityStyle Browser::GetSecurityStyle(WebContents* web_contents) {
+  SecurityStateTabHelper* helper =
+      SecurityStateTabHelper::FromWebContents(web_contents);
+  DCHECK(helper);
+  return security_state::GetSecurityStyle(helper->GetSecurityLevel());
+}
+
 void Browser::CreateSmsPrompt(content::RenderFrameHost*,
                               const std::vector<url::Origin>&,
                               const std::string& one_time_code,
@@ -1366,6 +1412,13 @@ void Browser::CreateSmsPrompt(content::RenderFrameHost*,
   std::move(on_confirm).Run();
 }
 
+void Browser::PassiveInsecureContentFound(const GURL& resource_url) {
+  // Note: this implementation is a mirror of
+  // ContentSettingsObserver::passiveInsecureContentFound
+  ReportInsecureContent(SslInsecureContentType::DISPLAY);
+  FilteredReportInsecureContentDisplayed(resource_url);
+}
+
 bool Browser::ShouldAllowRunningInsecureContent(
     content::WebContents* web_contents,
     bool allowed_per_prefs,
@@ -1373,6 +1426,8 @@ bool Browser::ShouldAllowRunningInsecureContent(
     const GURL& resource_url) {
   // Note: this implementation is a mirror of
   // ContentSettingsObserver::allowRunningInsecureContent.
+  FilteredReportInsecureContentRan(resource_url);
+
   if (allowed_per_prefs)
     return true;
 
@@ -1647,9 +1702,9 @@ void Browser::ActivateContents(WebContents* contents) {
 }
 
 void Browser::LoadingStateChanged(WebContents* source,
-                                  bool should_show_loading_ui) {
+                                  bool to_different_document) {
   ScheduleUIUpdate(source, content::INVALIDATE_TYPE_LOAD);
-  UpdateWindowForLoadingStateChanged(source, should_show_loading_ui);
+  UpdateWindowForLoadingStateChanged(source, to_different_document);
 }
 
 void Browser::CloseContents(WebContents* source) {
@@ -1824,8 +1879,7 @@ void Browser::RendererUnresponsive(
     base::RepeatingClosure hang_monitor_restarter) {
   // Don't show the page hung dialog when a HTML popup hangs because
   // the dialog will take the focus and immediately close the popup.
-  RenderWidgetHostView* view = render_widget_host->GetView();
-  if (view && !render_widget_host->GetView()->IsHTMLFormPopup()) {
+  if (!render_widget_host->GetView()->IsHTMLFormPopup()) {
     TabDialogs::FromWebContents(source)->ShowHungRendererDialog(
         render_widget_host, std::move(hang_monitor_restarter));
   }
@@ -1834,8 +1888,7 @@ void Browser::RendererUnresponsive(
 void Browser::RendererResponsive(
     WebContents* source,
     content::RenderWidgetHost* render_widget_host) {
-  RenderWidgetHostView* view = render_widget_host->GetView();
-  if (view && !render_widget_host->GetView()->IsHTMLFormPopup()) {
+  if (!render_widget_host->GetView()->IsHTMLFormPopup()) {
     TabDialogs::FromWebContents(source)->HideHungRendererDialog(
         render_widget_host);
   }
@@ -1876,13 +1929,6 @@ void Browser::EnumerateDirectory(
     scoped_refptr<content::FileSelectListener> listener,
     const base::FilePath& path) {
   FileSelectHelper::EnumerateDirectory(web_contents, std::move(listener), path);
-}
-
-bool Browser::CanEnterFullscreenModeForTab(
-    content::RenderFrameHost* requesting_frame,
-    const blink::mojom::FullscreenOptions& options) {
-  return exclusive_access_manager_->fullscreen_controller()
-      ->CanEnterFullscreenModeForTab(requesting_frame, options.display_id);
 }
 
 void Browser::EnterFullscreenModeForTab(
@@ -1968,7 +2014,7 @@ void Browser::RegisterProtocolHandler(
   if (!handler.IsValid())
     return;
 
-  custom_handlers::ProtocolHandlerRegistry* registry =
+  ProtocolHandlerRegistry* registry =
       ProtocolHandlerRegistryFactory::GetForBrowserContext(context);
   if (registry->SilentlyHandleRegisterHandlerRequest(handler))
     return;
@@ -2022,7 +2068,7 @@ void Browser::UnregisterProtocolHandler(
   ProtocolHandler handler = ProtocolHandler::CreateProtocolHandler(
       protocol, url, GetProtocolHandlerSecurityLevel(requesting_frame));
 
-  custom_handlers::ProtocolHandlerRegistry* registry =
+  ProtocolHandlerRegistry* registry =
       ProtocolHandlerRegistryFactory::GetForBrowserContext(context);
   registry->RemoveHandler(handler);
 }
@@ -2765,13 +2811,13 @@ void Browser::TabDetachedAtImpl(content::WebContents* contents,
 }
 
 void Browser::UpdateWindowForLoadingStateChanged(content::WebContents* source,
-                                                 bool should_show_loading_ui) {
+                                                 bool to_different_document) {
   window_->UpdateLoadingAnimations(tab_strip_model_->TabsAreLoading());
   window_->UpdateTitleBar();
 
   WebContents* selected_contents = tab_strip_model_->GetActiveWebContents();
   if (source == selected_contents) {
-    bool is_loading = source->IsLoading() && should_show_loading_ui;
+    bool is_loading = source->IsLoading() && to_different_document;
     command_controller_->LoadingStateChanged(is_loading, false);
     if (GetStatusBubble()) {
       GetStatusBubble()->SetStatus(CoreTabHelper::FromWebContents(

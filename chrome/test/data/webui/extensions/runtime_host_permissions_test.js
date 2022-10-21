@@ -26,7 +26,7 @@ suite('RuntimeHostPermissions', function() {
     delegate = new TestService();
     element.delegate = delegate;
     element.itemId = ITEM_ID;
-    element.enableEnhancedSiteControls = false;
+    element.useNewSiteAccessPage = false;
 
     document.body.appendChild(element);
 
@@ -85,7 +85,7 @@ suite('RuntimeHostPermissions', function() {
   });
 
   test('permissions display new site access menu', function() {
-    loadTimeData.overrideValues({extensionsMenuAccessControlEnabled: true});
+    element.set('useNewSiteAccessPage', true);
     const permissions = {
       hostAccess: HostAccess.ON_CLICK,
       hasAllHosts: true,

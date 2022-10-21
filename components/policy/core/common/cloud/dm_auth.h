@@ -8,6 +8,7 @@
 #include <string>
 
 #include "base/check_op.h"
+#include "base/macros.h"
 #include "components/policy/policy_export.h"
 
 namespace policy {

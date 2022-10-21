@@ -106,7 +106,7 @@ TEST_F(CustomTypesTest, ChromeSettingsEventUseAfterInvalidation) {
 TEST_F(CustomTypesTest, ContentSettingsPromisesForManifestV3) {
   scoped_refptr<const Extension> extension =
       ExtensionBuilder("foo")
-          .SetManifestVersion(3)
+          .SetManifestKey("manifest_version", 3)
           .AddPermission("contentSettings")
           .Build();
   RegisterExtension(extension);
@@ -233,10 +233,11 @@ TEST_F(CustomTypesTest, ContentSettingsInvalidInvocationForManifestV2) {
 }
 
 TEST_F(CustomTypesTest, ChromeSettingPromisesForManifestV3) {
-  scoped_refptr<const Extension> extension = ExtensionBuilder("foo")
-                                                 .SetManifestVersion(3)
-                                                 .AddPermission("privacy")
-                                                 .Build();
+  scoped_refptr<const Extension> extension =
+      ExtensionBuilder("foo")
+          .SetManifestKey("manifest_version", 3)
+          .AddPermission("privacy")
+          .Build();
   RegisterExtension(extension);
 
   v8::HandleScope handle_scope(isolate());

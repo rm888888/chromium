@@ -81,15 +81,15 @@ const base::DictionaryValue* ServiceProcessPrefs::GetDictionary(
   return dict_value;
 }
 
-const base::Value* ServiceProcessPrefs::GetList(const std::string& key) const {
+const base::ListValue* ServiceProcessPrefs::GetList(
+    const std::string& key) const {
   const base::Value* value;
   if (!prefs_->GetValue(key, &value))
     return nullptr;
 
-  if (!value || !value->is_list())
-    return nullptr;
-
-  return value;
+  const base::ListValue* list_value = nullptr;
+  value->GetAsList(&list_value);
+  return list_value;
 }
 
 void ServiceProcessPrefs::SetValue(const std::string& key,

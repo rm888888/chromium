@@ -7,6 +7,7 @@
 #include <memory>
 
 #include "base/bind.h"
+#include "base/macros.h"
 #include "base/metrics/histogram_macros.h"
 #include "base/time/time.h"
 #include "base/values.h"
@@ -240,10 +241,6 @@ class BrowserSwitchHandler : public content::WebUIMessageHandler {
   // Immediately re-download and apply XML rules.
   void HandleRefreshXml(const base::ListValue* args);
 
-  // Resolves a promise with the boolean value describing whether the feature
-  // is enabled or not which is configured by BrowserSwitcherEnabled key
-  void HandleIsBrowserSwitchEnabled(const base::ListValue* args);
-
   base::CallbackListSubscription prefs_subscription_;
 
   base::CallbackListSubscription service_subscription_;
@@ -284,10 +281,6 @@ void BrowserSwitchHandler::RegisterMessages() {
   web_ui()->RegisterDeprecatedMessageCallback(
       "refreshXml", base::BindRepeating(&BrowserSwitchHandler::HandleRefreshXml,
                                         base::Unretained(this)));
-  web_ui()->RegisterDeprecatedMessageCallback(
-      "isBrowserSwitcherEnabled",
-      base::BindRepeating(&BrowserSwitchHandler::HandleIsBrowserSwitchEnabled,
-                          base::Unretained(this)));
 }
 
 void BrowserSwitchHandler::OnJavascriptAllowed() {
@@ -386,12 +379,9 @@ void BrowserSwitchHandler::HandleGetAllRulesets(const base::ListValue* args) {
   retval.Set("gpo", std::move(gpo_dict));
   auto ieem_dict = RuleSetToDict(*service->sitelist()->GetIeemSitelist());
   retval.Set("ieem", std::move(ieem_dict));
-  auto external_sitelist_dict =
+  auto external_dict =
       RuleSetToDict(*service->sitelist()->GetExternalSitelist());
-  retval.Set("external_sitelist", std::move(external_sitelist_dict));
-  auto external_greylist_dict =
-      RuleSetToDict(*service->sitelist()->GetExternalGreylist());
-  retval.Set("external_greylist", std::move(external_greylist_dict));
+  retval.Set("external", std::move(external_dict));
 
   ResolveJavascriptCallback(args->GetList()[0], retval);
 }
@@ -491,16 +481,6 @@ void BrowserSwitchHandler::HandleRefreshXml(const base::ListValue* args) {
   DCHECK(args);
   auto* service = GetBrowserSwitcherService(web_ui());
   service->StartDownload(base::TimeDelta());
-}
-
-void BrowserSwitchHandler::HandleIsBrowserSwitchEnabled(
-    const base::ListValue* args) {
-  DCHECK(args);
-  AllowJavascript();
-
-  auto* service = GetBrowserSwitcherService(web_ui());
-  ResolveJavascriptCallback(args->GetList()[0],
-                            base::Value(service->prefs().IsEnabled()));
 }
 
 BrowserSwitchUI::BrowserSwitchUI(content::WebUI* web_ui)

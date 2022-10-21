@@ -26,7 +26,7 @@ base::StringPiece ToStringPiece(const char* str) {
 }  // namespace
 
 std::unique_ptr<TemplateURLData> TemplateURLDataFromDictionary(
-    const base::Value& dict) {
+    const base::DictionaryValue& dict) {
   const std::string* search_url =
       dict.FindStringKey(DefaultSearchManager::kURL);
   const std::string* keyword =
@@ -144,18 +144,16 @@ std::unique_ptr<TemplateURLData> TemplateURLDataFromDictionary(
   result->usage_count = dict.FindIntKey(DefaultSearchManager::kUsageCount)
                             .value_or(result->usage_count);
 
-  const base::Value* alternate_urls =
-      dict.FindListKey(DefaultSearchManager::kAlternateURLs);
-  if (alternate_urls) {
+  const base::ListValue* alternate_urls = nullptr;
+  if (dict.GetList(DefaultSearchManager::kAlternateURLs, &alternate_urls)) {
     for (const auto& it : alternate_urls->GetList()) {
       if (it.is_string())
         result->alternate_urls.push_back(it.GetString());
     }
   }
 
-  const base::Value* encodings =
-      dict.FindListKey(DefaultSearchManager::kInputEncodings);
-  if (encodings) {
+  const base::ListValue* encodings = nullptr;
+  if (dict.GetList(DefaultSearchManager::kInputEncodings, &encodings)) {
     for (const auto& it : encodings->GetList()) {
       std::string encoding;
       if (it.is_string())
@@ -271,7 +269,7 @@ std::unique_ptr<TemplateURLData> TemplateURLDataFromPrepopulatedEngine(
 }
 
 std::unique_ptr<TemplateURLData> TemplateURLDataFromOverrideDictionary(
-    const base::Value& engine) {
+    const base::DictionaryValue& engine) {
   const std::string* string_value = nullptr;
 
   std::u16string name;

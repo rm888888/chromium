@@ -5,6 +5,8 @@
 #ifndef UI_VIEWS_TEST_CAPTURE_TRACKING_VIEW_H_
 #define UI_VIEWS_TEST_CAPTURE_TRACKING_VIEW_H_
 
+#include "base/compiler_specific.h"
+#include "base/macros.h"
 #include "ui/views/view.h"
 
 namespace views {

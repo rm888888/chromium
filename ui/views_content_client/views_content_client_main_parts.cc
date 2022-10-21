@@ -17,9 +17,10 @@
 namespace ui {
 
 ViewsContentClientMainParts::ViewsContentClientMainParts(
-    content::MainFunctionParams content_params,
+    const content::MainFunctionParams& content_params,
     ViewsContentClient* views_content_client)
-    : views_content_client_(views_content_client) {}
+    : views_content_client_(views_content_client) {
+}
 
 ViewsContentClientMainParts::~ViewsContentClientMainParts() {
 }

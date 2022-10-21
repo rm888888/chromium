@@ -14,6 +14,7 @@
 #include "components/safe_browsing/buildflags.h"
 #include "components/variations/variations_associated_data.h"
 
+#include "base/macros.h"
 #include "base/values.h"
 namespace safe_browsing {
 // Please define any new SafeBrowsing related features in this file, and add
@@ -31,7 +32,7 @@ const base::Feature kBetterTelemetryAcrossReports{
     base::FEATURE_ENABLED_BY_DEFAULT};
 
 const base::Feature kClientSideDetectionDocumentScanning{
-    "ClientSideDetectionDocumentScanning", base::FEATURE_ENABLED_BY_DEFAULT};
+    "ClientSideDetectionDocumentScanning", base::FEATURE_DISABLED_BY_DEFAULT};
 
 const base::Feature kClientSideDetectionForAndroid{
     "ClientSideDetectionModelOnAndroid", base::FEATURE_ENABLED_BY_DEFAULT};
@@ -57,13 +58,11 @@ extern const base::Feature kClientSideDetectionModelHighMemoryTag{
 const base::Feature kClientSideDetectionReferrerChain{
     "ClientSideDetectionReferrerChain", base::FEATURE_ENABLED_BY_DEFAULT};
 
-// TODO(b/197749390): Add tests for this feature being enabled when it's
-// finalied.
-const base::Feature kConnectorsScanningReportOnlyUI{
-    "ConnectorsScanningReportOnlyUI", base::FEATURE_DISABLED_BY_DEFAULT};
+const base::Feature kFileAnalysisMimeTypeSniff{
+    "FileAnalysisMimeTypeSniff", base::FEATURE_ENABLED_BY_DEFAULT};
 
 const base::Feature kFileTypePoliciesTag{"FileTypePoliciesTag",
-                                         base::FEATURE_ENABLED_BY_DEFAULT};
+                                         base::FEATURE_DISABLED_BY_DEFAULT};
 
 const base::Feature kDelayedWarnings{"SafeBrowsingDelayedWarnings",
                                      base::FEATURE_DISABLED_BY_DEFAULT};
@@ -75,13 +74,6 @@ const base::FeatureParam<bool> kDelayedWarningsEnableMouseClicks{
     &kDelayedWarnings, "mouse",
     /*default_value=*/false};
 
-const base::Feature kExtensionTelemetry{"SafeBrowsingExtensionTelemetry",
-                                        base::FEATURE_DISABLED_BY_DEFAULT};
-
-const base::FeatureParam<int> kExtensionTelemetryUploadIntervalSeconds{
-    &kExtensionTelemetry, "UploadIntervalSeconds",
-    /*default_value=*/3600};
-
 const base::Feature kSimplifiedUrlDisplay{"SimplifiedUrlDisplay",
                                           base::FEATURE_DISABLED_BY_DEFAULT};
 
@@ -90,7 +82,7 @@ const base::Feature kTailoredSecurityIntegration{
 
 const base::Feature kOmitNonUserGesturesFromReferrerChain{
     "SafeBrowsingOmitNonUserGesturesFromReferrerChain",
-    base::FEATURE_ENABLED_BY_DEFAULT};
+    base::FEATURE_DISABLED_BY_DEFAULT};
 
 const base::Feature kPasswordProtectionForSignedInUsers {
   "SafeBrowsingPasswordProtectionForSignedInUsers",
@@ -114,8 +106,12 @@ const base::Feature kSafeBrowsingDisableConsumerCsdForEnterprise{
     "SafeBrowsingDisableConsumerCsdForEnterprise",
     base::FEATURE_ENABLED_BY_DEFAULT};
 
+const base::Feature kRealTimeUrlLookupReferrerChainForEnterprise{
+    "SafeBrowsingRealTimeUrlLookupReferrerChainForEnterprise",
+    base::FEATURE_DISABLED_BY_DEFAULT};
+
 const base::Feature kSafeBrowsingPageLoadToken{
-    "SafeBrowsingPageLoadToken", base::FEATURE_ENABLED_BY_DEFAULT};
+    "SafeBrowsingPageLoadToken", base::FEATURE_DISABLED_BY_DEFAULT};
 
 const base::Feature
     kSafeBrowsingPasswordCheckIntegrationForSavedPasswordsAndroid{
@@ -124,10 +120,6 @@ const base::Feature
 
 const base::Feature kSafeBrowsingRemoveCookiesInAuthRequests{
     "SafeBrowsingRemoveCookiesInAuthRequests",
-    base::FEATURE_DISABLED_BY_DEFAULT};
-
-const base::Feature kSendSampledPingsForProtegoAllowlistDomains{
-    "SafeBrowsingSendSampledPingsForProtegoAllowlistDomains",
     base::FEATURE_DISABLED_BY_DEFAULT};
 
 constexpr base::FeatureParam<bool> kShouldFillOldPhishGuardProto{
@@ -169,14 +161,13 @@ constexpr struct {
     {&kClientSideDetectionModelVersion, true},
     {&kClientSideDetectionReferrerChain, true},
     {&kDelayedWarnings, true},
-    {&kExtensionTelemetry, true},
     {&kFileTypePoliciesTag, true},
     {&kOmitNonUserGesturesFromReferrerChain, true},
     {&kPasswordProtectionForSignedInUsers, true},
+    {&kRealTimeUrlLookupReferrerChainForEnterprise, true},
     {&kSafeBrowsingPageLoadToken, true},
     {&kSafeBrowsingPasswordCheckIntegrationForSavedPasswordsAndroid, true},
     {&kSafeBrowsingRemoveCookiesInAuthRequests, true},
-    {&kSendSampledPingsForProtegoAllowlistDomains, true},
     {&kSuspiciousSiteTriggerQuotaFeature, true},
     {&kThreatDomDetailsTagAndAttributeFeature, false},
     {&kTriggerThrottlerDailyQuotaFeature, false},
@@ -247,13 +238,12 @@ std::string GetClientSideDetectionTag() {
 }
 
 std::string GetFileTypePoliciesTag() {
-  if (!base::FeatureList::IsEnabled(kFileTypePoliciesTag)) {
-    return "default";
+  if (base::FeatureList::IsEnabled(kFileTypePoliciesTag)) {
+    return variations::GetVariationParamValueByFeature(
+        kFileTypePoliciesTag, kFileTypePoliciesTagParamName);
   }
-  std::string tag_value = variations::GetVariationParamValueByFeature(
-      kFileTypePoliciesTag, kFileTypePoliciesTagParamName);
 
-  return tag_value.empty() ? "default" : tag_value;
+  return "default";
 }
 
 }  // namespace safe_browsing

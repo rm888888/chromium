@@ -13,6 +13,7 @@
 
 #include <memory>
 
+#include "base/macros.h"
 #include "base/process/process_handle.h"
 #include "components/nacl/renderer/ppb_nacl_private.h"
 #include "ipc/ipc_sync_channel.h"
@@ -38,14 +39,15 @@ struct SelLdrStartParams {
   PP_NaClAppProcessType process_type;
 };
 
-// ServiceRuntime abstracts a NativeClient sel_ldr instance.
+//  ServiceRuntime abstracts a NativeClient sel_ldr instance.
 // TODO(dschuff): Merge this with NaClSubprocess, since, that now only contains
 // a ServiceRuntime.
 class ServiceRuntime {
  public:
   ServiceRuntime(Plugin* plugin,
                  PP_Instance pp_instance,
-                 bool main_service_runtime);
+                 bool main_service_runtime,
+                 bool uses_nonsfi_mode);
 
   ServiceRuntime(const ServiceRuntime&) = delete;
   ServiceRuntime& operator=(const ServiceRuntime&) = delete;
@@ -70,6 +72,7 @@ class ServiceRuntime {
   Plugin* plugin_;
   PP_Instance pp_instance_;
   bool main_service_runtime_;
+  bool uses_nonsfi_mode_;
 
   std::unique_ptr<IPC::SyncChannel> translator_channel_;
 };

@@ -134,7 +134,6 @@ public class PlayerFrameBitmapStateController {
     }
 
     void onStartScaling() {
-        if (mVisibleBitmapState == null) return;
         invalidateLoadingBitmaps();
 
         if (mVisibleBitmapState == null) return;

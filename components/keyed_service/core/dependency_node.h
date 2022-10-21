@@ -5,6 +5,8 @@
 #ifndef COMPONENTS_KEYED_SERVICE_CORE_DEPENDENCY_NODE_H_
 #define COMPONENTS_KEYED_SERVICE_CORE_DEPENDENCY_NODE_H_
 
+#include "base/macros.h"
+
 // Base class representing a node in a DependencyGraph.
 class DependencyNode {
  public:

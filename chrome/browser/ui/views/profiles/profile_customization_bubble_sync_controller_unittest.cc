@@ -4,7 +4,7 @@
 
 #include "chrome/browser/ui/views/profiles/profile_customization_bubble_sync_controller.h"
 
-#include "base/memory/raw_ptr.h"
+#include "base/test/metrics/histogram_tester.h"
 #include "base/test/mock_callback.h"
 #include "chrome/browser/themes/theme_service.h"
 #include "chrome/browser/themes/theme_syncable_service.h"
@@ -58,7 +58,7 @@ class FakeThemeService : public ThemeService {
   }
 
  private:
-  raw_ptr<ThemeSyncableService> theme_syncable_service_ = nullptr;
+  ThemeSyncableService* theme_syncable_service_ = nullptr;
   bool using_default_theme_ = true;
   SkColor color_ = 0;
 };
@@ -116,9 +116,10 @@ class ProfileCustomizationBubbleSyncControllerTest : public testing::Test {
  protected:
   content::BrowserTaskEnvironment task_environment_;
   syncer::TestSyncService test_sync_service_;
+  base::HistogramTester histogram_tester_;
 
  private:
-  raw_ptr<Profile> testing_profile_ = nullptr;
+  Profile* testing_profile_ = nullptr;
   TestingProfileManager testing_profile_manager_;
   std::unique_ptr<views::View> testing_view_;
   FakeThemeService fake_theme_service_;
@@ -133,6 +134,7 @@ TEST_F(ProfileCustomizationBubbleSyncControllerTest,
 
   ApplyColorAndShowBubbleWhenNoValueSynced(show_bubble.Get());
   NotifyOnSyncStarted();
+  histogram_tester_.ExpectTotalCount("Profile.SyncCustomizationBubbleDelay", 1);
 }
 
 TEST_F(ProfileCustomizationBubbleSyncControllerTest,
@@ -143,6 +145,7 @@ TEST_F(ProfileCustomizationBubbleSyncControllerTest,
   test_sync_service_.SetDisableReasons(
       syncer::SyncService::DISABLE_REASON_ENTERPRISE_POLICY);
   ApplyColorAndShowBubbleWhenNoValueSynced(show_bubble.Get());
+  histogram_tester_.ExpectTotalCount("Profile.SyncCustomizationBubbleDelay", 1);
 }
 
 TEST_F(ProfileCustomizationBubbleSyncControllerTest,
@@ -153,6 +156,7 @@ TEST_F(ProfileCustomizationBubbleSyncControllerTest,
   ApplyColorAndShowBubbleWhenNoValueSynced(show_bubble.Get());
   SetSyncedProfileColor();
   NotifyOnSyncStarted();
+  histogram_tester_.ExpectTotalCount("Profile.SyncCustomizationBubbleDelay", 1);
 }
 
 // Regression test for crbug.com/1213109.
@@ -166,6 +170,7 @@ TEST_F(ProfileCustomizationBubbleSyncControllerTest,
   NotifyOnSyncStarted();
 
   ApplyColorAndShowBubbleWhenNoValueSynced(show_bubble.Get());
+  histogram_tester_.ExpectTotalCount("Profile.SyncCustomizationBubbleDelay", 1);
 }
 
 TEST_F(ProfileCustomizationBubbleSyncControllerTest,
@@ -176,6 +181,7 @@ TEST_F(ProfileCustomizationBubbleSyncControllerTest,
   ApplyColorAndShowBubbleWhenNoValueSynced(show_bubble.Get());
   SetSyncedProfileTheme();
   NotifyOnSyncStarted();
+  histogram_tester_.ExpectTotalCount("Profile.SyncCustomizationBubbleDelay", 1);
 }
 
 TEST_F(ProfileCustomizationBubbleSyncControllerTest,
@@ -185,6 +191,7 @@ TEST_F(ProfileCustomizationBubbleSyncControllerTest,
 
   ApplyColorAndShowBubbleWhenNoValueSynced(show_bubble.Get());
   NotifyOnSyncStarted(/*waiting_for_extension_installation=*/true);
+  histogram_tester_.ExpectTotalCount("Profile.SyncCustomizationBubbleDelay", 1);
 }
 
 TEST_F(ProfileCustomizationBubbleSyncControllerTest,
@@ -195,6 +202,7 @@ TEST_F(ProfileCustomizationBubbleSyncControllerTest,
   test_sync_service_.SetPassphraseRequired(true);
   ApplyColorAndShowBubbleWhenNoValueSynced(show_bubble.Get());
   test_sync_service_.FireStateChanged();
+  histogram_tester_.ExpectTotalCount("Profile.SyncCustomizationBubbleDelay", 1);
 }
 
 TEST_F(ProfileCustomizationBubbleSyncControllerTest,
@@ -204,6 +212,7 @@ TEST_F(ProfileCustomizationBubbleSyncControllerTest,
 
   ApplyColorAndShowBubbleWhenNoValueSynced(show_bubble.Get());
   DeleteTestingProfile();
+  histogram_tester_.ExpectTotalCount("Profile.SyncCustomizationBubbleDelay", 1);
 }
 
 TEST_F(ProfileCustomizationBubbleSyncControllerTest,
@@ -213,6 +222,7 @@ TEST_F(ProfileCustomizationBubbleSyncControllerTest,
 
   ApplyColorAndShowBubbleWhenNoValueSynced(show_bubble.Get());
   DeleteTestingView();
+  histogram_tester_.ExpectTotalCount("Profile.SyncCustomizationBubbleDelay", 1);
 }
 
 }  // namespace

@@ -152,10 +152,6 @@ const char* ProtoEnumToString(
 const char* ProtoEnumToString(
     sync_pb::UserConsentTypes::AssistantActivityControlConsent::SettingType
         setting_type);
-
-const char* ProtoEnumToString(
-    sync_pb::WebauthnCredentialSpecifics::PaymentsSupport payments_support);
-
 }  // namespace syncer
 
 #endif  // COMPONENTS_SYNC_PROTOCOL_PROTO_ENUM_CONVERSIONS_H_

@@ -5,7 +5,6 @@
 #include "components/reporting/client/report_queue_impl.h"
 
 #include <memory>
-#include <queue>
 #include <string>
 #include <utility>
 
@@ -24,6 +23,7 @@
 #include "base/time/time.h"
 #include "base/values.h"
 #include "components/reporting/client/report_queue_configuration.h"
+#include "components/reporting/encryption/encryption_module.h"
 #include "components/reporting/proto/synced/record.pb.h"
 #include "components/reporting/proto/synced/record_constants.pb.h"
 #include "components/reporting/storage/storage_module_interface.h"

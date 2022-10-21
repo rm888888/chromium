@@ -13,19 +13,14 @@
 #include "base/atomic_sequence_num.h"
 #include "base/bind.h"
 #include "base/files/file_enumerator.h"
-#include "base/files/file_util.h"
 #include "base/files/scoped_temp_dir.h"
 #include "base/process/process_handle.h"
-#include "base/run_loop.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
 #include "base/threading/thread.h"
 #include "build/chromeos_buildflags.h"
-#include "components/exo/capabilities.h"
 #include "components/exo/display.h"
 #include "components/exo/test/exo_test_base_views.h"
-#include "components/exo/wayland/server_util.h"
-#include "testing/gmock/include/gmock/gmock.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
 #if BUILDFLAG(IS_CHROMEOS_ASH)
@@ -53,11 +48,6 @@ using TestBase =
 #endif
     ;
 
-class TestCapabilities : public Capabilities {
- public:
-  std::string GetSecurityContext() const override { return "test"; }
-};
-
 class ServerTest : public TestBase {
  public:
   ServerTest() = default;
@@ -72,14 +62,13 @@ class ServerTest : public TestBase {
     TestBase::SetUp();
   }
 
- protected:
+ private:
   base::ScopedTempDir xdg_temp_dir_;
 };
 
 TEST_F(ServerTest, AddSocket) {
   std::unique_ptr<Display> display(new Display);
-  std::unique_ptr<Server> server(
-      new Server(display.get(), Capabilities::GetDefaultCapabilities()));
+  std::unique_ptr<Server> server(new Server(display.get()));
   server->Initialize();
   // Check that calling AddSocket() with a unique socket name succeeds.
   bool rv = server->AddSocket(GetUniqueSocketName());
@@ -88,8 +77,7 @@ TEST_F(ServerTest, AddSocket) {
 
 TEST_F(ServerTest, GetFileDescriptor) {
   std::unique_ptr<Display> display(new Display);
-  std::unique_ptr<Server> server(
-      new Server(display.get(), Capabilities::GetDefaultCapabilities()));
+  std::unique_ptr<Server> server(new Server(display.get()));
   server->Initialize();
   bool rv = server->AddSocket(GetUniqueSocketName());
   EXPECT_TRUE(rv);
@@ -99,52 +87,22 @@ TEST_F(ServerTest, GetFileDescriptor) {
   DCHECK_GE(fd, 0);
 }
 
-TEST_F(ServerTest, CapabilityAssociation) {
-  std::unique_ptr<Capabilities> capabilities =
-      Capabilities::GetDefaultCapabilities();
-  Capabilities* capability_ptr = capabilities.get();
-
-  Display display;
-  Server server(&display, std::move(capabilities));
-  server.Initialize();
-
-  EXPECT_EQ(GetCapabilities(server.GetWaylandDisplayForTesting()),
-            capability_ptr);
-}
-
-TEST_F(ServerTest, CreateAsync) {
-  using MockServerFunction =
-      testing::MockFunction<void(bool, const base::FilePath&)>;
-
+TEST_F(ServerTest, CustomSocketPath) {
   std::unique_ptr<Display> display(new Display);
 
   base::ScopedTempDir non_xdg_dir;
   ASSERT_TRUE(non_xdg_dir.CreateUniqueTempDir());
 
-  base::RunLoop run_loop;
-  base::FilePath server_socket;
-  MockServerFunction server_callback;
-  EXPECT_CALL(server_callback, Call(testing::_, testing::_))
-      .WillOnce(testing::Invoke([&run_loop, &server_socket](
-                                    bool success, const base::FilePath& path) {
-        EXPECT_TRUE(success);
-        server_socket = path;
-        run_loop.Quit();
-      }));
+  std::unique_ptr<Server> server = Server::Create(
+      display.get(), non_xdg_dir.GetPath().Append("custom-socket"));
+  EXPECT_TRUE(server);
 
-  std::unique_ptr<Server> server =
-      Server::Create(display.get(), std::make_unique<TestCapabilities>());
-  server->StartAsync(base::BindOnce(&MockServerFunction::Call,
-                                    base::Unretained(&server_callback)));
-  run_loop.Run();
-
-  // Should create a directory for the server.
-  EXPECT_TRUE(base::DirectoryExists(server_socket.DirName()));
-  // Must not be a child of the XDG dir.
-  EXPECT_TRUE(base::IsDirectoryEmpty(xdg_temp_dir_.GetPath()));
-  // Must be deleted when the helper is removed.
-  server.reset();
-  EXPECT_FALSE(base::PathExists(server_socket));
+  // Check that Create() has put the socket in the directory. Actually two files
+  // will be created (the socket and its .lock), so we use StartsWith().
+  base::FileEnumerator enumerator(non_xdg_dir.GetPath(), /*recursive=*/false,
+                                  base::FileEnumerator::FILES);
+  EXPECT_TRUE(base::StartsWith(enumerator.Next().BaseName().MaybeAsASCII(),
+                               "custom-socket"));
 }
 
 void ConnectToServer(const std::string socket_name,
@@ -158,8 +116,7 @@ void ConnectToServer(const std::string socket_name,
 
 TEST_F(ServerTest, Dispatch) {
   std::unique_ptr<Display> display(new Display);
-  std::unique_ptr<Server> server(
-      new Server(display.get(), Capabilities::GetDefaultCapabilities()));
+  std::unique_ptr<Server> server(new Server(display.get()));
   server->Initialize();
 
   std::string socket_name = GetUniqueSocketName();
@@ -187,8 +144,7 @@ TEST_F(ServerTest, Dispatch) {
 
 TEST_F(ServerTest, Flush) {
   std::unique_ptr<Display> display(new Display);
-  std::unique_ptr<Server> server(
-      new Server(display.get(), Capabilities::GetDefaultCapabilities()));
+  std::unique_ptr<Server> server(new Server(display.get()));
   server->Initialize();
 
   bool rv = server->AddSocket(GetUniqueSocketName());

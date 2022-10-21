@@ -7,7 +7,7 @@
 
 #include <string>
 
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "build/build_config.h"
 #include "ui/base/window_open_disposition.h"
 #include "url/gurl.h"
@@ -142,7 +142,7 @@ class InfoBarDelegate {
     OFFLINE_PAGE_INFOBAR_DELEGATE_ANDROID = 71,
     SEARCH_GEOLOCATION_DISCLOSURE_INFOBAR_DELEGATE_ANDROID = 72,
     AUTOMATION_INFOBAR_DELEGATE = 73,
-    // Removed: VR_SERVICES_UPGRADE_ANDROID = 74,
+    VR_SERVICES_UPGRADE_ANDROID = 74,
     READER_MODE_INFOBAR_ANDROID = 75,
     VR_FEEDBACK_INFOBAR_ANDROID = 76,
     FRAMEBUST_BLOCK_INFOBAR_ANDROID = 77,
@@ -151,7 +151,7 @@ class InfoBarDelegate {
     INSTALLABLE_AMBIENT_BADGE_INFOBAR_DELEGATE = 80,
     // Removed: PAGE_LOAD_CAPPING_INFOBAR_DELEGATE = 81,
     DOWNLOAD_PROGRESS_INFOBAR_ANDROID = 82,
-    // Removed: AR_CORE_UPGRADE_ANDROID = 83,
+    AR_CORE_UPGRADE_ANDROID = 83,
     BLOATED_RENDERER_INFOBAR_DELEGATE = 84,
     // Removed: SUPERVISED_USERS_DEPRECATED_INFOBAR_DELEGATE = 85,
     NEAR_OOM_REDUCTION_INFOBAR_ANDROID = 86,
@@ -290,7 +290,7 @@ class InfoBarDelegate {
 
  private:
   // The InfoBar associated with us.
-  raw_ptr<InfoBar> infobar_ = nullptr;
+  InfoBar* infobar_ = nullptr;
 
   // The ID of the active navigation entry at the time we became owned.
   int nav_entry_id_ = 0;

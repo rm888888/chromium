@@ -2,9 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import {sendWithPromise} from 'chrome://resources/js/cr.m.js';
+var ApiTest = ApiTest || {};
 
-suite('getSysInfo', function() {
+ApiTest.getSysInfo = function() {
   test('Message handler integration test', function(done) {
     function checkConst(constVal) {
       if (!Number.isInteger(constVal.counterMax)) {
@@ -56,7 +56,7 @@ suite('getSysInfo', function() {
       }
     }
 
-    sendWithPromise('getSysInfo').then(function(result) {
+    cr.sendWithPromise('getSysInfo').then(function(result) {
       try {
         checkConst(result.const);
         checkCpus(result.cpus);
@@ -68,4 +68,6 @@ suite('getSysInfo', function() {
       }
     });
   });
-});
+
+  mocha.run();
+};

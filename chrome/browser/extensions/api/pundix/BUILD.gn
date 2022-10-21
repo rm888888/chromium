@@ -1,0 +1,19 @@
+import("//extensions/buildflags/buildflags.gni")
+
+assert(enable_extensions,
+       "Cannot depend on extensions because enable_extensions=false.")
+
+source_set("example") {
+  sources = [
+    "pundix_api.cc",
+    "pundix_api.h",
+  ]
+
+  deps = [
+    "//extensions/common/api",
+  ]
+
+   public_deps = [
+    "//extensions/browser:browser_sources",
+  ]
+}

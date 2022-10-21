@@ -8,7 +8,6 @@
 
 #include "base/bind.h"
 #include "base/feature_list.h"
-#include "base/no_destructor.h"
 #include "base/task/current_thread.h"
 #include "base/task/post_task.h"
 #include "components/metrics/structured/event_base.h"

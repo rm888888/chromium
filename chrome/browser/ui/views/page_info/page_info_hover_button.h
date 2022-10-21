@@ -7,7 +7,7 @@
 
 #include <string>
 
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "chrome/browser/ui/views/hover_button.h"
 
 namespace test {
@@ -91,10 +91,10 @@ class PageInfoHoverButton : public HoverButton {
 
   void UpdateAccessibleName();
 
-  raw_ptr<views::StyledLabel> title_ = nullptr;
+  views::StyledLabel* title_ = nullptr;
   // Shows secondary text on right side. Used for page info v2 only.
-  raw_ptr<views::Label> secondary_label_ = nullptr;
-  raw_ptr<views::Label> subtitle_ = nullptr;
+  views::Label* secondary_label_ = nullptr;
+  views::Label* subtitle_ = nullptr;
 };
 
 #endif  // CHROME_BROWSER_UI_VIEWS_PAGE_INFO_PAGE_INFO_HOVER_BUTTON_H_

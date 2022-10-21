@@ -7,7 +7,6 @@
 
 #include <memory>
 
-#include "base/memory/weak_ptr.h"
 #include "components/password_manager/core/browser/password_store_backend.h"
 
 namespace password_manager {
@@ -29,13 +28,12 @@ class FakePasswordStoreBackend : public PasswordStoreBackend {
 
  private:
   // Implements PasswordStoreBackend interface.
-  base::WeakPtr<PasswordStoreBackend> GetWeakPtr() override;
   void InitBackend(RemoteChangesReceived remote_form_changes_received,
                    base::RepeatingClosure sync_enabled_or_disabled_cb,
                    base::OnceCallback<void(bool)> completion) override;
   void Shutdown(base::OnceClosure shutdown_completed) override;
-  void GetAllLoginsAsync(LoginsOrErrorReply callback) override;
-  void GetAutofillableLoginsAsync(LoginsOrErrorReply callback) override;
+  void GetAllLoginsAsync(LoginsReply callback) override;
+  void GetAutofillableLoginsAsync(LoginsReply callback) override;
   void FillMatchingLoginsAsync(
       LoginsReply callback,
       bool include_psl,
@@ -63,7 +61,7 @@ class FakePasswordStoreBackend : public PasswordStoreBackend {
   FieldInfoStore* GetFieldInfoStore() override;
   std::unique_ptr<syncer::ProxyModelTypeControllerDelegate>
   CreateSyncControllerDelegate() override;
-  void ClearAllLocalPasswords() override;
+  void GetSyncStatus(base::OnceCallback<void(bool)> callback) override;
 
   LoginsResult GetAllLoginsInternal();
   LoginsResult GetAutofillableLoginsInternal();
@@ -76,10 +74,8 @@ class FakePasswordStoreBackend : public PasswordStoreBackend {
   PasswordStoreChangeList UpdateLoginInternal(const PasswordForm& form);
   void DisableAutoSignInForOriginsInternal(
       const base::RepeatingCallback<bool(const GURL&)>& origin_filter);
-  PasswordStoreChangeList RemoveLoginInternal(const PasswordForm& form);
 
   PasswordMap stored_passwords_;
-  base::WeakPtrFactory<FakePasswordStoreBackend> weak_ptr_factory_{this};
 };
 
 }  // namespace password_manager

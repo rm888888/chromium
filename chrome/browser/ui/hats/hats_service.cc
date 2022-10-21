@@ -48,7 +48,6 @@ constexpr char kHatsSurveyTriggerTrustSafetyPrivacySettings[] =
 constexpr char kHatsSurveyTriggerTrustSafetyTrustedSurface[] =
     "ts-trusted-surface";
 constexpr char kHatsSurveyTriggerTrustSafetyTransactions[] = "ts-transactions";
-constexpr char kHatsSurveyTriggerWhatsNew[] = "whats-new";
 
 constexpr char kHatsNextSurveyTriggerIDTesting[] =
     "HLpeYy5Av0ugnJ3q1cK0XzzA8UHv";
@@ -183,11 +182,6 @@ std::vector<HatsService::SurveyConfig> GetSurveyConfigs() {
   survey_configs.emplace_back(&features::kAutofillPasswordSurvey,
                               kHatsSurveyTriggerAutofillPassword);
 
-  // What's New survey.
-  survey_configs.emplace_back(
-      &features::kHappinessTrackingSurveysForDesktopWhatsNew,
-      kHatsSurveyTriggerWhatsNew);
-
   return survey_configs;
 }
 
@@ -274,9 +268,7 @@ void HatsService::DelayedSurveyTask::DidFinishNavigation(
     content::NavigationHandle* navigation_handle) {
   if (!require_same_origin_ || !navigation_handle ||
       !navigation_handle->IsInPrimaryMainFrame() ||
-      navigation_handle->IsSameDocument() ||
-      (navigation_handle->HasCommitted() &&
-       navigation_handle->IsSameOrigin())) {
+      navigation_handle->IsSameOrigin()) {
     return;
   }
 
@@ -399,8 +391,7 @@ void HatsService::RecordSurveyAsShown(std::string trigger_id) {
   UMA_HISTOGRAM_ENUMERATION(kHatsShouldShowSurveyReasonHistogram,
                             ShouldShowSurveyReasons::kYes);
 
-  DictionaryPrefUpdateDeprecated update(profile_->GetPrefs(),
-                                        prefs::kHatsSurveyMetadata);
+  DictionaryPrefUpdate update(profile_->GetPrefs(), prefs::kHatsSurveyMetadata);
   base::DictionaryValue* pref_data = update.Get();
   pref_data->SetIntPath(GetMajorVersionPath(trigger),
                         version_info::GetVersion().components()[0]);
@@ -417,8 +408,7 @@ void HatsService::HatsNextDialogClosed() {
 void HatsService::SetSurveyMetadataForTesting(
     const HatsService::SurveyMetadata& metadata) {
   const std::string& trigger = kHatsSurveyTriggerSettings;
-  DictionaryPrefUpdateDeprecated update(profile_->GetPrefs(),
-                                        prefs::kHatsSurveyMetadata);
+  DictionaryPrefUpdate update(profile_->GetPrefs(), prefs::kHatsSurveyMetadata);
   base::DictionaryValue* pref_data = update.Get();
   if (!metadata.last_major_version.has_value() &&
       !metadata.last_survey_started_time.has_value() &&
@@ -466,8 +456,7 @@ void HatsService::SetSurveyMetadataForTesting(
 void HatsService::GetSurveyMetadataForTesting(
     HatsService::SurveyMetadata* metadata) const {
   const std::string& trigger = kHatsSurveyTriggerSettings;
-  DictionaryPrefUpdateDeprecated update(profile_->GetPrefs(),
-                                        prefs::kHatsSurveyMetadata);
+  DictionaryPrefUpdate update(profile_->GetPrefs(), prefs::kHatsSurveyMetadata);
   base::DictionaryValue* pref_data = update.Get();
 
   absl::optional<int> last_major_version =
@@ -589,7 +578,7 @@ bool HatsService::CanShowSurvey(const std::string& trigger) const {
     return false;
   }
 
-  const base::Value* pref_data =
+  const base::DictionaryValue* pref_data =
       profile_->GetPrefs()->GetDictionary(prefs::kHatsSurveyMetadata);
   absl::optional<int> last_major_version =
       pref_data->FindIntPath(GetMajorVersionPath(trigger));
@@ -658,7 +647,7 @@ bool HatsService::CanShowAnySurvey(bool user_prompted) const {
   // confrontational manner than the standard HaTS prompt). The bar for whether
   // a user is eligible is thus lower for these types of surveys.
   if (!user_prompted) {
-    const base::Value* pref_data =
+    const base::DictionaryValue* pref_data =
         profile_->GetPrefs()->GetDictionary(prefs::kHatsSurveyMetadata);
 
     // If the profile is too new, measured as the age of the profile directory,
@@ -713,7 +702,7 @@ void HatsService::CheckSurveyStatusAndMaybeShow(
   // Check the survey status in profile first.
   // We record the survey's over capacity information in user profile to avoid
   // duplicated checks since the survey won't change once it is full.
-  const base::Value* pref_data =
+  const base::DictionaryValue* pref_data =
       profile_->GetPrefs()->GetDictionary(prefs::kHatsSurveyMetadata);
   absl::optional<int> is_full =
       pref_data->FindBoolPath(GetIsSurveyFull(trigger));
@@ -750,8 +739,7 @@ void HatsService::CheckSurveyStatusAndMaybeShow(
 
   // As soon as the HaTS Next dialog is created it will attempt to contact
   // the HaTS servers to check for a survey.
-  DictionaryPrefUpdateDeprecated update(profile_->GetPrefs(),
-                                        prefs::kHatsSurveyMetadata);
+  DictionaryPrefUpdate update(profile_->GetPrefs(), prefs::kHatsSurveyMetadata);
   update->SetPath(GetLastSurveyCheckTime(trigger),
                   base::TimeToValue(base::Time::Now()));
 

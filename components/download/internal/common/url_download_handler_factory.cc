@@ -4,6 +4,7 @@
 
 #include "components/download/public/common/url_download_handler_factory.h"
 
+#include "base/no_destructor.h"
 #include "base/synchronization/lock.h"
 #include "components/download/internal/common/resource_downloader.h"
 #include "components/download/public/common/download_item.h"

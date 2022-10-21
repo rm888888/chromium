@@ -8,6 +8,7 @@
 #include <memory>
 #include <vector>
 
+#include "base/macros.h"
 #include "ui/ozone/public/gl_ozone.h"
 #include "ui/ozone/public/surface_factory_ozone.h"
 

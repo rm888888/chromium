@@ -5,6 +5,7 @@
 #ifndef CHROME_BROWSER_VR_ELEMENTS_VECTOR_ICON_H_
 #define CHROME_BROWSER_VR_ELEMENTS_VECTOR_ICON_H_
 
+#include "base/macros.h"
 #include "chrome/browser/vr/elements/textured_element.h"
 #include "chrome/browser/vr/vr_ui_export.h"
 #include "third_party/skia/include/core/SkColor.h"

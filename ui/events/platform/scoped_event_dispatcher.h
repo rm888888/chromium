@@ -6,7 +6,7 @@
 #define UI_EVENTS_PLATFORM_SCOPED_EVENT_DISPATCHER_H_
 
 #include "base/auto_reset.h"
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "ui/events/events_export.h"
 
 namespace ui {
@@ -33,7 +33,7 @@ class EVENTS_EXPORT ScopedEventDispatcher {
   operator PlatformEventDispatcher*() const { return original_; }
 
  private:
-  raw_ptr<PlatformEventDispatcher> original_;
+  PlatformEventDispatcher* original_;
   base::AutoReset<PlatformEventDispatcher*> restore_;
 };
 

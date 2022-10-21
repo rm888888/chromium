@@ -15,20 +15,20 @@
 #include "base/check_op.h"
 #include "base/feature_list.h"
 #include "base/json/json_writer.h"
+#include "base/macros.h"
 #include "base/metrics/histogram_functions.h"
 #include "chrome/browser/ash/profiles/profile_helper.h"
 #include "chrome/browser/profiles/profile_manager.h"
+#include "chrome/browser/supervised_user/supervised_user_features/supervised_user_features.h"
 #include "chrome/browser/supervised_user/supervised_user_service.h"
 #include "chrome/browser/supervised_user/supervised_user_service_factory.h"
 #include "chrome/browser/ui/webui/chromeos/system_web_dialog_delegate.h"
 #include "chrome/common/webui_url_constants.h"
-#include "components/account_manager_core/account_addition_options.h"
 #include "components/account_manager_core/pref_names.h"
 #include "components/prefs/pref_service.h"
 #include "components/session_manager/core/session_manager.h"
 #include "components/web_modal/web_contents_modal_dialog_manager.h"
 #include "content/public/browser/browser_thread.h"
-#include "content/public/browser/web_contents_observer.h"
 #include "content/public/browser/web_ui.h"
 #include "google_apis/gaia/gaia_auth_util.h"
 #include "net/base/url_util.h"
@@ -90,30 +90,6 @@ GURL GetInlineLoginUrl(const std::string& email) {
 
 }  // namespace
 
-// Cleans up the delegate for a WebContentsModalDialogManager on destruction, or
-// on WebContents destruction, whichever comes first.
-class InlineLoginDialogChromeOS::ModalDialogManagerCleanup
-    : public content::WebContentsObserver {
- public:
-  // This constructor automatically observes |web_contents| for its lifetime.
-  explicit ModalDialogManagerCleanup(content::WebContents* web_contents)
-      : content::WebContentsObserver(web_contents) {}
-  ModalDialogManagerCleanup(const ModalDialogManagerCleanup&) = delete;
-  ModalDialogManagerCleanup& operator=(const ModalDialogManagerCleanup&) =
-      delete;
-  ~ModalDialogManagerCleanup() override { ResetDelegate(); }
-
-  // content::WebContentsObserver:
-  void WebContentsDestroyed() override { ResetDelegate(); }
-
-  void ResetDelegate() {
-    if (!web_contents())
-      return;
-    web_modal::WebContentsModalDialogManager::FromWebContents(web_contents())
-        ->SetDelegate(nullptr);
-  }
-};
-
 // static
 bool InlineLoginDialogChromeOS::IsShown() {
   return dialog != nullptr;
@@ -164,12 +140,10 @@ InlineLoginDialogChromeOS::InlineLoginDialogChromeOS(const GURL& url)
 
 InlineLoginDialogChromeOS::InlineLoginDialogChromeOS(
     const GURL& url,
-    absl::optional<account_manager::AccountAdditionOptions> options,
     base::OnceClosure close_dialog_closure)
     : SystemWebDialogDelegate(url, std::u16string() /* title */),
       delegate_(this),
       url_(url),
-      add_account_options_(options),
       close_dialog_closure_(std::move(close_dialog_closure)) {
   DCHECK(!dialog);
   dialog = this;
@@ -178,6 +152,12 @@ InlineLoginDialogChromeOS::InlineLoginDialogChromeOS(
 InlineLoginDialogChromeOS::~InlineLoginDialogChromeOS() {
   for (auto& observer : modal_dialog_host_observer_list_)
     observer.OnHostDestroying();
+
+  if (webui()) {
+    web_modal::WebContentsModalDialogManager::FromWebContents(
+        webui()->GetWebContents())
+        ->SetDelegate(nullptr);
+  }
 
   if (!close_dialog_closure_.is_null()) {
     std::move(close_dialog_closure_).Run();
@@ -191,7 +171,8 @@ void InlineLoginDialogChromeOS::GetDialogSize(gfx::Size* size) const {
   const display::Display display =
       display::Screen::GetScreen()->GetDisplayNearestWindow(dialog_window());
 
-  if (ProfileManager::GetActiveUserProfile()->IsChild()) {
+  if (ProfileManager::GetActiveUserProfile()->IsChild() &&
+      base::FeatureList::IsEnabled(supervised_users::kEduCoexistenceFlowV2)) {
     size->SetSize(
         std::min(kEduCoexistenceSigninDialogWidth, display.work_area().width()),
         std::min(kEduCoexistenceSigninDialogHeight,
@@ -218,47 +199,26 @@ void InlineLoginDialogChromeOS::OnDialogShown(content::WebUI* webui) {
   web_modal::WebContentsModalDialogManager::FromWebContents(
       webui->GetWebContents())
       ->SetDelegate(&delegate_);
-  modal_dialog_manager_cleanup_ =
-      std::make_unique<ModalDialogManagerCleanup>(webui->GetWebContents());
 }
 
 void InlineLoginDialogChromeOS::OnDialogClosed(const std::string& json_retval) {
   SystemWebDialogDelegate::OnDialogClosed(json_retval);
 }
 
-std::string InlineLoginDialogChromeOS::GetDialogArgs() const {
-  if (!add_account_options_)
-    return std::string();
-
-  base::DictionaryValue args;
-  args.SetKey("isAvailableInArc",
-              base::Value(add_account_options_->is_available_in_arc));
-  args.SetKey("showArcAvailabilityPicker",
-              base::Value(add_account_options_->show_arc_availability_picker));
-  std::string json;
-  base::JSONWriter::Write(args, &json);
-  return json;
-}
-
 // static
-void InlineLoginDialogChromeOS::Show(
-    const account_manager::AccountAdditionOptions& options,
-    base::OnceClosure close_dialog_closure) {
-  ShowInternal(/* email= */ std::string(), options,
-               std::move(close_dialog_closure));
+void InlineLoginDialogChromeOS::Show(base::OnceClosure close_dialog_closure) {
+  Show(/* email= */ std::string(), std::move(close_dialog_closure));
 }
 
 // static
 void InlineLoginDialogChromeOS::Show(const std::string& email,
                                      base::OnceClosure close_dialog_closure) {
-  ShowInternal(email, /*options=*/absl::nullopt,
-               std::move(close_dialog_closure));
+  ShowInternal(email, std::move(close_dialog_closure));
 }
 
 // static
 void InlineLoginDialogChromeOS::ShowInternal(
     const std::string& email,
-    absl::optional<account_manager::AccountAdditionOptions> options,
     base::OnceClosure close_dialog_closure) {
   // If the dialog was triggered as a response to background request, it could
   // get displayed on the lock screen. In this case it is safe to ignore it,
@@ -273,7 +233,7 @@ void InlineLoginDialogChromeOS::ShowInternal(
   }
 
   // Will be deleted by |SystemWebDialogDelegate::OnDialogClosed|.
-  dialog = new InlineLoginDialogChromeOS(GetInlineLoginUrl(email), options,
+  dialog = new InlineLoginDialogChromeOS(GetInlineLoginUrl(email),
                                          std::move(close_dialog_closure));
   dialog->ShowSystemDialog();
 

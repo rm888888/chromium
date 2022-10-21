@@ -7,6 +7,7 @@
 
 #include <string>
 
+#include "ash/public/cpp/keyboard/keyboard_controller_observer.h"
 #include "base/i18n/rtl.h"
 #include "base/strings/string_piece.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
@@ -15,7 +16,6 @@
 #include "ui/base/ime/text_input_flags.h"
 #include "ui/base/ime/text_input_mode.h"
 #include "ui/base/ime/text_input_type.h"
-#include "ui/base/ime/virtual_keyboard_controller_observer.h"
 #include "ui/gfx/geometry/rect.h"
 #include "ui/gfx/range/range.h"
 
@@ -23,12 +23,16 @@ namespace ui {
 class InputMethod;
 }
 
+namespace keyboard {
+class KeyboardUIController;
+}
+
 namespace exo {
 class Surface;
 
 // This class bridges the ChromeOS input method and a text-input context.
 class TextInput : public ui::TextInputClient,
-                  public ui::VirtualKeyboardControllerObserver {
+                  public ash::KeyboardControllerObserver {
  public:
   class Delegate {
    public:
@@ -176,9 +180,8 @@ class TextInput : public ui::TextInputClient,
       absl::optional<gfx::Rect>* control_bounds,
       absl::optional<gfx::Rect>* selection_bounds) override {}
 
-  // ui::VirtualKeyboardControllerObserver:
-  void OnKeyboardVisible(const gfx::Rect& keyboard_rect) override;
-  void OnKeyboardHidden() override;
+  // ash::KeyboardControllerObserver:
+  void OnKeyboardVisibilityChanged(bool is_visible) override;
 
  private:
   void AttachInputMethod();
@@ -186,6 +189,8 @@ class TextInput : public ui::TextInputClient,
 
   // Delegate to talk to actual its client.
   std::unique_ptr<Delegate> delegate_;
+  // Keyboard Controller to observe the visibility.
+  keyboard::KeyboardUIController* keyboard_ui_controller_ = nullptr;
 
   // On requesting to show Virtual Keyboard, InputMethod may not be connected.
   // So, remember the request temporarily, and then on InputMethod connection

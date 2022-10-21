@@ -15,5 +15,4 @@ enum Color {
   kPink,
   kPurple,
   kCyan,
-  kOrange,
 };

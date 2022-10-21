@@ -439,7 +439,11 @@ TEST(ExtensionTest, ExtraFlags) {
       LoadManifest("app", "manifest.json", Extension::FROM_WEBSTORE);
   EXPECT_TRUE(extension->from_webstore());
 
+  extension = LoadManifest("app", "manifest.json", Extension::FROM_BOOKMARK);
+  EXPECT_TRUE(extension->from_bookmark());
+
   extension = LoadManifest("app", "manifest.json", Extension::NO_FLAGS);
+  EXPECT_FALSE(extension->from_bookmark());
   EXPECT_FALSE(extension->from_webstore());
 }
 

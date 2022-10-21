@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+#include "base/macros.h"
 #include "base/sequence_checker.h"
 
 namespace optimization_guide {

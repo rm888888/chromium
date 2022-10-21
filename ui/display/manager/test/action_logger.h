@@ -7,6 +7,8 @@
 
 #include <string>
 
+#include "base/macros.h"
+
 namespace display {
 namespace test {
 

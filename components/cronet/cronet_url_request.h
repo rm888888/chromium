@@ -9,7 +9,8 @@
 #include <string>
 
 #include "base/callback.h"
-#include "base/memory/raw_ptr.h"
+#include "base/location.h"
+#include "base/macros.h"
 #include "base/memory/ref_counted.h"
 #include "base/time/time.h"
 #include "net/base/idempotency.h"
@@ -302,7 +303,7 @@ class CronetURLRequest {
     THREAD_CHECKER(network_thread_checker_);
   };
 
-  raw_ptr<CronetURLRequestContext> context_;
+  CronetURLRequestContext* context_;
   // |network_tasks_| is invoked on network thread.
   NetworkTasks network_tasks_;
 

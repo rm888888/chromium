@@ -8,6 +8,7 @@
 #include <memory>
 
 #include "base/bind.h"
+#include "base/macros.h"
 #include "base/memory/ref_counted_memory.h"
 #include "base/task/single_thread_task_runner.h"
 #include "base/test/task_environment.h"

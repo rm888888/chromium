@@ -3,19 +3,12 @@
 // found in the LICENSE file.
 
 #include "chrome/browser/ui/webui/new_tab_page/new_tab_page_handler.h"
-#include "base/memory/raw_ptr.h"
 #include "base/memory/ref_counted_memory.h"
-#include "base/memory/scoped_refptr.h"
 #include "base/test/metrics/histogram_tester.h"
 #include "base/test/mock_callback.h"
-#include "chrome/browser/new_tab_page/promos/promo_data.h"
-#include "chrome/browser/new_tab_page/promos/promo_service.h"
-#include "chrome/browser/new_tab_page/promos/promo_service_factory.h"
-#include "chrome/browser/new_tab_page/promos/promo_service_observer.h"
 #include "chrome/browser/search/background/ntp_background_data.h"
 #include "chrome/browser/search/background/ntp_custom_background_service.h"
 #include "chrome/browser/search/background/ntp_custom_background_service_observer.h"
-#include "chrome/browser/search_engines/template_url_service_factory.h"
 #include "chrome/browser/themes/theme_helper.h"
 #include "chrome/browser/themes/theme_properties.h"
 #include "chrome/browser/themes/theme_service.h"
@@ -24,8 +17,6 @@
 #include "chrome/common/webui_url_constants.h"
 #include "chrome/grit/theme_resources.h"
 #include "chrome/test/base/testing_profile.h"
-#include "components/keyed_service/content/browser_context_keyed_service_factory.h"
-#include "components/keyed_service/core/keyed_service.h"
 #include "components/search_provider_logos/logo_common.h"
 #include "components/search_provider_logos/logo_service.h"
 #include "content/public/test/browser_task_environment.h"
@@ -33,9 +24,6 @@
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "mojo/public/cpp/bindings/receiver.h"
-#include "services/network/public/cpp/shared_url_loader_factory.h"
-#include "services/network/public/cpp/weak_wrapper_shared_url_loader_factory.h"
-#include "services/network/test/test_url_loader_factory.h"
 #include "testing/gmock/include/gmock/gmock.h"
 #include "testing/gtest/include/gtest/gtest.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
@@ -45,10 +33,7 @@
 
 namespace {
 
-using testing::_;
 using testing::DoAll;
-using testing::Optional;
-using testing::SaveArg;
 
 class MockPage : public new_tab_page::mojom::Page {
  public:
@@ -107,46 +92,13 @@ class MockThemeService : public ThemeService {
   ThemeHelper theme_helper_;
 };
 
-class MockPromoService : public PromoService {
- public:
-  MockPromoService() : PromoService(nullptr, nullptr) {}
-  MOCK_METHOD(const absl::optional<PromoData>&,
-              promo_data,
-              (),
-              (const, override));
-  MOCK_METHOD(void, AddObserver, (PromoServiceObserver*), (override));
-  MOCK_METHOD(void, Refresh, (), (override));
-};
-
-std::unique_ptr<TestingProfile> MakeTestingProfile(
-    scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory) {
-  TestingProfile::Builder profile_builder;
-  profile_builder.AddTestingFactory(
-      PromoServiceFactory::GetInstance(),
-      base::BindRepeating([](content::BrowserContext* context)
-                              -> std::unique_ptr<KeyedService> {
-        return std::make_unique<testing::NiceMock<MockPromoService>>();
-      }));
-  profile_builder.SetSharedURLLoaderFactory(url_loader_factory);
-  auto profile = profile_builder.Build();
-  TemplateURLServiceFactory::GetInstance()->SetTestingFactoryAndUse(
-      profile.get(),
-      base::BindRepeating(&TemplateURLServiceFactory::BuildInstanceFor));
-  return profile;
-}
-
 }  // namespace
 
 class NewTabPageHandlerTest : public testing::Test {
  public:
   NewTabPageHandlerTest()
-      : profile_(MakeTestingProfile(
-            base::MakeRefCounted<network::WeakWrapperSharedURLLoaderFactory>(
-                &test_url_loader_factory_))),
-        mock_ntp_custom_background_service_(profile_.get()),
-        mock_promo_service_(*static_cast<MockPromoService*>(
-            PromoServiceFactory::GetForProfile(profile_.get()))),
-        web_contents_(factory_.CreateWebContents(profile_.get())) {}
+      : mock_ntp_custom_background_service_(&profile_),
+        web_contents_(factory_.CreateWebContents(&profile_)) {}
 
   ~NewTabPageHandlerTest() override = default;
 
@@ -158,15 +110,12 @@ class NewTabPageHandlerTest : public testing::Test {
         .Times(1)
         .WillOnce(
             testing::SaveArg<0>(&ntp_custom_background_service_observer_));
-    EXPECT_CALL(mock_promo_service_, AddObserver)
-        .Times(1)
-        .WillOnce(testing::SaveArg<0>(&promo_service_observer_));
     EXPECT_CALL(mock_page_, SetTheme).Times(1);
     EXPECT_CALL(mock_ntp_custom_background_service_, RefreshBackgroundIfNeeded)
         .Times(1);
     handler_ = std::make_unique<NewTabPageHandler>(
         mojo::PendingReceiver<new_tab_page::mojom::PageHandler>(),
-        mock_page_.BindAndGetRemote(), profile_.get(),
+        mock_page_.BindAndGetRemote(), &profile_,
         &mock_ntp_custom_background_service_, &mock_theme_service_,
         &mock_logo_service_, &mock_theme_provider_, web_contents_,
         base::Time::Now());
@@ -211,21 +160,18 @@ class NewTabPageHandlerTest : public testing::Test {
   testing::NiceMock<MockPage> mock_page_;
   // NOTE: The initialization order of these members matters.
   content::BrowserTaskEnvironment task_environment_;
-  network::TestURLLoaderFactory test_url_loader_factory_;
-  std::unique_ptr<TestingProfile> profile_;
+  TestingProfile profile_;
   testing::NiceMock<MockNtpCustomBackgroundService>
       mock_ntp_custom_background_service_;
   testing::NiceMock<MockThemeService> mock_theme_service_;
   MockLogoService mock_logo_service_;
   testing::NiceMock<MockThemeProvider> mock_theme_provider_;
-  MockPromoService& mock_promo_service_;
   content::TestWebContentsFactory factory_;
-  raw_ptr<content::WebContents> web_contents_;  // Weak. Owned by factory_.
+  content::WebContents* web_contents_;  // Weak. Owned by factory_.
   base::HistogramTester histogram_tester_;
   std::unique_ptr<NewTabPageHandler> handler_;
   ThemeServiceObserver* theme_service_observer_;
   NtpCustomBackgroundServiceObserver* ntp_custom_background_service_observer_;
-  PromoServiceObserver* promo_service_observer_;
 };
 
 TEST_F(NewTabPageHandlerTest, SetTheme) {
@@ -308,7 +254,6 @@ TEST_F(NewTabPageHandlerTest, SetTheme) {
   EXPECT_EQ(SkColorSetRGB(0, 0, 1), theme->background_color);
   EXPECT_EQ(SkColorSetRGB(0, 0, 2), theme->text_color);
   EXPECT_FALSE(theme->is_default);
-  EXPECT_FALSE(theme->is_custom_background);
   EXPECT_FALSE(theme->is_dark);
   EXPECT_EQ(SkColorSetRGB(0, 0, 3), theme->logo_color);
   EXPECT_FALSE(theme->daily_refresh_collection_id.has_value());
@@ -369,7 +314,6 @@ TEST_F(NewTabPageHandlerTest, SetCustomBackground) {
   mock_page_.FlushForTesting();
 
   ASSERT_TRUE(theme);
-  EXPECT_TRUE(theme->is_custom_background);
   EXPECT_EQ(gfx::kGoogleGrey050, theme->text_color);
   EXPECT_EQ(ThemeProperties::GetDefaultColor(
                 ThemeProperties::COLOR_NTP_SHORTCUT, false),
@@ -500,114 +444,4 @@ TEST_F(NewTabPageHandlerTest, GetInteractiveDoodle) {
   EXPECT_EQ(1u, doodle->interactive->width);
   EXPECT_EQ(2u, doodle->interactive->height);
   EXPECT_EQ("alt text", doodle->description);
-}
-
-TEST_F(NewTabPageHandlerTest, GetPromo) {
-  PromoData promo_data;
-  promo_data.promo_html = "<html/>";
-  promo_data.middle_slot_json = R"({
-    "part": [{
-      "image": {
-        "image_url": "https://image.com/image",
-        "target": "https://image.com/target"
-      }
-    }, {
-      "link": {
-        "url": "https://link.com",
-        "text": "bar",
-        "color": "red"
-      }
-    }, {
-      "text": {
-        "text": "blub",
-        "color": "green"
-      }
-    }]
-  })";
-  promo_data.promo_log_url = GURL("https://foo.com");
-  promo_data.promo_id = "foo";
-  auto promo_data_optional = absl::make_optional(promo_data);
-  ON_CALL(mock_promo_service_, promo_data())
-      .WillByDefault(testing::ReturnRef(promo_data_optional));
-  EXPECT_CALL(mock_promo_service_, Refresh).Times(1);
-
-  new_tab_page::mojom::PromoPtr promo;
-  base::MockCallback<NewTabPageHandler::GetPromoCallback> callback;
-  EXPECT_CALL(callback, Run(testing::_))
-      .Times(1)
-      .WillOnce(testing::Invoke([&promo](new_tab_page::mojom::PromoPtr arg) {
-        promo = std::move(arg);
-      }));
-  handler_->GetPromo(callback.Get());
-
-  ASSERT_TRUE(promo);
-  EXPECT_EQ("foo", promo->id);
-  EXPECT_EQ("https://foo.com/", promo->log_url);
-  ASSERT_EQ(3lu, promo->middle_slot_parts.size());
-  ASSERT_TRUE(promo->middle_slot_parts[0]->is_image());
-  const auto& image = promo->middle_slot_parts[0]->get_image();
-  EXPECT_EQ("https://image.com/image", image->image_url);
-  EXPECT_EQ("https://image.com/target", image->target);
-  ASSERT_TRUE(promo->middle_slot_parts[1]->is_link());
-  const auto& link = promo->middle_slot_parts[1]->get_link();
-  EXPECT_EQ("red", link->color);
-  EXPECT_EQ("bar", link->text);
-  EXPECT_EQ("https://link.com/", link->url);
-  ASSERT_TRUE(promo->middle_slot_parts[2]->is_text());
-  const auto& text = promo->middle_slot_parts[2]->get_text();
-  EXPECT_EQ("green", text->color);
-  EXPECT_EQ("blub", text->text);
-}
-
-TEST_F(NewTabPageHandlerTest, OnDoodleImageClicked) {
-  handler_->OnDoodleImageClicked(
-      /*type=*/new_tab_page::mojom::DoodleImageType::kCta,
-      /*log_url=*/GURL("https://doodle.com/log"));
-
-  histogram_tester_.ExpectTotalCount("NewTabPage.LogoClick", 1);
-  EXPECT_TRUE(test_url_loader_factory_.SimulateResponseForPendingRequest(
-      "https://doodle.com/log", ""));
-}
-
-TEST_F(NewTabPageHandlerTest, OnDoodleImageRendered) {
-  base::MockCallback<NewTabPageHandler::OnDoodleImageRenderedCallback> callback;
-  absl::optional<std::string> image_click_params;
-  absl::optional<GURL> interaction_log_url;
-  absl::optional<std::string> shared_id;
-  EXPECT_CALL(callback, Run(_, _, _))
-      .Times(1)
-      .WillOnce(DoAll(SaveArg<0>(&image_click_params),
-                      SaveArg<1>(&interaction_log_url),
-                      SaveArg<2>(&shared_id)));
-
-  handler_->OnDoodleImageRendered(
-      /*type=*/new_tab_page::mojom::DoodleImageType::kStatic,
-      /*time=*/0,
-      /*log_url=*/GURL("https://doodle.com/log"), callback.Get());
-
-  EXPECT_TRUE(test_url_loader_factory_.SimulateResponseForPendingRequest(
-      "https://doodle.com/log", R"()]}'
-  {
-    "ddllog": {
-      "target_url_params": "foo params",
-      "interaction_log_url": "/bar_log",
-      "encoded_ei": "baz ei"
-    }
-  })"));
-  EXPECT_THAT(image_click_params, Optional(std::string("foo params")));
-  EXPECT_THAT(interaction_log_url,
-              Optional(GURL("https://www.google.com/bar_log")));
-  EXPECT_THAT(shared_id, Optional(std::string("baz ei")));
-  histogram_tester_.ExpectTotalCount("NewTabPage.LogoShown", 1);
-  histogram_tester_.ExpectTotalCount("NewTabPage.LogoShown.FromCache", 1);
-  histogram_tester_.ExpectTotalCount("NewTabPage.LogoShownTime2", 1);
-}
-
-TEST_F(NewTabPageHandlerTest, OnDoodleShared) {
-  handler_->OnDoodleShared(new_tab_page::mojom::DoodleShareChannel::kEmail,
-                           "food_id", "bar_id");
-
-  EXPECT_TRUE(test_url_loader_factory_.IsPending(
-      "https://www.google.com/"
-      "gen_204?atype=i&ct=doodle&ntp=2&cad=sh,5,ct:food_id&ei=bar_id"));
 }

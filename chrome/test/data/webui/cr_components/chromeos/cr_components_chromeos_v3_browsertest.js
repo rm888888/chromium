@@ -104,7 +104,6 @@ function registerTest(componentName, webuiHost, testName, module, caseName) {
       return {
         enabled: [
           'chromeos::features::kCellularUseAttachApn',
-          'chromeos::features::kESimPolicy',
           'ash::features::kBluetoothRevamp',
         ],
       };

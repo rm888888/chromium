@@ -2,7 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "base/memory/raw_ptr.h"
 #include "extensions/common/extension_api.h"
 
 #include <stddef.h>
@@ -25,7 +24,6 @@
 #include "base/values.h"
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/extensions/extension_features_unittest.h"
-#include "extensions/common/api/extension_action/action_info.h"
 #include "extensions/common/extension.h"
 #include "extensions/common/extension_builder.h"
 #include "extensions/common/features/feature_session_type.h"
@@ -92,7 +90,7 @@ TEST(ExtensionAPITest, Creation) {
   ExtensionAPI empty_instance;
 
   struct {
-    raw_ptr<ExtensionAPI> api;
+    ExtensionAPI* api;
     bool expect_populated;
   } test_data[] = {
     { shared_instance, true },
@@ -323,7 +321,7 @@ TEST(ExtensionAPITest, IsAnyFeatureAvailableToContext) {
     std::string api_full_name;
     bool expect_is_available;
     Feature::Context context;
-    raw_ptr<const Extension> extension;
+    const Extension* extension;
     GURL url;
   } test_data[] = {
       {"test1", false, Feature::WEB_PAGE_CONTEXT, nullptr, GURL()},
@@ -802,7 +800,7 @@ TEST(ExtensionAPITest, DefaultConfigurationFeatures) {
           api->GetFeatureDependency("api:browserAction.setTitle"));
 
   struct {
-    raw_ptr<const SimpleFeature> feature;
+    const SimpleFeature* feature;
     // TODO(aa): More stuff to test over time.
   } test_data[] = {{browser_action}, {browser_action_set_title}};
 
@@ -977,7 +975,9 @@ TEST(ExtensionAPITest, ManifestKeys) {
       ExtensionAPI::CreateWithDefaultConfiguration());
 
   scoped_refptr<const Extension> extension =
-      ExtensionBuilder("Test").SetAction(ActionInfo::TYPE_BROWSER).Build();
+      ExtensionBuilder("Test")
+          .SetAction(ExtensionBuilder::ActionType::BROWSER_ACTION)
+          .Build();
 
   EXPECT_TRUE(extension_api
                   ->IsAvailable("browserAction", extension.get(),

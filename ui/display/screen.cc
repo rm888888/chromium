@@ -71,9 +71,8 @@ void Screen::SetDisplayForNewWindows(int64_t display_id) {
   display_id_for_new_windows_ = display_id;
 }
 
-bool Screen::SetScreenSaverSuspended(bool suspend) {
+void Screen::SetScreenSaverSuspended(bool suspend) {
   NOTIMPLEMENTED_LOG_ONCE();
-  return false;
 }
 
 bool Screen::IsScreenSaverActive() const {

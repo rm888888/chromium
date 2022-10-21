@@ -9,6 +9,7 @@
 #include <string>
 
 #include "base/callback.h"
+#include "base/macros.h"
 #include "components/sync/engine/sync_encryption_handler.h"
 
 namespace syncer {

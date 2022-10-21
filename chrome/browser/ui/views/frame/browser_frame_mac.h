@@ -8,6 +8,7 @@
 #include "chrome/browser/ui/views/frame/native_browser_frame.h"
 
 #import "base/mac/scoped_nsobject.h"
+#include "base/macros.h"
 #include "ui/views/widget/native_widget_mac.h"
 
 class BrowserFrame;
@@ -50,7 +51,6 @@ class BrowserFrameMac : public views::NativeWidgetMac,
   bool HandleKeyboardEvent(
       const content::NativeWebKeyboardEvent& event) override;
   bool ShouldRestorePreviousBrowserWidgetState() const override;
-  void AnnounceTextInInProcessWindow(const std::u16string& text) override;
 
  protected:
   ~BrowserFrameMac() override;

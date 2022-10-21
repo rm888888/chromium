@@ -7,7 +7,6 @@
 #include <algorithm>
 
 #include "base/metrics/histogram.h"
-#include "build/build_config.h"
 
 namespace nacl {
 

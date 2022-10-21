@@ -8,6 +8,7 @@
 #include <stdint.h>
 
 #include "base/component_export.h"
+#include "base/macros.h"
 
 namespace ui {
 
@@ -39,6 +40,6 @@ class COMPONENT_EXPORT(EVDEV) MouseButtonMapEvdev {
   bool primary_button_right_ = false;
 };
 
-}  // namespace ui
+}  // namspace ui
 
 #endif  // UI_EVENTS_OZONE_EVDEV_MOUSE_BUTTON_MAP_EVDEV_H_

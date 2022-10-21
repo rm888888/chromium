@@ -38,16 +38,16 @@ bool LoadImages(const base::DictionaryValue* theme_value,
           for (base::DictionaryValue::Iterator inner_iter(*inner_value);
                !inner_iter.IsAtEnd(); inner_iter.Advance()) {
             if (!inner_iter.value().is_string()) {
-              *error = errors::kInvalidThemeImages;
+              *error = base::ASCIIToUTF16(errors::kInvalidThemeImages);
               return false;
             }
           }
         } else {
-          *error = errors::kInvalidThemeImages;
+          *error = base::ASCIIToUTF16(errors::kInvalidThemeImages);
           return false;
         }
       } else if (!iter.value().is_string()) {
-        *error = errors::kInvalidThemeImages;
+        *error = base::ASCIIToUTF16(errors::kInvalidThemeImages);
         return false;
       }
     }
@@ -67,28 +67,28 @@ bool LoadColors(const base::Value* theme_value,
     // Validate that the colors are RGB or RGBA lists.
     for (const auto it : colors_value->DictItems()) {
       if (!it.second.is_list()) {
-        *error = errors::kInvalidThemeColors;
+        *error = base::ASCIIToUTF16(errors::kInvalidThemeColors);
         return false;
       }
       base::Value::ConstListView color_list = it.second.GetList();
 
       // There must be either 3 items (RGB), or 4 (RGBA).
       if (!(color_list.size() == 3 || color_list.size() == 4)) {
-        *error = errors::kInvalidThemeColors;
+        *error = base::ASCIIToUTF16(errors::kInvalidThemeColors);
         return false;
       }
 
       // The first three items (RGB), must be ints:
       if (!(color_list[0].is_int() && color_list[1].is_int() &&
             color_list[2].is_int())) {
-        *error = errors::kInvalidThemeColors;
+        *error = base::ASCIIToUTF16(errors::kInvalidThemeColors);
         return false;
       }
 
       // If there is a 4th item (alpha), it may be either int or double:
       if (color_list.size() == 4 &&
           !(color_list[3].is_int() || color_list[3].is_double())) {
-        *error = errors::kInvalidThemeColors;
+        *error = base::ASCIIToUTF16(errors::kInvalidThemeColors);
         return false;
       }
     }
@@ -110,19 +110,19 @@ bool LoadTints(const base::DictionaryValue* theme_value,
   for (base::DictionaryValue::Iterator iter(*tints_value); !iter.IsAtEnd();
        iter.Advance()) {
     if (!iter.value().is_list()) {
-      *error = errors::kInvalidThemeTints;
+      *error = base::ASCIIToUTF16(errors::kInvalidThemeTints);
       return false;
     }
 
     base::Value::ConstListView tint_list = iter.value().GetList();
     if (tint_list.size() != 3) {
-      *error = errors::kInvalidThemeTints;
+      *error = base::ASCIIToUTF16(errors::kInvalidThemeTints);
       return false;
     }
 
     if (!tint_list[0].GetIfDouble() || !tint_list[1].GetIfDouble() ||
         !tint_list[2].GetIfDouble()) {
-      *error = errors::kInvalidThemeTints;
+      *error = base::ASCIIToUTF16(errors::kInvalidThemeTints);
       return false;
     }
   }
@@ -189,7 +189,7 @@ ThemeHandler::~ThemeHandler() {
 bool ThemeHandler::Parse(Extension* extension, std::u16string* error) {
   const base::DictionaryValue* theme_value = NULL;
   if (!extension->manifest()->GetDictionary(keys::kTheme, &theme_value)) {
-    *error = errors::kInvalidTheme;
+    *error = base::ASCIIToUTF16(errors::kInvalidTheme);
     return false;
   }
 

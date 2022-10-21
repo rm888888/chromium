@@ -11,12 +11,11 @@
 #include <utility>
 #include <vector>
 
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/time/time.h"
 #include "components/sync/base/client_tag_hash.h"
 #include "components/sync/protocol/entity_metadata.pb.h"
 #include "components/sync/protocol/model_type_state.pb.h"
-#include "third_party/abseil-cpp/absl/types/optional.h"
 
 namespace sync_pb {
 class BookmarkModelMetadata;
@@ -62,8 +61,6 @@ class SyncedBookmarkTracker {
 
     // Check whether |data| matches the stored specifics hash. It also compares
     // parent information, but only if present in specifics (M94 and above).
-    // TODO(crbug.com/1274122): Remove Possibly from the name, since it's now
-    // guaranteed and update comment.
     bool MatchesDataPossiblyIncludingParent(
         const syncer::EntityData& data) const;
 
@@ -106,7 +103,7 @@ class SyncedBookmarkTracker {
 
    private:
     // Null for tombstones.
-    raw_ptr<const bookmarks::BookmarkNode> bookmark_node_;
+    const bookmarks::BookmarkNode* bookmark_node_;
 
     // Serializable Sync metadata.
     const std::unique_ptr<sync_pb::EntityMetadata> metadata_;
@@ -151,9 +148,6 @@ class SyncedBookmarkTracker {
   // Returns null if no entity is found.
   const Entity* GetEntityForClientTagHash(
       const syncer::ClientTagHash& client_tag_hash) const;
-
-  // Convenience function, similar to GetEntityForClientTagHash().
-  const Entity* GetEntityForGUID(const base::GUID& guid) const;
 
   // Returns null if no entity is found.
   const SyncedBookmarkTracker::Entity* GetEntityForBookmarkNode(
@@ -214,6 +208,11 @@ class SyncedBookmarkTracker {
   void set_model_type_state(sync_pb::ModelTypeState model_type_state) {
     model_type_state_ = std::move(model_type_state);
   }
+
+  // Treats the current time as last sync time.
+  // TODO(crbug.com/1032052): Remove this code once all local sync metadata is
+  // required to populate the client tag (and be considered invalid otherwise).
+  void UpdateLastSyncTime() { last_sync_time_ = base::Time::Now(); }
 
   std::vector<const Entity*> GetAllEntities() const;
 
@@ -283,16 +282,6 @@ class SyncedBookmarkTracker {
   // creations) should populate client tags.
   bool bookmark_client_tags_in_protocol_enabled() const;
 
-  // Causes the tracker to remember that a remote sync update (initial or
-  // incremental) was ignored because its parent was unknown (either because
-  // the data was corrupt or because the update is a descendant of an
-  // unsupported permanent folder).
-  void RecordIgnoredServerUpdateDueToMissingParent(int64_t server_version);
-
-  absl::optional<int64_t> GetNumIgnoredUpdatesDueToMissingParentForTest() const;
-  absl::optional<int64_t>
-  GetMaxVersionAmongIgnoredUpdatesDueToMissingParentForTest() const;
-
  private:
   // Enumeration of possible reasons why persisted metadata are considered
   // corrupted and don't match the bookmark model. Used in UMA metrics. Do not
@@ -317,12 +306,9 @@ class SyncedBookmarkTracker {
     kMaxValue = MISSING_CLIENT_TAG_HASH
   };
 
-  SyncedBookmarkTracker(
-      sync_pb::ModelTypeState model_type_state,
-      bool bookmarks_reuploaded,
-      absl::optional<int64_t> num_ignored_updates_due_to_missing_parent,
-      absl::optional<int64_t>
-          max_version_among_ignored_updates_due_to_missing_parent);
+  SyncedBookmarkTracker(sync_pb::ModelTypeState model_type_state,
+                        bool bookmarks_reuploaded,
+                        base::Time last_sync_time);
 
   // Add entities to |this| tracker based on the content of |*model| and
   // |model_metadata|. Validates the integrity of |*model| and |model_metadata|
@@ -379,10 +365,11 @@ class SyncedBookmarkTracker {
   // reuploaded.
   bool bookmarks_reuploaded_ = false;
 
-  // See corresponding proto fields in BookmarkModelMetadata.
-  absl::optional<int64_t> num_ignored_updates_due_to_missing_parent_;
-  absl::optional<int64_t>
-      max_version_among_ignored_updates_due_to_missing_parent_;
+  // The local timestamp corresponding to the last time remote updates were
+  // received.
+  // TODO(crbug.com/1032052): Remove this code once all local sync metadata is
+  // required to populate the client tag (and be considered invalid otherwise).
+  base::Time last_sync_time_;
 };
 
 }  // namespace sync_bookmarks

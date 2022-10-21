@@ -41,7 +41,7 @@ class AndroidPlatformKeySystemProperties : public KeySystemProperties {
                                      SupportedCodecs supported_codecs)
       : name_(name), supported_codecs_(supported_codecs) {}
 
-  std::string GetBaseKeySystemName() const override { return name_; }
+  std::string GetKeySystemName() const override { return name_; }
 
   bool IsSupportedInitDataType(EmeInitDataType init_data_type) const override {
     // Here we assume that support for a container implies support for the
@@ -72,7 +72,6 @@ class AndroidPlatformKeySystemProperties : public KeySystemProperties {
   }
 
   EmeConfigRule GetRobustnessConfigRule(
-      const std::string& key_system,
       media::EmeMediaType media_type,
       const std::string& requested_robustness,
       const bool* /*hw_secure_requirement*/) const override {
@@ -121,7 +120,7 @@ SupportedKeySystemResponse QueryKeySystemSupport(
 
 #if BUILDFLAG(ENABLE_WIDEVINE)
 void AddAndroidWidevine(
-    std::vector<std::unique_ptr<KeySystemProperties>>* key_systems) {
+    std::vector<std::unique_ptr<KeySystemProperties>>* concrete_key_systems) {
   // TODO(crbug.com/853336): Use media.mojom.KeySystemSupport instead of
   // separate IPC.
   auto response = QueryKeySystemSupport(kWidevineKeySystem);
@@ -149,7 +148,7 @@ void AddAndroidWidevine(
       encryption_schemes.insert(media::EncryptionScheme::kCbcs);
     }
 
-    key_systems->emplace_back(new WidevineKeySystemProperties(
+    concrete_key_systems->emplace_back(new WidevineKeySystemProperties(
         codecs,                        // Regular codecs.
         encryption_schemes,            // Encryption schemes.
         hw_secure_codecs,              // Hardware secure codecs.
@@ -157,8 +156,8 @@ void AddAndroidWidevine(
         Robustness::HW_SECURE_CRYPTO,  // Max audio robustness.
         Robustness::HW_SECURE_ALL,     // Max video robustness.
         persistent_license_support,    // persistent-license.
-        EmeFeatureSupport::ALWAYS_ENABLED,    // Persistent state.
-        EmeFeatureSupport::ALWAYS_ENABLED));  // Distinctive identifier.
+        EmeFeatureSupport::ALWAYS_ENABLED,     // Persistent state.
+        EmeFeatureSupport::ALWAYS_ENABLED));   // Distinctive identifier.
   } else {
     // It doesn't make sense to support hw secure codecs but not regular codecs.
     DVLOG(3) << __func__ << " Widevine NOT supported.";
@@ -168,7 +167,7 @@ void AddAndroidWidevine(
 #endif  // BUILDFLAG(ENABLE_WIDEVINE)
 
 void AddAndroidPlatformKeySystems(
-    std::vector<std::unique_ptr<KeySystemProperties>>* key_systems) {
+    std::vector<std::unique_ptr<KeySystemProperties>>* concrete_key_systems) {
   // TODO(crbug.com/853336): Update media.mojom.KeySystemSupport to handle this
   // case and use it instead.
 
@@ -180,7 +179,7 @@ void AddAndroidPlatformKeySystems(
        it != key_system_names.end(); ++it) {
     SupportedKeySystemResponse response = QueryKeySystemSupport(*it);
     if (response.non_secure_codecs != media::EME_CODEC_NONE) {
-      key_systems->emplace_back(new AndroidPlatformKeySystemProperties(
+      concrete_key_systems->emplace_back(new AndroidPlatformKeySystemProperties(
           *it, response.non_secure_codecs));
     }
   }

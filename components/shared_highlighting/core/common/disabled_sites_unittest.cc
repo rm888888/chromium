@@ -46,9 +46,19 @@ TEST(DisabledSitesTest, NonMatchingHost) {
   EXPECT_TRUE(ShouldOfferLinkToText(GURL("https://www.example.com")));
 }
 
+TEST(DisabledSitesTest, FeatureDisabled) {
+  base::test::ScopedFeatureList feature;
+  feature.InitAndDisableFeature(kSharedHighlightingUseBlocklist);
+
+  EXPECT_TRUE(ShouldOfferLinkToText(GURL("https://www.google.com/amp/")));
+  EXPECT_TRUE(ShouldOfferLinkToText(GURL("https://www.youtube.com")));
+  EXPECT_TRUE(ShouldOfferLinkToText(GURL("https://www.example.com")));
+}
+
 TEST(DisabledSitesTest, AmpFeatureEnabled) {
   base::test::ScopedFeatureList feature;
-  feature.InitWithFeatures({kSharedHighlightingAmp}, {});
+  feature.InitWithFeatures(
+      {kSharedHighlightingUseBlocklist, kSharedHighlightingAmp}, {});
 
   EXPECT_TRUE(ShouldOfferLinkToText(GURL("https://www.google.com/amp/")));
   EXPECT_TRUE(ShouldOfferLinkToText(GURL("https://www.google.com/amp/foo")));

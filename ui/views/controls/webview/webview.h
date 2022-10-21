@@ -11,14 +11,13 @@
 
 #include "base/callback.h"
 #include "base/location.h"
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "content/public/browser/web_contents_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "ui/accessibility/ax_mode_observer.h"
 #include "ui/gfx/native_widget_types.h"
 #include "ui/views/controls/native/native_view_host.h"
 #include "ui/views/controls/webview/webview_export.h"
-#include "ui/views/metadata/view_factory.h"
 #include "ui/views/view.h"
 
 namespace views {
@@ -100,7 +99,6 @@ class WEBVIEW_EXPORT WebView : public View,
   void set_allow_accelerators(bool allow_accelerators) {
     allow_accelerators_ = allow_accelerators;
   }
-
   // Overridden from content::WebContentsDelegate:
   void ResizeDueToAutoResize(content::WebContents* source,
                              const gfx::Size& new_size) override;
@@ -187,16 +185,16 @@ class WEBVIEW_EXPORT WebView : public View,
       content::BrowserContext* browser_context,
       base::Location creator_location = base::Location::Current());
 
-  const raw_ptr<NativeViewHost> holder_ =
+  NativeViewHost* const holder_ =
       AddChildView(std::make_unique<NativeViewHost>());
   // Non-NULL if |web_contents()| was created and is owned by this WebView.
   std::unique_ptr<content::WebContents> wc_owner_;
   // Set to true when |holder_| is letterboxed (scaled to be smaller than this
   // view, to preserve its aspect ratio).
   bool is_letterboxing_ = false;
-  raw_ptr<content::BrowserContext> browser_context_;
+  content::BrowserContext* browser_context_;
   bool allow_accelerators_ = false;
-  raw_ptr<View> crashed_overlay_view_ = nullptr;
+  View* crashed_overlay_view_ = nullptr;
   bool is_primary_web_contents_for_window_ = false;
 
   // Minimum and maximum sizes to determine WebView bounds for auto-resizing.
@@ -205,20 +203,6 @@ class WEBVIEW_EXPORT WebView : public View,
   gfx::Size max_size_;
 };
 
-BEGIN_VIEW_BUILDER(WEBVIEW_EXPORT, WebView, View)
-VIEW_BUILDER_PROPERTY(content::BrowserContext*, BrowserContext)
-VIEW_BUILDER_PROPERTY(content::WebContents*, WebContents)
-VIEW_BUILDER_PROPERTY(bool, FastResize)
-VIEW_BUILDER_METHOD(EnableSizingFromWebContents,
-                    const gfx::Size&,
-                    const gfx::Size&)
-VIEW_BUILDER_PROPERTY(View*, CrashedOverlayView)
-VIEW_BUILDER_METHOD(set_is_primary_web_contents_for_window, bool)
-VIEW_BUILDER_METHOD(set_allow_accelerators, bool)
-END_VIEW_BUILDER
-
 }  // namespace views
-
-DEFINE_VIEW_BUILDER(WEBVIEW_EXPORT, WebView)
 
 #endif  // UI_VIEWS_CONTROLS_WEBVIEW_WEBVIEW_H_

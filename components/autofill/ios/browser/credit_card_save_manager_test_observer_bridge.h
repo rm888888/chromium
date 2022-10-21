@@ -7,6 +7,7 @@
 
 #import <Foundation/Foundation.h>
 
+#include "base/macros.h"
 #include "components/autofill/core/browser/payments/credit_card_save_manager.h"
 
 // A protocol to be adopted by EarlGrey tests to get notified of actions that

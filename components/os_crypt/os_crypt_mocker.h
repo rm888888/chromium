@@ -5,6 +5,7 @@
 #ifndef COMPONENTS_OS_CRYPT_OS_CRYPT_MOCKER_H_
 #define COMPONENTS_OS_CRYPT_OS_CRYPT_MOCKER_H_
 
+#include "base/macros.h"
 #include "build/build_config.h"
 
 // Handles the mocking of OSCrypt, such that it does not reach system level

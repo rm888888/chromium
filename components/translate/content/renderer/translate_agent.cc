@@ -191,7 +191,8 @@ void TranslateAgent::PageCaptured(const std::u16string& contents) {
   // ok as the translate service will make the final call and only results in a
   // slight overhead in running the model when unnecessary.
   if (url.is_empty() || url.SchemeIs(content::kChromeUIScheme) ||
-      url.SchemeIs(content::kChromeDevToolsScheme) || url.IsAboutBlank()) {
+      url.SchemeIs(content::kChromeDevToolsScheme) || url.IsAboutBlank() ||
+      url.SchemeIs(url::kFtpScheme)) {
     return;
   }
 

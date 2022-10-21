@@ -8,6 +8,7 @@
 #include <utility>
 
 #include "base/containers/contains.h"
+#include "base/macros.h"
 #include "base/memory/ptr_util.h"
 #include "build/build_config.h"
 #include "build/chromeos_buildflags.h"
@@ -229,10 +230,9 @@ int GuestViewManager::GetGuestInstanceIDForElementID(int owner_process_id,
 }
 
 SiteInstance* GuestViewManager::GetGuestSiteInstance(
-    const content::StoragePartitionConfig& storage_partition_config) {
+    const GURL& guest_site) {
   for (const auto& guest : guest_web_contents_by_instance_id_) {
-    if (guest.second->GetSiteInstance()->GetStoragePartitionConfig() ==
-        storage_partition_config)
+    if (guest.second->GetSiteInstance()->GetSiteURL() == guest_site)
       return guest.second->GetSiteInstance();
   }
   return nullptr;

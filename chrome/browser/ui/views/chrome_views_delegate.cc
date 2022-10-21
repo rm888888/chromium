@@ -10,10 +10,10 @@
 #include "build/build_config.h"
 #include "build/chromeos_buildflags.h"
 #include "chrome/browser/browser_process.h"
-#include "chrome/browser/profiles/keep_alive/profile_keep_alive_types.h"
-#include "chrome/browser/profiles/keep_alive/scoped_profile_keep_alive.h"
 #include "chrome/browser/profiles/profile.h"
+#include "chrome/browser/profiles/profile_keep_alive_types.h"
 #include "chrome/browser/profiles/profile_manager.h"
+#include "chrome/browser/profiles/scoped_profile_keep_alive.h"
 #include "chrome/browser/ui/browser_window_state.h"
 #include "components/keep_alive_registry/keep_alive_registry.h"
 #include "components/keep_alive_registry/keep_alive_types.h"
@@ -88,7 +88,7 @@ void ChromeViewsDelegate::SaveWindowPlacement(const views::Widget* window,
   if (!prefs)
     return;
 
-  std::unique_ptr<DictionaryPrefUpdateDeprecated> pref_update =
+  std::unique_ptr<DictionaryPrefUpdate> pref_update =
       chrome::GetWindowPlacementDictionaryReadWrite(window_name, prefs);
   base::DictionaryValue* window_preferences = pref_update->Get();
   window_preferences->SetInteger("left", bounds.x());
@@ -117,7 +117,7 @@ bool ChromeViewsDelegate::GetSavedWindowPlacement(
     return false;
 
   DCHECK(prefs->FindPreference(window_name));
-  const base::Value* dictionary = prefs->GetDictionary(window_name);
+  const base::DictionaryValue* dictionary = prefs->GetDictionary(window_name);
   if (!dictionary)
     return false;
   absl::optional<int> left = dictionary->FindIntKey("left");
@@ -129,7 +129,9 @@ bool ChromeViewsDelegate::GetSavedWindowPlacement(
 
   bounds->SetRect(*left, *top, *right - *left, *bottom - *top);
 
-  const bool maximized = dictionary->FindBoolKey("maximized").value_or(false);
+  bool maximized = false;
+  if (dictionary)
+    dictionary->GetBoolean("maximized", &maximized);
   *show_state = maximized ? ui::SHOW_STATE_MAXIMIZED : ui::SHOW_STATE_NORMAL;
 
 #if BUILDFLAG(IS_CHROMEOS_ASH)

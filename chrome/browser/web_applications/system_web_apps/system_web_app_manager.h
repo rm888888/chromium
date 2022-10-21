@@ -13,7 +13,6 @@
 
 #include "base/callback_forward.h"
 #include "base/containers/flat_map.h"
-#include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/one_shot_event.h"
 #include "chrome/browser/web_applications/externally_managed_app_manager.h"
@@ -47,6 +46,7 @@ class Profile;
 namespace web_app {
 
 class WebAppUiManager;
+class OsIntegrationManager;
 class WebAppSyncBridge;
 class WebAppPolicyManager;
 
@@ -84,6 +84,7 @@ class SystemWebAppManager {
       WebAppRegistrar* registrar,
       WebAppSyncBridge* sync_bridge,
       WebAppUiManager* ui_manager,
+      OsIntegrationManager* os_integration_manager,
       WebAppPolicyManager* web_app_policy_manager);
 
   void Start();
@@ -169,6 +170,8 @@ class SystemWebAppManager {
       const SystemWebAppDelegate* system_app,
       const GURL& url) const;
 
+  bool AppHasFileHandlingOriginTrial(const SystemWebAppDelegate* system_app);
+
   void StopBackgroundTasks();
 
   void OnAppsSynchronized(
@@ -192,7 +195,7 @@ class SystemWebAppManager {
 
   void StartBackgroundTasks() const;
 
-  raw_ptr<Profile> profile_;
+  Profile* profile_;
 
   std::unique_ptr<base::OneShotEvent> on_apps_synchronized_;
   std::unique_ptr<base::OneShotEvent> on_tasks_started_;
@@ -205,19 +208,20 @@ class SystemWebAppManager {
 
   SystemAppDelegateMap system_app_delegates_;
 
-  const raw_ptr<PrefService> pref_service_;
+  PrefService* const pref_service_;
 
   // Used to install, uninstall, and update apps. Should outlive this class.
-  raw_ptr<ExternallyManagedAppManager> externally_managed_app_manager_ =
-      nullptr;
+  ExternallyManagedAppManager* externally_managed_app_manager_ = nullptr;
 
-  raw_ptr<WebAppRegistrar> registrar_ = nullptr;
+  WebAppRegistrar* registrar_ = nullptr;
 
-  raw_ptr<WebAppSyncBridge> sync_bridge_ = nullptr;
+  WebAppSyncBridge* sync_bridge_ = nullptr;
 
-  raw_ptr<WebAppUiManager> ui_manager_ = nullptr;
+  WebAppUiManager* ui_manager_ = nullptr;
 
-  raw_ptr<WebAppPolicyManager> web_app_policy_manager_ = nullptr;
+  OsIntegrationManager* os_integration_manager_ = nullptr;
+
+  WebAppPolicyManager* web_app_policy_manager_ = nullptr;
 
   std::vector<std::unique_ptr<SystemAppBackgroundTask>> tasks_;
 

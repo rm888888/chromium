@@ -9,7 +9,6 @@
 #include <utility>
 
 #include "base/containers/flat_map.h"
-#include "base/memory/raw_ptr.h"
 #include "components/autofill/content/browser/form_forest.h"
 #include "components/autofill/core/browser/autofill_driver.h"
 #include "components/autofill/core/browser/field_types.h"
@@ -216,13 +215,13 @@ class ContentAutofillRouter {
                             const FormFieldData& field);
 
   // Routing of events called by the browser:
-  base::flat_map<FieldGlobalId, ServerFieldType> FillOrPreviewForm(
+  void FillOrPreviewForm(
       ContentAutofillDriver* source_driver,
       int query_id,
       mojom::RendererFormDataAction action,
       const FormData& data,
       const url::Origin& triggered_origin,
-      base::flat_map<FieldGlobalId, ServerFieldType> field_type_map);
+      const base::flat_map<FieldGlobalId, ServerFieldType>& field_type_map);
   void SendAutofillTypePredictionsToRenderer(
       ContentAutofillDriver* source_driver,
       const std::vector<FormDataPredictions>& type_predictions);
@@ -274,10 +273,10 @@ class ContentAutofillRouter {
 
   // The driver that triggered the last AskForValuesToFill() call.
   // Update with SetLastQueriedSource().
-  raw_ptr<ContentAutofillDriver> last_queried_source_ = nullptr;
+  ContentAutofillDriver* last_queried_source_ = nullptr;
   // The driver to which the last AskForValuesToFill() call was routed.
   // Update with SetLastQueriedTarget().
-  raw_ptr<ContentAutofillDriver> last_queried_target_ = nullptr;
+  ContentAutofillDriver* last_queried_target_ = nullptr;
 
   // When the focus moves to a different frame, the order of the events
   // FocusNoLongerOnForm() and FocusOnFormField() may be reversed due to race

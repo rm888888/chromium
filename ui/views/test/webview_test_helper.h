@@ -7,6 +7,8 @@
 
 #include <memory>
 
+#include "base/macros.h"
+
 namespace content {
 class TestContentClientInitializer;
 }  // namespace content

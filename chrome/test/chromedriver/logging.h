@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "base/containers/circular_deque.h"
+#include "base/macros.h"
 #include "base/values.h"
 #include "chrome/test/chromedriver/chrome/log.h"
 

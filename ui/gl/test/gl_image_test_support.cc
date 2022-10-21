@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "base/check_op.h"
+#include "base/containers/contains.h"
 #include "base/notreached.h"
 #include "ui/gfx/buffer_format_util.h"
 #include "ui/gfx/half_float.h"
@@ -37,9 +38,11 @@ void rgb_to_yuv(uint8_t r, uint8_t g, uint8_t b, T* y, T* u, T* v) {
 void GLImageTestSupport::InitializeGL(
     absl::optional<GLImplementationParts> prefered_impl) {
 #if defined(USE_OZONE)
-  ui::OzonePlatform::InitParams params;
-  params.single_process = true;
-  ui::OzonePlatform::InitializeForGPU(params);
+  if (features::IsUsingOzonePlatform()) {
+    ui::OzonePlatform::InitParams params;
+    params.single_process = true;
+    ui::OzonePlatform::InitializeForGPU(params);
+  }
 #endif
 
   std::vector<GLImplementationParts> allowed_impls =
@@ -52,9 +55,11 @@ void GLImageTestSupport::InitializeGL(
 
   GLSurfaceTestSupport::InitializeOneOffImplementation(impl, true);
 #if defined(USE_OZONE)
-  // Make sure all the tasks posted to the current task runner by the
-  // initialization functions are run before running the tests.
-  base::RunLoop().RunUntilIdle();
+  if (features::IsUsingOzonePlatform()) {
+    // Make sure all the tasks posted to the current task runner by the
+    // initialization functions are run before running the tests.
+    base::RunLoop().RunUntilIdle();
+  }
 #endif
 }
 

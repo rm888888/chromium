@@ -23,8 +23,4 @@ bool StubSurfaceClient::IsVideoCaptureStarted() {
   return false;
 }
 
-base::flat_set<base::PlatformThreadId> StubSurfaceClient::GetThreadIds() {
-  return {};
-}
-
 }  // namespace viz

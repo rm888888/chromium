@@ -7,6 +7,7 @@
 
 #include <memory>
 
+#include "base/macros.h"
 #include "base/memory/scoped_refptr.h"
 #include "device/vr/gl_bindings.h"
 #include "ui/gfx/geometry/size.h"

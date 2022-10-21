@@ -38,7 +38,7 @@ gfx::NativeViewAccessible ViewAXPlatformNodeDelegateMac::GetNSWindow() {
   return window_host->GetNativeViewAccessibleForNSWindow();
 }
 
-gfx::NativeViewAccessible ViewAXPlatformNodeDelegateMac::GetParent() const {
+gfx::NativeViewAccessible ViewAXPlatformNodeDelegateMac::GetParent() {
   if (view()->parent())
     return ViewAXPlatformNodeDelegate::GetParent();
 

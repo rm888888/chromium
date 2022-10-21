@@ -7,14 +7,14 @@
 
 #include <string>
 
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/scoped_observation.h"
+#include "chrome/browser/custom_handlers/protocol_handler_registry.h"
 #include "chrome/browser/ui/webui/settings/settings_page_ui_handler.h"
 #include "chrome/browser/web_applications/app_registrar_observer.h"
 #include "chrome/browser/web_applications/web_app_id.h"
 #include "chrome/browser/web_applications/web_app_provider.h"
 #include "chrome/browser/web_applications/web_app_registrar.h"
-#include "components/custom_handlers/protocol_handler_registry.h"
 #include "content/public/common/custom_handlers/protocol_handler.h"
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -33,12 +33,11 @@ using content::ProtocolHandler;
 
 namespace settings {
 
-class ProtocolHandlersHandler
-    : public SettingsPageUIHandler,
-      public custom_handlers::ProtocolHandlerRegistry::Observer,
-      public web_app::AppRegistrarObserver {
+class ProtocolHandlersHandler : public SettingsPageUIHandler,
+                                public ProtocolHandlerRegistry::Observer,
+                                public web_app::AppRegistrarObserver {
  public:
-  explicit ProtocolHandlersHandler(Profile* profile);
+  ProtocolHandlersHandler();
 
   ProtocolHandlersHandler(const ProtocolHandlersHandler&) = delete;
   ProtocolHandlersHandler& operator=(const ProtocolHandlersHandler&) = delete;
@@ -96,10 +95,10 @@ class ProtocolHandlersHandler
   // |args| is a list of [protocol, url].
   void HandleRemoveHandler(const base::ListValue* args);
 
-  custom_handlers::ProtocolHandlerRegistry* GetProtocolHandlerRegistry();
+  ProtocolHandlerRegistry* GetProtocolHandlerRegistry();
 
-  base::ScopedObservation<custom_handlers::ProtocolHandlerRegistry,
-                          custom_handlers::ProtocolHandlerRegistry::Observer>
+  base::ScopedObservation<ProtocolHandlerRegistry,
+                          ProtocolHandlerRegistry::Observer>
       registry_observation_{this};
 
   // Web App Protocol Handler specific functions:
@@ -116,7 +115,7 @@ class ProtocolHandlersHandler
   // the given |protocol| in the given |handlers| list.
   std::unique_ptr<base::DictionaryValue> GetAppHandlersForProtocol(
       const std::string& protocol,
-      custom_handlers::ProtocolHandlerRegistry::ProtocolHandlerList handlers);
+      ProtocolHandlerRegistry::ProtocolHandlerList handlers);
 
   // Called when OnWebAppProtocolSettingsChanged() is notified or on page load.
   void UpdateAllAllowedLaunchProtocols();
@@ -132,8 +131,7 @@ class ProtocolHandlersHandler
   // |args| is a list of [protocol, url, app_id].
   void HandleRemoveDisallowedAppHandler(base::Value::ConstListView args);
 
-  const raw_ptr<Profile> profile_;
-  const raw_ptr<web_app::WebAppProvider> web_app_provider_;
+  web_app::WebAppProvider* GetWebAppProvider();
 
   base::ScopedObservation<web_app::WebAppRegistrar,
                           web_app::AppRegistrarObserver>

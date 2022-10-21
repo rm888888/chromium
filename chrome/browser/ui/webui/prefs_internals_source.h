@@ -5,7 +5,7 @@
 #ifndef CHROME_BROWSER_UI_WEBUI_PREFS_INTERNALS_SOURCE_H_
 #define CHROME_BROWSER_UI_WEBUI_PREFS_INTERNALS_SOURCE_H_
 
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "content/public/browser/url_data_source.h"
 
 class Profile;
@@ -29,7 +29,7 @@ class PrefsInternalsSource : public content::URLDataSource {
       content::URLDataSource::GotDataCallback callback) override;
 
  private:
-  raw_ptr<Profile> profile_;
+  Profile* profile_;
 };
 
 #endif  // CHROME_BROWSER_UI_WEBUI_PREFS_INTERNALS_SOURCE_H_

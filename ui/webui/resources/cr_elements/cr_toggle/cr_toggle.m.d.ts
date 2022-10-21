@@ -4,8 +4,6 @@
 
 import {LegacyElementMixin} from 'chrome://resources/polymer/v3_0/polymer/lib/legacy/legacy-element-mixin.js';
 
-export const MOVE_THRESHOLD_PX: number;
-
 interface CrToggleElement extends LegacyElementMixin, HTMLElement {
   checked: boolean;
   dark: boolean;

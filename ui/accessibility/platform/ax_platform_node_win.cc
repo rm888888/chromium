@@ -1848,7 +1848,7 @@ int AXPlatformNodeWin::GetAnnotationTypeImpl() const {
       if (DescendantHasComment(this))
         return AnnotationType_Comment;
 
-      [[fallthrough]];
+      FALLTHROUGH;
     }
     default:
       return AnnotationType_Unknown;
@@ -3606,6 +3606,12 @@ HRESULT AXPlatformNodeWin::IAccessibleTextGetTextForOffsetType(
   AXPlatformNode::NotifyAddAXModeFlags(kScreenReaderAndHTMLAccessibilityModes |
                                        AXMode::kInlineTextBoxes);
 
+  // https://accessibility.linuxfoundation.org/a11yspecs/ia2/docs/html/_accessible_text_8idl.html
+  // IA2_TEXT_BOUNDARY_SENTENCE is optional and we can let the screenreader
+  // handle it, the rest of the boundary types must be supported.
+  if (boundary_type == IA2_TEXT_BOUNDARY_SENTENCE)
+    return S_FALSE;
+
   HandleSpecialTextOffset(&offset);
   if (offset < 0)
     return E_INVALIDARG;
@@ -3628,6 +3634,7 @@ HRESULT AXPlatformNodeWin::IAccessibleTextGetTextForOffsetType(
   }
 
   LONG start, end;
+
   switch (text_offset_type) {
     case TextOffsetType::kAtOffset: {
       end = FindBoundary(boundary_type, offset,
@@ -3742,7 +3749,7 @@ IFACEMETHODIMP AXPlatformNodeWin::get_offsetAtPoint(
     return S_FALSE;
   }
 
-  for (int i = 0, text_length = hit_child->GetTextContentUTF16().length();
+  for (int i = 0, text_length = hit_child->GetInnerText().length();
        i < text_length; ++i) {
     gfx::Rect char_bounds =
         hit_child->GetDelegate()->GetInnerTextRangeBoundsRect(
@@ -5290,7 +5297,7 @@ int AXPlatformNodeWin::MSAARole() {
   // If this is a web area for a presentational iframe, give it a role of
   // something other than DOCUMENT so that the fact that it's a separate doc
   // is not exposed to AT.
-  if (GetDelegate()->IsWebAreaForPresentationalIframe())
+  if (IsWebAreaForPresentationalIframe())
     return ROLE_SYSTEM_GROUPING;
 
   switch (GetRole()) {
@@ -5816,6 +5823,17 @@ AXPlatformNodeWin* AXPlatformNodeWin::GetParentPlatformNodeWin() const {
       AXPlatformNode::FromNativeViewAccessible(GetParent()));
 }
 
+bool AXPlatformNodeWin::IsWebAreaForPresentationalIframe() {
+  if (!IsPlatformDocument())
+    return false;
+
+  AXPlatformNodeBase* parent = FromNativeViewAccessible(GetParent());
+  if (!parent)
+    return false;
+
+  return parent->GetRole() == ax::mojom::Role::kIframePresentational;
+}
+
 int32_t AXPlatformNodeWin::ComputeIA2State() {
   int32_t ia2_state = IA2_STATE_OPAQUE;
 
@@ -5872,7 +5890,7 @@ int32_t AXPlatformNodeWin::ComputeIA2State() {
       if (!HasState(ax::mojom::State::kFocusable) ||
           GetBoolAttribute(ax::mojom::BoolAttribute::kNonAtomicTextFieldRoot))
         break;  // Not used with activedescendant, so preserve editable state.
-      [[fallthrough]];  // Will clear editable state.
+      FALLTHROUGH;  // Will clear editable state.
     case ax::mojom::Role::kMenuListPopup:
     case ax::mojom::Role::kMenuListOption:
       ia2_state &= ~(IA2_STATE_EDITABLE);
@@ -5890,7 +5908,7 @@ int32_t AXPlatformNodeWin::ComputeIA2Role() {
   // If this is a web area for a presentational iframe, give it a role of
   // something other than DOCUMENT so that the fact that it's a separate doc
   // is not exposed to AT.
-  if (GetDelegate()->IsWebAreaForPresentationalIframe()) {
+  if (IsWebAreaForPresentationalIframe()) {
     return ROLE_SYSTEM_GROUPING;
   }
 
@@ -6126,7 +6144,7 @@ std::wstring AXPlatformNodeWin::UIAAriaRole() {
   // If this is a web area for a presentational iframe, give it a role of
   // something other than document so that the fact that it's a separate doc
   // is not exposed to AT.
-  if (GetDelegate()->IsWebAreaForPresentationalIframe())
+  if (IsWebAreaForPresentationalIframe())
     return L"group";
 
   switch (GetRole()) {
@@ -6817,22 +6835,6 @@ std::wstring AXPlatformNodeWin::ComputeUIAProperties() {
       properties.push_back(L"valuenow=" + value_now);
   }
 
-  // Expose the aria-current attribute as 'current=<value>' if <value> is not
-  // 'none'.
-  int32_t aria_current_attribute;
-  if (GetIntAttribute(ax::mojom::IntAttribute::kAriaCurrentState,
-                      &aria_current_attribute)) {
-    ax::mojom::AriaCurrentState aria_current_state =
-        static_cast<ax::mojom::AriaCurrentState>(aria_current_attribute);
-    if (aria_current_state != ax::mojom::AriaCurrentState::kNone &&
-        aria_current_state != ax::mojom::AriaCurrentState::kFalse) {
-      std::string value = ui::ToString(aria_current_state);
-      std::wstring wide_value = base::UTF8ToWide(value);
-      SanitizeStringAttributeForUIAAriaProperty(wide_value, &wide_value);
-      properties.push_back(L"current=" + wide_value);
-    }
-  }
-
   std::wstring result = base::JoinString(properties, L";");
   return result;
 }
@@ -6841,7 +6843,7 @@ LONG AXPlatformNodeWin::ComputeUIAControlType() {  // NOLINT(runtime/int)
   // If this is a web area for a presentational iframe, give it a role of
   // something other than document so that the fact that it's a separate doc
   // is not exposed to AT.
-  if (GetDelegate()->IsWebAreaForPresentationalIframe())
+  if (IsWebAreaForPresentationalIframe())
     return UIA_GroupControlTypeId;
 
   switch (GetRole()) {
@@ -7833,7 +7835,6 @@ absl::optional<DWORD> AXPlatformNodeWin::MojoEventToMSAAEvent(
       return EVENT_OBJECT_STATECHANGE;
     case ax::mojom::Event::kFocus:
     case ax::mojom::Event::kFocusContext:
-    case ax::mojom::Event::kFocusAfterMenuClose:
       return EVENT_OBJECT_FOCUS;
     case ax::mojom::Event::kLiveRegionChanged:
       return EVENT_OBJECT_LIVEREGIONCHANGED;
@@ -8427,54 +8428,24 @@ void AXPlatformNodeWin::NotifyAPIObserverForPropertyRequest(
     case UIA_ProviderDescriptionPropertyId:
     case UIA_RuntimeIdPropertyId:
       break;
-    // These properties require the screenreader mode to get correct results
+    // These properties are indicative of a screenreader, we should enable full
+    // accessibility support.
+    case UIA_AriaRolePropertyId:
     case UIA_LabeledByPropertyId:
     case UIA_LiveSettingPropertyId:
     case UIA_LevelPropertyId:
     case UIA_DescribedByPropertyId:
-    // This property currently requires the html mode to get correct results.
-    // see crbug.com/703277
+      probable_screen_reader_detected = true;
+      probable_advanced_client_detected = true;
+      break;
     case UIA_AutomationIdPropertyId:
-    // These properties are indicative of a screenreader.
-    case UIA_AriaRolePropertyId:
-    case UIA_ControlTypePropertyId:
-    case UIA_LocalizedControlTypePropertyId:
-    case UIA_NamePropertyId:
-    case UIA_AcceleratorKeyPropertyId:
-    case UIA_AccessKeyPropertyId:
-    case UIA_IsKeyboardFocusablePropertyId:
-    case UIA_ClassNamePropertyId:
-    case UIA_HelpTextPropertyId:
-    case UIA_ClickablePointPropertyId:
-    case UIA_CulturePropertyId:
-    case UIA_IsControlElementPropertyId:
-    case UIA_IsContentElementPropertyId:
-    case UIA_IsPasswordPropertyId:
-    case UIA_IsOffscreenPropertyId:
-    case UIA_OrientationPropertyId:
-    case UIA_IsRequiredForFormPropertyId:
-    case UIA_ItemStatusPropertyId:
-    case UIA_ExpandCollapseExpandCollapseStatePropertyId:
-    case UIA_SelectionItemIsSelectedPropertyId:
-    case UIA_ToggleToggleStatePropertyId:
-    case UIA_AriaPropertiesPropertyId:
-    case UIA_IsDataValidForFormPropertyId:
-    case UIA_ControllerForPropertyId:
-    case UIA_FlowsToPropertyId:
-    case UIA_OptimizeForVisualContentPropertyId:
-    case UIA_FlowsFromPropertyId:
-    case UIA_IsPeripheralPropertyId:
-    case UIA_PositionInSetPropertyId:
-    case UIA_SizeOfSetPropertyId:
-    case UIA_AnnotationObjectsPropertyId:
-    case UIA_LandmarkTypePropertyId:
-    case UIA_LocalizedLandmarkTypePropertyId:
-    case UIA_FullDescriptionPropertyId:
-    case UIA_IsDialogPropertyId:
       uiautomation_id_requested = true;
       probable_screen_reader_detected = true;
       probable_advanced_client_detected = true;
       break;
+    default:
+      // All other properties should cause us to enable.
+      probable_advanced_client_detected = true;
   }
 
   for (WinAccessibilityAPIUsageObserver& observer :

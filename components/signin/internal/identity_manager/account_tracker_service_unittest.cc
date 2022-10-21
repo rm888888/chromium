@@ -65,7 +65,6 @@ const AccountKey kAccountKeyAlpha = {"alpha"};
 const AccountKey kAccountKeyBeta = {"beta"};
 const AccountKey kAccountKeyGamma = {"gamma"};
 const AccountKey kAccountKeyChild = {"child"};
-const AccountKey kAccountKeyEdu = {"EDU"};
 const AccountKey kAccountKeyIncomplete = {"incomplete"};
 const AccountKey kAccountKeyFooBar = {"foobar"};
 const AccountKey kAccountKeyFooDotBar = {"foo.bar"};
@@ -243,8 +242,7 @@ class AccountTrackerServiceTest : public testing::Test {
 
   void SimulateTokenAvailable(AccountKey account_key) {
     fake_oauth2_token_service_.UpdateCredentials(
-        AccountKeyToAccountId(account_key),
-        base::StringPrintf("fake-refresh-token-%s", account_key.value));
+        AccountKeyToAccountId(account_key), "fake-refresh-token");
   }
 
   void SimulateTokenRevoked(AccountKey account_key) {
@@ -1027,7 +1025,7 @@ TEST_F(AccountTrackerServiceTest, ChildStatusMigration) {
             account_tracker()
                 ->GetAccountInfo(AccountKeyToAccountId(kAccountKeyAlpha))
                 .is_child_account);
-  ListPrefUpdateDeprecated update(prefs(), prefs::kAccountInfo);
+  ListPrefUpdate update(prefs(), prefs::kAccountInfo);
   base::Value* dict = nullptr;
   update->Get(0, &dict);
   ASSERT_TRUE(dict && dict->is_dict());
@@ -1283,7 +1281,7 @@ TEST_F(AccountTrackerServiceTest, MigrateAccountIdToGaiaId) {
   const std::string email_beta = AccountKeyToEmail(kAccountKeyBeta);
   const std::string gaia_beta = AccountKeyToGaiaId(kAccountKeyBeta);
 
-  ListPrefUpdateDeprecated update(prefs(), prefs::kAccountInfo);
+  ListPrefUpdate update(prefs(), prefs::kAccountInfo);
 
   base::Value dict(base::Value::Type::DICTIONARY);
   dict.SetStringKey("account_id", email_alpha);
@@ -1331,7 +1329,7 @@ TEST_F(AccountTrackerServiceTest, CanNotMigrateAccountIdToGaiaId) {
   const std::string gaia_alpha = AccountKeyToGaiaId(kAccountKeyAlpha);
   const std::string email_beta = AccountKeyToEmail(kAccountKeyBeta);
 
-  ListPrefUpdateDeprecated update(prefs(), prefs::kAccountInfo);
+  ListPrefUpdate update(prefs(), prefs::kAccountInfo);
 
   base::Value dict(base::Value::Type::DICTIONARY);
   dict.SetStringKey("account_id", email_alpha);
@@ -1380,7 +1378,7 @@ TEST_F(AccountTrackerServiceTest, GaiaIdMigrationCrashInTheMiddle) {
   const std::string email_beta = AccountKeyToEmail(kAccountKeyBeta);
   const std::string gaia_beta = AccountKeyToGaiaId(kAccountKeyBeta);
 
-  ListPrefUpdateDeprecated update(prefs(), prefs::kAccountInfo);
+  ListPrefUpdate update(prefs(), prefs::kAccountInfo);
 
   base::Value dict(base::Value::Type::DICTIONARY);
   dict.SetStringKey("account_id", email_alpha);
@@ -1456,47 +1454,13 @@ TEST_F(AccountTrackerServiceTest, ChildAccountBasic) {
   account_tracker()->SetIsChildAccount(AccountKeyToAccountId(kAccountKeyChild),
                                        true);
 #endif
-  // Response was processed but observer is not notified as fetch results
-  // haven't been returned yet.
+  // Response was processed but observer is not notified as the account
+  // state is invalid.
   EXPECT_TRUE(CheckAccountTrackerEvents({}));
   AccountInfo info = account_tracker()->GetAccountInfo(
       AccountKeyToAccountId(kAccountKeyChild));
   EXPECT_EQ(signin::Tribool::kTrue, info.is_child_account);
   SimulateTokenRevoked(kAccountKeyChild);
-}
-
-TEST_F(AccountTrackerServiceTest, ChildAccountWithSecondaryEdu) {
-  SimulateTokenAvailable(kAccountKeyChild);
-  IssueAccessToken(kAccountKeyChild);
-#if defined(OS_ANDROID)
-  account_fetcher()->SetIsChildAccount(AccountKeyToAccountId(kAccountKeyChild),
-                                       true);
-#else
-  account_tracker()->SetIsChildAccount(AccountKeyToAccountId(kAccountKeyChild),
-                                       true);
-#endif
-
-  SimulateTokenAvailable(kAccountKeyEdu);
-  IssueAccessToken(kAccountKeyEdu);
-#if defined(OS_ANDROID)
-  account_fetcher()->SetIsChildAccount(AccountKeyToAccountId(kAccountKeyEdu),
-                                       false);
-#else
-  account_tracker()->SetIsChildAccount(AccountKeyToAccountId(kAccountKeyEdu),
-                                       false);
-#endif
-
-  // Response was processed but observer is not notified as fetch results
-  // haven't been returned yet.
-  EXPECT_TRUE(CheckAccountTrackerEvents({}));
-  AccountInfo info = account_tracker()->GetAccountInfo(
-      AccountKeyToAccountId(kAccountKeyChild));
-  EXPECT_EQ(signin::Tribool::kTrue, info.is_child_account);
-  info =
-      account_tracker()->GetAccountInfo(AccountKeyToAccountId(kAccountKeyEdu));
-  EXPECT_NE(signin::Tribool::kTrue, info.is_child_account);
-  SimulateTokenRevoked(kAccountKeyChild);
-  SimulateTokenRevoked(kAccountKeyEdu);
 }
 
 TEST_F(AccountTrackerServiceTest, ChildAccountUpdatedAndRevoked) {
@@ -1713,7 +1677,7 @@ TEST_F(AccountTrackerServiceTest, CountOfLoadedAccounts_TwoAccounts) {
   const std::string email_beta = AccountKeyToEmail(kAccountKeyBeta);
   const std::string gaia_beta = AccountKeyToGaiaId(kAccountKeyBeta);
 
-  ListPrefUpdateDeprecated update(prefs(), prefs::kAccountInfo);
+  ListPrefUpdate update(prefs(), prefs::kAccountInfo);
 
   base::Value dict(base::Value::Type::DICTIONARY);
   dict.SetStringKey("account_id", email_alpha);
@@ -1741,7 +1705,7 @@ TEST_F(AccountTrackerServiceTest, CountOfLoadedAccounts_TwoAccountsOneInvalid) {
   const std::string email_foobar = AccountKeyToEmail(kAccountKeyFooDotBar);
   const std::string gaia_foobar = AccountKeyToGaiaId(kAccountKeyFooDotBar);
 
-  ListPrefUpdateDeprecated update(prefs(), prefs::kAccountInfo);
+  ListPrefUpdate update(prefs(), prefs::kAccountInfo);
 
   base::Value dict(base::Value::Type::DICTIONARY);
   dict.SetStringKey("account_id", email_alpha);

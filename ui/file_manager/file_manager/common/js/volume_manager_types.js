@@ -235,7 +235,6 @@ VolumeManagerCommon.VolumeType = {
   ANDROID_FILES: 'android_files',
   MY_FILES: 'my_files',
   SMB: 'smb',
-  SYSTEM_INTERNAL: 'system_internal',
   TRASH: 'trash',
 };
 

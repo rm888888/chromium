@@ -59,7 +59,7 @@ std::vector<web_app::UrlHandlerLaunchParams> CreateUrlHandlerLaunchParams(
 }
 
 web_app::AppId InstallTestWebApp(Profile* profile) {
-  auto app_info = std::make_unique<WebAppInstallInfo>();
+  auto app_info = std::make_unique<WebApplicationInfo>();
   app_info->start_url = GURL(kStartUrl);
   app_info->title = kAppName;
   app_info->user_display_mode = blink::mojom::DisplayMode::kStandalone;

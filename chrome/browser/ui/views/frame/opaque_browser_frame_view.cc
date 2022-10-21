@@ -221,7 +221,7 @@ void OpaqueBrowserFrameView::InitViews() {
   window_title_->SetSubpixelRenderingEnabled(false);
   window_title_->SetHorizontalAlignment(gfx::ALIGN_LEFT);
   window_title_->SetID(VIEW_ID_WINDOW_TITLE);
-  AddChildView(window_title_.get());
+  AddChildView(window_title_);
 
 #if defined(OS_WIN)
   if (browser_view()->AppUsesWindowControlsOverlay())
@@ -259,7 +259,7 @@ void OpaqueBrowserFrameView::WindowControlsOverlayEnabledChanged() {
         AddChildView(std::make_unique<CaptionButtonPlaceholderContainer>());
     UpdateCaptionButtonPlaceholderContainerBackground();
   } else {
-    RemoveChildViewT(caption_button_placeholder_container_.get());
+    RemoveChildViewT(caption_button_placeholder_container_);
     caption_button_placeholder_container_ = nullptr;
   }
 
@@ -574,7 +574,7 @@ void OpaqueBrowserFrameView::OnPaint(gfx::Canvas* canvas) {
     return;  // Nothing is visible, so don't bother to paint.
 
   const bool active = ShouldPaintAsActive();
-  SkColor frame_color = GetFrameColor(BrowserFrameActiveState::kUseCurrent);
+  SkColor frame_color = GetFrameColor();
   window_title_->SetEnabledColor(
       GetCaptionColor(BrowserFrameActiveState::kUseCurrent));
   window_title_->SetBackgroundColor(frame_color);
@@ -751,12 +751,12 @@ gfx::Rect OpaqueBrowserFrameView::GetIconBounds() const {
 }
 
 void OpaqueBrowserFrameView::WindowIconPressed() {
-#if defined(OS_LINUX)
-  // Chrome OS doesn't show the window icon, and Windows handles this on its own
-  // due to the hit test being HTSYSMENU.
-  menu_runner_ = std::make_unique<views::MenuRunner>(
-      frame()->GetSystemMenuModel(), views::MenuRunner::HAS_MNEMONICS);
-  menu_runner_->RunMenuAt(
+#if defined(OS_LINUX) || defined(OS_CHROMEOS)
+  // TODO(pbos): Figure out / document why this is Linux only. This needs a
+  // comment.
+  views::MenuRunner menu_runner(frame()->GetSystemMenuModel(),
+                                views::MenuRunner::HAS_MNEMONICS);
+  menu_runner.RunMenuAt(
       browser_view()->GetWidget(), window_icon_->button_controller(),
       window_icon_->GetBoundsInScreen(), views::MenuAnchorPosition::kTopLeft,
       ui::MENU_SOURCE_MOUSE);
@@ -837,8 +837,7 @@ void OpaqueBrowserFrameView::
     UpdateCaptionButtonPlaceholderContainerBackground() {
   if (caption_button_placeholder_container_) {
     caption_button_placeholder_container_->SetBackground(
-        views::CreateSolidBackground(
-            GetFrameColor(BrowserFrameActiveState::kUseCurrent)));
+        views::CreateSolidBackground(GetFrameColor()));
   }
 }
 

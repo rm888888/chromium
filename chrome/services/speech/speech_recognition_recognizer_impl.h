@@ -9,6 +9,7 @@
 #include <string>
 
 #include "base/memory/weak_ptr.h"
+#include "chrome/services/speech/cloud_speech_recognition_client.h"
 #include "components/soda/constants.h"
 #include "media/mojo/mojom/speech_recognition_service.mojom.h"
 #include "mojo/public/cpp/bindings/receiver.h"
@@ -90,6 +91,7 @@ class SpeechRecognitionRecognizerImpl
       const std::string& language,
       const media::mojom::ConfidenceLevel confidence_level);
 
+  const bool enable_soda_;
   media::mojom::SpeechRecognitionOptionsPtr options_;
 
  private:
@@ -113,6 +115,8 @@ class SpeechRecognitionRecognizerImpl
   mojo::Remote<media::mojom::SpeechRecognitionRecognizerClient> client_remote_;
 
   std::unique_ptr<soda::SodaClient> soda_client_;
+
+  std::unique_ptr<CloudSpeechRecognitionClient> cloud_client_;
 
   // The callback that is eventually executed on a speech recognition event
   // which passes the transcribed audio back to the caller via the speech

@@ -17,7 +17,7 @@
 namespace ui {
 
 namespace {
-constexpr uint32_t kMinVersion = 2;
+constexpr uint32_t kMinWlDrmVersion = 2;
 }
 
 // static
@@ -31,10 +31,8 @@ void WaylandDrm::Instantiate(WaylandConnection* connection,
                              uint32_t version) {
   DCHECK_EQ(interface, kInterfaceName);
 
-  if (connection->drm_ ||
-      !wl::CanBind(interface, version, kMinVersion, kMinVersion)) {
+  if (connection->drm_ || version < kMinWlDrmVersion)
     return;
-  }
 
   auto wl_drm = wl::Bind<struct wl_drm>(registry, name, version);
   if (!wl_drm) {

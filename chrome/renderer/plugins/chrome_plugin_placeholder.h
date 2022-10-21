@@ -8,6 +8,7 @@
 #include <stdint.h>
 #include <string>
 
+#include "base/macros.h"
 #include "chrome/common/buildflags.h"
 #include "chrome/common/plugin.mojom.h"
 #include "components/no_state_prefetch/renderer/prerender_observer.h"

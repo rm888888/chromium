@@ -84,8 +84,6 @@ void TransientWindowManager::AddTransientChild(Window* child) {
 
   for (auto& observer : observers_)
     observer.OnTransientChildAdded(window_, child);
-  for (auto& observer : child_manager->observers_)
-    observer.OnTransientParentChanged(window_);
 }
 
 void TransientWindowManager::RemoveTransientChild(Window* child) {
@@ -110,8 +108,6 @@ void TransientWindowManager::RemoveTransientChild(Window* child) {
 
   for (auto& observer : observers_)
     observer.OnTransientChildRemoved(window_, child);
-  for (auto& observer : child_manager->observers_)
-    observer.OnTransientParentChanged(nullptr);
 }
 
 bool TransientWindowManager::IsStackingTransient(

@@ -26,7 +26,6 @@
 #include "components/download/internal/background_service/model.h"
 #include "components/download/internal/background_service/scheduler/scheduler.h"
 #include "components/download/internal/background_service/stats.h"
-#include "components/download/network/download_http_utils.h"
 #include "components/download/public/background_service/client.h"
 #include "components/download/public/background_service/download_metadata.h"
 #include "components/download/public/background_service/navigation_monitor.h"
@@ -192,12 +191,6 @@ void ControllerImpl::StartDownload(DownloadParams params) {
 
   // TODO(dtrainor): Validate all input parameters.
   DCHECK_LE(base::Time::Now(), params.scheduling_params.cancel_time);
-  if (!ValidateRequestHeaders(params.request_params.request_headers)) {
-    HandleStartDownloadResponse(params.client, params.guid,
-                                DownloadParams::StartResult::INTERNAL_ERROR,
-                                std::move(params.callback));
-    return;
-  }
 
   if (controller_state_ != State::READY) {
     HandleStartDownloadResponse(params.client, params.guid,
@@ -1180,11 +1173,7 @@ void ControllerImpl::HandleCompleteDownload(CompletionType type,
   auto driver_entry = driver_->Find(guid);
   uint64_t file_size =
       driver_entry.has_value() ? driver_entry->bytes_downloaded : 0;
-  stats::LogDownloadCompletion(entry->client, type, file_size);
-  LOG(WARNING) << "Background download complete, client: "
-               << static_cast<int>(entry->client)
-               << ", completion type: " << static_cast<int>(type)
-               << ", file size:" << file_size;
+  stats::LogDownloadCompletion(type, file_size);
 
   if (type == CompletionType::SUCCEED) {
     DCHECK(driver_entry.has_value());

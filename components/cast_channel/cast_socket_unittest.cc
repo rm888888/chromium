@@ -14,8 +14,8 @@
 #include "base/callback_helpers.h"
 #include "base/files/file_util.h"
 #include "base/location.h"
+#include "base/macros.h"
 #include "base/memory/ptr_util.h"
-#include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/path_service.h"
 #include "base/run_loop.h"
@@ -224,7 +224,7 @@ class MockTestCastSocket : public TestCastSocketBase {
 
   void SetupMockTransport() {
     mock_transport_ = new MockCastTransport;
-    SetTransportForTesting(base::WrapUnique(mock_transport_.get()));
+    SetTransportForTesting(base::WrapUnique(mock_transport_));
   }
 
   bool TestVerifyChannelPolicyAudioOnly() {
@@ -239,7 +239,7 @@ class MockTestCastSocket : public TestCastSocketBase {
   }
 
  private:
-  raw_ptr<MockCastTransport> mock_transport_ = nullptr;
+  MockCastTransport* mock_transport_ = nullptr;
 };
 
 // TODO(https://crbug.com/928467):  Remove this class.
@@ -349,6 +349,20 @@ class TestSocketFactory : public net::ClientSocketFactory {
         std::move(nested_socket), net::HostPortPair(), net::SSLConfig(),
         ssl_socket_data_provider_.get());
   }
+  std::unique_ptr<net::ProxyClientSocket> CreateProxyClientSocket(
+      std::unique_ptr<net::StreamSocket> stream_socket,
+      const std::string& user_agent,
+      const net::HostPortPair& endpoint,
+      const net::ProxyServer& proxy_server,
+      net::HttpAuthController* http_auth_controller,
+      bool tunnel,
+      bool using_spdy,
+      net::NextProto negotiated_protocol,
+      net::ProxyDelegate* proxy_delegate,
+      const net::NetworkTrafficAnnotationTag& traffic_annotation) override {
+    NOTIMPLEMENTED();
+    return nullptr;
+  }
 
   net::IPEndPoint ip_;
   // Simulated connect data
@@ -405,7 +419,7 @@ class CastSocketTestBase : public testing::Test {
   net::TestURLRequestContext url_request_context_;
   std::unique_ptr<network::NetworkContext> network_context_;
   mojo::Remote<network::mojom::NetworkContext> network_context_remote_;
-  raw_ptr<Logger> logger_;
+  Logger* logger_;
   CompleteHandler handler_;
   std::unique_ptr<MockCastSocketObserver> observer_;
   CastSocketOpenParams socket_open_params_;

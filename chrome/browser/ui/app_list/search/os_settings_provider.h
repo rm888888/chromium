@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "base/time/time.h"
 #include "chrome/browser/apps/app_service/app_service_proxy_forward.h"
@@ -15,7 +16,6 @@
 #include "chrome/browser/ui/app_list/search/search_provider.h"
 #include "chrome/browser/ui/webui/settings/chromeos/search/search.mojom.h"
 #include "components/services/app_service/public/cpp/app_registry_cache.h"
-#include "components/services/app_service/public/cpp/icon_types.h"
 #include "components/services/app_service/public/mojom/types.mojom.h"
 #include "mojo/public/cpp/bindings/receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
@@ -41,7 +41,7 @@ class OsSettingsResult : public ChromeSearchResult {
  public:
   OsSettingsResult(Profile* profile,
                    const chromeos::settings::mojom::SearchResultPtr& result,
-                   double relevance_score,
+                   float relevance_score,
                    const gfx::ImageSkia& icon,
                    const std::u16string& query);
   ~OsSettingsResult() override;
@@ -73,7 +73,7 @@ class OsSettingsProvider
   // SearchProvider:
   void Start(const std::u16string& query) override;
   void ViewClosing() override;
-  ash::AppListSearchResultType ResultType() const override;
+  ash::AppListSearchResultType ResultType() override;
 
   // apps::AppRegistryCache::Observer:
   void OnAppUpdate(const apps::AppUpdate& update) override;
@@ -111,7 +111,7 @@ class OsSettingsProvider
       const std::vector<chromeos::settings::mojom::SearchResultPtr>& results,
       const chromeos::settings::Hierarchy* hierarchy);
 
-  void OnLoadIcon(apps::IconValuePtr icon_value);
+  void OnLoadIcon(apps::mojom::IconValuePtr icon_value);
 
   // Scoring and filtering parameters controlled from Finch.
   bool accept_alternate_matches_ = false;

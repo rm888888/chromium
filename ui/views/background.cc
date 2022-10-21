@@ -7,6 +7,7 @@
 #include <utility>
 
 #include "base/check.h"
+#include "base/macros.h"
 #include "base/scoped_observation.h"
 #include "build/build_config.h"
 #include "cc/paint/paint_flags.h"

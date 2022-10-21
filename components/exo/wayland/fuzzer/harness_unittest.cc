@@ -45,7 +45,6 @@ class WaylandFuzzerTest : public TestBase {
     TestBase::SetUp();
     display_ = std::make_unique<exo::Display>();
     server_ = wayland::Server::Create(display_.get());
-    server_->StartWithDefaultPath(base::DoNothing());
   }
 
   void TearDown() override {

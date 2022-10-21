@@ -4,7 +4,6 @@
 
 #include <list>
 #include <memory>
-#include <tuple>
 
 #include "ash/clipboard/clipboard_history.h"
 #include "ash/clipboard/clipboard_history_controller_impl.h"
@@ -805,8 +804,8 @@ IN_PROC_BROWSER_TEST_F(ClipboardHistoryWithMultiProfileBrowserTest,
 
   // Wait for the paste event to propagate to the web contents.
   // The web contents will notify us a paste occurred by updating page title.
-  std::ignore =
-      content::TitleWatcher(web_contents, u"Paste 1").WaitAndGetTitle();
+  ignore_result(
+      content::TitleWatcher(web_contents, u"Paste 1").WaitAndGetTitle());
 
   // Confirm the expected paste data.
   base::ListValue last_paste = GetLastPaste();
@@ -825,8 +824,8 @@ IN_PROC_BROWSER_TEST_F(ClipboardHistoryWithMultiProfileBrowserTest,
 
   // Wait for the paste event to propagate to the web contents.
   // The web contents will notify us a paste occurred by updating page title.
-  std::ignore =
-      content::TitleWatcher(web_contents, u"Paste 2").WaitAndGetTitle();
+  ignore_result(
+      content::TitleWatcher(web_contents, u"Paste 2").WaitAndGetTitle());
 
   // Confirm the expected paste data.
   last_paste = GetLastPaste();
@@ -864,9 +863,8 @@ IN_PROC_BROWSER_TEST_F(ClipboardHistoryBrowserTest,
   // Select one part of the web page. Wait until the selection region updates.
   // Then copy the selected part to clipboard.
   auto* web_contents = browser()->tab_strip_model()->GetActiveWebContents();
-  content::BoundingBoxUpdateWaiter select_part_one(web_contents);
   ASSERT_TRUE(ExecuteScript(web_contents, "selectPart1();"));
-  select_part_one.Wait();
+  content::WaitForSelectionBoundingBoxUpdate(web_contents);
   ASSERT_TRUE(ExecuteScript(web_contents, "copyToClipboard();"));
 
   // Wait until the clipboard history updates.
@@ -909,9 +907,8 @@ IN_PROC_BROWSER_TEST_F(ClipboardHistoryBrowserTest,
 
   // Select another part. Wait until the selection region updates. Then copy
   // the selected html code to clipboard.
-  content::BoundingBoxUpdateWaiter select_part_two(web_contents);
   ASSERT_TRUE(ExecuteScript(web_contents, "selectPart2();"));
-  select_part_two.Wait();
+  content::WaitForSelectionBoundingBoxUpdate(web_contents);
   ASSERT_TRUE(ExecuteScript(web_contents, "copyToClipboard();"));
 
   // Wait until the clipboard history updates.
@@ -1172,7 +1169,7 @@ class FakeDataTransferPolicyController
     // For other data destinations, only the data from `allowed_origin_`
     // should be accessible.
     return data_src && data_src->IsUrlType() &&
-           (*data_src->GetOrigin() == allowed_origin_);
+           (*data_src->origin() == allowed_origin_);
   }
 
   void PasteIfAllowed(const ui::DataTransferEndpoint* const data_src,

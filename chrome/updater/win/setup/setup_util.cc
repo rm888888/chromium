@@ -22,7 +22,6 @@
 #include "base/strings/string_split.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/win_util.h"
-#include "build/branding_buildflags.h"
 #include "chrome/installer/util/install_service_work_item.h"
 #include "chrome/installer/util/work_item_list.h"
 #include "chrome/updater/app/server/win/updater_idl.h"
@@ -35,72 +34,47 @@
 #include "chrome/updater/win/win_constants.h"
 #include "chrome/updater/win/win_util.h"
 
+// Specialization for std::hash so that IID instances can be stored in an
+// associative container. This implementation of the hash function adds
+// together four 32-bit integers which make up an IID. The function does not
+// have to be efficient or guarantee no collisions. It is used infrequently,
+// for a small number of IIDs, and the container deals with collisions.
+template <>
+struct std::hash<IID> {
+  size_t operator()(const IID& iid) const {
+    return iid.Data1 + (iid.Data2 + (iid.Data3 << 16)) + [&iid]() {
+      size_t val = 0;
+      for (int i = 0; i < 2; ++i) {
+        for (int j = 0; j < 4; ++j) {
+          val += (iid.Data4[j + i * 4] << (j * 4));
+        }
+      }
+      return val;
+    }();
+  }
+};
+
 namespace updater {
 namespace {
-
-std::wstring GetTaskName(UpdaterScope scope) {
-  return TaskScheduler::CreateInstance()->FindFirstTaskName(
-      GetTaskNamePrefix(scope));
-}
-
-std::wstring CreateRandomTaskName(UpdaterScope scope) {
-  GUID random_guid = {0};
-  return SUCCEEDED(::CoCreateGuid(&random_guid))
-             ? base::StrCat({GetTaskNamePrefix(scope),
-                             base::win::WStringFromGUID(random_guid)})
-             : std::wstring();
-}
 
 }  // namespace
 
 bool RegisterWakeTask(const base::CommandLine& run_command,
                       UpdaterScope scope) {
   auto task_scheduler = TaskScheduler::CreateInstance();
-
-  std::wstring task_name = GetTaskName(scope);
-  if (!task_name.empty()) {
-    // Update the currently installed scheduled task.
-    if (task_scheduler->RegisterTask(
-            scope, task_name.c_str(), GetTaskDisplayName(scope).c_str(),
-            run_command, TaskScheduler::TriggerType::TRIGGER_TYPE_HOURLY,
-            true)) {
-      VLOG(1) << "RegisterWakeTask succeeded." << task_name;
-      return true;
-    } else {
-      task_scheduler->DeleteTask(task_name.c_str());
-    }
-  }
-
-  // Create a new task name and fall through to install that.
-  task_name = CreateRandomTaskName(scope);
-  if (task_name.empty()) {
-    LOG(ERROR) << "Unexpected empty task name.";
+  if (!task_scheduler->RegisterTask(
+          scope, GetTaskName(scope).c_str(), GetTaskDisplayName(scope).c_str(),
+          run_command, TaskScheduler::TriggerType::TRIGGER_TYPE_HOURLY, true)) {
+    LOG(ERROR) << "RegisterWakeTask failed.";
     return false;
   }
-
-  DCHECK(!task_scheduler->IsTaskRegistered(task_name.c_str()));
-
-  if (task_scheduler->RegisterTask(
-          scope, task_name.c_str(), GetTaskDisplayName(scope).c_str(),
-          run_command, TaskScheduler::TriggerType::TRIGGER_TYPE_HOURLY, true)) {
-    VLOG(1) << "RegisterWakeTask succeeded: " << task_name;
-    return true;
-  }
-
-  LOG(ERROR) << "RegisterWakeTask failed: " << task_name;
-  return false;
+  VLOG(1) << "RegisterWakeTask succeeded.";
+  return true;
 }
 
 void UnregisterWakeTask(UpdaterScope scope) {
   auto task_scheduler = TaskScheduler::CreateInstance();
-
-  const std::wstring task_name = GetTaskName(scope);
-  if (task_name.empty()) {
-    LOG(ERROR) << "Empty task name during uninstall.";
-    return;
-  }
-
-  task_scheduler->DeleteTask(task_name.c_str());
+  task_scheduler->DeleteTask(GetTaskName(scope).c_str());
 }
 
 std::vector<IID> GetSideBySideInterfaces() {
@@ -111,16 +85,18 @@ std::vector<IID> GetSideBySideInterfaces() {
 }
 
 std::vector<IID> GetActiveInterfaces() {
-  return {
-    __uuidof(IUpdateState), __uuidof(IUpdater), __uuidof(IUpdaterObserver),
-        __uuidof(IUpdaterRegisterAppCallback), __uuidof(IUpdaterCallback),
-
-#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
-        __uuidof(IAppBundleWeb), __uuidof(IAppWeb), __uuidof(ICompleteStatus),
-        __uuidof(ICurrentState), __uuidof(IGoogleUpdate3Web),
-        __uuidof(IProcessLauncher), __uuidof(IProcessLauncher2),
-#endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
-  };
+  return {__uuidof(IAppBundleWeb),
+          __uuidof(IAppWeb),
+          __uuidof(ICompleteStatus),
+          __uuidof(ICurrentState),
+          __uuidof(IGoogleUpdate3Web),
+          __uuidof(IProcessLauncher),
+          __uuidof(IProcessLauncher2),
+          __uuidof(IUpdateState),
+          __uuidof(IUpdater),
+          __uuidof(IUpdaterObserver),
+          __uuidof(IUpdaterRegisterAppCallback),
+          __uuidof(IUpdaterCallback)};
 }
 
 std::vector<CLSID> GetSideBySideServers(UpdaterScope scope) {
@@ -135,22 +111,11 @@ std::vector<CLSID> GetSideBySideServers(UpdaterScope scope) {
 std::vector<CLSID> GetActiveServers(UpdaterScope scope) {
   switch (scope) {
     case UpdaterScope::kUser:
-      return {
-        __uuidof(UpdaterUserClass),
-
-#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
-            __uuidof(GoogleUpdate3WebUserClass)
-#endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
-      };
+      return {__uuidof(UpdaterUserClass), __uuidof(GoogleUpdate3WebUserClass)};
     case UpdaterScope::kSystem:
-      return {
-        __uuidof(UpdaterSystemClass),
-
-#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
-            __uuidof(GoogleUpdate3WebSystemClass),
-            __uuidof(ProcessLauncherClass)
-#endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
-      };
+      return {__uuidof(UpdaterSystemClass),
+              __uuidof(GoogleUpdate3WebSystemClass),
+              __uuidof(ProcessLauncherClass)};
   }
 }
 

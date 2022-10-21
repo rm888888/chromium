@@ -132,6 +132,12 @@ AuthenticatorRequestDialogModel::PairedPhone&
 AuthenticatorRequestDialogModel::PairedPhone::operator=(const PairedPhone&) =
     default;
 
+bool AuthenticatorRequestDialogModel::PairedPhone::CompareByName(
+    const PairedPhone& a,
+    const PairedPhone& b) {
+  return a.name < b.name;
+}
+
 void AuthenticatorRequestDialogModel::EphemeralState::Reset() {
   selected_authenticator_id_ = absl::nullopt;
   saved_authenticators_.RemoveAllAuthenticators();
@@ -252,9 +258,7 @@ void AuthenticatorRequestDialogModel::
     return;
   }
 
-  after_ble_adapter_powered_ =
-      base::BindOnce(&AuthenticatorRequestDialogModel::SetCurrentStep,
-                     weak_factory_.GetWeakPtr(), step);
+  next_step_once_ble_powered_ = step;
   SetCurrentStep(transport_availability()->can_power_on_ble_adapter
                      ? Step::kBlePowerOnAutomatic
                      : Step::kBlePowerOnManual);
@@ -264,8 +268,9 @@ void AuthenticatorRequestDialogModel::ContinueWithFlowAfterBleAdapterPowered() {
   DCHECK(current_step() == Step::kBlePowerOnManual ||
          current_step() == Step::kBlePowerOnAutomatic);
   DCHECK(ble_adapter_is_powered());
+  DCHECK(next_step_once_ble_powered_.has_value());
 
-  std::move(after_ble_adapter_powered_).Run();
+  SetCurrentStep(*next_step_once_ble_powered_);
 }
 
 void AuthenticatorRequestDialogModel::PowerOnBleAdapter() {
@@ -658,11 +663,16 @@ void AuthenticatorRequestDialogModel::set_cable_transport_info(
   contact_phone_callback_ = std::move(contact_phone_callback);
   cable_qr_string_ = cable_qr_string;
 
+  std::stable_sort(paired_phones_.begin(), paired_phones_.end(),
+                   PairedPhone::CompareByName);
   paired_phones_contacted_.assign(paired_phones_.size(), false);
 }
 
 std::vector<std::string> AuthenticatorRequestDialogModel::paired_phone_names()
     const {
+  DCHECK(std::is_sorted(paired_phones_.begin(), paired_phones_.end(),
+                        PairedPhone::CompareByName));
+
   std::vector<std::string> names;
   std::transform(paired_phones_.begin(), paired_phones_.end(),
                  std::back_inserter(names),
@@ -718,7 +728,7 @@ void AuthenticatorRequestDialogModel::StartGuidedFlowForTransport(
   }
 }
 
-void AuthenticatorRequestDialogModel::StartGuidedFlowForAddPhone(
+void AuthenticatorRequestDialogModel::StartGuidedFlowForOtherPhone(
     size_t mechanism_index) {
   current_mechanism_ = mechanism_index;
   EnsureBleAdapterIsPoweredAndContinueWithStep(Step::kCableV2QRCode);
@@ -758,23 +768,8 @@ void AuthenticatorRequestDialogModel::ContactPhone(const std::string& name,
 
 void AuthenticatorRequestDialogModel::ContactPhoneAfterOffTheRecordInterstitial(
     std::string name) {
-  if (!ble_adapter_is_powered()) {
-    after_ble_adapter_powered_ = base::BindOnce(
-        &AuthenticatorRequestDialogModel::ContactPhoneAfterBleIsPowered,
-        weak_factory_.GetWeakPtr(), std::move(name));
-    SetCurrentStep(transport_availability()->can_power_on_ble_adapter
-                       ? Step::kBlePowerOnAutomatic
-                       : Step::kBlePowerOnManual);
-    return;
-  }
-
-  ContactPhoneAfterBleIsPowered(std::move(name));
-}
-
-void AuthenticatorRequestDialogModel::ContactPhoneAfterBleIsPowered(
-    std::string name) {
   ContactNextPhoneByName(name);
-  SetCurrentStep(Step::kCableActivate);
+  EnsureBleAdapterIsPoweredAndContinueWithStep(Step::kCableActivate);
 }
 
 void AuthenticatorRequestDialogModel::StartLocationBarBubbleRequest() {
@@ -809,6 +804,9 @@ void AuthenticatorRequestDialogModel::DispatchRequestAsyncInternal(
 
 void AuthenticatorRequestDialogModel::ContactNextPhoneByName(
     const std::string& name) {
+  DCHECK(std::is_sorted(paired_phones_.begin(), paired_phones_.end(),
+                        PairedPhone::CompareByName));
+
   bool found_name = false;
   for (size_t i = 0; i != paired_phones_.size(); i++) {
     const PairedPhone& phone = paired_phones_[i];
@@ -850,7 +848,7 @@ void AuthenticatorRequestDialogModel::PopulateMechanisms() {
   };
 
   const auto kCable = AuthenticatorTransport::kCloudAssistedBluetoothLowEnergy;
-  bool include_add_phone_option = false;
+  bool include_other_phone_mechanism = false;
 
   if (cable_ui_type_) {
     switch (*cable_ui_type_) {
@@ -858,7 +856,7 @@ void AuthenticatorRequestDialogModel::PopulateMechanisms() {
         if (base::FeatureList::IsEnabled(device::kWebAuthPhoneSupport) &&
             base::Contains(transport_availability_.available_transports,
                            kCable)) {
-          include_add_phone_option = true;
+          include_other_phone_mechanism = true;
         }
         break;
 
@@ -886,17 +884,6 @@ void AuthenticatorRequestDialogModel::PopulateMechanisms() {
         break;
       }
     }
-  }
-
-  if (include_add_phone_option) {
-    const std::u16string label =
-        l10n_util::GetStringUTF16(IDS_WEBAUTHN_CABLEV2_ADD_PHONE);
-    mechanisms_.emplace_back(
-        Mechanism::AddPhone(), label, label, &kQrcodeGeneratorIcon,
-        base::BindRepeating(
-            &AuthenticatorRequestDialogModel::StartGuidedFlowForAddPhone,
-            base::Unretained(this), mechanisms_.size()),
-        /*is_priority=*/false);
   }
 
   for (const auto transport : transports_to_list_if_active) {
@@ -945,6 +932,19 @@ void AuthenticatorRequestDialogModel::PopulateMechanisms() {
                               base::Unretained(this), phone_name,
                               mechanisms_.size()),
           /*priority=*/false);
+    }
+
+    if (include_other_phone_mechanism) {
+      // TODO(agl): i18n once final strings are ready.
+      const std::u16string label =
+          paired_phones_.empty() ? u"Your phone" : u"Another phone";
+
+      mechanisms_.emplace_back(
+          Mechanism::OtherPhone(), label, label, GetTransportIcon(kCable),
+          base::BindRepeating(
+              &AuthenticatorRequestDialogModel::StartGuidedFlowForOtherPhone,
+              base::Unretained(this), mechanisms_.size()),
+          /*is_priority=*/false);
     }
   }
 

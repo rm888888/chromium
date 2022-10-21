@@ -5,6 +5,8 @@
 #ifndef COMPONENTS_HISTORY_CORE_BROWSER_TOP_SITES_OBSERVER_H_
 #define COMPONENTS_HISTORY_CORE_BROWSER_TOP_SITES_OBSERVER_H_
 
+#include "base/macros.h"
+
 namespace history {
 
 class TopSites;

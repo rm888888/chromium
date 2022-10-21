@@ -46,9 +46,9 @@ using url_matcher::URLQueryElementMatcherCondition;
 
 namespace policy {
 
-using url_matcher::util::CreateConditionSet;
-using url_matcher::util::FilterComponents;
-using url_matcher::util::FilterToComponents;
+using url_util::CreateConditionSet;
+using url_util::FilterComponents;
+using url_util::FilterToComponents;
 
 namespace {
 
@@ -78,11 +78,11 @@ constexpr char kIosNtpHost[] = "newtab";
 #endif
 
 // Returns a blocklist based on the given |block| and |allow| pattern lists.
-std::unique_ptr<URLBlocklist> BuildBlocklist(const base::Value* block,
-                                             const base::Value* allow) {
+std::unique_ptr<URLBlocklist> BuildBlocklist(const base::ListValue* block,
+                                             const base::ListValue* allow) {
   auto blocklist = std::make_unique<URLBlocklist>();
-  blocklist->Block(&base::Value::AsListValue(*block));
-  blocklist->Allow(&base::Value::AsListValue(*allow));
+  blocklist->Block(block);
+  blocklist->Allow(allow);
   return blocklist;
 }
 
@@ -112,18 +112,16 @@ bool BypassBlocklistWildcardForURL(const GURL& url) {
 
 }  // namespace
 
-URLBlocklist::URLBlocklist() : url_matcher_(new URLMatcher) {}
+URLBlocklist::URLBlocklist() : id_(0), url_matcher_(new URLMatcher) {}
 
 URLBlocklist::~URLBlocklist() = default;
 
 void URLBlocklist::Block(const base::ListValue* filters) {
-  url_matcher::util::AddFilters(url_matcher_.get(), false, &id_, filters,
-                                &filters_);
+  url_util::AddFilters(url_matcher_.get(), false, &id_, filters, &filters_);
 }
 
 void URLBlocklist::Allow(const base::ListValue* filters) {
-  url_matcher::util::AddFilters(url_matcher_.get(), true, &id_, filters,
-                                &filters_);
+  url_util::AddFilters(url_matcher_.get(), true, &id_, filters, &filters_);
 }
 
 bool URLBlocklist::IsURLBlocked(const GURL& url) const {
@@ -152,7 +150,7 @@ URLBlocklist::URLBlocklistState URLBlocklist::GetURLBlocklistState(
   // Some of the internal Chrome URLs are not affected by the "*" in the
   // blocklist. Note that the "*" is the lowest priority filter possible, so
   // any higher priority filter will be applied first.
-  if (!max->allow && max->IsWildcard() && BypassBlocklistWildcardForURL(url))
+  if (max->IsBlocklistWildcard() && BypassBlocklistWildcardForURL(url))
     return URLBlocklist::URLBlocklistState::URL_IN_ALLOWLIST;
 
   return max->allow ? URLBlocklist::URLBlocklistState::URL_IN_ALLOWLIST
@@ -166,8 +164,8 @@ size_t URLBlocklist::Size() const {
 // static
 bool URLBlocklist::FilterTakesPrecedence(const FilterComponents& lhs,
                                          const FilterComponents& rhs) {
-  // The "*" wildcard in the blocklist is the lowest priority filter.
-  if (!rhs.allow && rhs.IsWildcard())
+  // The "*" wildcard is the lowest priority filter.
+  if (rhs.IsBlocklistWildcard())
     return true;
 
   if (lhs.match_subdomains && !rhs.match_subdomains)
@@ -185,10 +183,8 @@ bool URLBlocklist::FilterTakesPrecedence(const FilterComponents& lhs,
   if (path_length != other_path_length)
     return path_length > other_path_length;
 
-  if (lhs.number_of_url_matching_conditions !=
-      rhs.number_of_url_matching_conditions)
-    return lhs.number_of_url_matching_conditions >
-           rhs.number_of_url_matching_conditions;
+  if (lhs.number_of_key_value_pairs != rhs.number_of_key_value_pairs)
+    return lhs.number_of_key_value_pairs > rhs.number_of_key_value_pairs;
 
   if (lhs.allow && !rhs.allow)
     return true;
@@ -245,10 +241,12 @@ void URLBlocklistManager::Update() {
       background_task_runner_.get(), FROM_HERE,
       base::BindOnce(
           &BuildBlocklist,
-          base::Owned(base::Value::ToUniquePtrValue(
-              pref_service_->GetList(policy_prefs::kUrlBlocklist)->Clone())),
-          base::Owned(base::Value::ToUniquePtrValue(
-              pref_service_->GetList(policy_prefs::kUrlAllowlist)->Clone()))),
+          base::Owned(pref_service_->GetList(policy_prefs::kUrlBlocklist)
+                          ->CreateDeepCopy()
+                          .release()),
+          base::Owned(pref_service_->GetList(policy_prefs::kUrlAllowlist)
+                          ->CreateDeepCopy()
+                          .release())),
       base::BindOnce(&URLBlocklistManager::SetBlocklist,
                      ui_weak_ptr_factory_.GetWeakPtr()));
 }

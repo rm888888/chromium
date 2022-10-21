@@ -6,6 +6,7 @@
 #define UI_BASE_X_X11_IDLE_QUERY_H_
 
 #include "base/component_export.h"
+#include "base/macros.h"
 
 namespace x11 {
 class Connection;

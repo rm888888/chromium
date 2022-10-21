@@ -34,9 +34,6 @@ std::string OptimizationTargetToHistogramVariant(
       return "ChromeStartAndroid";
     case OptimizationTarget::OPTIMIZATION_TARGET_SEGMENTATION_QUERY_TILES:
       return "QueryTiles";
-    case OptimizationTarget::
-        OPTIMIZATION_TARGET_SEGMENTATION_CHROME_LOW_USER_ENGAGEMENT:
-      return "ChromeLowUserEngagement";
     default:
       NOTREACHED();
       return "Unknown";
@@ -67,8 +64,7 @@ enum class SegmentationModel {
   kDummy = 10,
   kChromeStartAndroid = 11,
   kQueryTiles = 12,
-  kChromeLowUserEngagement = 16,
-  kMaxValue = kChromeLowUserEngagement,
+  kMaxValue = kQueryTiles,
 };
 
 AdaptiveToolbarButtonVariant OptimizationTargetToAdaptiveToolbarButtonVariant(
@@ -88,11 +84,8 @@ AdaptiveToolbarButtonVariant OptimizationTargetToAdaptiveToolbarButtonVariant(
 }
 
 bool IsBooleanSegment(const std::string& segmentation_key) {
-  // Please keep in sync with BooleanModel variant in
-  // //tools/metrics/histograms/metadata/segmentation_platform/histograms.xml.
   return segmentation_key == kChromeStartAndroidSegmentationKey ||
-         segmentation_key == kQueryTilesSegmentationKey ||
-         segmentation_key == kChromeLowUserEngagementSegmentationKey;
+         segmentation_key == kQueryTilesSegmentationKey;
 }
 
 BooleanSegmentSwitch GetBooleanSegmentSwitch(
@@ -187,9 +180,6 @@ SegmentationModel OptimizationTargetToSegmentationModel(
       return SegmentationModel::kChromeStartAndroid;
     case OptimizationTarget::OPTIMIZATION_TARGET_SEGMENTATION_QUERY_TILES:
       return SegmentationModel::kQueryTiles;
-    case OptimizationTarget::
-        OPTIMIZATION_TARGET_SEGMENTATION_CHROME_LOW_USER_ENGAGEMENT:
-      return SegmentationModel::kChromeLowUserEngagement;
     default:
       return SegmentationModel::kUnknown;
   }
@@ -241,8 +231,6 @@ float ZeroValueFraction(const std::vector<float>& tensor) {
 }
 
 const char* SegmentationKeyToUmaName(const std::string& segmentation_key) {
-  // Please keep in sync with SegmentationKey variant in
-  // //tools/metrics/histograms/metadata/segmentation_platform/histograms.xml.
   if (segmentation_key == kAdaptiveToolbarSegmentationKey) {
     return "AdaptiveToolbar";
   } else if (segmentation_key == kDummySegmentationKey) {
@@ -251,8 +239,6 @@ const char* SegmentationKeyToUmaName(const std::string& segmentation_key) {
     return "ChromeStartAndroid";
   } else if (segmentation_key == kQueryTilesSegmentationKey) {
     return "QueryTiles";
-  } else if (segmentation_key == kChromeLowUserEngagementSegmentationKey) {
-    return "ChromeLowUserEngagement";
   } else if (base::StartsWith(segmentation_key, "test_key")) {
     return "TestKey";
   }
@@ -286,8 +272,6 @@ void RecordModelScore(OptimizationTarget segment_id, float score) {
     case OptimizationTarget::
         OPTIMIZATION_TARGET_SEGMENTATION_CHROME_START_ANDROID:
     case OptimizationTarget::OPTIMIZATION_TARGET_SEGMENTATION_QUERY_TILES:
-    case OptimizationTarget::
-        OPTIMIZATION_TARGET_SEGMENTATION_CHROME_LOW_USER_ENGAGEMENT:
       // Assumes all models return score between 0 and 1. This is true for all
       // the models we have currently.
       base::UmaHistogramPercentage(
@@ -512,19 +496,6 @@ void RecordSignalsListeningCount(
       "SegmentationPlatform.Signals.ListeningCount." +
           SignalTypeToHistogramVariant(proto::SignalType::HISTOGRAM_VALUE),
       histogram_value_count);
-}
-
-void RecordSegmentSelectionFailure(SegmentationSelectionFailureReason reason) {
-  base::UmaHistogramEnumeration("SegmentationPlatform.SelectionFailedReason",
-                                reason);
-}
-
-void RecordModelAvailability(OptimizationTarget segment_id,
-                             SegmentationModelAvailability availability) {
-  base::UmaHistogramEnumeration(
-      "SegmentationPlatform.ModelAvailability." +
-          OptimizationTargetToHistogramVariant(segment_id),
-      availability);
 }
 
 }  // namespace stats

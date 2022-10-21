@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<grit-part>
+  <include name="IDR_LANDINGPAGE_UI_CSS" file="../pundix_landing_page/resources/landingpage_ui.css" type="BINDATA" />
+  <include name="IDR_LANDINGPAGE_UI_HTML" file="../pundix_landing_page/resources/landingpage_ui.html" preprocess="true" type="BINDATA" />
+  <include name="IDR_LANDINGPAGE_UI_JS" file="../pundix_landing_page/resources/landingpage_ui.js" preprocess="true" type="BINDATA" />
+</grit-part>

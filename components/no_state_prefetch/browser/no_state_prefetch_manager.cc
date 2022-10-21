@@ -19,8 +19,8 @@
 #include "base/containers/contains.h"
 #include "base/containers/cxx20_erase.h"
 #include "base/location.h"
+#include "base/macros.h"
 #include "base/memory/ptr_util.h"
-#include "base/memory/raw_ptr.h"
 #include "base/metrics/field_trial.h"
 #include "base/metrics/histogram_macros.h"
 #include "base/notreached.h"
@@ -111,7 +111,7 @@ class NoStatePrefetchManager::OnCloseWebContentsDeleter
     // |this| is deleted at this point.
   }
 
-  const raw_ptr<NoStatePrefetchManager> manager_;
+  NoStatePrefetchManager* const manager_;
   std::unique_ptr<WebContents> tab_;
 };
 
@@ -163,7 +163,7 @@ void NoStatePrefetchManager::Shutdown() {
 }
 
 std::unique_ptr<NoStatePrefetchHandle>
-NoStatePrefetchManager::StartPrefetchingFromLinkRelPrerender(
+NoStatePrefetchManager::AddPrerenderFromLinkRelPrerender(
     int process_id,
     int route_id,
     const GURL& url,
@@ -179,6 +179,9 @@ NoStatePrefetchManager::StartPrefetchingFromLinkRelPrerender(
     case blink::mojom::PrerenderTriggerType::kLinkRelNext:
       origin = ORIGIN_LINK_REL_NEXT;
       break;
+    case blink::mojom::PrerenderTriggerType::kSpeculationRule:
+      // SpeculationRule is not routed to NoStatePrefetchManager.
+      NOTREACHED();
   }
 
   SessionStorageNamespace* session_storage_namespace = nullptr;
@@ -193,34 +196,34 @@ NoStatePrefetchManager::StartPrefetchingFromLinkRelPrerender(
     if (!source_web_contents)
       return nullptr;
     if (origin == ORIGIN_LINK_REL_PRERENDER_CROSSDOMAIN &&
-        source_web_contents->GetVisibleURL().host_piece() == url.host_piece()) {
+        source_web_contents->GetURL().host_piece() == url.host_piece()) {
       origin = ORIGIN_LINK_REL_PRERENDER_SAMEDOMAIN;
     }
     // TODO(ajwong): This does not correctly handle storage for isolated apps.
     session_storage_namespace = source_web_contents->GetController()
                                     .GetDefaultSessionStorageNamespace();
   }
-  return StartPrefetchingWithPreconnectFallback(
-      origin, url, referrer, initiator_origin, gfx::Rect(size),
-      session_storage_namespace);
+  return AddPrerenderWithPreconnectFallback(origin, url, referrer,
+                                            initiator_origin, gfx::Rect(size),
+                                            session_storage_namespace);
 }
 
 std::unique_ptr<NoStatePrefetchHandle>
-NoStatePrefetchManager::StartPrefetchingFromOmnibox(
+NoStatePrefetchManager::AddPrerenderFromOmnibox(
     const GURL& url,
     SessionStorageNamespace* session_storage_namespace,
     const gfx::Size& size) {
-  return StartPrefetchingWithPreconnectFallback(
+  return AddPrerenderWithPreconnectFallback(
       ORIGIN_OMNIBOX, url, content::Referrer(), absl::nullopt, gfx::Rect(size),
       session_storage_namespace);
 }
 
 std::unique_ptr<NoStatePrefetchHandle>
-NoStatePrefetchManager::StartPrefetchingFromNavigationPredictor(
+NoStatePrefetchManager::AddPrerenderFromNavigationPredictor(
     const GURL& url,
     SessionStorageNamespace* session_storage_namespace,
     const gfx::Size& size) {
-  return StartPrefetchingWithPreconnectFallback(
+  return AddPrerenderWithPreconnectFallback(
       ORIGIN_NAVIGATION_PREDICTOR, url, content::Referrer(), absl::nullopt,
       gfx::Rect(size), session_storage_namespace);
 }
@@ -231,7 +234,7 @@ NoStatePrefetchManager::AddIsolatedPrerender(
     SessionStorageNamespace* session_storage_namespace,
     const gfx::Size& size) {
   // The preconnect fallback won't happen.
-  return StartPrefetchingWithPreconnectFallback(
+  return AddPrerenderWithPreconnectFallback(
       ORIGIN_ISOLATED_PRERENDER, url, content::Referrer(), absl::nullopt,
       gfx::Rect(size), session_storage_namespace);
 }
@@ -243,20 +246,20 @@ NoStatePrefetchManager::AddSameOriginSpeculation(
     const gfx::Size& size,
     const url::Origin& initiator_origin) {
   // The preconnect fallback won't happen.
-  return StartPrefetchingWithPreconnectFallback(
+  return AddPrerenderWithPreconnectFallback(
       ORIGIN_SAME_ORIGIN_SPECULATION, url, content::Referrer(),
       initiator_origin, gfx::Rect(size), session_storage_namespace);
 }
 
 std::unique_ptr<NoStatePrefetchHandle>
-NoStatePrefetchManager::StartPrefetchingFromExternalRequest(
+NoStatePrefetchManager::AddPrerenderFromExternalRequest(
     const GURL& url,
     const content::Referrer& referrer,
     SessionStorageNamespace* session_storage_namespace,
     const gfx::Rect& bounds) {
-  return StartPrefetchingWithPreconnectFallback(ORIGIN_EXTERNAL_REQUEST, url,
-                                                referrer, absl::nullopt, bounds,
-                                                session_storage_namespace);
+  return AddPrerenderWithPreconnectFallback(ORIGIN_EXTERNAL_REQUEST, url,
+                                            referrer, absl::nullopt, bounds,
+                                            session_storage_namespace);
 }
 
 std::unique_ptr<NoStatePrefetchHandle>
@@ -265,7 +268,7 @@ NoStatePrefetchManager::AddForcedPrerenderFromExternalRequest(
     const content::Referrer& referrer,
     SessionStorageNamespace* session_storage_namespace,
     const gfx::Rect& bounds) {
-  return StartPrefetchingWithPreconnectFallback(
+  return AddPrerenderWithPreconnectFallback(
       ORIGIN_EXTERNAL_REQUEST_FORCED_PRERENDER, url, referrer, absl::nullopt,
       bounds, session_storage_namespace);
 }
@@ -302,7 +305,7 @@ void NoStatePrefetchManager::MoveEntryToPendingDelete(
   PostCleanupTask();
 }
 
-bool NoStatePrefetchManager::IsWebContentsPrefetching(
+bool NoStatePrefetchManager::IsWebContentsPrerendering(
     const WebContents* web_contents) const {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
   return GetNoStatePrefetchContents(web_contents);
@@ -497,6 +500,11 @@ bool NoStatePrefetchManager::IsPredictionEnabled(Origin origin) {
     return true;
   }
 
+  // TODO(crbug.com/1121970): Remove this check once we're no longer running the
+  // experiment "PredictivePrefetchingAllowedOnAllConnectionTypes".
+  if (delegate_->IsPredictionDisabledDueToNetwork(origin))
+    return false;
+
   return delegate_->IsNetworkPredictionPreferenceEnabled();
 }
 
@@ -506,7 +514,7 @@ void NoStatePrefetchManager::MaybePreconnect(Origin origin,
 }
 
 std::unique_ptr<NoStatePrefetchHandle>
-NoStatePrefetchManager::StartPrefetchingWithPreconnectFallback(
+NoStatePrefetchManager::AddPrerenderWithPreconnectFallback(
     Origin origin,
     const GURL& url_arg,
     const content::Referrer& referrer,
@@ -552,7 +560,10 @@ NoStatePrefetchManager::StartPrefetchingWithPreconnectFallback(
   }
 
   if (!IsPredictionEnabled(origin)) {
-    FinalStatus final_status = FINAL_STATUS_PRERENDERING_DISABLED;
+    FinalStatus final_status =
+        delegate_->IsPredictionDisabledDueToNetwork(origin)
+            ? FINAL_STATUS_CELLULAR_NETWORK
+            : FINAL_STATUS_PRERENDERING_DISABLED;
     SkipNoStatePrefetchContentsAndMaybePreconnect(url, origin, final_status);
     return nullptr;
   }
@@ -1011,11 +1022,11 @@ void NoStatePrefetchManager::ClearPrefetchInformationForTesting() {
 }
 
 std::unique_ptr<NoStatePrefetchHandle>
-NoStatePrefetchManager::StartPrefetchingWithPreconnectFallbackForTesting(
+NoStatePrefetchManager::AddPrerenderWithPreconnectFallbackForTesting(
     Origin origin,
     const GURL& url,
     const absl::optional<url::Origin>& initiator_origin) {
-  return StartPrefetchingWithPreconnectFallback(
+  return AddPrerenderWithPreconnectFallback(
       origin, url, content::Referrer(), initiator_origin, gfx::Rect(), nullptr);
 }
 

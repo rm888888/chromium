@@ -9,6 +9,7 @@
 #include <utility>
 
 #include "base/feature_list.h"
+#include "base/macros.h"
 #include "base/metrics/histogram_macros.h"
 #include "base/metrics/user_metrics.h"
 #include "build/branding_buildflags.h"
@@ -146,6 +147,9 @@ ProfileMenuView::ProfileMenuView(views::Button* anchor_button, Browser* browser)
     : ProfileMenuViewBase(anchor_button, browser) {
   chrome::RecordDialogCreation(chrome::DialogIdentifier::PROFILE_CHOOSER);
   set_close_on_deactivate(close_on_deactivate_for_testing_);
+  //update on 20220803
+    kMenuWidth = 288;
+  //
 }
 
 ProfileMenuView::~ProfileMenuView() = default;
@@ -261,7 +265,7 @@ void ProfileMenuView::OnGuestProfileButtonClicked() {
   if (!perform_menu_actions())
     return;
   DCHECK(profiles::IsGuestModeEnabled());
-  profiles::SwitchToGuestProfile();
+  profiles::SwitchToGuestProfile(ProfileManager::CreateCallback());
 }
 
 void ProfileMenuView::OnExitProfileButtonClicked() {
@@ -293,24 +297,23 @@ void ProfileMenuView::OnSyncErrorButtonClicked(AvatarSyncErrorType error) {
       chrome::ShowSettingsSubPage(browser(), chrome::kSignOutSubPage);
       break;
     case AvatarSyncErrorType::kUnrecoverableError:
-#if BUILDFLAG(ENABLE_DICE_SUPPORT)
-      IdentityManagerFactory::GetForProfile(browser()->profile())
-          ->GetPrimaryAccountMutator()
-          ->RevokeSyncConsent(signin_metrics::USER_CLICKED_SIGNOUT_SETTINGS,
-                              signin_metrics::SignoutDelete::kIgnoreMetric);
-      Hide();
-      browser()->signin_view_controller()->ShowSignin(
-          profiles::BUBBLE_VIEW_MODE_GAIA_SIGNIN,
-          signin_metrics::AccessPoint::ACCESS_POINT_AVATAR_BUBBLE_SIGN_IN);
-#else
-      // TODO(https://crbug.com/1260291): Add support for Lacros.
-      NOTIMPLEMENTED();
-#endif
+      // GetPrimaryAccountMutator() might return nullptr on some platforms.
+      if (auto* account_mutator =
+              IdentityManagerFactory::GetForProfile(browser()->profile())
+                  ->GetPrimaryAccountMutator()) {
+        account_mutator->RevokeSyncConsent(
+            signin_metrics::USER_CLICKED_SIGNOUT_SETTINGS,
+            signin_metrics::SignoutDelete::kIgnoreMetric);
+        Hide();
+        browser()->signin_view_controller()->ShowSignin(
+            profiles::BUBBLE_VIEW_MODE_GAIA_SIGNIN,
+            signin_metrics::AccessPoint::ACCESS_POINT_AVATAR_BUBBLE_SIGN_IN);
+      }
       break;
     case AvatarSyncErrorType::kAuthError:
       Hide();
-      signin_ui_util::ShowReauthForPrimaryAccountWithAuthError(
-          browser(),
+      browser()->signin_view_controller()->ShowSignin(
+          profiles::BUBBLE_VIEW_MODE_GAIA_REAUTH,
           signin_metrics::AccessPoint::ACCESS_POINT_AVATAR_BUBBLE_SIGN_IN);
       break;
     case AvatarSyncErrorType::kUpgradeClientError:
@@ -346,7 +349,7 @@ void ProfileMenuView::OnSigninAccountButtonClicked(AccountInfo account) {
       signin_metrics::AccessPoint::ACCESS_POINT_AVATAR_BUBBLE_SIGN_IN);
 }
 
-#if BUILDFLAG(ENABLE_DICE_SUPPORT)
+#if !BUILDFLAG(IS_CHROMEOS_ASH)
 void ProfileMenuView::OnSignoutButtonClicked() {
   RecordClick(ActionableItem::kSignoutButton);
   if (!perform_menu_actions())
@@ -357,22 +360,15 @@ void ProfileMenuView::OnSignoutButtonClicked() {
       signin_metrics::SourceForRefreshTokenOperation::
           kUserMenu_SignOutAllAccounts);
 }
-#endif
 
-#if !BUILDFLAG(IS_CHROMEOS_ASH)
 void ProfileMenuView::OnSigninButtonClicked() {
   RecordClick(ActionableItem::kSigninButton);
-#if BUILDFLAG(IS_CHROMEOS_LACROS)
-  // TODO(https://crbug.com/1260291): Add support for Lacros.
-  NOTIMPLEMENTED();
-#else
   if (!perform_menu_actions())
     return;
   Hide();
   browser()->signin_view_controller()->ShowSignin(
       profiles::BUBBLE_VIEW_MODE_GAIA_SIGNIN,
       signin_metrics::AccessPoint::ACCESS_POINT_AVATAR_BUBBLE_SIGN_IN);
-#endif
 }
 
 void ProfileMenuView::OnOtherProfileSelected(
@@ -381,7 +377,8 @@ void ProfileMenuView::OnOtherProfileSelected(
   if (!perform_menu_actions())
     return;
   Hide();
-  profiles::SwitchToProfile(profile_path, /*always_create=*/false);
+  profiles::SwitchToProfile(profile_path, /*always_create=*/false,
+                            ProfileManager::CreateCallback());
 }
 
 void ProfileMenuView::OnAddNewProfileButtonClicked() {
@@ -617,7 +614,7 @@ void ProfileMenuView::BuildFeatureButtons() {
     }
   }
 
-#if BUILDFLAG(ENABLE_DICE_SUPPORT)
+#if !BUILDFLAG(IS_CHROMEOS_ASH)
   const bool has_primary_account =
       !profile->IsGuestSession() &&
       identity_manager->HasPrimaryAccount(signin::ConsentLevel::kSync);

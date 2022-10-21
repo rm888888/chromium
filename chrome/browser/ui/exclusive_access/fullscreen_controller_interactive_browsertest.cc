@@ -4,7 +4,6 @@
 
 #include "base/command_line.h"
 #include "base/feature_list.h"
-#include "base/memory/raw_ptr.h"
 #include "base/test/bind.h"
 #include "build/build_config.h"
 #include "build/chromeos_buildflags.h"
@@ -39,10 +38,6 @@
 #include "ash/shell.h"
 #include "ui/display/test/display_manager_test_api.h"  // nogncheck
 #endif  // BUILDFLAG(IS_CHROMEOS_ASH)
-
-#if defined(OS_LINUX) && defined(USE_OZONE)
-#include "ui/ozone/public/ozone_platform.h"
-#endif
 
 #if defined(USE_AURA)
 #include "ui/aura/window.h"
@@ -164,12 +159,6 @@ void FullscreenControllerInteractiveTest::ToggleTabFullscreen_Internal(
 // Tests that while in fullscreen creating a new tab will exit fullscreen.
 IN_PROC_BROWSER_TEST_F(FullscreenControllerInteractiveTest,
                        TestNewTabExitsFullscreen) {
-#if defined(OS_LINUX) && defined(USE_OZONE)
-  // Flaky in Linux interactive_ui_tests_wayland: crbug.com/1200036
-  if (ui::OzonePlatform::GetPlatformNameForTest() == "wayland")
-    GTEST_SKIP();
-#endif
-
   ASSERT_TRUE(embedded_test_server()->Start());
 
   AddTabAtIndex(0, GURL(url::kAboutBlankURL), PAGE_TRANSITION_TYPED);
@@ -770,7 +759,7 @@ class ExperimentalFullscreenControllerInteractiveTest
 
  private:
 #if !BUILDFLAG(IS_CHROMEOS_ASH)
-  raw_ptr<display::Screen> original_screen_ = nullptr;
+  display::Screen* original_screen_ = nullptr;
   display::ScreenBase screen_;
 #endif  // !BUILDFLAG(IS_CHROMEOS_ASH)
 };

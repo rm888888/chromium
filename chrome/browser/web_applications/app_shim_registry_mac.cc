@@ -7,7 +7,6 @@
 #include <memory>
 #include <utility>
 
-#include "base/no_destructor.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/profiles/profile_manager.h"
 #include "components/prefs/pref_registry_simple.h"
@@ -60,7 +59,8 @@ void AppShimRegistry::GetProfilesSetForApp(
     const std::string& app_id,
     const std::string& profiles_key,
     std::set<base::FilePath>* profiles) const {
-  const base::Value* cache = GetPrefService()->GetDictionary(kAppShims);
+  const base::DictionaryValue* cache =
+      GetPrefService()->GetDictionary(kAppShims);
   const base::Value* app_info = cache->FindDictKey(app_id);
   if (!app_info)
     return;
@@ -103,19 +103,21 @@ void AppShimRegistry::OnAppQuit(const std::string& app_id,
 std::set<std::string> AppShimRegistry::GetInstalledAppsForProfile(
     const base::FilePath& profile) const {
   std::set<std::string> result;
-  const base::Value* app_shims = GetPrefService()->GetDictionary(kAppShims);
+  const base::DictionaryValue* app_shims =
+      GetPrefService()->GetDictionary(kAppShims);
   if (!app_shims)
     return result;
-  for (const auto iter_app : app_shims->DictItems()) {
+  for (base::DictionaryValue::Iterator iter_app(*app_shims);
+       !iter_app.IsAtEnd(); iter_app.Advance()) {
     const base::Value* installed_profiles_list =
-        iter_app.second.FindListKey(kInstalledProfiles);
+        iter_app.value().FindListKey(kInstalledProfiles);
     if (!installed_profiles_list)
       continue;
     for (const auto& profile_path_value : installed_profiles_list->GetList()) {
       if (!profile_path_value.is_string())
         continue;
       if (profile == GetFullProfilePath(profile_path_value.GetString())) {
-        result.insert(iter_app.first);
+        result.insert(iter_app.key());
         break;
       }
     }

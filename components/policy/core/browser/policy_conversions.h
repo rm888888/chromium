@@ -114,7 +114,6 @@ class POLICY_EXPORT ArrayPolicyConversions : public PolicyConversions {
 
  private:
   base::Value GetChromePolicies();
-  base::Value GetPrecedencePolicies();
 
 #if defined(OS_WIN) && BUILDFLAG(GOOGLE_CHROME_BRANDING)
   base::Value GetUpdaterPolicies();

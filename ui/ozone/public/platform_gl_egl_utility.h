@@ -8,8 +8,6 @@
 #include <vector>
 
 #include "base/component_export.h"
-#include "base/scoped_environment_variable_override.h"
-#include "third_party/abseil-cpp/absl/types/optional.h"
 #include "third_party/khronos/EGL/egl.h"
 #include "ui/gfx/gpu_extra_info.h"
 
@@ -45,11 +43,6 @@ class COMPONENT_EXPORT(OZONE_BASE) PlatformGLEGLUtility {
 
   // X11 specific; returns whether the platform supports visuals.
   virtual bool HasVisualManager();
-
-  // X11 specific; returns scoped unset display env variable if vulkan surface
-  // is not supported.
-  virtual absl::optional<base::ScopedEnvironmentVariableOverride>
-  MaybeGetScopedDisplayUnsetForVulkan();
 };
 
 }  // namespace ui

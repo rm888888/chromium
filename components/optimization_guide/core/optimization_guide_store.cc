@@ -3,13 +3,10 @@
 // found in the LICENSE file.
 
 #include "components/optimization_guide/core/optimization_guide_store.h"
-#include <memory>
-#include <string>
 
 #include "base/bind.h"
 #include "base/callback_helpers.h"
 #include "base/files/file_util.h"
-#include "base/logging.h"
 #include "base/metrics/histogram_functions.h"
 #include "base/metrics/histogram_macros.h"
 #include "base/sequence_checker.h"
@@ -20,11 +17,9 @@
 #include "components/leveldb_proto/public/proto_database_provider.h"
 #include "components/leveldb_proto/public/shared_proto_database_client_list.h"
 #include "components/optimization_guide/core/memory_hint.h"
-#include "components/optimization_guide/core/model_util.h"
 #include "components/optimization_guide/core/optimization_guide_features.h"
 #include "components/optimization_guide/core/optimization_guide_util.h"
 #include "components/optimization_guide/proto/hint_cache.pb.h"
-#include "third_party/abseil-cpp/absl/types/optional.h"
 
 namespace optimization_guide {
 
@@ -67,7 +62,9 @@ enum class OptimizationGuideHintCacheLevelDBStoreLoadMetadataResult {
 // recorded when it goes out of scope and its destructor is called.
 class ScopedLoadMetadataResultRecorder {
  public:
-  ScopedLoadMetadataResultRecorder() = default;
+  ScopedLoadMetadataResultRecorder()
+      : result_(OptimizationGuideHintCacheLevelDBStoreLoadMetadataResult::
+                    kSuccess) {}
   ~ScopedLoadMetadataResultRecorder() {
     UMA_HISTOGRAM_ENUMERATION(
         "OptimizationGuide.HintCacheLevelDBStore.LoadMetadataResult", result_);
@@ -79,8 +76,7 @@ class ScopedLoadMetadataResultRecorder {
   }
 
  private:
-  OptimizationGuideHintCacheLevelDBStoreLoadMetadataResult result_ =
-      OptimizationGuideHintCacheLevelDBStoreLoadMetadataResult::kSuccess;
+  OptimizationGuideHintCacheLevelDBStoreLoadMetadataResult result_;
 };
 
 void RecordStatusChange(OptimizationGuideStore::Status status) {
@@ -967,30 +963,14 @@ void OptimizationGuideStore::OnLoadModelsToBeUpdated(
   bool had_entries_to_update_or_remove =
       !update_vector->empty() || !remove_vector->empty();
   for (const auto& entry : *entries) {
-    absl::optional<std::string> delete_download_file;
-    if (had_entries_to_update_or_remove &&
-        entry.second.has_prediction_model() &&
-        !entry.second.prediction_model().model().download_url().empty()) {
-      delete_download_file =
-          entry.second.prediction_model().model().download_url();
-    }
-
+    bool should_delete_download_file = had_entries_to_update_or_remove;
     // Only check expiry if we weren't explicitly passed in entries to update or
     // remove.
     if (!had_entries_to_update_or_remove) {
-      if (entry.second.keep_beyond_valid_duration()) {
-        continue;
-      }
       if (entry.second.has_expiry_time_secs()) {
         if (entry.second.expiry_time_secs() <= now_since_epoch) {
-          // Update the entry to remove the model.
-          if (entry.second.has_prediction_model() &&
-              !entry.second.prediction_model().model().download_url().empty()) {
-            delete_download_file =
-                entry.second.prediction_model().model().download_url();
-          }
-
           remove_vector->push_back(entry.first);
+          should_delete_download_file = true;
           proto::OptimizationTarget optimization_target =
               GetOptimizationTargetFromPredictionModelEntryKey(entry.first);
           base::UmaHistogramBoolean(
@@ -1004,17 +984,20 @@ void OptimizationGuideStore::OnLoadModelsToBeUpdated(
         update_vector->push_back(entry);
         update_vector->back().second.set_expiry_time_secs(
             now_since_epoch +
-            features::StoredModelsValidDuration().InSeconds());
+            features::StoredModelsInactiveDuration().InSeconds());
       }
     }
 
     // Delete files (the model itself and any additional files) that are
     // provided by the model in its directory.
-    if (delete_download_file) {
-      // |StringToFilePath| only returns nullopt when
-      // |delete_download_file| is empty.
+    if (should_delete_download_file && entry.second.has_prediction_model() &&
+        !entry.second.prediction_model().model().download_url().empty()) {
+      // |GetFilePathFromPredictionModel| only returns nullopt when
+      // |model().download_url()| is empty.
       base::FilePath model_file_path =
-          StringToFilePath(*delete_download_file).value();
+          StringToFilePath(
+              entry.second.prediction_model().model().download_url())
+              .value();
       base::FilePath path_to_delete;
 
       // Backwards compatibility: Once upon a time (<M93), model files were
@@ -1060,8 +1043,9 @@ bool OptimizationGuideStore::FindPredictionModelEntryKey(
   *out_prediction_model_entry_key =
       GetPredictionModelEntryKeyPrefix() +
       base::NumberToString(static_cast<int>(optimization_target));
-  return entry_keys_->find(*out_prediction_model_entry_key) !=
-         entry_keys_->end();
+  if (entry_keys_->find(*out_prediction_model_entry_key) != entry_keys_->end())
+    return true;
+  return false;
 }
 
 bool OptimizationGuideStore::RemovePredictionModelFromEntryKey(
@@ -1119,17 +1103,6 @@ void OptimizationGuideStore::OnLoadPredictionModel(
     entry.reset();
 
   if (!entry || !entry->has_prediction_model()) {
-    std::unique_ptr<proto::PredictionModel> loaded_prediction_model(nullptr);
-    std::move(callback).Run(std::move(loaded_prediction_model));
-    return;
-  }
-  // Also ensure that nothing is returned if the model is expired.
-  int64_t now_since_epoch =
-      base::Time::Now().ToDeltaSinceWindowsEpoch().InSeconds();
-  if (!entry->keep_beyond_valid_duration() &&
-      entry->expiry_time_secs() <= now_since_epoch) {
-    // Leave the actual model deletions to |PurgeInactiveModels| and return
-    // early.
     std::unique_ptr<proto::PredictionModel> loaded_prediction_model(nullptr);
     std::move(callback).Run(std::move(loaded_prediction_model));
     return;

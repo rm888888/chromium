@@ -11,6 +11,7 @@
 #include <utility>
 
 #include "base/containers/lru_cache.h"
+#include "base/macros.h"
 #include "base/synchronization/lock.h"
 #include "components/autofill/core/browser/geo/country_names_for_locale.h"
 

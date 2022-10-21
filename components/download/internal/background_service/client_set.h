@@ -9,6 +9,7 @@
 #include <memory>
 #include <set>
 
+#include "base/macros.h"
 #include "components/download/public/background_service/clients.h"
 
 namespace download {

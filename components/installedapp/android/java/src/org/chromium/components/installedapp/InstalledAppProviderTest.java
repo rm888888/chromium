@@ -356,7 +356,7 @@ public class InstalledAppProviderTest {
         manifestUrl.url = MANIFEST_URL;
 
         mInstalledAppProvider.filterInstalledApps(manifestRelatedApps, manifestUrl,
-                new InstalledAppProvider.FilterInstalledApps_Response() {
+                new InstalledAppProvider.FilterInstalledAppsResponse() {
                     @Override
                     public void call(RelatedApplication[] installedRelatedApps) {
                         Assert.assertEquals(

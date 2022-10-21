@@ -9,6 +9,7 @@
 #include <string>
 
 #include "base/files/file_path.h"
+#include "base/macros.h"
 #include "base/version.h"
 #include "base/win/windows_types.h"
 #include "build/build_config.h"

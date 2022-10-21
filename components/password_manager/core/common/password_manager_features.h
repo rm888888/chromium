@@ -22,13 +22,13 @@ extern const base::Feature kBiometricTouchToFill;
 extern const base::Feature kEditPasswordsInSettings;
 extern const base::Feature kDetectFormSubmissionOnFormClear;
 extern const base::Feature kEnableManualPasswordGeneration;
+extern const base::Feature kEnableMovingMultiplePasswordsToAccount;
 extern const base::Feature kEnableOverwritingPlaceholderUsernames;
 extern const base::Feature kEnablePasswordsAccountStorage;
 extern const base::Feature KEnablePasswordGenerationForClearTextFields;
 extern const base::Feature kFillingAcrossAffiliatedWebsites;
 extern const base::Feature kFillOnAccountSelect;
 extern const base::Feature kInferConfirmationPasswordField;
-extern const base::Feature kIOSEnablePasswordManagerBrandingUpdate;
 extern const base::Feature kLeakDetectionUnauthenticated;
 extern const base::Feature kPasswordChange;
 extern const base::Feature kPasswordChangeOnlyRecentCredentials;
@@ -41,16 +41,11 @@ extern const base::Feature kRecoverFromNeverSaveAndroid;
 extern const base::Feature kReparseServerPredictionsFollowingFormChange;
 extern const base::Feature kSecondaryServerFieldPredictions;
 extern const base::Feature kSupportForAddPasswordsInSettings;
-#if defined(OS_LINUX)
-extern const base::Feature kSyncUndecryptablePasswordsLinux;
-#endif
 extern const base::Feature kTreatNewPasswordHeuristicsAsReliable;
 #if defined(OS_ANDROID)
-extern const base::Feature kUnifiedCredentialManagerDryRun;
 extern const base::Feature kUnifiedPasswordManagerAndroid;
 extern const base::Feature kUnifiedPasswordManagerMigration;
 extern const base::Feature kUnifiedPasswordManagerShadowAndroid;
-extern const base::Feature kUnifiedPasswordManagerShadowWriteOperationsAndroid;
 extern const base::Feature kUnifiedPasswordManagerSyncUsingAndroidBackendOnly;
 
 #endif

@@ -7,6 +7,7 @@
 
 #include <stdint.h>
 
+#include "base/macros.h"
 #include "components/cdm/common/widevine_drm_delegate_android.h"
 #include "media/base/android/media_drm_bridge_client.h"
 

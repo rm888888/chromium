@@ -9,12 +9,10 @@
 #include <unordered_map>
 #include <vector>
 
-#include "base/hash/hash.h"
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "build/build_config.h"
 #include "components/viz/common/display/overlay_strategy.h"
 #include "components/viz/common/quads/aggregated_render_pass.h"
-#include "components/viz/service/display/display_resource_provider.h"
 #include "components/viz/service/display/output_surface.h"
 #include "components/viz/service/display/overlay_candidate.h"
 #include "components/viz/service/display/overlay_candidate_temporal_tracker.h"
@@ -47,10 +45,8 @@ class VIZ_SERVICE_EXPORT OverlayProcessorUsingStrategy
 
       // A iterator in the vector of quads.
       QuadList::Iterator quad_iter;
-      // This is needed to sort candidates based on DrawQuad order.
-      size_t quad_index;
       OverlayCandidate candidate;
-      raw_ptr<Strategy> strategy = nullptr;
+      Strategy* strategy = nullptr;
 
       // heuristic sort element
       int relative_power_gain = 0;
@@ -104,13 +100,7 @@ class VIZ_SERVICE_EXPORT OverlayProcessorUsingStrategy
         const PrimaryPlane* primary_plane,
         OverlayCandidateList* candidates,
         std::vector<gfx::Rect>* content_bounds,
-        const OverlayProposedCandidate& proposed_candidate) = 0;
-
-    // Commits to using the proposed candidate by updating |render_pass| as
-    // appropriate when this candidate is presented in an overlay plane.
-    virtual void CommitCandidate(
-        const OverlayProposedCandidate& proposed_candidate,
-        AggregatedRenderPass* render_pass) = 0;
+        OverlayProposedCandidate* proposed_candidate) = 0;
 
     // Currently this is only overridden by the Underlay strategy: the underlay
     // strategy needs to enable blending for the primary plane in order to show
@@ -179,21 +169,16 @@ class VIZ_SERVICE_EXPORT OverlayProcessorUsingStrategy
   // to be traditionally composited. Candidates with |overlay_handled| set to
   // true must also have their |display_rect| converted to integer
   // coordinates if necessary.
-  void CheckOverlaySupport(
+  virtual void CheckOverlaySupport(
       const OverlayProcessorInterface::OutputSurfaceOverlayPlane* primary_plane,
-      OverlayCandidateList* candidate_list);
-
-  // This should be called during overlay processing to register whether or not
-  // there is a candidate that requires an overlay so that the manager can allow
-  // the overlay on the display with the requirement only.
-  virtual void RegisterOverlayRequirement(bool requires_overlay) {}
+      OverlayCandidateList* candidate_list) = 0;
 
  protected:
   virtual gfx::Rect GetOverlayDamageRectForOutputSurface(
       const OverlayCandidate& overlay) const;
 
   StrategyList strategies_;
-  raw_ptr<Strategy> last_successful_strategy_ = nullptr;
+  Strategy* last_successful_strategy_ = nullptr;
 
   gfx::Rect overlay_damage_rect_;
   bool previous_is_underlay = false;
@@ -215,12 +200,6 @@ class VIZ_SERVICE_EXPORT OverlayProcessorUsingStrategy
   OverlayCandidateTemporalTracker::Config tracker_config_;
 
  private:
-  // The platform specific implementation to check overlay support that will be
-  // called by `CheckOverlaySupport()`.
-  virtual void CheckOverlaySupportImpl(
-      const OverlayProcessorInterface::OutputSurfaceOverlayPlane* primary_plane,
-      OverlayCandidateList* candidate_list) = 0;
-
   // Update |damage_rect| by removing damage caused by |candidates|.
   void UpdateDamageRect(OverlayCandidateList* candidates,
                         SurfaceDamageRectList* surface_damage_rect_list,
@@ -264,33 +243,6 @@ class VIZ_SERVICE_EXPORT OverlayProcessorUsingStrategy
       std::vector<gfx::Rect>* content_bounds,
       gfx::Rect* incoming_damage);
 
-  // Determines if we should attempt multiple overlays. This is based on
-  // `max_overlays_considered_`, the strategies proposed, and if any of the
-  // candidates require an overlay.
-  bool ShouldAttemptMultipleOverlays(
-      const Strategy::OverlayProposedCandidateList& sorted_candidates);
-
-  // Attempts to promote multiple candidates to overlays. Returns a boolean
-  // indicating if any of the attempted candidates were successfully promoted to
-  // overlays.
-  //
-  // TODO(khaslett): Write unit tests for this function before launching
-  // UseMultipleOverlays feature.
-  bool AttemptMultipleOverlays(
-      const Strategy::OverlayProposedCandidateList& sorted_candidates,
-      OverlayProcessorInterface::OutputSurfaceOverlayPlane* primary_plane,
-      AggregatedRenderPass* render_pass,
-      OverlayCandidateList& candidates);
-
-  // Assigns `plane_z_order`s to the proposed underlay candidates based on their
-  // DrawQuad orderings.
-  //
-  // TODO(khaslett): Write unit tests for this function before launching
-  // UseMultipleOverlays feature.
-  void AssignUnderlayZOrders(
-      std::vector<Strategy::OverlayProposedCandidateList::iterator>&
-          underlay_iters);
-
   // This function reorders and removes |proposed_candidates| based on a
   // heuristic designed to maximize the effectiveness of the limited number
   // of Hardware overlays. Effectiveness here is primarily about power and
@@ -309,17 +261,12 @@ class VIZ_SERVICE_EXPORT OverlayProcessorUsingStrategy
   // be whether that scaling worked or not.
   void UpdateDownscalingCapabilities(float scale_factor, bool success);
 
-  // Logs the number of times CheckOverlaySupport was called this frame, and
-  // resets the counter to 0.
-  void LogCheckOverlaySupportMetrics();
-
   struct ProposedCandidateKey {
-    OverlayCandidate::TrackingId tracking_id;
+    gfx::Rect rect;
     OverlayStrategy strategy_id = OverlayStrategy::kUnknown;
 
     bool operator==(const ProposedCandidateKey& other) const {
-      return (tracking_id == other.tracking_id &&
-              strategy_id == other.strategy_id);
+      return (rect == other.rect && strategy_id == other.strategy_id);
     }
   };
 
@@ -332,19 +279,16 @@ class VIZ_SERVICE_EXPORT OverlayProcessorUsingStrategy
   static ProposedCandidateKey ToProposeKey(
       const Strategy::OverlayProposedCandidate& proposed);
 
-  const int max_overlays_considered_;
-
   std::unordered_map<ProposedCandidateKey,
                      OverlayCandidateTemporalTracker,
                      ProposedCandidateKeyHasher>
-      tracked_candidates_;
+      tracked_candidates;
 
   // These variables are used only for UMA purposes.
   void OnOverlaySwitchUMA(ProposedCandidateKey overlay_tracking_key);
   base::TimeTicks last_time_interval_switch_overlay_tick_;
   ProposedCandidateKey prev_overlay_tracking_id_;
   uint64_t frame_sequence_number_ = 0;
-  int check_overlay_support_call_count_ = 0;
 
   // These values are used for tracking how much we can downscale with overlays
   // and is used for when we require an overlay so we can determine how much we

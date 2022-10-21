@@ -230,8 +230,8 @@ TEST_F(WebBundleParserTest, DuplicateSectionName) {
   ExpectFormatError(ParseBundle(&data_source));
 }
 
-TEST_F(WebBundleParserTest, B1BundleSingleEntry) {
-  WebBundleBuilder builder(kFallbackUrl, kManifestUrl, BundleVersion::kB1);
+TEST_F(WebBundleParserTest, SingleEntry) {
+  WebBundleBuilder builder(kFallbackUrl, kManifestUrl);
   builder.AddExchange("https://test.example.com/",
                       {{":status", "200"}, {"content-type", "text/plain"}},
                       "payload");
@@ -239,7 +239,6 @@ TEST_F(WebBundleParserTest, B1BundleSingleEntry) {
 
   mojom::BundleMetadataPtr metadata = ParseBundle(&data_source).first;
   ASSERT_TRUE(metadata);
-  ASSERT_EQ(metadata->version, mojom::BundleFormatVersion::kB1);
   ASSERT_EQ(metadata->requests.size(), 1u);
   auto location = FindResponse(metadata, GURL("https://test.example.com/"));
   ASSERT_TRUE(location);
@@ -761,8 +760,8 @@ TEST_F(WebBundleParserTest, ParseSignedFile) {
             "digest/mi-sha256-03");
 }
 
-TEST_F(WebBundleParserTest, SingleEntry) {
-  WebBundleBuilder builder(kFallbackUrl, kManifestUrl);
+TEST_F(WebBundleParserTest, B2BundleSingleEntry) {
+  WebBundleBuilder builder(kFallbackUrl, kManifestUrl, BundleVersion::kB2);
   builder.AddExchange("https://test.example.com/",
                       {{":status", "200"}, {"content-type", "text/plain"}},
                       "payload");
@@ -770,7 +769,6 @@ TEST_F(WebBundleParserTest, SingleEntry) {
 
   mojom::BundleMetadataPtr metadata = ParseBundle(&data_source).first;
   ASSERT_TRUE(metadata);
-  ASSERT_EQ(metadata->version, mojom::BundleFormatVersion::kB2);
   ASSERT_EQ(metadata->requests.size(), 1u);
   auto location = FindResponse(metadata, GURL("https://test.example.com/"));
   ASSERT_TRUE(location);

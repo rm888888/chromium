@@ -47,7 +47,6 @@ PopupTracker::PopupTracker(content::WebContents* contents,
                            content::WebContents* opener,
                            WindowOpenDisposition disposition)
     : content::WebContentsObserver(contents),
-      content::WebContentsUserData<PopupTracker>(*contents),
       visibility_tracker_(
           base::DefaultTickClock::GetInstance(),
           contents->GetVisibility() != content::Visibility::HIDDEN),

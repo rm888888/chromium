@@ -13,6 +13,11 @@ namespace switches {
 const char kEnableExperimentalAccessibilityAutoclick[] =
     "enable-experimental-accessibility-autoclick";
 
+// Enables the experimental dictation extension on Chrome OS that hasn't
+// launched yet.
+const char kEnableExperimentalAccessibilityDictationExtension[] =
+    "enable-experimental-accessibility-dictation-extension";
+
 // Enables support for visually debugging the accessibility labels
 // feature, which provides images descriptions for screen reader users.
 const char kEnableExperimentalAccessibilityLabelsDebugging[] =
@@ -40,6 +45,11 @@ const char kEnableMagnifierDebugDrawRect[] = "enable-magnifier-debug-draw-rect";
 // sprint project and hasn't launched yet.
 const char kEnableExperimentalAccessibilitySwitchAccessMultistepAutomation[] =
     "enable-experimental-accessibility-switch-access-multistep-automation";
+
+bool IsExperimentalAccessibilityDictationExtensionEnabled() {
+  return base::CommandLine::ForCurrentProcess()->HasSwitch(
+      ::switches::kEnableExperimentalAccessibilityDictationExtension);
+}
 
 bool IsExperimentalAccessibilityLanguageDetectionEnabled() {
   return base::CommandLine::ForCurrentProcess()->HasSwitch(

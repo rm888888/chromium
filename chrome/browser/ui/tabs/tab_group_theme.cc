@@ -40,9 +40,6 @@ int GetTabGroupTabStripColorId(TabGroupColorId group_color_id,
           {TabGroupColorId::kCyan,
            {TP::COLOR_TAB_GROUP_TABSTRIP_FRAME_INACTIVE_CYAN,
             TP::COLOR_TAB_GROUP_TABSTRIP_FRAME_ACTIVE_CYAN}},
-          {TabGroupColorId::kOrange,
-           {TP::COLOR_TAB_GROUP_TABSTRIP_FRAME_INACTIVE_ORANGE,
-            TP::COLOR_TAB_GROUP_TABSTRIP_FRAME_ACTIVE_ORANGE}},
       });
 
   return group_id_map.at(group_color_id)[active_frame];
@@ -59,7 +56,6 @@ int GetTabGroupDialogColorId(TabGroupColorId group_color_id) {
           {TabGroupColorId::kPink, TP::COLOR_TAB_GROUP_DIALOG_PINK},
           {TabGroupColorId::kPurple, TP::COLOR_TAB_GROUP_DIALOG_PURPLE},
           {TabGroupColorId::kCyan, TP::COLOR_TAB_GROUP_DIALOG_CYAN},
-          {TabGroupColorId::kOrange, TP::COLOR_TAB_GROUP_DIALOG_ORANGE},
       });
 
   return group_id_map.at(group_color_id);
@@ -76,7 +72,6 @@ int GetTabGroupContextMenuColorId(TabGroupColorId group_color_id) {
           {TabGroupColorId::kPink, TP::COLOR_TAB_GROUP_CONTEXT_MENU_PINK},
           {TabGroupColorId::kPurple, TP::COLOR_TAB_GROUP_CONTEXT_MENU_PURPLE},
           {TabGroupColorId::kCyan, TP::COLOR_TAB_GROUP_CONTEXT_MENU_CYAN},
-          {TabGroupColorId::kOrange, TP::COLOR_TAB_GROUP_CONTEXT_MENU_ORANGE},
       });
 
   return group_id_map.at(group_color_id);
@@ -93,7 +88,6 @@ int GetTabGroupBookmarkColorId(tab_groups::TabGroupColorId group_color_id) {
           {TabGroupColorId::kPink, TP::COLOR_TAB_GROUP_BOOKMARK_BAR_PINK},
           {TabGroupColorId::kPurple, TP::COLOR_TAB_GROUP_BOOKMARK_BAR_PURPLE},
           {TabGroupColorId::kCyan, TP::COLOR_TAB_GROUP_BOOKMARK_BAR_CYAN},
-          {TabGroupColorId::kOrange, TP::COLOR_TAB_GROUP_BOOKMARK_BAR_ORANGE},
       });
 
   return group_id_map.at(group_color_id);

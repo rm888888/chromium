@@ -437,8 +437,9 @@ void AXTableInfo::UpdateExtraMacNodes() {
 
   changes.push_back(AXTreeObserver::Change(
       table_node_, AXTreeObserver::ChangeType::NODE_CHANGED));
-  for (AXTreeObserver& observer : tree_->observers())
-    observer.OnAtomicUpdateFinished(tree_, /* root_changed= */ false, changes);
+  for (AXTreeObserver& observer : tree_->observers()) {
+    observer.OnAtomicUpdateFinished(tree_, false, changes);
+  }
 }
 
 AXNode* AXTableInfo::CreateExtraMacColumnNode(size_t col_index) {
@@ -550,7 +551,7 @@ AXTableInfo::~AXTableInfo() {
     ClearExtraMacNodes();
     for (AXTreeObserver& observer : tree_->observers()) {
       observer.OnAtomicUpdateFinished(
-          tree_, /* root_changed= */ false,
+          tree_, false,
           {{table_node_, AXTreeObserver::ChangeType::NODE_CHANGED}});
     }
   }

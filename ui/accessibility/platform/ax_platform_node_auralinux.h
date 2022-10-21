@@ -11,6 +11,7 @@
 #include <string>
 #include <utility>
 
+#include "base/macros.h"
 #include "base/strings/utf_offset_string_conversions.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/accessibility/ax_enums.mojom-forward.h"
@@ -112,6 +113,7 @@ class ImplementedAtkInterfaces {
 // Implements accessibility on Aura Linux using ATK.
 class AX_EXPORT AXPlatformNodeAuraLinux : public AXPlatformNodeBase {
  public:
+  AXPlatformNodeAuraLinux();
   ~AXPlatformNodeAuraLinux() override;
   AXPlatformNodeAuraLinux(const AXPlatformNodeAuraLinux&) = delete;
   AXPlatformNodeAuraLinux& operator=(const AXPlatformNodeAuraLinux&) = delete;
@@ -237,6 +239,7 @@ class AX_EXPORT AXPlatformNodeAuraLinux : public AXPlatformNodeBase {
   void NotifyAccessibilityEvent(ax::mojom::Event event_type) override;
 
   // AXPlatformNodeBase overrides.
+  void Init(AXPlatformNodeDelegate* delegate) override;
   bool IsPlatformCheckable() const override;
   absl::optional<int> GetIndexInParent() override;
 
@@ -297,11 +300,6 @@ class AX_EXPORT AXPlatformNodeAuraLinux : public AXPlatformNodeBase {
   std::string accessible_name_;
 
  protected:
-  AXPlatformNodeAuraLinux();
-
-  // AXPlatformNode overrides.
-  void Init(AXPlatformNodeDelegate* delegate) override;
-
   // Offsets for the AtkText API are calculated in UTF-16 code point offsets,
   // but the ATK APIs want all offsets to be in "characters," which we
   // understand to be Unicode character offsets. We keep a lazily generated set
@@ -430,9 +428,6 @@ class AX_EXPORT AXPlatformNodeAuraLinux : public AXPlatformNodeBase {
   TextAttributeList default_text_attributes_;
 
   bool window_activate_event_postponed_ = false;
-
-  friend AXPlatformNode* AXPlatformNode::Create(
-      AXPlatformNodeDelegate* delegate);
 };
 
 }  // namespace ui

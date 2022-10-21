@@ -6,11 +6,16 @@
 
 /**
  * Launch PaymentRequest with a show promise that resolve with invalid details.
- * @param {string} supportedMethods The payment method that is supported by this
- *        request.
+ * @param {boolean} useUrlPaymentMethod - Whether URL payment method should be
+ * used. Useful for payment handlers, which cannot use basic-card payment
+ * method. By default, basic-card payment method is used.
  */
-function buyWithMethods(supportedMethods) { // eslint-disable-line no-unused-vars, max-len
+function buy(useUrlPaymentMethod) { // eslint-disable-line no-unused-vars
   try {
+    let supportedMethods = 'basic-card';
+    if (useUrlPaymentMethod) {
+      supportedMethods = window.location.href;
+    }
     new PaymentRequest([{supportedMethods}], {
       total: {
         label: 'PENDING TOTAL',

@@ -639,8 +639,6 @@ void InternetSection::AddLoadTimeData(content::WebUIDataSource* html_source) {
       {"mobileNetworkScanningLabel", IDS_MOBILE_NETWORK_SCANNING_MESSAGE},
       {"networkAllowDataRoaming",
        IDS_SETTINGS_SETTINGS_NETWORK_ALLOW_DATA_ROAMING},
-      {"networkAllowDataRoamingRequired",
-       IDS_SETTINGS_SETTINGS_NETWORK_ALLOW_DATA_ROAMING_REQUIRED},
       {"networkAllowDataRoamingEnabledHome",
        IDS_SETTINGS_SETTINGS_NETWORK_ALLOW_DATA_ROAMING_ENABLED_HOME},
       {"networkAllowDataRoamingEnabledRoaming",
@@ -813,8 +811,6 @@ void InternetSection::AddLoadTimeData(content::WebUIDataSource* html_source) {
        IDS_SETTINGS_INTERNET_NETWORK_CELLULAR_CONNECTING_TO_PROFILE},
       {"cellularNetworRefreshingProfileListProfile",
        IDS_SETTINGS_INTERNET_NETWORK_CELLULAR_REFRESHING_PROFILE_LIST},
-      {"cellularNetworkResettingESim",
-       IDS_SETTINGS_INTERNET_NETWORK_CELLULAR_RESETTING_ESIM},
   };
   html_source->AddLocalizedStrings(kLocalizedStrings);
 

@@ -85,13 +85,11 @@ class PasswordStoreWaiter : public password_manager::PasswordStoreConsumer {
       std::vector<std::unique_ptr<password_manager::PasswordForm>>) override;
 
   base::RunLoop run_loop_;
-  base::WeakPtrFactory<PasswordStoreWaiter> weak_ptr_factory_{this};
 };
 
 PasswordStoreWaiter::PasswordStoreWaiter(
     password_manager::PasswordStoreInterface* store) {
-  store->GetAllLoginsWithAffiliationAndBrandingInformation(
-      weak_ptr_factory_.GetWeakPtr());
+  store->GetAllLoginsWithAffiliationAndBrandingInformation(this);
   run_loop_.Run();
 }
 

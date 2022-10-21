@@ -2,12 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "base/memory/raw_ptr.h"
 #include "base/run_loop.h"
 #include "base/test/bind.h"
 #include "chrome/browser/ui/browser.h"
 #include "chrome/browser/ui/browser_list.h"
-#include "chrome/browser/ui/test/test_browser_dialog.h"
 #include "chrome/browser/ui/views/frame/browser_view.h"
 #include "chrome/browser/ui/views/frame/toolbar_button_provider.h"
 #include "chrome/browser/ui/views/incognito_clear_browsing_data_dialog.h"
@@ -19,10 +17,9 @@
 #include "content/public/test/browser_test.h"
 #include "ui/views/controls/button/label_button.h"
 
-class IncognitoClearBrowsingDataDialogBrowserTest : public DialogBrowserTest {
+class IncognitoClearBrowsingDataDialogBrowserTest
+    : public InProcessBrowserTest {
  public:
-  void ShowUi(const std::string& name) override { OpenDialog(); }
-
   void OpenDialog() {
     incognito_browser_ = CreateIncognitoBrowser(browser()->profile());
     views::View* view = static_cast<views::View*>(
@@ -43,13 +40,8 @@ class IncognitoClearBrowsingDataDialogBrowserTest : public DialogBrowserTest {
   }
 
  private:
-  raw_ptr<Browser> incognito_browser_ = nullptr;
+  Browser* incognito_browser_ = nullptr;
 };
-
-IN_PROC_BROWSER_TEST_F(IncognitoClearBrowsingDataDialogBrowserTest,
-                       InvokeUi_default) {
-  ShowAndVerifyUi();
-}
 
 IN_PROC_BROWSER_TEST_F(IncognitoClearBrowsingDataDialogBrowserTest,
                        TestDialogIsShown) {
@@ -164,7 +156,7 @@ class IncognitoHistoryDisclaimerDialogBrowserTest
   }
 
  private:
-  raw_ptr<Browser> incognito_browser_ = nullptr;
+  Browser* incognito_browser_ = nullptr;
 };
 
 IN_PROC_BROWSER_TEST_F(IncognitoHistoryDisclaimerDialogBrowserTest,

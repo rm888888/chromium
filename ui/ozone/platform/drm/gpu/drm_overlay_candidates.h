@@ -7,6 +7,7 @@
 
 #include <vector>
 
+#include "base/macros.h"
 #include "ui/gfx/native_widget_types.h"
 #include "ui/ozone/public/overlay_candidates_ozone.h"
 
@@ -29,7 +30,6 @@ class DrmOverlayCandidates : public OverlayCandidatesOzone {
   // OverlayCandidatesOzone:
   void CheckOverlaySupport(
       std::vector<OverlaySurfaceCandidate>* candidates) override;
-  void RegisterOverlayRequirement(bool requires_overlay) override;
 
  private:
   DrmOverlayManager* const overlay_manager_;  // Not owned.

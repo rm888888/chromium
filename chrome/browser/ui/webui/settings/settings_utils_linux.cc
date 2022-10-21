@@ -9,7 +9,6 @@
 #include "base/bind.h"
 #include "base/environment.h"
 #include "base/files/file_util.h"
-#include "base/memory/weak_ptr.h"
 #include "base/nix/xdg_util.h"
 #include "base/process/launch.h"
 #include "base/task/thread_pool.h"
@@ -49,11 +48,8 @@ const char* const kKDE5ProxyConfigCommand[] = {"kcmshell5", "proxy", nullptr};
 constexpr char kLinuxProxyConfigUrl[] = "chrome://linux-proxy-config";
 
 // Show the proxy config URL in the given tab.
-void ShowLinuxProxyConfigUrl(base::WeakPtr<content::WebContents> web_contents,
-                             bool launched) {
+void ShowLinuxProxyConfigUrl(int render_process_id, int render_view_id) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
-  if (launched)
-    return;
   std::unique_ptr<base::Environment> env(base::Environment::Create());
   const char* name = base::nix::GetDesktopEnvironmentName(env.get());
   if (name)
@@ -62,6 +58,8 @@ void ShowLinuxProxyConfigUrl(base::WeakPtr<content::WebContents> web_contents,
                        WindowOpenDisposition::NEW_FOREGROUND_TAB,
                        ui::PAGE_TRANSITION_LINK, false);
 
+  content::WebContents* web_contents =
+      tab_util::GetWebContentsByID(render_process_id, render_view_id);
   if (web_contents)
     web_contents->OpenURL(params);
 }
@@ -93,7 +91,7 @@ bool StartProxyConfigUtil(const char* const command[]) {
 
 // Detect, and if possible, start the appropriate proxy config utility. On
 // failure to do so, show the Linux proxy config URL in a new tab instead.
-bool DetectAndStartProxyConfigUtil() {
+void DetectAndStartProxyConfigUtil(int render_process_id, int render_view_id) {
   base::ScopedBlockingCall scoped_blocking_call(FROM_HERE,
                                                 base::BlockingType::MAY_BLOCK);
   std::unique_ptr<base::Environment> env(base::Environment::Create());
@@ -136,7 +134,11 @@ bool DetectAndStartProxyConfigUtil() {
       break;
   }
 
-  return launched;
+  if (launched)
+    return;
+  content::GetUIThreadTaskRunner({})->PostTask(
+      FROM_HERE, base::BindOnce(&ShowLinuxProxyConfigUrl, render_process_id,
+                                render_view_id));
 }
 
 }  // namespace
@@ -144,10 +146,15 @@ bool DetectAndStartProxyConfigUtil() {
 namespace settings_utils {
 
 void ShowNetworkProxySettings(content::WebContents* web_contents) {
-  base::ThreadPool::PostTaskAndReplyWithResult(
+  base::ThreadPool::PostTask(
       FROM_HERE, {base::TaskPriority::USER_VISIBLE, base::MayBlock()},
-      base::BindOnce(&DetectAndStartProxyConfigUtil),
-      base::BindOnce(&ShowLinuxProxyConfigUrl, web_contents->GetWeakPtr()));
+      base::BindOnce(
+          &DetectAndStartProxyConfigUtil,
+          web_contents->GetMainFrame()
+              ->GetRenderViewHost()
+              ->GetProcess()
+              ->GetID(),
+          web_contents->GetMainFrame()->GetRenderViewHost()->GetRoutingID()));
 }
 
 }  // namespace settings_utils

@@ -15,7 +15,6 @@
 #include "base/cxx17_backports.h"
 #include "base/format_macros.h"
 #include "base/i18n/rtl.h"
-#include "base/memory/raw_ptr.h"
 #include "base/pickle.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
@@ -145,7 +144,7 @@ class TextfieldFocuser : public View {
 
  private:
   bool consume_ = true;
-  raw_ptr<Textfield> textfield_;
+  Textfield* textfield_;
 };
 
 class MockInputMethod : public ui::InputMethodBase {
@@ -163,9 +162,8 @@ class MockInputMethod : public ui::InputMethodBase {
   void OnCaretBoundsChanged(const ui::TextInputClient* client) override {}
   void CancelComposition(const ui::TextInputClient* client) override;
   bool IsCandidatePopupOpen() const override;
-  void SetVirtualKeyboardVisibilityIfEnabled(bool visibility) override {
-    if (visibility)
-      count_show_virtual_keyboard_++;
+  void ShowVirtualKeyboardIfEnabled() override {
+    count_show_virtual_keyboard_++;
   }
 
   bool untranslated_ime_message_called() const {

@@ -46,7 +46,7 @@ class FingerprintHandler : public ::settings::SettingsPageUIHandler,
                         bool enroll_session_complete,
                         int percent_complete) override;
   void OnAuthScanDone(
-      const device::mojom::FingerprintMessagePtr msg,
+      device::mojom::ScanResult scan_result,
       const base::flat_map<std::string, std::vector<std::string>>& matches)
       override;
   void OnSessionFailed() override;

@@ -11,7 +11,7 @@
 #include "base/callback.h"
 #include "base/compiler_specific.h"
 #include "base/gtest_prod_util.h"
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "components/autofill/core/browser/ui/autofill_popup_delegate.h"
 #include "components/autofill/core/browser/ui/suggestion.h"
@@ -47,8 +47,7 @@ class AutofillExternalDelegate : public AutofillPopupDelegate {
   void OnPopupHidden() override;
   void OnPopupSuppressed() override;
   void DidSelectSuggestion(const std::u16string& value,
-                           int frontend_id,
-                           const std::string& backend_id) override;
+                           int frontend_id) override;
   void DidAcceptSuggestion(const std::u16string& value,
                            int frontend_id,
                            const std::string& backend_id,
@@ -152,11 +151,11 @@ class AutofillExternalDelegate : public AutofillPopupDelegate {
   // Returns the text (i.e. |Suggestion| value) for Chrome autofill options.
   std::u16string GetSettingsSuggestionValue() const;
 
-  const raw_ptr<BrowserAutofillManager> manager_;  // weak.
+  BrowserAutofillManager* const manager_;  // weak.
 
   // Provides driver-level context to the shared code of the component. Must
   // outlive this object.
-  const raw_ptr<AutofillDriver> driver_;  // weak
+  AutofillDriver* const driver_;  // weak
 
   // The ID of the last request sent for form field Autofill.  Used to ignore
   // out of date responses.

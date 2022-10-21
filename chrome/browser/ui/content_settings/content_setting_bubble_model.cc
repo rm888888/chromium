@@ -23,6 +23,7 @@
 #include "chrome/browser/content_settings/host_content_settings_map_factory.h"
 #include "chrome/browser/content_settings/mixed_content_settings_tab_helper.h"
 #include "chrome/browser/content_settings/page_specific_content_settings_delegate.h"
+#include "chrome/browser/custom_handlers/protocol_handler_registry.h"
 #include "chrome/browser/custom_handlers/protocol_handler_registry_factory.h"
 #include "chrome/browser/download/download_request_limiter.h"
 #include "chrome/browser/external_protocol/external_protocol_handler.h"
@@ -47,7 +48,6 @@
 #include "components/content_settings/core/browser/cookie_settings.h"
 #include "components/content_settings/core/common/content_settings.h"
 #include "components/content_settings/core/common/content_settings_utils.h"
-#include "components/custom_handlers/protocol_handler_registry.h"
 #include "components/infobars/content/content_infobar_manager.h"
 #include "components/permissions/permission_decision_auto_blocker.h"
 #include "components/permissions/permission_manager.h"
@@ -64,10 +64,9 @@
 #include "components/url_formatter/elide_url.h"
 #include "components/vector_icons/vector_icons.h"
 #include "content/public/browser/notification_service.h"
-#include "content/public/browser/page.h"
+#include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
-#include "content/public/browser/weak_document_ptr.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_delegate.h"
 #include "mojo/public/cpp/bindings/associated_remote.h"
@@ -407,7 +406,7 @@ enum RPHState {
 ContentSettingRPHBubbleModel::ContentSettingRPHBubbleModel(
     Delegate* delegate,
     WebContents* web_contents,
-    custom_handlers::ProtocolHandlerRegistry* registry)
+    ProtocolHandlerRegistry* registry)
     : ContentSettingSimpleBubbleModel(delegate,
                                       web_contents,
                                       ContentSettingsType::PROTOCOL_HANDLERS),
@@ -441,7 +440,7 @@ ContentSettingRPHBubbleModel::ContentSettingRPHBubbleModel(
   std::u16string radio_ignore_label =
       l10n_util::GetStringUTF16(IDS_REGISTER_PROTOCOL_HANDLER_IGNORE);
 
-  const GURL& url = web_contents->GetLastCommittedURL();
+  const GURL& url = web_contents->GetURL();
   RadioGroup radio_group;
   radio_group.url = url;
 
@@ -820,7 +819,7 @@ ContentSettingMediaStreamBubbleModel::ContentSettingMediaStreamBubbleModel(
   radio_item_setting_[1] = CONTENT_SETTING_BLOCK;
 
   PageSpecificContentSettings* content_settings =
-      PageSpecificContentSettings::GetForFrame(&GetPage().GetMainDocument());
+      PageSpecificContentSettings::GetForFrame(web_contents->GetMainFrame());
   state_ = content_settings->GetMicrophoneCameraState();
   DCHECK(CameraAccessed() || MicrophoneAccessed());
 
@@ -888,10 +887,10 @@ void ContentSettingMediaStreamBubbleModel::OnDoneButtonClicked() {
 
     if (CameraAccessed()) {
       ExternalProtocolHandler::LaunchUrlWithoutSecurityCheck(
-          GURL(kCameraSettingsURI), web_contents(), content::WeakDocumentPtr());
+          GURL(kCameraSettingsURI), web_contents());
     } else if (MicrophoneAccessed()) {
       ExternalProtocolHandler::LaunchUrlWithoutSecurityCheck(
-          GURL(kMicSettingsURI), web_contents(), content::WeakDocumentPtr());
+          GURL(kMicSettingsURI), web_contents());
     }
     return;
 #endif  // defined(OS_MAC)
@@ -956,7 +955,7 @@ void ContentSettingMediaStreamBubbleModel::SetMessage() {
 
 void ContentSettingMediaStreamBubbleModel::SetRadioGroup() {
   PageSpecificContentSettings* content_settings =
-      PageSpecificContentSettings::GetForFrame(&GetPage().GetMainDocument());
+      PageSpecificContentSettings::GetForFrame(web_contents()->GetMainFrame());
   GURL url = content_settings->media_stream_access_origin();
   RadioGroup radio_group;
   radio_group.url = url;
@@ -994,7 +993,7 @@ void ContentSettingMediaStreamBubbleModel::SetRadioGroup() {
     permissions::PermissionResult pan_tilt_zoom_permission =
         permission_manager->GetPermissionStatusForFrame(
             ContentSettingsType::CAMERA_PAN_TILT_ZOOM,
-            &GetPage().GetMainDocument(), url);
+            web_contents()->GetMainFrame(), url);
     bool has_pan_tilt_zoom_permission_granted =
         pan_tilt_zoom_permission.content_setting == CONTENT_SETTING_ALLOW;
     if (MicrophoneAccessed() && CameraAccessed()) {
@@ -1035,7 +1034,7 @@ void ContentSettingMediaStreamBubbleModel::SetRadioGroup() {
 void ContentSettingMediaStreamBubbleModel::UpdateSettings(
     ContentSetting setting) {
   PageSpecificContentSettings* page_content_settings =
-      PageSpecificContentSettings::GetForFrame(&GetPage().GetMainDocument());
+      PageSpecificContentSettings::GetForFrame(web_contents()->GetMainFrame());
   // The same urls must be used as in other places (e.g. the infobar) in
   // order to override the existing rule. Otherwise a new rule is created.
   // TODO(markusheintz): Extract to a helper so that there is only a single
@@ -1135,7 +1134,7 @@ void ContentSettingMediaStreamBubbleModel::UpdateDefaultDeviceForType(
 
 void ContentSettingMediaStreamBubbleModel::SetMediaMenus() {
   PageSpecificContentSettings* content_settings =
-      PageSpecificContentSettings::GetForFrame(&GetPage().GetMainDocument());
+      PageSpecificContentSettings::GetForFrame(web_contents()->GetMainFrame());
   const std::string& requested_microphone =
       content_settings->media_stream_requested_audio_device();
   const std::string& requested_camera =
@@ -1205,7 +1204,7 @@ void ContentSettingMediaStreamBubbleModel::SetManageText() {
 
 void ContentSettingMediaStreamBubbleModel::SetCustomLink() {
   PageSpecificContentSettings* content_settings =
-      PageSpecificContentSettings::GetForFrame(&GetPage().GetMainDocument());
+      PageSpecificContentSettings::GetForFrame(web_contents()->GetMainFrame());
   if (content_settings->IsMicrophoneCameraStateChanged()) {
     set_custom_link(
         l10n_util::GetStringUTF16(IDS_MEDIASTREAM_SETTING_CHANGED_MESSAGE));
@@ -1269,7 +1268,7 @@ void ContentSettingGeolocationBubbleModel::OnDoneButtonClicked() {
     }
 
     ExternalProtocolHandler::LaunchUrlWithoutSecurityCheck(
-        GURL(kLocationSettingsURI), web_contents(), content::WeakDocumentPtr());
+        GURL(kLocationSettingsURI), web_contents());
     return;
 #endif  // defined(OS_MAC)
   }
@@ -1758,7 +1757,7 @@ ContentSettingBubbleModel::CreateContentSettingBubbleModel(
                                                                   web_contents);
   }
   if (content_type == ContentSettingsType::PROTOCOL_HANDLERS) {
-    custom_handlers::ProtocolHandlerRegistry* registry =
+    ProtocolHandlerRegistry* registry =
         ProtocolHandlerRegistryFactory::GetForBrowserContext(
             web_contents->GetBrowserContext());
     return std::make_unique<ContentSettingRPHBubbleModel>(

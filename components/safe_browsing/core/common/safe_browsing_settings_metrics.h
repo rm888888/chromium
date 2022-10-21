@@ -23,9 +23,7 @@ enum class SettingsAccessPoint : int {
   kSurfaceExplorerPromoSlinger = 3,
   // From security interstitial.
   kSecurityInterstitial = 4,
-  // From UX shown due to the Tailored Security setting changing.
-  kTailoredSecurity = 5,
-  kMaxValue = kTailoredSecurity
+  kMaxValue = kSurfaceExplorerPromoSlinger
 };
 
 // Enum representing actions taken by users visiting the

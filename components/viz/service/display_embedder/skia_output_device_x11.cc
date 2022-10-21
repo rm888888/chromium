@@ -8,7 +8,9 @@
 
 #include "base/logging.h"
 #include "base/memory/ref_counted_memory.h"
-#include "third_party/skia/include/core/SkImageInfo.h"
+#include "third_party/skia/include/core/SkSurface.h"
+#include "third_party/skia/include/gpu/GrBackendSurface.h"
+#include "third_party/skia/include/gpu/vk/GrVkTypes.h"
 #include "ui/base/x/x11_util.h"
 #include "ui/gfx/geometry/rect.h"
 #include "ui/gfx/x/xproto.h"

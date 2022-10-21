@@ -25,7 +25,7 @@ function getElementRegion(element) {
   // We try 2 methods to determine element region. Try the first client rect,
   // and then the bounding client rect.
   // SVG is one case that doesn't have a first client rect.
-  const clientRects = element.getClientRects();
+  var clientRects = element.getClientRects();
 
   // Determines if region is partially in viewport, returning visible region
   // if so. If not, returns null. If fully visible, returns original region.
@@ -49,21 +49,12 @@ function getElementRegion(element) {
       }
       return null;
     }
-    const visualViewport = window.visualViewport;
-    // We need to disregard any scrollbars therefore instead of innerSize
-    // of the window we should use the viewport size.
-    // This size can be affected (scaled) by user's pinch.
-    // We need to undo this scaling because client rects are calculated
-    // relatively to the original unscaled viewport.
-    const viewport = new DOMRect(0, 0,
-      visualViewport.width * visualViewport.scale,
-      visualViewport.height * visualViewport.scale
-    );
+    var viewport = new DOMRect(0, 0, window.innerWidth, window.innerHeight);
     return getIntersectingSubregion(viewport, region);
   }
 
-  let boundingRect = null;
-  let clientRect = null;
+  var boundingRect = null;
+  var clientRect = null;
   // Element area of a map has same first ClientRect and BoundingClientRect
   // after blink roll at chromium commit position 290738 which includes blink
   // revision 180610. Thus handle area as a special case.
@@ -72,14 +63,14 @@ function getElementRegion(element) {
     // desired feature. Returns region containing the area instead of subregion
     // so that whole area is visible and always clicked correctly.
     if (element.tagName.toLowerCase() == 'area') {
-      const coords = element.coords.split(',');
+      var coords = element.coords.split(',');
       if (element.shape.toLowerCase() == 'rect') {
         if (coords.length != 4)
           throw new Error('failed to detect the region of the area');
-        const leftX = Number(coords[0]);
-        const topY = Number(coords[1]);
-        const rightX = Number(coords[2]);
-        const bottomY = Number(coords[3]);
+        var leftX = Number(coords[0]);
+        var topY = Number(coords[1]);
+        var rightX = Number(coords[2]);
+        var bottomY = Number(coords[3]);
         return {
             'left': leftX,
             'top': topY,
@@ -89,9 +80,9 @@ function getElementRegion(element) {
       } else if (element.shape.toLowerCase() == 'circle') {
         if (coords.length != 3)
           throw new Error('failed to detect the region of the area');
-        const centerX = Number(coords[0]);
-        const centerY = Number(coords[1]);
-        const radius = Number(coords[2]);
+        var centerX = Number(coords[0]);
+        var centerY = Number(coords[1]);
+        var radius = Number(coords[2]);
         return {
             'left': Math.max(0, centerX - radius),
             'top': Math.max(0, centerY - radius),
@@ -101,13 +92,13 @@ function getElementRegion(element) {
       } else if (element.shape.toLowerCase() == 'poly') {
         if (coords.length < 2)
           throw new Error('failed to detect the region of the area');
-        let minX = Number(coords[0]);
-        let minY = Number(coords[1]);
-        let maxX = minX;
-        let maxY = minY;
+        var minX = Number(coords[0]);
+        var minY = Number(coords[1]);
+        var maxX = minX;
+        var maxY = minY;
         for (i = 2; i < coords.length; i += 2) {
-          const x = Number(coords[i]);
-          const y = Number(coords[i + 1]);
+          var x = Number(coords[i]);
+          var y = Number(coords[i + 1]);
           minX = Math.min(minX, x);
           minY = Math.min(minY, y);
           maxX = Math.max(maxX, x);
@@ -128,14 +119,14 @@ function getElementRegion(element) {
   } else {
     boundingRect = element.getBoundingClientRect();
     clientRect = clientRects[0];
-    for (let i = 0; i < clientRects.length; i++) {
+    for (var i = 0; i < clientRects.length; i++) {
       if (clientRects[i].height != 0 && clientRects[i].width != 0) {
         clientRect = clientRects[i];
         break;
       }
     }
   }
-  const visiblePortion = getVisibleSubregion(clientRect) || clientRect;
+  var visiblePortion = getVisibleSubregion(clientRect) || clientRect;
   // Returned region is relative to boundingRect's left,top.
   return {
     'left': visiblePortion.left - boundingRect.left,

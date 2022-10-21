@@ -30,7 +30,7 @@ void RegisterPrefs(PrefRegistrySimple* registry) {
   registry->RegisterListPref(prefs::kDeviceOpenNetworkConfiguration);
 }
 
-void RegisterProfilePrefs(PrefRegistrySimple* registry) {
+void RegisterProfilePrefs(user_prefs::PrefRegistrySyncable* registry) {
   registry->RegisterListPref(prefs::kOpenNetworkConfiguration);
 }
 

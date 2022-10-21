@@ -9,6 +9,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/macros.h"
 #include "base/time/time.h"
 #include "components/history/core/browser/web_history_service.h"
 #include "url/gurl.h"

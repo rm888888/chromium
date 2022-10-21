@@ -4,7 +4,6 @@
 
 #include "ui/events/blink/web_input_event.h"
 
-#include "build/build_config.h"
 #include "ui/base/ui_base_features.h"
 #include "ui/events/base_event_utils.h"
 #include "ui/events/blink/blink_event_util.h"

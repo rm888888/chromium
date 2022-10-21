@@ -6,8 +6,8 @@
 
 #include "chrome/browser/apps/app_service/app_service_proxy.h"
 #include "chrome/browser/apps/app_service/app_service_proxy_factory.h"
+#include "chrome/browser/ash/arc/arc_web_contents_data.h"
 #include "chrome/browser/ash/profiles/profile_helper.h"
-#include "chrome/browser/chromeos/arc/arc_web_contents_data.h"
 #include "chrome/browser/prefs/incognito_mode_prefs.h"
 #include "chrome/browser/profiles/profile_manager.h"
 #include "chrome/browser/ui/browser.h"
@@ -252,7 +252,7 @@ IN_PROC_BROWSER_TEST_F(ChromeNewWindowClientWebAppBrowserTest,
   const GURL app_url = https_server().GetURL(GetAppUrlHost(), GetAppUrlPath());
 
   // InstallTestWebApp() but with a ShareTarget definition added.
-  auto web_app_info = std::make_unique<WebAppInstallInfo>();
+  auto web_app_info = std::make_unique<WebApplicationInfo>();
   web_app_info->start_url = app_url;
   web_app_info->scope =
       https_server().GetURL(GetAppUrlHost(), GetAppScopePath());
@@ -396,7 +396,7 @@ void TestAllOSSettingPages(const GURL& base_url) {
   TestOpenOSSettingsChromePage(
       ChromePage::ACCOUNTS,
       base_url.Resolve(
-          chromeos::settings::mojom::kManageOtherPeopleSubpagePathV2));
+          chromeos::settings::mojom::kManageOtherPeopleSubpagePath));
   TestOpenOSSettingsChromePage(
       ChromePage::BLUETOOTHDEVICES,
       base_url.Resolve(
@@ -419,7 +419,7 @@ void TestAllOSSettingPages(const GURL& base_url) {
   TestOpenOSSettingsChromePage(
       ChromePage::LOCKSCREEN,
       base_url.Resolve(
-          chromeos::settings::mojom::kSecurityAndSignInSubpagePathV2));
+          chromeos::settings::mojom::kSecurityAndSignInSubpagePath));
   TestOpenOSSettingsChromePage(
       ChromePage::MANAGEACCESSIBILITY,
       base_url.Resolve(

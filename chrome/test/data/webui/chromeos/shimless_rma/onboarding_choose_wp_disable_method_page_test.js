@@ -5,13 +5,13 @@
 import {PromiseResolver} from 'chrome://resources/js/promise_resolver.m.js';
 import {FakeShimlessRmaService} from 'chrome://shimless-rma/fake_shimless_rma_service.js';
 import {setShimlessRmaServiceForTesting} from 'chrome://shimless-rma/mojo_interface_provider.js';
-import {OnboardingChooseWpDisableMethodPage} from 'chrome://shimless-rma/onboarding_choose_wp_disable_method_page.js';
+import {OnboardingChooseWpDisableMethodPageElement} from 'chrome://shimless-rma/onboarding_choose_wp_disable_method_page.js';
 
 import {assertDeepEquals, assertEquals, assertFalse, assertTrue} from '../../chai_assert.js';
 import {flushTasks} from '../../test_util.js';
 
 export function onboardingChooseWpDisableMethodPageTest() {
-  /** @type {?OnboardingChooseWpDisableMethodPage} */
+  /** @type {?OnboardingChooseWpDisableMethodPageElement} */
   let component = null;
 
   /** @type {?FakeShimlessRmaService} */
@@ -38,7 +38,7 @@ export function onboardingChooseWpDisableMethodPageTest() {
   function initializeChooseWpDisableMethodPage() {
     assertFalse(!!component);
 
-    component = /** @type {!OnboardingChooseWpDisableMethodPage} */ (
+    component = /** @type {!OnboardingChooseWpDisableMethodPageElement} */ (
         document.createElement('onboarding-choose-wp-disable-method-page'));
     assertTrue(!!component);
     document.body.appendChild(component);
@@ -128,15 +128,5 @@ export function onboardingChooseWpDisableMethodPageTest() {
 
     assertEquals(callCounter, 1);
     assertDeepEquals(savedResult, expectedResult);
-  });
-
-  test('ChooseWpDisableMethodDisableRadioGroup', async () => {
-    await initializeChooseWpDisableMethodPage();
-
-    const hwwpDisableMethodGroup =
-        component.shadowRoot.querySelector('#hwwpDisableMethod');
-    assertFalse(hwwpDisableMethodGroup.disabled);
-    component.allButtonsDisabled = true;
-    assertTrue(hwwpDisableMethodGroup.disabled);
   });
 }

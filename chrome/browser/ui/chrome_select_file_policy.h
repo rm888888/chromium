@@ -5,7 +5,8 @@
 #ifndef CHROME_BROWSER_UI_CHROME_SELECT_FILE_POLICY_H_
 #define CHROME_BROWSER_UI_CHROME_SELECT_FILE_POLICY_H_
 
-#include "base/memory/raw_ptr.h"
+#include "base/compiler_specific.h"
+#include "base/macros.h"
 #include "ui/shell_dialogs/select_file_policy.h"
 
 namespace content {
@@ -31,7 +32,7 @@ class ChromeSelectFilePolicy : public ui::SelectFilePolicy {
   static bool FileSelectDialogsAllowed();
 
  private:
-  raw_ptr<content::WebContents> source_contents_;
+  content::WebContents* source_contents_;
 };
 
 #endif  // CHROME_BROWSER_UI_CHROME_SELECT_FILE_POLICY_H_

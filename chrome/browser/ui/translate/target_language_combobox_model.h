@@ -8,7 +8,8 @@
 #include <memory>
 #include <string>
 
-#include "base/memory/raw_ptr.h"
+#include "base/compiler_specific.h"
+#include "base/macros.h"
 #include "ui/base/models/combobox_model.h"
 
 class TranslateBubbleModel;
@@ -32,7 +33,7 @@ class TargetLanguageComboboxModel : public ui::ComboboxModel {
 
  private:
   const int default_index_;
-  raw_ptr<TranslateBubbleModel> model_;
+  TranslateBubbleModel* model_;
 };
 
 #endif  // CHROME_BROWSER_UI_TRANSLATE_TARGET_LANGUAGE_COMBOBOX_MODEL_H_

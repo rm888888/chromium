@@ -7,6 +7,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+
 #include "base/bind.h"
 #include "base/command_line.h"
 #include "base/metrics/field_trial.h"
@@ -158,11 +159,7 @@ void AccountFetcherService::RefreshAccountInfoIfStale(
 void AccountFetcherService::UpdateChildInfo() {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   std::vector<CoreAccountId> accounts = token_service_->GetAccounts();
-  if (accounts.size() >= 1) {
-    // If a child account is present then there can be only one child account,
-    // and it must be the first account on the device.
-    //
-    // TODO(crbug/1268858): consider removing this assumption.
+  if (accounts.size() == 1) {
     const CoreAccountId& candidate = accounts[0];
     if (candidate == child_request_account_id_)
       return;

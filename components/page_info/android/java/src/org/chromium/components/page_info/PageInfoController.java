@@ -146,12 +146,13 @@ public class PageInfoController implements PageInfoMainController, ModalDialogPr
      * @param publisher                The name of the content publisher, if any.
      * @param delegate                 The PageInfoControllerDelegate used to provide
      *                                 embedder-specific info.
-     * @param pageInfoHighlight        Providing the highlight row info related to this dialog.
+     * @param highlightedPermission    The ContentSettingsType to be highlighted on this page or
+     *                                 NO_HIGHLIGHTED_PERMISSION for no highlight.
      */
     @VisibleForTesting(otherwise = VisibleForTesting.PROTECTED)
     public PageInfoController(WebContents webContents, @ConnectionSecurityLevel int securityLevel,
             String publisher, PageInfoControllerDelegate delegate,
-            PageInfoHighlight pageInfoHighlight) {
+            @ContentSettingsType int highlightedPermission) {
         mWebContents = webContents;
         mSecurityLevel = securityLevel;
         mDelegate = delegate;
@@ -256,9 +257,8 @@ public class PageInfoController implements PageInfoMainController, ModalDialogPr
         // Create Subcontrollers.
         mConnectionController = new PageInfoConnectionController(this, mView.getConnectionRowView(),
                 mWebContents, mDelegate, publisher, mIsInternalPage);
-        mPermissionsController =
-                new PageInfoPermissionsController(this, mView.getPermissionsRowView(), mDelegate,
-                        pageInfoHighlight.getHighlightedPermission());
+        mPermissionsController = new PageInfoPermissionsController(
+                this, mView.getPermissionsRowView(), mDelegate, highlightedPermission);
         mCookiesController =
                 new PageInfoCookiesController(this, mView.getCookiesRowView(), mDelegate);
 
@@ -506,11 +506,13 @@ public class PageInfoController implements PageInfoMainController, ModalDialogPr
      * @param contentPublisher The name of the publisher of the content.
      * @param source Determines the source that triggered the popup.
      * @param delegate The PageInfoControllerDelegate used to provide embedder-specific info.
-     * @param pageInfoHighlight Providing the highlight row info related to this dialog.
+     * @param highlightedPermission The ContentSettingsType to be highlighted on this page or
+     *            NO_HIGHLIGHTED_PERMISSION for no highlight.
      */
     public static void show(final Activity activity, WebContents webContents,
             final String contentPublisher, @OpenedFromSource int source,
-            PageInfoControllerDelegate delegate, PageInfoHighlight pageInfoHighlight) {
+            PageInfoControllerDelegate delegate,
+            @ContentSettingsType int highlightedPermission) {
         // Don't show the dialog if this tab doesn't have an activity. See https://crbug.com/1267383
         if (activity == null) return;
         // If the activity's decor view is not attached to window, we don't show the dialog because
@@ -531,7 +533,7 @@ public class PageInfoController implements PageInfoMainController, ModalDialogPr
 
         sLastPageInfoControllerForTesting = new WeakReference<>(new PageInfoController(webContents,
                 SecurityStateModel.getSecurityLevelForWebContents(webContents), contentPublisher,
-                delegate, pageInfoHighlight));
+                delegate, highlightedPermission));
     }
 
     @VisibleForTesting(otherwise = VisibleForTesting.PACKAGE_PRIVATE)

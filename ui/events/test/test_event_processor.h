@@ -7,6 +7,7 @@
 
 #include <memory>
 
+#include "base/macros.h"
 #include "ui/events/event_processor.h"
 
 namespace ui {

@@ -5,8 +5,6 @@
 #ifndef CHROME_BROWSER_UI_ASH_SHELF_BROWSER_APP_SHELF_CONTROLLER_H_
 #define CHROME_BROWSER_UI_ASH_SHELF_BROWSER_APP_SHELF_CONTROLLER_H_
 
-#include "ash/public/cpp/shelf_model.h"
-#include "ash/public/cpp/shelf_model_observer.h"
 #include "ash/public/cpp/shelf_types.h"
 #include "base/scoped_observation.h"
 #include "chrome/browser/apps/app_service/browser_app_instance_observer.h"
@@ -39,8 +37,7 @@ class ChromeShelfItemFactory;
 // Updates to the shelf model:
 // - sets shelf item status when an app is running or stopped,
 // - creates or removes shelf items when necessary.
-class BrowserAppShelfController : public apps::BrowserAppInstanceObserver,
-                                  public ash::ShelfModelObserver {
+class BrowserAppShelfController : public apps::BrowserAppInstanceObserver {
  public:
   BrowserAppShelfController(Profile* profile,
                             ash::ShelfModel& model,
@@ -62,9 +59,6 @@ class BrowserAppShelfController : public apps::BrowserAppInstanceObserver,
   void OnBrowserAppUpdated(const apps::BrowserAppInstance& instance) override;
   void OnBrowserAppRemoved(const apps::BrowserAppInstance& instance) override;
 
-  // ash::ShelfModelObserver overrides:
-  void ShelfItemAdded(int index) override;
-
  private:
   // Creates a shelf item if it doesn't exist and sets its status.
   void CreateOrUpdateShelfItem(const ash::ShelfID& id,
@@ -75,9 +69,7 @@ class BrowserAppShelfController : public apps::BrowserAppInstanceObserver,
                              ash::ShelfItemStatus status);
   // Updates Aura window's app-related keys when the active app associated with
   // this window changes.
-  void MaybeUpdateWindowProperties(aura::Window* window);
-  // Updates app-related properties of all the windows containing this app.
-  void MaybeUpdateWindowPropertiesForApp(const std::string& app_id);
+  void MaybeUpdateBrowserWindowProperties(aura::Window* window);
 
   Profile* profile_;
   ash::ShelfModel& model_;
@@ -89,8 +81,6 @@ class BrowserAppShelfController : public apps::BrowserAppInstanceObserver,
   base::ScopedObservation<apps::BrowserAppInstanceRegistry,
                           apps::BrowserAppInstanceObserver>
       registry_observation_{this};
-  base::ScopedObservation<ash::ShelfModel, ash::ShelfModelObserver>
-      shelf_model_observation_{this};
 };
 
 #endif  // CHROME_BROWSER_UI_ASH_SHELF_BROWSER_APP_SHELF_CONTROLLER_H_

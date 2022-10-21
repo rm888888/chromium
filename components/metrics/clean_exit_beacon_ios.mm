@@ -24,9 +24,28 @@ NSString* const kUserDefaultsFeatureFlagForExitedCleanlyBeacon =
 }
 
 // static
-void CleanExitBeacon::SetUserDefaultsBeacon(bool exited_cleanly) {
+bool CleanExitBeacon::HasUserDefaultsBeacon() {
   NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
-  [defaults setBool:exited_cleanly forKey:kLastSessionExitedCleanly];
+  return [defaults objectForKey:kLastSessionExitedCleanly] != nil;
+}
+
+// static
+bool CleanExitBeacon::GetUserDefaultsBeacon() {
+  NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
+  return [defaults boolForKey:kLastSessionExitedCleanly];
+}
+
+// static
+void CleanExitBeacon::SetUserDefaultsBeacon(bool clean) {
+  NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
+  [defaults setBool:clean forKey:kLastSessionExitedCleanly];
+  [defaults synchronize];
+}
+
+// static
+void CleanExitBeacon::ResetUserDefaultsBeacon() {
+  NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
+  [defaults removeObjectForKey:kLastSessionExitedCleanly];
   [defaults synchronize];
 }
 
@@ -42,25 +61,6 @@ void CleanExitBeacon::SyncUseUserDefaultsBeacon() {
   [defaults setBool:base::FeatureList::IsEnabled(
                         kUseUserDefaultsForExitedCleanlyBeacon)
              forKey:kUserDefaultsFeatureFlagForExitedCleanlyBeacon];
-  [defaults synchronize];
-}
-
-// static
-bool CleanExitBeacon::HasUserDefaultsBeacon() {
-  NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
-  return [defaults objectForKey:kLastSessionExitedCleanly] != nil;
-}
-
-// static
-bool CleanExitBeacon::GetUserDefaultsBeacon() {
-  NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
-  return [defaults boolForKey:kLastSessionExitedCleanly];
-}
-
-// static
-void CleanExitBeacon::ResetUserDefaultsBeacon() {
-  NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
-  [defaults removeObjectForKey:kLastSessionExitedCleanly];
   [defaults synchronize];
 }
 

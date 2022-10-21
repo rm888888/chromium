@@ -69,7 +69,7 @@ public class CppWrappedTestTracker implements Tracker {
     @CheckResult
     @Override
     public TriggerDetails shouldTriggerHelpUIWithSnooze(String feature) {
-        return new TriggerDetails(ourFeature(feature), false);
+        return null;
     }
 
     @CalledByNative

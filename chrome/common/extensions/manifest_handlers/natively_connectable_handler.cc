@@ -45,14 +45,15 @@ bool NativelyConnectableHandler::Parse(Extension* extension,
   const base::Value* natively_connectable_hosts = nullptr;
   if (!extension->manifest()->GetList(manifest_keys::kNativelyConnectable,
                                       &natively_connectable_hosts)) {
-    *error = manifest_errors::kInvalidNativelyConnectable;
+    *error = base::ASCIIToUTF16(manifest_errors::kInvalidNativelyConnectable);
     return false;
   }
 
   auto hosts = std::make_unique<NativelyConnectableHosts>();
   for (const auto& host : natively_connectable_hosts->GetList()) {
     if (!host.is_string() || host.GetString().empty()) {
-      *error = manifest_errors::kInvalidNativelyConnectableValue16;
+      *error =
+          base::ASCIIToUTF16(manifest_errors::kInvalidNativelyConnectableValue);
       return false;
     }
     hosts->hosts.insert(host.GetString());

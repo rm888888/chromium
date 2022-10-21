@@ -70,10 +70,6 @@ bool FakeWebAppUiManager::CanAddAppToQuickLaunchBar() const {
 
 void FakeWebAppUiManager::AddAppToQuickLaunchBar(const AppId& app_id) {}
 
-bool FakeWebAppUiManager::IsAppInQuickLaunchBar(const AppId& app_id) const {
-  return false;
-}
-
 bool FakeWebAppUiManager::IsInAppWindow(content::WebContents* web_contents,
                                         const AppId* app_id) const {
   return false;

@@ -4,8 +4,6 @@
 
 #include "ui/aura/test/ui_controls_ozone.h"
 
-#include <tuple>
-
 #include "build/build_config.h"
 #include "build/chromeos_buildflags.h"
 #include "ui/events/event_utils.h"
@@ -253,7 +251,7 @@ void UIControlsOzone::SendEventToSink(ui::Event* event,
   }
   WindowTreeHost* host = optional_host ? optional_host : host_;
   ui::EventSourceTestApi event_source_test(host->GetEventSource());
-  std::ignore = event_source_test.SendEventToSink(event);
+  ignore_result(event_source_test.SendEventToSink(event));
 }
 
 void UIControlsOzone::PostKeyEvent(ui::EventType type,

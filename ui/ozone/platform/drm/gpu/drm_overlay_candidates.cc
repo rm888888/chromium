@@ -4,7 +4,6 @@
 
 #include "ui/ozone/platform/drm/gpu/drm_overlay_candidates.h"
 
-#include "media/media_buildflags.h"
 #include "ui/ozone/platform/drm/gpu/drm_overlay_manager.h"
 #include "ui/ozone/public/overlay_surface_candidate.h"
 
@@ -14,20 +13,11 @@ DrmOverlayCandidates::DrmOverlayCandidates(DrmOverlayManager* manager,
                                            gfx::AcceleratedWidget widget)
     : overlay_manager_(manager), widget_(widget) {}
 
-DrmOverlayCandidates::~DrmOverlayCandidates() {
-  overlay_manager_->RegisterOverlayRequirement(widget_, false);
-}
+DrmOverlayCandidates::~DrmOverlayCandidates() = default;
 
 void DrmOverlayCandidates::CheckOverlaySupport(
     std::vector<OverlaySurfaceCandidate>* candidates) {
   overlay_manager_->CheckOverlaySupport(candidates, widget_);
-}
-
-void DrmOverlayCandidates::RegisterOverlayRequirement(bool requires_overlay) {
-#if !BUILDFLAG(USE_CHROMEOS_PROTECTED_MEDIA)
-  DCHECK(!requires_overlay);
-#endif
-  overlay_manager_->RegisterOverlayRequirement(widget_, requires_overlay);
 }
 
 }  // namespace ui

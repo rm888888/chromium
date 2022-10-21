@@ -18,8 +18,7 @@
 std::unique_ptr<MediaToolbarButtonContextualMenu>
 MediaToolbarButtonContextualMenu::Create(Browser* browser) {
 #if BUILDFLAG(GOOGLE_CHROME_BRANDING)
-  if (media_router::GlobalMediaControlsCastStartStopEnabled(
-          browser->profile())) {
+  if (media_router::GlobalMediaControlsCastStartStopEnabled()) {
     return std::make_unique<MediaToolbarButtonContextualMenu>(browser);
   }
 #endif

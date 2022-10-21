@@ -377,10 +377,10 @@ std::ostream& operator<<(std::ostream& out, const UrlPattern& pattern) {
   switch (pattern.anchor_left()) {
     case proto::ANCHOR_TYPE_SUBDOMAIN:
       out << '|';
-      [[fallthrough]];
+      FALLTHROUGH;
     case proto::ANCHOR_TYPE_BOUNDARY:
       out << '|';
-      [[fallthrough]];
+      FALLTHROUGH;
     default:
       break;
   }

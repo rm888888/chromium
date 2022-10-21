@@ -62,9 +62,6 @@ ReaderModeIconView::~ReaderModeIconView() {
 
 void ReaderModeIconView::DidFinishNavigation(
     content::NavigationHandle* navigation_handle) {
-  if (!navigation_handle->IsInPrimaryMainFrame())
-    return;
-
   if (GetVisible())
     views::InkDrop::Get(this)->AnimateToState(views::InkDropState::HIDDEN,
                                               nullptr);

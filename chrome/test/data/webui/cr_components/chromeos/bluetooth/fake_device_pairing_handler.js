@@ -28,11 +28,6 @@ export class FakeDevicePairingHandler {
      */
     this.pairDeviceCallback_ = null;
 
-    /**
-     * @private {?function()}
-     */
-    this.pairDeviceRejectCallback_ = null;
-
     /** @private {number} */
     this.pairDeviceCalledCount_ = 0;
 
@@ -52,7 +47,6 @@ export class FakeDevicePairingHandler {
     this.devicePairingDelegate_ = delegate;
     let promise = new Promise((resolve, reject) => {
       this.pairDeviceCallback_ = resolve;
-      this.pairDeviceRejectCallback_ = reject;
     });
     return promise;
   }
@@ -144,21 +138,10 @@ export class FakeDevicePairingHandler {
    * @param {boolean} success
    */
   completePairDevice(success) {
-    assert(this.pairDeviceCallback_, 'pairDevice() was never called.');
     this.pairDeviceCallback_({
       result: success ? chromeos.bluetoothConfig.mojom.PairingResult.kSuccess :
                         chromeos.bluetoothConfig.mojom.PairingResult.kAuthFailed
     });
-  }
-
-  /**
-   * Simulates pairing failing due to an exception, such as the Mojo pipe
-   * disconnecting.
-   */
-  rejectPairDevice() {
-    if (this.pairDeviceRejectCallback_) {
-      this.pairDeviceRejectCallback_();
-    }
   }
 
   /**

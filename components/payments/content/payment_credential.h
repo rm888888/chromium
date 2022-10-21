@@ -15,11 +15,15 @@
 #include "components/payments/core/secure_payment_confirmation_metrics.h"
 #include "components/webdata/common/web_data_service_base.h"
 #include "components/webdata/common/web_data_service_consumer.h"
-#include "content/public/browser/document_service.h"
 #include "content/public/browser/global_routing_id.h"
+#include "content/public/browser/web_contents_observer.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "mojo/public/cpp/bindings/receiver.h"
 #include "third_party/blink/public/mojom/payments/payment_credential.mojom.h"
+
+namespace content {
+class WebContents;
+}  // namespace content
 
 namespace payments {
 
@@ -29,17 +33,18 @@ class PaymentManifestWebDataService;
 // PaymentCredential instruments and their associated WebAuthn credential IDs.
 // These can be retrieved later to authenticate during a PaymentRequest
 // that uses Secure Payment Confirmation.
-class PaymentCredential
-    : public content::DocumentService<mojom::PaymentCredential>,
-      public WebDataServiceConsumer {
+class PaymentCredential : public mojom::PaymentCredential,
+                          public WebDataServiceConsumer,
+                          public content::WebContentsObserver {
  public:
   static bool IsFrameAllowedToUseSecurePaymentConfirmation(
       content::RenderFrameHost* rfh);
 
   PaymentCredential(
-      content::RenderFrameHost& render_frame_host,
-      mojo::PendingReceiver<mojom::PaymentCredential> receiver,
-      scoped_refptr<PaymentManifestWebDataService> web_data_service);
+      content::WebContents* web_contents,
+      content::GlobalRenderFrameHostId initiator_frame_routing_id,
+      scoped_refptr<PaymentManifestWebDataService> web_data_service,
+      mojo::PendingReceiver<mojom::PaymentCredential> receiver);
   ~PaymentCredential() override;
 
   PaymentCredential(const PaymentCredential&) = delete;
@@ -48,7 +53,6 @@ class PaymentCredential
   // mojom::PaymentCredential:
   void StorePaymentCredential(const std::vector<uint8_t>& credential_id,
                               const std::string& rp_id,
-                              const std::vector<uint8_t>& user_id,
                               StorePaymentCredentialCallback callback) override;
 
  private:
@@ -76,15 +80,22 @@ class PaymentCredential
       WebDataServiceBase::Handle h,
       std::unique_ptr<WDTypedResult> result) override;
 
+  // content::WebContentsObserver:
+  void DidStartNavigation(
+      content::NavigationHandle* navigation_handle) override;
+  void RenderFrameDeleted(content::RenderFrameHost* render_frame_host) override;
+
   bool IsCurrentStateValid() const;
   void RecordFirstSystemPromptResult(
       SecurePaymentConfirmationEnrollSystemPromptResult result);
   void Reset();
 
   State state_ = State::kIdle;
+  const content::GlobalRenderFrameHostId initiator_frame_routing_id_;
   scoped_refptr<PaymentManifestWebDataService> web_data_service_;
   absl::optional<WebDataServiceBase::Handle> data_service_request_handle_;
   StorePaymentCredentialCallback storage_callback_;
+  mojo::Receiver<mojom::PaymentCredential> receiver_{this};
   bool is_system_prompt_result_recorded_ = false;
 
   base::WeakPtrFactory<PaymentCredential> weak_ptr_factory_{this};

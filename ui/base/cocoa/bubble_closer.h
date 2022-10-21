@@ -9,6 +9,7 @@
 
 #include "base/callback.h"
 #include "base/component_export.h"
+#include "base/macros.h"
 #include "ui/base/cocoa/weak_ptr_nsobject.h"
 #include "ui/gfx/native_widget_types.h"
 

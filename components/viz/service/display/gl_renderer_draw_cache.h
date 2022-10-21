@@ -7,6 +7,7 @@
 
 #include <vector>
 
+#include "base/macros.h"
 #include "components/viz/common/resources/resource_id.h"
 #include "components/viz/service/display/program_binding.h"
 #include "third_party/skia/include/core/SkColor.h"

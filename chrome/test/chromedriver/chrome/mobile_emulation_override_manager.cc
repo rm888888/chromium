@@ -30,7 +30,8 @@ Status MobileEmulationOverrideManager::OnEvent(
     const std::string& method,
     const base::DictionaryValue& params) {
   if (method == "Page.frameNavigated") {
-    if (!params.FindPath("frame.parentId"))
+    const base::Value* unused_value;
+    if (!params.Get("frame.parentId", &unused_value))
       return ApplyOverrideIfNeeded();
   }
   return Status(kOk);

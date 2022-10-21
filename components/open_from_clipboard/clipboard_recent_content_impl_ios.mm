@@ -54,8 +54,6 @@ NSString* const kPasteboardChangeDateKey = @"PasteboardChangeDate";
 // A cached version of an already-retrieved image. This prevents subsequent
 // image requests from triggering the iOS 14 pasteboard notification.
 @property(nonatomic, strong) UIImage* cachedImage;
-// A cached set of the content types currently being used for the clipboard.
-@property(nonatomic, strong) NSSet<ContentType>* cachedContentTypes;
 
 // If the content of the pasteboard has changed, updates the change count
 // and change date.
@@ -98,6 +96,13 @@ NSString* const kPasteboardChangeDateKey = @"PasteboardChangeDate";
 
 @implementation ClipboardRecentContentImplIOS
 
+@synthesize lastPasteboardChangeCount = _lastPasteboardChangeCount;
+@synthesize lastPasteboardChangeDate = _lastPasteboardChangeDate;
+@synthesize sharedUserDefaults = _sharedUserDefaults;
+@synthesize authorizedSchemes = _authorizedSchemes;
+@synthesize delegate = _delegate;
+@synthesize maximumAgeOfClipboard = _maximumAgeOfClipboard;
+
 - (instancetype)initWithMaxAge:(NSTimeInterval)maxAge
              authorizedSchemes:(NSSet<NSString*>*)authorizedSchemes
                   userDefaults:(NSUserDefaults*)groupUserDefaults
@@ -112,7 +117,6 @@ NSString* const kPasteboardChangeDateKey = @"PasteboardChangeDate";
     _lastPasteboardChangeCount = NSIntegerMax;
     [self loadFromUserDefaults];
     [self updateIfNeeded];
-    [self updateCachedClipboardState];
 
     // Makes sure |last_pasteboard_change_count_| was properly initialized.
     DCHECK_NE(_lastPasteboardChangeCount, NSIntegerMax);
@@ -120,11 +124,6 @@ NSString* const kPasteboardChangeDateKey = @"PasteboardChangeDate";
         addObserver:self
            selector:@selector(didBecomeActive:)
                name:UIApplicationDidBecomeActiveNotification
-             object:nil];
-    [[NSNotificationCenter defaultCenter]
-        addObserver:self
-           selector:@selector(pasteboardDidChange:)
-               name:UIPasteboardChangedNotification
              object:nil];
   }
   return self;
@@ -137,16 +136,11 @@ NSString* const kPasteboardChangeDateKey = @"PasteboardChangeDate";
 - (void)didBecomeActive:(NSNotification*)notification {
   [self loadFromUserDefaults];
   [self updateIfNeeded];
-  [self updateCachedClipboardState];
 }
 
 - (BOOL)hasPasteboardChanged {
   return UIPasteboard.generalPasteboard.changeCount !=
          self.lastPasteboardChangeCount;
-}
-
-- (void)pasteboardDidChange:(NSNotification*)notification {
-  [self updateCachedClipboardState];
 }
 
 - (NSURL*)recentURLFromClipboard {
@@ -199,24 +193,6 @@ NSString* const kPasteboardChangeDateKey = @"PasteboardChangeDate";
   }
 
   return self.cachedImage;
-}
-
-- (void)updateCachedClipboardState {
-  self.cachedContentTypes = nil;
-
-  NSSet<ContentType>* desiredContentTypes = [NSSet
-      setWithArray:@[ ContentTypeImage, ContentTypeURL, ContentTypeText ]];
-  __weak __typeof(self) weakSelf = self;
-  [self hasContentMatchingTypes:desiredContentTypes
-              completionHandler:^(NSSet<ContentType>* results) {
-                weakSelf.cachedContentTypes = results;
-              }];
-}
-
-- (NSSet<ContentType>*)cachedClipboardContentTypes {
-  if (![self shouldReturnValueOfClipboard])
-    return nil;
-  return self.cachedContentTypes;
 }
 
 - (void)hasContentMatchingTypes:(NSSet<ContentType>*)types

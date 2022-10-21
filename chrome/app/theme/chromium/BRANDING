@@ -1,0 +1,10 @@
+COMPANY_FULLNAME=The PurseBrowser Authors
+COMPANY_SHORTNAME=The PurseBrowser Authors
+PRODUCT_FULLNAME=PurseBrowser
+PRODUCT_SHORTNAME=PurseBrowser
+PRODUCT_INSTALLER_FULLNAME=PurseBrowser Installer
+PRODUCT_INSTALLER_SHORTNAME=PurseBrowser Installer
+COPYRIGHT=Copyright @LASTCHANGE_YEAR@ The PurseBrowser Authors. All rights reserved.
+MAC_BUNDLE_ID=org.PurseBrowser.PurseBrowser
+MAC_CREATOR_CODE=Cr24
+MAC_TEAM_ID=

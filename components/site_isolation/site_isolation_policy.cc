@@ -178,9 +178,8 @@ void SiteIsolationPolicy::PersistUserTriggeredIsolatedOrigin(
   // unlimited size.
   // TODO(alexmos): Cap the maximum number of entries and evict older entries.
   // See https://crbug.com/1172407.
-  ListPrefUpdateDeprecated update(
-      user_prefs::UserPrefs::Get(context),
-      site_isolation::prefs::kUserTriggeredIsolatedOrigins);
+  ListPrefUpdate update(user_prefs::UserPrefs::Get(context),
+                        site_isolation::prefs::kUserTriggeredIsolatedOrigins);
   base::ListValue* list = update.Get();
   base::Value value(origin.Serialize());
   if (!base::Contains(list->GetList(), value))
@@ -194,7 +193,7 @@ void SiteIsolationPolicy::PersistWebTriggeredIsolatedOrigin(
   // Web-triggered isolated origins are stored in a dictionary of (origin,
   // timestamp) pairs.  The number of entries is capped by a field trial param,
   // and older entries are evicted.
-  DictionaryPrefUpdateDeprecated update(
+  DictionaryPrefUpdate update(
       user_prefs::UserPrefs::Get(context),
       site_isolation::prefs::kWebTriggeredIsolatedOrigins);
   base::DictionaryValue* dict = update.Get();
@@ -277,8 +276,8 @@ void SiteIsolationPolicy::ApplyPersistedIsolatedOrigins(
       }
       // Remove expired entries (as well as those with an invalid timestamp).
       if (!expired_entries.empty()) {
-        DictionaryPrefUpdateDeprecated update(
-            pref_service, prefs::kWebTriggeredIsolatedOrigins);
+        DictionaryPrefUpdate update(pref_service,
+                                    prefs::kWebTriggeredIsolatedOrigins);
         base::DictionaryValue* updated_dict = update.Get();
         for (const auto& entry : expired_entries)
           updated_dict->RemoveKey(entry);

@@ -8,6 +8,7 @@
 #include "base/command_line.h"
 #include "base/containers/contains.h"
 #include "base/files/file_path.h"
+#include "base/macros.h"
 #include "base/run_loop.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/test/metrics/histogram_tester.h"
@@ -743,13 +744,8 @@ IN_PROC_BROWSER_TEST_F(PopupBlockerBrowserTest, CtrlEnterKey) {
 }
 
 // Tests that the tapping gesture with cntl/cmd key on a link open the
-// background tab.
-#if defined(OS_WIN)
-#define MAYBE_TapGestureWithCtrlKey DISABLED_TapGestureWithCtrlKey
-#else
-#define MAYBE_TapGestureWithCtrlKey TapGestureWithCtrlKey
-#endif
-IN_PROC_BROWSER_TEST_F(PopupBlockerBrowserTest, MAYBE_TapGestureWithCtrlKey) {
+// backgournd tab.
+IN_PROC_BROWSER_TEST_F(PopupBlockerBrowserTest, TapGestureWithCtrlKey) {
   WebContents* tab = browser()->tab_strip_model()->GetActiveWebContents();
 
   GURL url(embedded_test_server()->GetURL(
@@ -834,7 +830,7 @@ IN_PROC_BROWSER_TEST_F(PopupBlockerBrowserTest, PopupsDisableBackForwardCache) {
       browser(), embedded_test_server()->GetURL("b.com", "/title1.html")));
 
   // Because the original RFH is not cacheable it will be deleted.
-  ASSERT_TRUE(rfh.WaitUntilRenderFrameDeleted());
+  rfh.WaitUntilRenderFrameDeleted();
 }
 
 #if defined(OS_WIN)

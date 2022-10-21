@@ -75,7 +75,7 @@ const char kBackgroundDurationSec[] = "background_duration_sec";
 const char kNumSessions[] = "num_sessions";
 
 optional<DailyInteraction> DictToRecord(const std::string& url,
-                                        const Value& record_dict) {
+                                        const DictionaryValue& record_dict) {
   GURL gurl(url);
   if (!gurl.is_valid())
     return absl::nullopt;
@@ -157,39 +157,41 @@ void EmitRecord(DailyInteraction record, Profile* profile) {
 }
 
 void EmitRecords(Profile* profile) {
-  const Value* urls_to_features =
+  const DictionaryValue* urls_to_features =
       profile->GetPrefs()->GetDictionary(prefs::kWebAppsDailyMetrics);
   DCHECK(urls_to_features);
 
-  for (const auto iter : urls_to_features->DictItems()) {
-    const std::string& url = iter.first;
-    const Value& val = iter.second;
-    optional<DailyInteraction> record = DictToRecord(url, val);
+  for (DictionaryValue::Iterator iter(*urls_to_features); !iter.IsAtEnd();
+       iter.Advance()) {
+    const std::string& url = iter.key();
+    const Value& val = iter.value();
+    const DictionaryValue& dict = Value::AsDictionaryValue(val);
+    optional<DailyInteraction> record = DictToRecord(url, dict);
     if (record)
       EmitRecord(*record, profile);
   }
 }
 
 void RemoveRecords(PrefService* prefs) {
-  const Value* urls_to_features =
+  const DictionaryValue* urls_to_features =
       prefs->GetDictionary(prefs::kWebAppsDailyMetrics);
   if (!urls_to_features)
     return;
-  DictionaryPrefUpdateDeprecated update(prefs, prefs::kWebAppsDailyMetrics);
-  update->DictClear();
+  DictionaryPrefUpdate update(prefs, prefs::kWebAppsDailyMetrics);
+  update->Clear();
 }
 
 void UpdateRecord(DailyInteraction& record, PrefService* prefs) {
   DCHECK(record.start_url.is_valid());
   const std::string& url = record.start_url.spec();
-  const Value* urls_to_features =
+  const DictionaryValue* urls_to_features =
       prefs->GetDictionary(prefs::kWebAppsDailyMetrics);
   CHECK(urls_to_features);
   const Value* existing_val = urls_to_features->FindDictKey(url);
   if (existing_val) {
     // Sum duration and session values from existing record.
-    optional<DailyInteraction> existing_record =
-        DictToRecord(url, *existing_val);
+    const DictionaryValue& dict = Value::AsDictionaryValue(*existing_val);
+    optional<DailyInteraction> existing_record = DictToRecord(url, dict);
     if (existing_record) {
       record.foreground_duration += existing_record->foreground_duration;
       record.background_duration += existing_record->background_duration;
@@ -198,7 +200,7 @@ void UpdateRecord(DailyInteraction& record, PrefService* prefs) {
   }
 
   std::unique_ptr<DictionaryValue> record_dict = RecordToDict(record);
-  DictionaryPrefUpdateDeprecated update(prefs, prefs::kWebAppsDailyMetrics);
+  DictionaryPrefUpdate update(prefs, prefs::kWebAppsDailyMetrics);
 
   update->SetKey(url, std::move(*record_dict));
 }

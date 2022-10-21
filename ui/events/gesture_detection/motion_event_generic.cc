@@ -4,7 +4,6 @@
 
 #include "ui/events/gesture_detection/motion_event_generic.h"
 
-#include <ostream>
 #include <utility>
 
 #include "base/check_op.h"

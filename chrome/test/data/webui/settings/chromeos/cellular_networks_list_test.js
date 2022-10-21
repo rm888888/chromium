@@ -29,9 +29,6 @@ suite('CellularNetworksList', function() {
   let browserProxy;
 
   setup(function() {
-    loadTimeData.overrideValues({
-      esimPolicyEnabled: true,
-    });
     mojom = chromeos.networkConfig.mojom;
     mojoApi_ = new FakeNetworkConfig();
     network_config.MojoInterfaceProviderImpl.getInstance().remote_ = mojoApi_;
@@ -353,14 +350,9 @@ suite('CellularNetworksList', function() {
     };
     await flushAsync();
 
-    // When policy is enabled add cellular button should be disabled, and policy
-    // indicator should be shown.
+    // When policy is enabled add cellular button should not be shown.
     let addESimButton = cellularNetworkList.$$('#addESimButton');
-    assertTrue(!!addESimButton);
-    assertTrue(addESimButton.disabled);
-    let policyIcon = cellularNetworkList.$$('cr-policy-indicator');
-    assertTrue(!!policyIcon);
-    assertFalse(policyIcon.hidden);
+    assertFalse(!!addESimButton);
 
     cellularNetworkList.globalPolicy = {
       allowOnlyPolicyCellularNetworks: false,
@@ -370,9 +362,6 @@ suite('CellularNetworksList', function() {
     addESimButton = cellularNetworkList.$$('#addESimButton');
     assertTrue(!!addESimButton);
     assertFalse(addESimButton.disabled);
-    policyIcon = cellularNetworkList.$$('cr-policy-indicator');
-    assertTrue(!!policyIcon);
-    assertTrue(policyIcon.hidden);
 
     // When device is inhibited add cellular button should be disabled.
     cellularNetworkList.cellularDeviceState = {

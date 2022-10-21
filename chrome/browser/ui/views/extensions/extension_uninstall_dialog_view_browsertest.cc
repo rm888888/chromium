@@ -5,6 +5,7 @@
 #include <memory>
 
 #include "base/callback_helpers.h"
+#include "base/macros.h"
 #include "base/run_loop.h"
 #include "chrome/browser/extensions/browsertest_util.h"
 #include "chrome/browser/extensions/extension_service.h"
@@ -194,7 +195,7 @@ IN_PROC_BROWSER_TEST_F(ExtensionUninstallDialogViewBrowserTest,
       ->AddExtension(extension.get());
 
   const GURL start_url = GURL("https://test.com/");
-  auto web_app_info = std::make_unique<WebAppInstallInfo>();
+  auto web_app_info = std::make_unique<WebApplicationInfo>();
   web_app_info->start_url = start_url;
   web_app_info->scope = start_url;
   web_app_info->user_display_mode = blink::mojom::DisplayMode::kStandalone;

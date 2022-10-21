@@ -8,7 +8,6 @@
 #include <set>
 #include <string>
 
-#include "ash/components/settings/cros_settings_names.h"
 #include "ash/public/cpp/app_list/app_list_config.h"
 #include "ash/public/cpp/app_list/app_list_types.h"
 #include "base/files/file_path.h"
@@ -60,6 +59,7 @@
 #include "chromeos/dbus/concierge/concierge_client.h"
 #include "chromeos/dbus/dbus_thread_manager.h"
 #include "chromeos/dbus/seneschal/seneschal_client.h"
+#include "chromeos/settings/cros_settings_names.h"
 #include "components/prefs/pref_service.h"
 #include "components/services/app_service/public/mojom/types.mojom-shared.h"
 #include "components/services/app_service/public/mojom/types.mojom.h"
@@ -152,7 +152,7 @@ void RemoveApps(apps::mojom::AppType app_type,
   proxy->AppRegistryCache().ForEachApp(
       [&model_updater, &app_type](const apps::AppUpdate& update) {
         if (update.AppType() != app_type) {
-          model_updater->RemoveItem(update.AppId(), /*is_uninstall=*/true);
+          model_updater->RemoveItem(update.AppId());
         }
       });
 }
@@ -182,13 +182,6 @@ void VerifyIcon(const gfx::ImageSkia& src, const gfx::ImageSkia& dst) {
   }
 }
 
-void InitAppPosition(ChromeAppListItem* new_item) {
-  if (new_item->position().IsValid())
-    return;
-
-  new_item->SetChromePosition(new_item->CalculateDefaultPositionForTest());
-}
-
 }  // namespace
 
 class AppServiceAppModelBuilderTest : public AppListTestBase {
@@ -211,7 +204,6 @@ class AppServiceAppModelBuilderTest : public AppListTestBase {
 
  protected:
   void ResetBuilder() {
-    scoped_callback_.reset();
     builder_.reset();
     controller_.reset();
     model_updater_.reset();
@@ -228,16 +220,10 @@ class AppServiceAppModelBuilderTest : public AppListTestBase {
         /*profile=*/nullptr, /*reorder_delegate=*/nullptr);
     controller_ = std::make_unique<test::TestAppListControllerDelegate>();
     builder_ = std::make_unique<AppServiceAppModelBuilder>(controller_.get());
-    scoped_callback_ = std::make_unique<
-        AppServiceAppModelBuilder::ScopedAppPositionInitCallbackForTest>(
-        builder_.get(), base::BindRepeating(&InitAppPosition));
     builder_->Initialize(nullptr, testing_profile(), model_updater_.get());
   }
 
   apps::AppServiceTest app_service_test_;
-  std::unique_ptr<
-      AppServiceAppModelBuilder::ScopedAppPositionInitCallbackForTest>
-      scoped_callback_;
   std::unique_ptr<AppServiceAppModelBuilder> builder_;
   std::unique_ptr<FakeAppListModelUpdater> model_updater_;
   std::unique_ptr<test::TestAppListControllerDelegate> controller_;
@@ -268,7 +254,7 @@ class ExtensionAppTest : public AppServiceAppModelBuilderTest {
   // Creates a new builder, destroying any existing one.
   void CreateBuilder() {
     AppServiceAppModelBuilderTest::CreateBuilder(false /*guest_mode*/);
-    RemoveApps(apps::mojom::AppType::kChromeApp, testing_profile(),
+    RemoveApps(apps::mojom::AppType::kExtension, testing_profile(),
                model_updater_.get());
   }
 
@@ -337,7 +323,7 @@ class WebAppBuilderTest : public AppServiceAppModelBuilderTest {
   std::string CreateWebApp(const std::string& app_name) {
     const GURL kAppUrl("https://example.com/");
 
-    auto web_app_info = std::make_unique<WebAppInstallInfo>();
+    auto web_app_info = std::make_unique<WebApplicationInfo>();
     web_app_info->title = base::UTF8ToUTF16(app_name);
     web_app_info->start_url = kAppUrl;
     web_app_info->scope = kAppUrl;
@@ -451,9 +437,6 @@ TEST_F(ExtensionAppTest, HideWebStore) {
   FakeAppListModelUpdater model_updater1(/*profile=*/nullptr,
                                          /*reorder_delegate=*/nullptr);
   AppServiceAppModelBuilder builder1(controller_.get());
-  auto scoped_callback1 = std::make_unique<
-      AppServiceAppModelBuilder::ScopedAppPositionInitCallbackForTest>(
-      &builder1, base::BindRepeating(&InitAppPosition));
   builder1.Initialize(nullptr, profile_.get(), &model_updater1);
   EXPECT_TRUE(model_updater1.FindItem(store->id()));
   EXPECT_TRUE(model_updater1.FindItem(enterprise_store->id()));
@@ -469,9 +452,6 @@ TEST_F(ExtensionAppTest, HideWebStore) {
   FakeAppListModelUpdater model_updater2(/*profile=*/nullptr,
                                          /*reorder_delegate=*/nullptr);
   AppServiceAppModelBuilder builder2(controller_.get());
-  auto scoped_callback2 = std::make_unique<
-      AppServiceAppModelBuilder::ScopedAppPositionInitCallbackForTest>(
-      &builder2, base::BindRepeating(&InitAppPosition));
   builder2.Initialize(nullptr, profile_.get(), &model_updater2);
   app_service_test_.FlushMojoCalls();
   EXPECT_FALSE(model_updater2.FindItem(store->id()));
@@ -483,10 +463,6 @@ TEST_F(ExtensionAppTest, HideWebStore) {
   // Now the web stores should have appeared.
   EXPECT_TRUE(model_updater2.FindItem(store->id()));
   EXPECT_TRUE(model_updater2.FindItem(enterprise_store->id()));
-
-  // Destroy scoped callbacks before model builders.
-  scoped_callback1.reset();
-  scoped_callback2.reset();
 }
 
 TEST_F(ExtensionAppTest, DisableAndEnable) {
@@ -787,7 +763,7 @@ class CrostiniAppTest : public AppServiceAppModelBuilderTest {
           id == crostini::kCrostiniTerminalSystemAppId) {
         continue;
       }
-      sync_service_->RemoveItem(id, /*is_uninstall=*/false);
+      sync_service_->RemoveItem(id);
     }
   }
 
@@ -796,7 +772,7 @@ class CrostiniAppTest : public AppServiceAppModelBuilderTest {
         app_list::AppListSyncableService::ScopedModelUpdaterFactoryForTest>(
         base::BindRepeating(
             [](Profile* profile,
-               app_list::reorder::AppListReorderDelegate* reorder_delegate)
+               app_list::AppListReorderDelegate* reorder_delegate)
                 -> std::unique_ptr<AppListModelUpdater> {
               return std::make_unique<FakeAppListModelUpdater>(
                   profile, reorder_delegate);
@@ -997,7 +973,6 @@ class PluginVmAppTest : public testing::Test {
 
   // Destroys any existing builder in the correct order.
   void ResetBuilder() {
-    scoped_callback_.reset();
     builder_.reset();
     controller_.reset();
     model_updater_.reset();
@@ -1014,9 +989,6 @@ class PluginVmAppTest : public testing::Test {
         /*profile=*/nullptr, /*reorder_delegate=*/nullptr);
     controller_ = std::make_unique<test::TestAppListControllerDelegate>();
     builder_ = std::make_unique<AppServiceAppModelBuilder>(controller_.get());
-    scoped_callback_ = std::make_unique<
-        AppServiceAppModelBuilder::ScopedAppPositionInitCallbackForTest>(
-        builder_.get(), base::BindRepeating(&InitAppPosition));
     builder_->Initialize(nullptr, testing_profile_.get(), model_updater_.get());
 
     RemoveApps(apps::mojom::AppType::kPluginVm, testing_profile_.get(),
@@ -1037,9 +1009,6 @@ class PluginVmAppTest : public testing::Test {
 
   apps::AppServiceTest app_service_test_;
   std::unique_ptr<AppServiceAppModelBuilder> builder_;
-  std::unique_ptr<
-      AppServiceAppModelBuilder::ScopedAppPositionInitCallbackForTest>
-      scoped_callback_;
   std::unique_ptr<FakeAppListModelUpdater> model_updater_;
   std::unique_ptr<test::TestAppListControllerDelegate> controller_;
 };
@@ -1062,7 +1031,7 @@ TEST_F(PluginVmAppTest, EnableAndDisablePluginVm) {
             GetModelContent(model_updater_.get()));
 
   testing_profile_->ScopedCrosSettingsTestHelper()->SetBoolean(
-      ash::kPluginVmAllowed, false);
+      chromeos::kPluginVmAllowed, false);
 
   app_service_test_.FlushMojoCalls();
   EXPECT_THAT(GetModelContent(model_updater_.get()), testing::IsEmpty());
@@ -1101,9 +1070,6 @@ class BorealisAppTest : public AppServiceAppModelBuilderTest {
         /*profile=*/nullptr, /*reorder_delegate=*/nullptr);
     controller_ = std::make_unique<test::TestAppListControllerDelegate>();
     builder_ = std::make_unique<AppServiceAppModelBuilder>(controller_.get());
-    scoped_callback_ = std::make_unique<
-        AppServiceAppModelBuilder::ScopedAppPositionInitCallbackForTest>(
-        builder_.get(), base::BindRepeating(&InitAppPosition));
     builder_->Initialize(nullptr, testing_profile_.get(), model_updater_.get());
 
     RemoveApps(apps::mojom::AppType::kBorealis, testing_profile_.get(),

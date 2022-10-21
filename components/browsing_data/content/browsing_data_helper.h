@@ -10,6 +10,7 @@
 #include <string>
 
 #include "base/callback.h"
+#include "base/macros.h"
 #include "components/content_settings/core/browser/host_content_settings_map.h"
 
 class GURL;

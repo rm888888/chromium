@@ -155,17 +155,15 @@ TEST_F(WebCryptoRsaOaepTest, ExportPublicJwk) {
 }
 
 TEST_F(WebCryptoRsaOaepTest, EncryptDecryptKnownAnswerTest) {
-  base::Value tests;
-  ASSERT_TRUE(ReadJsonTestFileAsList("rsa_oaep.json", &tests));
+  base::ListValue tests;
+  ASSERT_TRUE(ReadJsonTestFileToList("rsa_oaep.json", &tests));
 
   for (size_t test_index = 0; test_index < tests.GetList().size();
        ++test_index) {
     SCOPED_TRACE(test_index);
 
-    const base::Value& test_value = tests.GetList()[test_index];
-    ASSERT_TRUE(test_value.is_dict());
-    const base::DictionaryValue* test =
-        &base::Value::AsDictionaryValue(test_value);
+    base::DictionaryValue* test = nullptr;
+    ASSERT_TRUE(tests.GetDictionary(test_index, &test));
 
     blink::WebCryptoAlgorithm digest_algorithm =
         GetDigestAlgorithm(test, "hash");

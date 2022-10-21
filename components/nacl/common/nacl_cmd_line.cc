@@ -26,7 +26,6 @@ void CopyNaClCommandLineArguments(base::CommandLine* cmd_line) {
     switches::kEnableLogging,
     switches::kDisableLogging,
     switches::kLoggingLevel,
-    switches::kVerboseLoggingInNacl,
     switches::kNoErrorDialogs,
 #if defined(OS_APPLE)
     sandbox::policy::switches::kEnableSandboxLogging,

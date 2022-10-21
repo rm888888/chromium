@@ -12,6 +12,7 @@
 #include "base/callback.h"
 #include "base/check_op.h"
 #include "base/containers/flat_map.h"
+#include "base/macros.h"
 #include "base/no_destructor.h"
 #include "base/notreached.h"
 #include "base/numerics/safe_conversions.h"
@@ -255,7 +256,7 @@ class UrlRuleFlatBufferConverter {
     switch (rule_.source_type()) {
       case proto::SOURCE_TYPE_ANY:
         options_ |= flat::OptionFlag_APPLIES_TO_THIRD_PARTY;
-        [[fallthrough]];
+        FALLTHROUGH;
       case proto::SOURCE_TYPE_FIRST_PARTY:
         options_ |= flat::OptionFlag_APPLIES_TO_FIRST_PARTY;
         break;

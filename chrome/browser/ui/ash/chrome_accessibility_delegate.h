@@ -6,6 +6,7 @@
 #define CHROME_BROWSER_UI_ASH_CHROME_ACCESSIBILITY_DELEGATE_H_
 
 #include "ash/accessibility/accessibility_delegate.h"
+#include "base/macros.h"
 
 // See ash::AccessibilityDelegate for details.
 class ChromeAccessibilityDelegate : public ash::AccessibilityDelegate {

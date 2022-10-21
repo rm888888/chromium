@@ -12,7 +12,9 @@
 
 #include <memory>
 
+#include "base/macros.h"
 #include "chrome/browser/ui/webui/settings/settings_page_ui_handler.h"
+#include "components/policy/core/common/policy_service.h"
 #include "components/prefs/pref_member.h"
 
 #if BUILDFLAG(IS_CHROMEOS_LACROS)
@@ -54,6 +56,11 @@ class MetricsReportingHandler : public SettingsPageUIHandler {
   // |enabled| boolean argument.
   void HandleSetMetricsReportingEnabled(const base::ListValue* args);
 
+  // Called when the policies that affect whether metrics reporting is managed
+  // change.
+  void OnPolicyChanged(const base::Value* current_policy,
+                       const base::Value* previous_policy);
+
   // Called when the local state pref controlling metrics reporting changes.
   void OnPrefChanged(const std::string& pref_name);
 
@@ -63,6 +70,10 @@ class MetricsReportingHandler : public SettingsPageUIHandler {
   // Used to track pref changes that affect whether metrics reporting is
   // enabled.
   std::unique_ptr<BooleanPrefMember> pref_member_;
+
+  // Used to track policy changes that affect whether metrics reporting is
+  // enabled or managed.
+  std::unique_ptr<policy::PolicyChangeRegistrar> policy_registrar_;
 
 #if BUILDFLAG(IS_CHROMEOS_LACROS)
   // The metrics reporting interface in ash-chrome.

@@ -22,14 +22,12 @@ namespace security_interstitials {
 
 OriginPolicyInterstitialPage::OriginPolicyInterstitialPage(
     content::WebContents* web_contents,
-    content::StoragePartition* storage_partition,
     const GURL& request_url,
     std::unique_ptr<SecurityInterstitialControllerClient> controller,
     network::OriginPolicyState error_reason)
     : SecurityInterstitialPage(web_contents,
                                request_url,
                                std::move(controller)),
-      storage_partition_(storage_partition),
       error_reason_(error_reason) {}
 
 OriginPolicyInterstitialPage::~OriginPolicyInterstitialPage() = default;
@@ -118,7 +116,8 @@ void OriginPolicyInterstitialPage::CommandReceived(const std::string& command) {
 }
 
 void OriginPolicyInterstitialPage::Proceed() {
-  content::OriginPolicyAddExceptionFor(storage_partition_, request_url());
+  content::OriginPolicyAddExceptionFor(web_contents()->GetBrowserContext(),
+                                       request_url());
   web_contents()->GetController().Reload(content::ReloadType::NORMAL, true);
 }
 

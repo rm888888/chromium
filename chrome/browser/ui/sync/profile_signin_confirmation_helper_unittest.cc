@@ -14,7 +14,6 @@
 #include "base/cxx17_backports.h"
 #include "base/files/scoped_temp_dir.h"
 #include "base/memory/ptr_util.h"
-#include "base/memory/raw_ptr.h"
 #include "base/run_loop.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
@@ -135,8 +134,7 @@ class ProfileSigninConfirmationHelperTest : public testing::Test {
         new sync_preferences::TestingPrefServiceSyncable(
             /*managed_prefs=*/new TestingPrefStore(),
             /*supervised_user_prefs=*/new TestingPrefStore(),
-            /*extension_prefs=*/new TestingPrefStore(),
-            /*standalone_browser_prefs=*/new TestingPrefStore(), user_prefs_,
+            /*extension_prefs=*/new TestingPrefStore(), user_prefs_,
             /*recommended_prefs=*/new TestingPrefStore(),
             new user_prefs::PrefRegistrySyncable(), new PrefNotifierImpl());
     RegisterUserProfilePrefs(pref_service->registry());
@@ -172,8 +170,8 @@ class ProfileSigninConfirmationHelperTest : public testing::Test {
   base::ScopedTempDir profile_dir_;
   content::BrowserTaskEnvironment task_environment_;
   std::unique_ptr<TestingProfile> profile_;
-  raw_ptr<TestingPrefStoreWithCustomReadError> user_prefs_;
-  raw_ptr<BookmarkModel> model_;
+  TestingPrefStoreWithCustomReadError* user_prefs_;
+  BookmarkModel* model_;
 
 #if BUILDFLAG(IS_CHROMEOS_ASH)
   ash::ScopedCrosSettingsTestHelper cros_settings_test_helper_;

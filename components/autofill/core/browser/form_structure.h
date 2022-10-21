@@ -15,12 +15,13 @@
 #include <vector>
 
 #include "base/gtest_prod_util.h"
+#include "base/macros.h"
 #include "base/strings/string_piece.h"
 #include "components/autofill/core/browser/autofill_field.h"
+#include "components/autofill/core/browser/autofill_metrics.h"
 #include "components/autofill/core/browser/autofill_type.h"
 #include "components/autofill/core/browser/field_types.h"
 #include "components/autofill/core/browser/form_types.h"
-#include "components/autofill/core/browser/metrics/autofill_metrics.h"
 #include "components/autofill/core/browser/proto/api_v1.pb.h"
 #include "components/autofill/core/common/dense_set.h"
 #include "components/autofill/core/common/language_code.h"
@@ -380,6 +381,12 @@ class FormStructure {
     submission_source_ = submission_source;
   }
 
+  // Returns an identifier that is used by the refill logic. Takes the first non
+  // empty of these or returns an empty string:
+  // - Form name
+  // - Name for Autofill of first field
+  std::u16string GetIdentifierForRefill() const;
+
   int developer_engagement_metrics() const {
     return developer_engagement_metrics_;
   }
@@ -435,7 +442,7 @@ class FormStructure {
   FRIEND_TEST_ALL_PREFIXES(FormStructureTestImpl, FindLongestCommonPrefix);
   FRIEND_TEST_ALL_PREFIXES(FormStructureTestImpl, FindLongestCommonAffixLength);
   FRIEND_TEST_ALL_PREFIXES(FormStructureTestImpl, IsValidParseableName);
-  FRIEND_TEST_ALL_PREFIXES(FormStructureTestImpl,
+  FRIEND_TEST_ALL_PREFIXES(ParameterizedFormStructureTest,
                            RationalizePhoneNumber_RunsOncePerSection);
 
   // This class wraps a vector of vectors of field indices. The indices of a

@@ -11,12 +11,12 @@
 #include <string>
 #include <vector>
 
-#include "ash/components/arc/mojom/intent_helper.mojom.h"
-#include "base/memory/weak_ptr.h"
+#include "base/macros.h"
 #include "base/observer_list.h"
 #include "base/threading/thread_checker.h"
-#include "components/arc/common/intent_helper/link_handler_model_delegate.h"
+#include "components/arc/intent_helper/activity_icon_loader.h"
 #include "components/arc/intent_helper/arc_intent_helper_observer.h"
+#include "components/arc/mojom/intent_helper.mojom.h"
 #include "components/keyed_service/core/keyed_service.h"
 #include "url/gurl.h"
 
@@ -36,8 +36,7 @@ class OpenUrlDelegate;
 
 // Receives intents from ARC.
 class ArcIntentHelperBridge : public KeyedService,
-                              public mojom::IntentHelperHost,
-                              public LinkHandlerModelDelegate {
+                              public mojom::IntentHelperHost {
  public:
   class Delegate {
    public:
@@ -101,22 +100,27 @@ class ArcIntentHelperBridge : public KeyedService,
   void CloseCameraApp() override;
   void IsChromeAppEnabled(arc::mojom::ChromeApp app,
                           IsChromeAppEnabledCallback callback) override;
+  void OnPreferredAppsChangedDeprecated(
+      std::vector<IntentFilter> added,
+      std::vector<IntentFilter> deleted) override;
   void OnSupportedLinksChanged(
       std::vector<arc::mojom::SupportedLinksPtr> added_packages,
-      std::vector<arc::mojom::SupportedLinksPtr> removed_packages,
-      arc::mojom::SupportedLinkChangeSource source) override;
+      std::vector<arc::mojom::SupportedLinksPtr> removed_packages) override;
   void OnDownloadAdded(const std::string& relative_path,
                        const std::string& owner_package_name) override;
   void OnOpenAppWithIntent(const GURL& start_url,
                            arc::mojom::LaunchIntentPtr intent) override;
 
-  // LinkHandlerModelDelegete:
+  // Retrieves icons for the |activities| and calls |callback|.
+  // See ActivityIconLoader::GetActivityIcons() for more details.
+  using ActivityName = internal::ActivityIconLoader::ActivityName;
+  // A part of OnIconsReadyCallback signature.
+  using ActivityToIconsMap = internal::ActivityIconLoader::ActivityToIconsMap;
+  using OnIconsReadyCallback =
+      internal::ActivityIconLoader::OnIconsReadyCallback;
+  using GetResult = internal::ActivityIconLoader::GetResult;
   GetResult GetActivityIcons(const std::vector<ActivityName>& activities,
-                             OnIconsReadyCallback callback) override;
-  bool RequestUrlHandlerList(const std::string& url,
-                             RequestUrlHandlerListCallback callback) override;
-  bool HandleUrl(const std::string& url,
-                 const std::string& package_name) override;
+                             OnIconsReadyCallback callback);
 
   // Returns true when |url| can only be handled by Chrome. Otherwise, which is
   // when there might be one or more ARC apps that can handle |url|, returns
@@ -153,19 +157,17 @@ class ArcIntentHelperBridge : public KeyedService,
   const std::vector<IntentFilter>& GetIntentFilterForPackage(
       const std::string& package_name);
 
+  const std::vector<IntentFilter>& GetAddedPreferredApps();
+
+  const std::vector<IntentFilter>& GetDeletedPreferredApps();
+
  private:
   THREAD_CHECKER(thread_checker_);
-
-  // Convert vector of mojom::IntentHandlerInfoPtr to vector of
-  // LinkHandlerModelDelegate::IntentHandlerInfo.
-  void OnRequestUrlHandlerList(
-      RequestUrlHandlerListCallback callback,
-      std::vector<mojom::IntentHandlerInfoPtr> handlers);
 
   content::BrowserContext* const context_;
   ArcBridgeService* const arc_bridge_service_;  // Owned by ArcServiceManager.
 
-  ActivityIconLoader icon_loader_;
+  internal::ActivityIconLoader icon_loader_;
 
   // A map of each package name to the intent filters for that package.
   // Used to determine if Chrome should handle a URL without handing off to
@@ -180,9 +182,13 @@ class ArcIntentHelperBridge : public KeyedService,
   // Schemes that ARC is known to send via OnOpenUrl.
   const std::set<std::string> allowed_arc_schemes_;
 
-  std::unique_ptr<Delegate> delegate_;
+  // The preferred app added in ARC.
+  std::vector<IntentFilter> added_preferred_apps_;
 
-  base::WeakPtrFactory<ArcIntentHelperBridge> weak_ptr_factory_{this};
+  // The preferred app deleted in ARC.
+  std::vector<IntentFilter> deleted_preferred_apps_;
+
+  std::unique_ptr<Delegate> delegate_;
 };
 
 }  // namespace arc

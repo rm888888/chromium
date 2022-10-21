@@ -278,8 +278,7 @@ PaintPreviewClient::InProgressDocumentCaptureState::IntoCaptureResult() && {
 }
 
 PaintPreviewClient::PaintPreviewClient(content::WebContents* web_contents)
-    : content::WebContentsUserData<PaintPreviewClient>(*web_contents),
-      content::WebContentsObserver(web_contents) {}
+    : content::WebContentsObserver(web_contents) {}
 
 PaintPreviewClient::~PaintPreviewClient() = default;
 

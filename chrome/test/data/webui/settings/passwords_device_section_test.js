@@ -86,7 +86,7 @@ suite('PasswordsDeviceSection', function() {
     // syncing) and opted-in to account storage.
     syncBrowserProxy.storedAccounts = [SIGNED_IN_ACCOUNT];
     simulateStoredAccounts(syncBrowserProxy.storedAccounts);
-    syncBrowserProxy.testSyncStatus = {signedIn: false};
+    syncBrowserProxy.syncStatus = {signedIn: false};
     simulateSyncStatus(syncBrowserProxy.syncStatus);
     passwordManager.setIsOptedInForAccountStorageAndNotify(true);
   });
@@ -374,6 +374,9 @@ suite('PasswordsDeviceSection', function() {
   test(
       'moveMultiplePasswordsBannerHiddenWhenNoLocalPasswords',
       async function() {
+        loadTimeData.overrideValues(
+            {enableMovingMultiplePasswordsToAccount: true});
+
         const passwordsDeviceSection = await createPasswordsDeviceSection(
             syncBrowserProxy, passwordManager, []);
 
@@ -384,6 +387,9 @@ suite('PasswordsDeviceSection', function() {
 
   test(
       'moveMultiplePasswordsBannerVisibleWhenLocalPasswords', async function() {
+        loadTimeData.overrideValues(
+            {enableMovingMultiplePasswordsToAccount: true});
+
         const devicePassword = createPasswordEntry(
             {username: 'device', id: 0, fromAccountStore: false});
         const passwordsDeviceSection = await createPasswordsDeviceSection(
@@ -397,6 +403,9 @@ suite('PasswordsDeviceSection', function() {
   test(
       'moveMultiplePasswordsBannerHiddenWhenConflictingLocalAndDevicesPasswords',
       async function() {
+        loadTimeData.overrideValues(
+            {enableMovingMultiplePasswordsToAccount: true});
+
         // The existence of two entries with the same url and password username
         // indicate that they must have different passwords. Otherwise, they
         // would have deduped earlier.

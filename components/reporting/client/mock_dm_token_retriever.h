@@ -5,8 +5,7 @@
 #ifndef COMPONENTS_REPORTING_CLIENT_MOCK_DM_TOKEN_RETRIEVER_H_
 #define COMPONENTS_REPORTING_CLIENT_MOCK_DM_TOKEN_RETRIEVER_H_
 
-#include <string>
-
+#include "base/strings/string_piece_forward.h"
 #include "components/reporting/client/dm_token_retriever.h"
 #include "testing/gmock/include/gmock/gmock.h"
 

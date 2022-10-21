@@ -233,7 +233,7 @@ template <typename RendererType>
 class RendererPerfTest : public VizPerfTest {
  public:
   RendererPerfTest()
-      : manager_(FrameSinkManagerImpl::InitParams(&shared_bitmap_manager_)),
+      : manager_(&shared_bitmap_manager_),
         support_(
             std::make_unique<CompositorFrameSinkSupport>(nullptr,
                                                          &manager_,
@@ -371,8 +371,7 @@ class RendererPerfTest : public VizPerfTest {
                                 .Build();
     support_->SubmitCompositorFrame(id_allocator_.GetCurrentLocalSurfaceId(),
                                     std::move(frame));
-    ASSERT_TRUE(
-        display_->DrawAndSwap(base::TimeTicks::Now(), base::TimeTicks::Now()));
+    ASSERT_TRUE(display_->DrawAndSwap(base::TimeTicks::Now()));
   }
 
   ResourceId MapResourceId(base::flat_map<ResourceId, ResourceId>* resource_map,

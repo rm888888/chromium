@@ -5,10 +5,6 @@
 #ifndef COMPONENTS_JS_INJECTION_BROWSER_WEB_MESSAGE_REPLY_PROXY_H_
 #define COMPONENTS_JS_INJECTION_BROWSER_WEB_MESSAGE_REPLY_PROXY_H_
 
-namespace content {
-class Page;
-}
-
 namespace js_injection {
 
 struct WebMessage;
@@ -21,9 +17,6 @@ class WebMessageReplyProxy {
   // Returns true if the page associated with the channel is in the back
   // forward cache.
   virtual bool IsInBackForwardCache() = 0;
-
-  // Returns the page the messages are sent to.
-  virtual content::Page& GetPage() = 0;
 
  protected:
   virtual ~WebMessageReplyProxy() = default;

@@ -9,6 +9,8 @@
 #include <string>
 #include <vector>
 
+#include "base/macros.h"
+
 struct FirefoxRawPasswordInfo;
 
 namespace importer {

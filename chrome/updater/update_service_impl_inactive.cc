@@ -6,7 +6,6 @@
 
 #include <string>
 #include <utility>
-#include <vector>
 
 #include "base/bind.h"
 #include "base/callback.h"
@@ -38,13 +37,6 @@ class UpdateServiceImplInactive : public UpdateService {
         base::BindOnce(std::move(callback), RegistrationResponse(-1)));
   }
 
-  void GetAppStates(base::OnceCallback<void(const std::vector<AppState>&)>
-                        callback) const override {
-    base::SequencedTaskRunnerHandle::Get()->PostTask(
-        FROM_HERE,
-        base::BindOnce(std::move(callback), std::vector<AppState>()));
-  }
-
   void RunPeriodicTasks(base::OnceClosure callback) override {
     std::move(callback).Run();
   }
@@ -56,9 +48,8 @@ class UpdateServiceImplInactive : public UpdateService {
   }
 
   void Update(const std::string& app_id,
-              Priority /*priority*/,
-              PolicySameVersionUpdate /*policy_same_version_update*/,
-              StateChangeCallback /*state_update*/,
+              Priority priority,
+              StateChangeCallback state_update,
               Callback callback) override {
     base::SequencedTaskRunnerHandle::Get()->PostTask(
         FROM_HERE,

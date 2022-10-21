@@ -87,9 +87,6 @@ export class CommandHandlerDeps {
 
     /** @type {Crostini} */
     this.crostini;
-
-    /** @type {boolean} */
-    this.guestMode;
   }
 
   /** @return {DirectoryEntry|FilesAppEntry} */

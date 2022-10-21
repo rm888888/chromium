@@ -77,7 +77,8 @@ void DirectLayerTreeFrameSink::DetachFromClient() {
 
 void DirectLayerTreeFrameSink::SubmitCompositorFrame(
     viz::CompositorFrame frame,
-    bool hit_test_data_changed) {
+    bool hit_test_data_changed,
+    bool show_hit_test_borders) {
   DCHECK(frame.metadata.begin_frame_ack.has_damage);
   DCHECK(frame.metadata.begin_frame_ack.frame_id.IsSequenceValid());
 
@@ -145,7 +146,8 @@ void DirectLayerTreeFrameSink::DisplayWillDrawAndSwap(
     bool will_draw_and_swap,
     viz::AggregatedRenderPassList* render_passes) {
   if (support_->GetHitTestAggregator()) {
-    support_->GetHitTestAggregator()->Aggregate(display_->CurrentSurfaceId());
+    support_->GetHitTestAggregator()->Aggregate(display_->CurrentSurfaceId(),
+                                                render_passes);
   }
 }
 

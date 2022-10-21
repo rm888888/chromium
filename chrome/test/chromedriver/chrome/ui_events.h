@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+#include "base/macros.h"
 #include "ui/events/keycodes/keyboard_codes.h"
 
 // Specifies the type of the mouse event.

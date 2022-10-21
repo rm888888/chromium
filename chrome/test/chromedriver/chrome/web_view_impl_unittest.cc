@@ -33,17 +33,18 @@ class FakeDevToolsClient : public StubDevToolsClient {
     status_ = status;
   }
   void set_result(const base::DictionaryValue& result) {
-    result_.DictClear();
+    result_.Clear();
     result_.MergeDictionary(&result);
   }
 
   // Overridden from DevToolsClient:
-  Status SendCommandAndGetResult(const std::string& method,
-                                 const base::DictionaryValue& params,
-                                 base::Value* result) override {
+  Status SendCommandAndGetResult(
+      const std::string& method,
+      const base::DictionaryValue& params,
+      std::unique_ptr<base::DictionaryValue>* result) override {
     if (status_.IsError())
       return status_;
-    *result = result_.Clone();
+    result->reset(result_.DeepCopy());
     return Status(kOk);
   }
 

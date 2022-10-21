@@ -50,9 +50,7 @@ suite('NewTabPageModulesModuleRegistryTest', () => {
     ];
     windowProxy.setResultFor('now', 5.0);
     handler.setResultFor('getModulesOrder', Promise.resolve({
-      // Returning order different from |descriptors| to test order is ignored
-      // by default.
-      moduleIds: ['bar', 'baz', 'foo', 'buz'],
+      moduleIds: [],
     }));
 
     // Act.
@@ -90,101 +88,89 @@ suite('NewTabPageModulesModuleRegistryTest', () => {
     assertEquals(1, metrics.count('NewTabPage.Modules.LoadDuration.baz', 118));
   });
 
-  suite('reorder', () => {
-    suiteSetup(() => {
-      loadTimeData.overrideValues({
-        modulesDragAndDropEnabled: true,
-      });
-    });
+  test('instantiates reordered modules without disabled modules', async () => {
+    // Arrange.
+    const fooModule = createElement();
+    const barModule = createElement();
+    const bazModule = createElement();
+    const descriptors = [
+      new ModuleDescriptor('foo', 'bli', () => Promise.resolve(fooModule)),
+      new ModuleDescriptor('bar', 'blu', () => Promise.resolve(barModule)),
+      new ModuleDescriptor('baz', 'bla', () => Promise.resolve(bazModule)),
+    ];
+    handler.setResultFor('getModulesOrder', Promise.resolve({
+      moduleIds: ['bar', 'baz', 'foo'],
+    }));
 
-    test(
-        'instantiates reordered modules without disabled modules', async () => {
-          // Arrange.
-          const fooModule = createElement();
-          const barModule = createElement();
-          const bazModule = createElement();
-          const descriptors = [
-            new ModuleDescriptor(
-                'foo', 'bli', () => Promise.resolve(fooModule)),
-            new ModuleDescriptor(
-                'bar', 'blu', () => Promise.resolve(barModule)),
-            new ModuleDescriptor(
-                'baz', 'bla', () => Promise.resolve(bazModule)),
-          ];
-          handler.setResultFor('getModulesOrder', Promise.resolve({
-            moduleIds: ['bar', 'baz', 'foo'],
-          }));
+    // Act.
+    const moduleRegistry = new ModuleRegistry(descriptors);
+    const modulesPromise = moduleRegistry.initializeModules(0);
+    callbackRouterRemote.setDisabledModules(false, []);
+    // Wait for first batch of modules.
+    await flushTasks();
+    const modules = await modulesPromise;
 
-          // Act.
-          const moduleRegistry = new ModuleRegistry(descriptors);
-          const modulesPromise = moduleRegistry.initializeModules(0);
-          callbackRouterRemote.setDisabledModules(false, []);
-          // Wait for first batch of modules.
-          await flushTasks();
-          const modules = await modulesPromise;
+    // Assert.
+    assertEquals(3, modules.length);
+    assertEquals('bar', modules[0].descriptor.id);
+    assertDeepEquals(barModule, modules[0].element);
+    assertEquals('baz', modules[1].descriptor.id);
+    assertDeepEquals(bazModule, modules[1].element);
+    assertEquals('foo', modules[2].descriptor.id);
+    assertDeepEquals(fooModule, modules[2].element);
+  });
 
-          // Assert.
-          assertEquals(3, modules.length);
-          assertEquals('bar', modules[0].descriptor.id);
-          assertDeepEquals(barModule, modules[0].element);
-          assertEquals('baz', modules[1].descriptor.id);
-          assertDeepEquals(bazModule, modules[1].element);
-          assertEquals('foo', modules[2].descriptor.id);
-          assertDeepEquals(fooModule, modules[2].element);
-        });
+  test('instantiates reordered modules with disabled modules', async () => {
+    // Arrange.
+    const fooModule = createElement();
+    const barModule = createElement();
+    const bazModule = createElement();
+    const bizModule = createElement();
+    const buzModule = createElement();
+    const descriptors = [
+      new ModuleDescriptor('foo', 'bli', () => Promise.resolve(fooModule)),
+      new ModuleDescriptor('bar', 'blu', () => Promise.resolve(barModule)),
+      new ModuleDescriptor('baz', 'bla', () => Promise.resolve(bazModule)),
+      new ModuleDescriptor('biz', 'blo', () => Promise.resolve(bizModule)),
+      new ModuleDescriptor('buz', 'ble', () => Promise.resolve(buzModule)),
+    ];
+    handler.setResultFor('getModulesOrder', Promise.resolve({
+      moduleIds: ['biz', 'bar'],
+    }));
 
-    test('instantiates reordered modules with disabled modules', async () => {
-      // Arrange.
-      const fooModule = createElement();
-      const barModule = createElement();
-      const bazModule = createElement();
-      const bizModule = createElement();
-      const buzModule = createElement();
-      const descriptors = [
-        new ModuleDescriptor('foo', 'bli', () => Promise.resolve(fooModule)),
-        new ModuleDescriptor('bar', 'blu', () => Promise.resolve(barModule)),
-        new ModuleDescriptor('baz', 'bla', () => Promise.resolve(bazModule)),
-        new ModuleDescriptor('biz', 'blo', () => Promise.resolve(bizModule)),
-        new ModuleDescriptor('buz', 'ble', () => Promise.resolve(buzModule)),
-      ];
-      handler.setResultFor('getModulesOrder', Promise.resolve({
-        moduleIds: ['biz', 'bar'],
-      }));
+    // Act.
+    const moduleRegistry = new ModuleRegistry(descriptors);
+    let modulesPromise = moduleRegistry.initializeModules(0);
+    callbackRouterRemote.setDisabledModules(false, ['foo', 'baz', 'buz']);
+    // Wait for first batch of modules with disabled modules.
+    await flushTasks();
+    let modules = await modulesPromise;
 
-      // Act.
-      const moduleRegistry = new ModuleRegistry(descriptors);
-      let modulesPromise = moduleRegistry.initializeModules(0);
-      callbackRouterRemote.setDisabledModules(false, ['foo', 'baz', 'buz']);
-      // Wait for first batch of modules with disabled modules.
-      await flushTasks();
-      let modules = await modulesPromise;
+    // Assert.
+    assertEquals(2, modules.length);
+    assertEquals('biz', modules[0].descriptor.id);
+    assertDeepEquals(bizModule, modules[0].element);
+    assertEquals('bar', modules[1].descriptor.id);
+    assertDeepEquals(barModule, modules[1].element);
 
-      // Assert.
-      assertEquals(2, modules.length);
-      assertEquals('biz', modules[0].descriptor.id);
-      assertDeepEquals(bizModule, modules[0].element);
-      assertEquals('bar', modules[1].descriptor.id);
-      assertDeepEquals(barModule, modules[1].element);
+    // Act.
+    modulesPromise = moduleRegistry.initializeModules(0);
+    callbackRouterRemote.setDisabledModules(false, []);
+    // Wait for second batch of modules with re-enabled modules.
+    await flushTasks();
+    modules = await modulesPromise;
 
-      // Act.
-      modulesPromise = moduleRegistry.initializeModules(0);
-      callbackRouterRemote.setDisabledModules(false, []);
-      // Wait for second batch of modules with re-enabled modules.
-      await flushTasks();
-      modules = await modulesPromise;
-
-      // Assert.
-      assertEquals(5, modules.length);
-      assertEquals('foo', modules[0].descriptor.id);
-      assertDeepEquals(fooModule, modules[0].element);
-      assertEquals('baz', modules[1].descriptor.id);
-      assertDeepEquals(bazModule, modules[1].element);
-      assertEquals('buz', modules[2].descriptor.id);
-      assertDeepEquals(buzModule, modules[2].element);
-      assertEquals('biz', modules[3].descriptor.id);
-      assertDeepEquals(bizModule, modules[3].element);
-      assertEquals('bar', modules[4].descriptor.id);
-      assertDeepEquals(barModule, modules[4].element);
-    });
+    // Assert.
+    assertEquals(5, modules.length);
+    assertEquals('foo', modules[0].descriptor.id);
+    assertDeepEquals(fooModule, modules[0].element);
+    assertEquals('baz', modules[1].descriptor.id);
+    assertDeepEquals(bazModule, modules[1].element);
+    assertEquals('buz', modules[2].descriptor.id);
+    assertDeepEquals(buzModule, modules[2].element);
+    assertEquals('biz', modules[3].descriptor.id);
+    assertDeepEquals(bizModule, modules[3].element);
+    assertEquals('bar', modules[4].descriptor.id);
+    assertDeepEquals(barModule, modules[4].element);
   });
 });

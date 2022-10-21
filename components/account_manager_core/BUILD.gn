@@ -12,7 +12,6 @@ component("account_manager_core") {
   sources = [
     "account.cc",
     "account.h",
-    "account_addition_options.h",
     "account_addition_result.cc",
     "account_addition_result.h",
     "account_manager_facade.cc",
@@ -63,14 +62,11 @@ source_set("test_support") {
   sources = [
     "account_manager_test_util.cc",
     "account_manager_test_util.h",
-    "chromeos/fake_account_manager_ui.cc",
-    "chromeos/fake_account_manager_ui.h",
     "mock_account_manager_facade.cc",
     "mock_account_manager_facade.h",
   ]
 
   public_deps = [
-    "//base",
     "//google_apis",
     "//testing/gmock",
   ]

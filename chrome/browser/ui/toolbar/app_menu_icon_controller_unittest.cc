@@ -4,6 +4,7 @@
 
 #include "chrome/browser/ui/toolbar/app_menu_icon_controller.h"
 
+#include "base/macros.h"
 #include "base/time/default_clock.h"
 #include "base/time/default_tick_clock.h"
 #include "base/time/time.h"

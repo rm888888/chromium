@@ -184,7 +184,7 @@ SyncServiceImpl::SyncServiceImpl(InitParams init_params)
                           base::Unretained(this)),
       base::BindRepeating(&SyncServiceImpl::StartUpSlowEngineComponents,
                           base::Unretained(this)),
-      should_wait_for_policies ? init_params.policy_service.get() : nullptr);
+      should_wait_for_policies ? init_params.policy_service : nullptr);
 
   sync_stopped_reporter_ = std::make_unique<SyncStoppedReporter>(
       sync_service_url_, MakeUserAgentForSync(channel_), url_loader_factory_,
@@ -255,8 +255,12 @@ void SyncServiceImpl::Initialize() {
     user_settings_->SetSyncRequested(false);
 
 #if defined(OS_ANDROID)
-    // If Sync gets turned on, it should be in the decoupled state.
-    sync_prefs_.SetDecoupledFromAndroidMasterSync();
+    // If Sync was turned on after the feature toggle was enabled, it should be
+    // in the decoupled state.
+    if (base::FeatureList::IsEnabled(
+            switches::kDecoupleSyncFromAndroidMasterSync)) {
+      sync_prefs_.SetDecoupledFromAndroidMasterSync();
+    }
 #endif  // defined(OS_ANDROID)
   }
 
@@ -319,10 +323,11 @@ void SyncServiceImpl::AccountStateChanged() {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
 
 #if defined(OS_ANDROID)
-  // Sync and master sync should only remain coupled if the former stays enabled
-  // and the latter disabled. Upon sign-out set the pref so they are decoupled
-  // on the next time Sync is turned on.
-  if (!HasSyncConsent()) {
+  // Once the feature toggle is enabled, Sync and master sync should only remain
+  // coupled if the former stays enabled and the latter disabled. Upon sign-out
+  // set the pref so they are decoupled on the next time Sync is turned on.
+  if (!HasSyncConsent() && base::FeatureList::IsEnabled(
+                               switches::kDecoupleSyncFromAndroidMasterSync)) {
     sync_prefs_.SetDecoupledFromAndroidMasterSync();
   }
 #endif  // defined(OS_ANDROID)
@@ -368,8 +373,7 @@ void SyncServiceImpl::CredentialsChanged() {
     if (!engine_) {
       NotifyObservers();
     }
-    ResetEngine(ShutdownReason::STOP_SYNC_AND_KEEP_DATA,
-                ResetEngineReason::kCredentialsChanged);
+    ResetEngine(ShutdownReason::STOP_SYNC_AND_KEEP_DATA);
     return;
   }
 
@@ -479,6 +483,7 @@ void SyncServiceImpl::StartUpSlowEngineComponents() {
   params.engine_components_factory =
       std::make_unique<EngineComponentsFactoryImpl>(
           EngineSwitchesFromCommandLine());
+  params.encryption_bootstrap_token = sync_prefs_.GetEncryptionBootstrapToken();
 
   if (!IsLocalSyncEnabled()) {
     auth_manager_->ConnectionOpened();
@@ -491,8 +496,7 @@ void SyncServiceImpl::Shutdown() {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
 
   NotifyShutdown();
-  ResetEngine(ShutdownReason::BROWSER_SHUTDOWN_AND_KEEP_DATA,
-              ResetEngineReason::kShutdown);
+  ResetEngine(ShutdownReason::BROWSER_SHUTDOWN_AND_KEEP_DATA);
 
   DCHECK(!data_type_manager_);
   data_type_controllers_.clear();
@@ -512,19 +516,17 @@ void SyncServiceImpl::Shutdown() {
   auth_manager_.reset();
 }
 
-void SyncServiceImpl::ResetEngine(ShutdownReason shutdown_reason,
-                                  ResetEngineReason reset_reason) {
+void SyncServiceImpl::ResetEngine(ShutdownReason reason) {
   if (!engine_) {
     // If the engine hasn't started or is already shut down when a DISABLE_SYNC
     // happens, the Directory needs to be cleaned up here.
-    if (shutdown_reason == ShutdownReason::DISABLE_SYNC_AND_CLEAR_DATA) {
+    if (reason == ShutdownReason::DISABLE_SYNC_AND_CLEAR_DATA) {
       sync_client_->GetSyncApiComponentFactory()->ClearAllTransportData();
     }
     return;
   }
 
-  base::UmaHistogramEnumeration("Sync.ResetEngineReason", reset_reason);
-  switch (shutdown_reason) {
+  switch (reason) {
     case ShutdownReason::STOP_SYNC_AND_KEEP_DATA:
     case ShutdownReason::DISABLE_SYNC_AND_CLEAR_DATA:
       RemoveClientFromServer();
@@ -547,7 +549,7 @@ void SyncServiceImpl::ResetEngine(ShutdownReason shutdown_reason,
       // When aborting as part of shutdown, we should expect an aborted sync
       // configure result, else we'll dcheck when we try to read the sync error.
       expect_sync_configuration_aborted_ = true;
-      data_type_manager_->Stop(shutdown_reason);
+      data_type_manager_->Stop(reason);
     }
     data_type_manager_.reset();
   }
@@ -556,7 +558,7 @@ void SyncServiceImpl::ResetEngine(ShutdownReason shutdown_reason,
   // snapshot.
   migrator_.reset();
 
-  engine_->Shutdown(shutdown_reason);
+  engine_->Shutdown(reason);
   engine_.reset();
 
   sync_enabled_weak_factory_.InvalidateWeakPtrs();
@@ -575,7 +577,7 @@ void SyncServiceImpl::ResetEngine(ShutdownReason shutdown_reason,
   NotifyObservers();
 
   // Now that everything is shut down, try to start up again.
-  switch (shutdown_reason) {
+  switch (reason) {
     case ShutdownReason::STOP_SYNC_AND_KEEP_DATA:
     case ShutdownReason::DISABLE_SYNC_AND_CLEAR_DATA:
       // If Sync is being stopped (either temporarily or permanently),
@@ -722,8 +724,7 @@ void SyncServiceImpl::OnUnrecoverableErrorImpl(
   // Shut the Sync machinery down. The existence of
   // |unrecoverable_error_reason_| and thus |DISABLE_REASON_UNRECOVERABLE_ERROR|
   // will prevent Sync from starting up again (even in transport-only mode).
-  ResetEngine(ShutdownReason::DISABLE_SYNC_AND_CLEAR_DATA,
-              ResetEngineReason::kUnrecoverableError);
+  ResetEngine(ShutdownReason::DISABLE_SYNC_AND_CLEAR_DATA);
 }
 
 void SyncServiceImpl::DataTypePreconditionChanged(ModelType type) {
@@ -846,11 +847,6 @@ void SyncServiceImpl::OnActionableError(const SyncProtocolError& error) {
         UMA_HISTOGRAM_ENUMERATION("Sync.StopSource", BIRTHDAY_ERROR,
                                   STOP_SOURCE_LIMIT);
       }
-
-      // Security domain state might be reset, reset local state as well.
-      sync_client_->GetTrustedVaultClient()->ClearDataForAccount(
-          GetAccountInfo());
-
       // Note: StopAndClear sets IsSyncRequested to false, which ensures that
       // Sync-the-feature remains off.
       StopAndClear();
@@ -879,12 +875,10 @@ void SyncServiceImpl::OnActionableError(const SyncProtocolError& error) {
     case STOP_SYNC_FOR_DISABLED_ACCOUNT:
       // Sync disabled by domain admin. Stop syncing until next restart.
       sync_disabled_by_admin_ = true;
-      ResetEngine(ShutdownReason::DISABLE_SYNC_AND_CLEAR_DATA,
-                  ResetEngineReason::kDisabledAccount);
+      ResetEngine(ShutdownReason::DISABLE_SYNC_AND_CLEAR_DATA);
       break;
     case RESET_LOCAL_SYNC_DATA:
-      ResetEngine(ShutdownReason::DISABLE_SYNC_AND_CLEAR_DATA,
-                  ResetEngineReason::kResetLocalData);
+      ResetEngine(ShutdownReason::DISABLE_SYNC_AND_CLEAR_DATA);
       break;
     case UNKNOWN_ACTION:
       NOTREACHED();
@@ -982,15 +976,10 @@ void SyncServiceImpl::ReconfigureDataTypesDueToCrypto() {
   NotifyObservers();
 }
 
-void SyncServiceImpl::SetEncryptionBootstrapToken(
+void SyncServiceImpl::EncryptionBootstrapTokenChanged(
     const std::string& bootstrap_token) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   sync_prefs_.SetEncryptionBootstrapToken(bootstrap_token);
-}
-
-std::string SyncServiceImpl::GetEncryptionBootstrapToken() {
-  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-  return sync_prefs_.GetEncryptionBootstrapToken();
 }
 
 bool SyncServiceImpl::IsSetupInProgress() const {
@@ -1456,8 +1445,7 @@ void SyncServiceImpl::OnSyncRequestedPrefChange(bool is_sync_requested) {
     // This will notify the observers.
     // TODO(crbug.com/856179): Evaluate whether we can get away without a
     // full restart in this case (i.e. just reconfigure).
-    ResetEngine(ShutdownReason::STOP_SYNC_AND_KEEP_DATA,
-                ResetEngineReason::kRequestedPrefChange);
+    ResetEngine(ShutdownReason::STOP_SYNC_AND_KEEP_DATA);
   }
 }
 
@@ -1689,8 +1677,7 @@ void SyncServiceImpl::StopAndClear() {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
 
   ClearUnrecoverableError();
-  ResetEngine(ShutdownReason::DISABLE_SYNC_AND_CLEAR_DATA,
-              ResetEngineReason::kStopAndClear);
+  ResetEngine(ShutdownReason::DISABLE_SYNC_AND_CLEAR_DATA);
   // Note: ResetEngine(DISABLE_SYNC_AND_CLEAR_DATA) does *not* clear prefs which
   // are directly user-controlled such as the set of selected types here, so
   // that if the user ever chooses to enable Sync again, they start off with
@@ -1718,8 +1705,7 @@ void SyncServiceImpl::SetSyncAllowedByPlatform(bool allowed) {
     // TODO(crbug.com/856179): Evaluate whether we can get away without a full
     // restart (i.e. just reconfigure). See also similar comment in
     // OnSyncRequestedPrefChange().
-    ResetEngine(ShutdownReason::STOP_SYNC_AND_KEEP_DATA,
-                ResetEngineReason::kSetSyncAllowedByPlatform);
+    ResetEngine(ShutdownReason::STOP_SYNC_AND_KEEP_DATA);
   }
 }
 
@@ -1781,8 +1767,7 @@ void SyncServiceImpl::OverrideNetworkForTest(
   if (engine_) {
     // Use BROWSER_SHUTDOWN_AND_KEEP_DATA to prevent the engine from immediately
     // restarting.
-    ResetEngine(ShutdownReason::BROWSER_SHUTDOWN_AND_KEEP_DATA,
-                ResetEngineReason::kShutdown);
+    ResetEngine(ShutdownReason::BROWSER_SHUTDOWN_AND_KEEP_DATA);
     restart = true;
   }
   DCHECK(!engine_);

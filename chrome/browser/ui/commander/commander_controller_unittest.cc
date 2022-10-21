@@ -5,11 +5,10 @@
 #include "chrome/browser/ui/commander/commander_controller.h"
 
 #include <string>
-#include <tuple>
 
 #include "base/callback.h"
 #include "base/callback_helpers.h"
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/run_loop.h"
 #include "base/test/bind.h"
 #include "chrome/browser/ui/commander/command_source.h"
@@ -111,7 +110,7 @@ class ViewModelCallbackWaiter {
   ~ViewModelCallbackWaiter() { test_->WaitForExpectedCallbacks(); }
 
  private:
-  raw_ptr<CommanderControllerTest> test_;
+  CommanderControllerTest* test_;
 };
 
 TEST_F(CommanderControllerTest, PassesInputToCommandSourcesOnTextChanged) {
@@ -139,7 +138,7 @@ TEST_F(CommanderControllerTest, PassesInputToCommandSourcesOnTextChanged) {
 
 TEST_F(CommanderControllerTest, ResultSetIdsDifferAcrossCalls) {
   std::vector<std::unique_ptr<CommandSource>> sources;
-  std::ignore = AddSource(&sources, CreateNoOpCommandSource());
+  ignore_result(AddSource(&sources, CreateNoOpCommandSource()));
   base::RunLoop run_loop;
   auto controller =
       CommanderController::CreateWithSourcesForTesting(std::move(sources));

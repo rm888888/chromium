@@ -9,6 +9,7 @@
 #include <string>
 
 #include "base/callback.h"
+#include "base/macros.h"
 #include "base/memory/ref_counted.h"
 #include "chrome/browser/image_decoder/image_decoder.h"
 #include "ui/gfx/image/image_skia.h"

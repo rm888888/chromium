@@ -9,6 +9,7 @@
 
 #include "base/bind.h"
 #include "base/check.h"
+#include "base/containers/contains.h"
 #include "base/memory/scoped_refptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/notreached.h"
@@ -44,9 +45,10 @@ class Clipboard {
   // Synchronously retrieves the mime types list currently available to be read.
   virtual std::vector<std::string> ReadMimeTypes() = 0;
 
-  // Synchronously reads and returns clipboard content with |mime_type| format.
-  // TODO(crbug.com/443355): Drop once Clipboard API becomes async.
-  virtual ui::PlatformClipboard::Data Read(const std::string& mime_type) = 0;
+  // Asynchronously reads clipboard content with |mime_type| format. The result
+  // data is expected to be delivered through |callback|.
+  virtual bool Read(const std::string& mime_type,
+                    ui::PlatformClipboard::RequestDataClosure callback) = 0;
 
   // Synchronously stores and announces |data| as available from this clipboard.
   virtual void Write(const ui::PlatformClipboard::DataMap* data) = 0;
@@ -79,8 +81,10 @@ class ClipboardImpl final : public Clipboard, public DataSource::Delegate {
   ClipboardImpl(const ClipboardImpl&) = delete;
   ClipboardImpl& operator=(const ClipboardImpl&) = delete;
 
-  ui::PlatformClipboard::Data Read(const std::string& mime_type) final {
-    return GetDevice()->ReadSelectionData(GetMimeTypeForRequest(mime_type));
+  bool Read(const std::string& mime_type,
+            ui::PlatformClipboard::RequestDataClosure callback) final {
+    return GetDevice()->ReadSelectionData(GetMimeTypeForRequest(mime_type),
+                                          std::move(callback));
   }
 
   std::vector<std::string> ReadMimeTypes() final {
@@ -186,7 +190,6 @@ class ClipboardImpl final : public Clipboard, public DataSource::Delegate {
 }  // namespace wl
 
 namespace ui {
-
 WaylandClipboard::WaylandClipboard(WaylandConnection* connection,
                                    WaylandDataDeviceManager* manager)
     : connection_(connection),
@@ -214,19 +217,10 @@ void WaylandClipboard::RequestClipboardData(
     ClipboardBuffer buffer,
     const std::string& mime_type,
     PlatformClipboard::RequestDataClosure callback) {
-  PlatformClipboard::Data data;
   if (auto* clipboard = GetClipboard(buffer))
-    data = clipboard->Read(mime_type);
-  std::move(callback).Run(data);
-}
-
-void WaylandClipboard::GetAvailableMimeTypes(
-    ClipboardBuffer buffer,
-    PlatformClipboard::GetMimeTypesClosure callback) {
-  std::vector<std::string> mime_types;
-  if (auto* clipboard = GetClipboard(buffer))
-    mime_types = clipboard->ReadMimeTypes();
-  std::move(callback).Run(mime_types);
+    clipboard->Read(mime_type, std::move(callback));
+  else
+    std::move(callback).Run(nullptr);
 }
 
 bool WaylandClipboard::IsSelectionOwner(ClipboardBuffer buffer) {
@@ -240,6 +234,15 @@ void WaylandClipboard::SetClipboardDataChangedCallback(
   copypaste_clipboard_->SetClipboardDataChangedCallback(data_changed_callback);
   if (auto* selection_clipboard = GetClipboard(ClipboardBuffer::kSelection))
     selection_clipboard->SetClipboardDataChangedCallback(data_changed_callback);
+}
+
+void WaylandClipboard::GetAvailableMimeTypes(
+    ClipboardBuffer buffer,
+    PlatformClipboard::GetMimeTypesClosure callback) {
+  std::vector<std::string> mime_types;
+  if (auto* clipboard = GetClipboard(buffer))
+    mime_types = clipboard->ReadMimeTypes();
+  std::move(callback).Run(mime_types);
 }
 
 bool WaylandClipboard::IsSelectionBufferAvailable() const {

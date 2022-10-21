@@ -5,9 +5,7 @@
 #include <utility>
 
 #include "base/callback.h"
-#include "base/memory/raw_ptr.h"
 #include "base/run_loop.h"
-#include "base/scoped_observation.h"
 #include "base/test/bind.h"
 #include "build/build_config.h"
 #include "chrome/browser/signin/identity_manager_factory.h"
@@ -43,13 +41,6 @@ namespace {
 // Synchronously waits for the Sync confirmation to be closed.
 class SyncConfirmationClosedObserver : public LoginUIService::Observer {
  public:
-  explicit SyncConfirmationClosedObserver(Browser* browser)
-      : browser_(browser) {
-    DCHECK(browser_);
-    login_ui_service_observation_.Observe(
-        LoginUIServiceFactory::GetForProfile(browser_->profile()));
-  }
-
   LoginUIService::SyncConfirmationUIClosedResult WaitForConfirmationClosed() {
     run_loop_.Run();
     return *result_;
@@ -59,16 +50,11 @@ class SyncConfirmationClosedObserver : public LoginUIService::Observer {
   // LoginUIService::Observer:
   void OnSyncConfirmationUIClosed(
       LoginUIService::SyncConfirmationUIClosedResult result) override {
-    login_ui_service_observation_.Reset();
-    result_ = result;
-    browser_->signin_view_controller()->CloseModalSignin();
     run_loop_.Quit();
+    result_ = result;
   }
 
-  Browser* const browser_;
   base::RunLoop run_loop_;
-  base::ScopedObservation<LoginUIService, LoginUIService::Observer>
-      login_ui_service_observation_{this};
   absl::optional<LoginUIService::SyncConfirmationUIClosedResult> result_;
 };
 
@@ -97,7 +83,7 @@ class SigninDialogClosedObserver
   }
 
   base::RunLoop dialog_closed_run_loop_;
-  raw_ptr<SigninViewControllerDelegate> delegate_;
+  SigninViewControllerDelegate* delegate_;
 };
 
 }  // namespace
@@ -154,7 +140,9 @@ IN_PROC_BROWSER_TEST_F(SignInViewControllerBrowserTest,
   EXPECT_TRUE(browser()->signin_view_controller()->ShowsModalDialog());
   content_observer.Wait();
 
-  SyncConfirmationClosedObserver sync_confirmation_observer(browser());
+  SyncConfirmationClosedObserver sync_confirmation_observer;
+  LoginUIServiceFactory::GetForProfile(browser()->profile())
+      ->AddObserver(&sync_confirmation_observer);
   ASSERT_TRUE(ui_test_utils::SendKeyPressSync(browser(), ui::VKEY_RETURN,
                                               /*control=*/false,
                                               /*shift=*/false, /*alt=*/false,

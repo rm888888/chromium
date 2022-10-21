@@ -9,10 +9,11 @@
 #include <vector>
 
 #include "base/callback.h"
+#include "base/macros.h"
 #include "base/memory/ref_counted.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "ui/ozone/platform/drm/gpu/drm_thread.h"
-#include "ui/ozone/platform/drm/mojom/device_cursor.mojom.h"
+#include "ui/ozone/public/mojom/device_cursor.mojom.h"
 #include "ui/ozone/public/overlay_surface_candidate.h"
 
 namespace ui {

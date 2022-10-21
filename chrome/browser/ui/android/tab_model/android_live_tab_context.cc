@@ -63,14 +63,9 @@ sessions::LiveTab* AndroidLiveTabContext::GetActiveLiveTab() const {
   return sessions::ContentLiveTab::GetForWebContents(web_contents);
 }
 
-std::map<std::string, std::string> AndroidLiveTabContext::GetExtraDataForTab(
-    int index) const {
-  return std::map<std::string, std::string>();
-}
-
-std::map<std::string, std::string>
-AndroidLiveTabContext::GetExtraDataForWindow() const {
-  return std::map<std::string, std::string>();
+bool AndroidLiveTabContext::IsTabPinned(int index) const {
+  // Not applicable to android.
+  return false;
 }
 
 absl::optional<tab_groups::TabGroupId> AndroidLiveTabContext::GetTabGroupForTab(
@@ -86,11 +81,6 @@ AndroidLiveTabContext::GetVisualDataForGroup(
   // be called.
   NOTREACHED();
   return nullptr;
-}
-
-bool AndroidLiveTabContext::IsTabPinned(int index) const {
-  // Not applicable to android.
-  return false;
 }
 
 void AndroidLiveTabContext::SetVisualDataForGroup(
@@ -130,7 +120,6 @@ sessions::LiveTab* AndroidLiveTabContext::AddRestoredTab(
     bool pin,
     const sessions::PlatformSpecificTabData* tab_platform_data,
     const sessions::SerializedUserAgentOverride& user_agent_override,
-    const std::map<std::string, std::string>& extra_data,
     const SessionID* tab_id) {
   Profile* profile = tab_model_->GetProfile();
 
@@ -160,8 +149,7 @@ sessions::LiveTab* AndroidLiveTabContext::ReplaceRestoredTab(
     int selected_navigation,
     const std::string& extension_app_id,
     const sessions::PlatformSpecificTabData* tab_platform_data,
-    const sessions::SerializedUserAgentOverride& user_agent_override,
-    const std::map<std::string, std::string>& extra_data) {
+    const sessions::SerializedUserAgentOverride& user_agent_override) {
   NOTIMPLEMENTED();
   return nullptr;
 }

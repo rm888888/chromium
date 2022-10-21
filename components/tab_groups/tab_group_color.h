@@ -11,6 +11,7 @@
 
 #include "base/component_export.h"
 #include "base/containers/flat_map.h"
+#include "base/macros.h"
 #include "third_party/skia/include/core/SkColor.h"
 
 namespace tab_groups {
@@ -19,13 +20,13 @@ namespace tab_groups {
 // These values are written to and read from disk for session and tab restore.
 //
 // Any changes to the tab group color set should be made in the map returned by
-// GetTabGroupColorLabelMap(). The set of valid colors is contained in the keys
-// of that map. Do not add or delete items in this enum without also reflecting
-// that change in the map.
+// GetColorSet(). The set of valid colors is contained in the keys of that map.
+// Do not add or delete items in this enum without also reflecting that change
+// in the map.
 //
 // Any code that reads an enum value from disk should check it against the map
-// from GetTabGroupColorLabelMap(). If the value is not contained in the map's
-// keys, default to kGrey.
+// from GetColorSet(). If the value is not contained in the map's keys, default
+// to kGrey.
 enum class TabGroupColorId {
   kGrey = 0,
   kBlue = 1,
@@ -35,8 +36,7 @@ enum class TabGroupColorId {
   kPink = 5,
   kPurple = 6,
   kCyan = 7,
-  kOrange = 8,
-  // Next value: 9
+  // Next value: 8
 };
 
 using ColorLabelMap = base::flat_map<TabGroupColorId, std::u16string>;

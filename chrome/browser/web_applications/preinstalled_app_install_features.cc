@@ -10,6 +10,8 @@
 
 namespace web_app {
 
+namespace {
+
 // A hard coded list of features available for externally installed apps to
 // gate their installation on via their config file settings. See
 // |kFeatureName| in preinstalled_web_app_utils.h.
@@ -21,14 +23,12 @@ constexpr const base::Feature* kPreinstalledAppInstallFeatures[] = {
 
 bool g_always_enabled_for_testing = false;
 
-namespace {
-
-// Checks if the feature being passed matches any of the migration features
-// above.
+#if defined(OS_CHROMEOS)
 bool IsMigrationFeature(const base::Feature& feature) {
   return &feature == &kMigrateDefaultChromeAppToWebAppsGSuite ||
          &feature == &kMigrateDefaultChromeAppToWebAppsNonGSuite;
 }
+#endif  // defined(OS_CHROMEOS)
 
 }  // namespace
 
@@ -96,17 +96,6 @@ bool IsPreinstalledAppInstallFeatureEnabled(base::StringPiece feature_name,
       return base::FeatureList::IsEnabled(*feature);
   }
 
-  return false;
-}
-
-bool IsAnyChromeAppToWebAppMigrationEnabled(const Profile& profile) {
-  for (const base::Feature* feature : kPreinstalledAppInstallFeatures) {
-    if (IsMigrationFeature(*feature)) {
-      if (IsPreinstalledAppInstallFeatureEnabled(feature->name, profile)) {
-        return true;
-      }
-    }
-  }
   return false;
 }
 

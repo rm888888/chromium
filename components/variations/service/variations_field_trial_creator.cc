@@ -183,13 +183,17 @@ bool VariationsFieldTrialCreator::SetUpFieldTrials(
     metrics::MetricsStateManager* metrics_state_manager,
     PlatformFieldTrials* platform_field_trials,
     SafeSeedManager* safe_seed_manager,
-    absl::optional<int> low_entropy_source_value) {
+    absl::optional<int> low_entropy_source_value,
+    bool extend_variations_safe_mode) {
   DCHECK(feature_list);
   DCHECK(metrics_state_manager);
   DCHECK(platform_field_trials);
   DCHECK(safe_seed_manager);
 
-  if (base::FieldTrialList::IsTrialActive(kExtendedSafeModeTrial) &&
+#if !defined(OS_ANDROID) && !defined(OS_IOS)
+  // TODO(crbug/1248239): Enable Extended Variations Safe Mode on Clank.
+  // TODO(crbug/1255305): Re-enable it on iOS.
+  if (extend_variations_safe_mode &&
       !metrics_state_manager->is_background_session()) {
     // If the session is expected to be a background session, then do not extend
     // Variations Safe Mode. Extending Safe Mode involves monitoring for crashes
@@ -198,6 +202,7 @@ bool VariationsFieldTrialCreator::SetUpFieldTrials(
     // crashes.
     MaybeExtendVariationsSafeMode(metrics_state_manager);
   }
+#endif  // !defined(OS_ANDROID) && !defined(OS_IOS)
 
   // TODO(crbug/1257204): Some FieldTrial-setup-related code is here and some is
   // in MetricsStateManager::InstantiateFieldTrialList(). It's not ideal that
@@ -342,27 +347,26 @@ std::string VariationsFieldTrialCreator::LoadPermanentConsistencyCountry(
     return permanent_overridden_country;
   }
 
-  const base::Value* list_value =
+  const base::ListValue* list_value =
       local_state()->GetList(prefs::kVariationsPermanentConsistencyCountry);
-  const std::string* stored_version_string = nullptr;
-  const std::string* stored_country = nullptr;
+  std::string stored_version_string;
+  std::string stored_country;
 
   // Determine if the saved pref value is present and valid.
   const bool is_pref_empty = list_value->GetList().empty();
-  const bool is_pref_valid =
-      list_value->GetList().size() == 2 &&
-      (stored_version_string = list_value->GetList()[0].GetIfString()) &&
-      (stored_country = list_value->GetList()[1].GetIfString()) &&
-      base::Version(*stored_version_string).IsValid();
+  const bool is_pref_valid = list_value->GetList().size() == 2 &&
+                             list_value->GetString(0, &stored_version_string) &&
+                             list_value->GetString(1, &stored_country) &&
+                             base::Version(stored_version_string).IsValid();
 
   // Determine if the version from the saved pref matches |version|.
   const bool does_version_match =
-      is_pref_valid && version == base::Version(*stored_version_string);
+      is_pref_valid && version == base::Version(stored_version_string);
 
   // Determine if the country in the saved pref matches the country in
   // |latest_country|.
   const bool does_country_match = is_pref_valid && !latest_country.empty() &&
-                                  *stored_country == latest_country;
+                                  stored_country == latest_country;
 
   // Record a histogram for how the saved pref value compares to the current
   // version and the country code in the variations seed.
@@ -389,7 +393,7 @@ std::string VariationsFieldTrialCreator::LoadPermanentConsistencyCountry(
   // Use the stored country if one is available and was fetched since the last
   // time Chrome was updated.
   if (does_version_match)
-    return *stored_country;
+    return stored_country;
 
   if (latest_country.empty()) {
     if (!is_pref_valid)
@@ -444,13 +448,12 @@ bool VariationsFieldTrialCreator::IsOverrideResourceMapEmpty() {
   return overridden_strings_map_.empty();
 }
 
+#if !defined(OS_ANDROID) && !defined(OS_IOS)
 void VariationsFieldTrialCreator::MaybeExtendVariationsSafeMode(
     metrics::MetricsStateManager* metrics_state_manager) {
   const std::string group_name =
       base::FieldTrialList::FindFullName(kExtendedSafeModeTrial);
-  DCHECK(!group_name.empty());
-
-  if (group_name == kDefaultGroup)
+  if (group_name.empty() || group_name == kDefaultGroup)
     return;
 
   if (group_name == kControlGroup) {
@@ -466,6 +469,7 @@ void VariationsFieldTrialCreator::MaybeExtendVariationsSafeMode(
       /*has_session_shutdown_cleanly=*/false,
       /*write_synchronously=*/true);
 }
+#endif  // !defined(OS_ANDROID) && !defined(OS_IOS)
 
 bool VariationsFieldTrialCreator::HasSeedExpired(bool is_safe_seed) {
   const base::Time fetch_time = is_safe_seed
@@ -620,9 +624,8 @@ bool VariationsFieldTrialCreator::CreateTrialsFromSeed(
         std::move(client_filterable_state), seed_store_->GetLastFetchTime());
   }
 
-  base::UmaHistogramCounts1M("Variations.AppliedSeed.Size", seed_data.size());
-  base::UmaHistogramTimes("Variations.SeedProcessingTime",
-                          base::TimeTicks::Now() - start_time);
+  UMA_HISTOGRAM_TIMES("Variations.SeedProcessingTime",
+                      base::TimeTicks::Now() - start_time);
   return true;
 }
 

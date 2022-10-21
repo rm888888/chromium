@@ -102,6 +102,10 @@ void WaylandEventSource::StartProcessingEvents() {
   event_watcher_->StartProcessingEvents();
 }
 
+void WaylandEventSource::StopProcessingEvents() {
+  event_watcher_->StopProcessingEvents();
+}
+
 void WaylandEventSource::OnKeyboardFocusChanged(WaylandWindow* window,
                                                 bool focused) {
   DCHECK(window);
@@ -467,10 +471,6 @@ void WaylandEventSource::UseSingleThreadedPollingForTesting() {
 
 void WaylandEventSource::OnDispatcherListChanged() {
   StartProcessingEvents();
-}
-
-void WaylandEventSource::StopProcessingEventsForTesting() {
-  event_watcher_->StopProcessingEvents();
 }
 
 void WaylandEventSource::OnWindowRemoved(WaylandWindow* window) {

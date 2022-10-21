@@ -4,6 +4,7 @@
 
 #include "chrome/browser/ui/views/chrome_constrained_window_views_client.h"
 
+#include "base/macros.h"
 #include "base/memory/ptr_util.h"
 #include "chrome/browser/platform_util.h"
 #include "chrome/browser/ui/browser.h"

@@ -560,13 +560,6 @@ const char kUnlimitedStorage[]              = "unlimited-storage";
 // all of its state.
 const char kUserDataDir[]                   = "user-data-dir";
 
-// Uses WinHttp to resolve proxies instead of using Chromium's normal proxy
-// resolution logic. This is only supported in Windows.
-//
-// TODO(https://crbug.com/1032820): Only use WinHttp whenever Chrome is
-// exclusively using system proxy configs.
-const char kUseSystemProxyResolver[] = "use-system-proxy-resolver";
-
 // Examines a .crx for validity and prints the result.
 const char kValidateCrx[]                   = "validate-crx";
 
@@ -806,18 +799,6 @@ const char kEnableNewAppMenuIcon[] = "enable-new-app-menu-icon";
 
 // Causes the browser to launch directly in guest mode.
 const char kGuest[] = "guest";
-#endif
-
-#if defined(OS_LINUX) || defined(OS_MAC) || defined(OS_WIN)
-// Writes open and installed web apps for each profile to the specified file
-// without launching a new browser window or tab. Pass a absolute file path to
-// specify where to output the information. Can be used together with optional
-// --profile-base-name switch to only write information for a given profile.
-const char kListApps[] = "list-apps";
-
-// Pass the basename of the profile directory to specify which profile to get
-// information. Only relevant when used with --list-apps switch.
-const char kProfileBaseName[] = "profile-base-name";
 #endif
 
 #if BUILDFLAG(IS_CHROMEOS_ASH) || defined(OS_ANDROID)

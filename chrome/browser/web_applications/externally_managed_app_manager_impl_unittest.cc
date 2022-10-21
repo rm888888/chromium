@@ -13,7 +13,6 @@
 #include "base/bind.h"
 #include "base/callback.h"
 #include "base/containers/contains.h"
-#include "base/memory/raw_ptr.h"
 #include "base/one_shot_event.h"
 #include "base/run_loop.h"
 #include "base/strings/utf_string_conversions.h"
@@ -60,9 +59,9 @@ ExternalInstallOptions GetInstallOptions(
   return options;
 }
 
-std::unique_ptr<WebAppInstallInfo> GetWebAppInstallInfo(const GURL& url) {
-  std::unique_ptr<WebAppInstallInfo> info =
-      std::make_unique<WebAppInstallInfo>();
+std::unique_ptr<WebApplicationInfo> GetWebApplicationInfo(const GURL& url) {
+  std::unique_ptr<WebApplicationInfo> info =
+      std::make_unique<WebApplicationInfo>();
   info->start_url = url;
   info->scope = url.GetWithoutFilename();
   info->title = u"Foo Web App";
@@ -78,8 +77,8 @@ ExternalInstallOptions GetInstallOptionsWithWebAppInfo(
   options.only_use_app_info_factory = true;
   // Static to ensure re-use across multiple function calls for
   // ExternalInstallOptions equality checking.
-  static WebAppInstallInfoFactory app_info_factory =
-      base::BindRepeating(&GetWebAppInstallInfo, url);
+  static WebApplicationInfoFactory app_info_factory =
+      base::BindRepeating(&GetWebApplicationInfo, url);
   options.app_info_factory = app_info_factory;
 
   if (override_previous_user_uninstall.has_value())
@@ -311,8 +310,7 @@ class FakeExternallyManagedAppManager : public ExternallyManagedAppManagerImpl {
               install_url, result.did_install_placeholder);
         }
       }
-      std::move(callback).Run(
-          ExternallyManagedAppManager::InstallResult(result.code, app_id));
+      std::move(callback).Run(app_id, {.code = result.code});
     }
 
     void Install(content::WebContents* web_contents,
@@ -337,8 +335,7 @@ class FakeExternallyManagedAppManager : public ExternallyManagedAppManagerImpl {
     }
 
    private:
-    raw_ptr<FakeExternallyManagedAppManager>
-        externally_managed_app_manager_impl_;
+    FakeExternallyManagedAppManager* externally_managed_app_manager_impl_;
     ExternallyInstalledWebAppPrefs externally_installed_app_prefs_;
     TestExternallyManagedAppInstallTaskManager& test_install_task_manager_;
   };
@@ -371,8 +368,7 @@ class FakeExternallyManagedAppManager : public ExternallyManagedAppManagerImpl {
           install_url, RegistrationResultCode::kSuccess);
     }
 
-    const raw_ptr<FakeExternallyManagedAppManager>
-        externally_managed_app_manager_impl_;
+    FakeExternallyManagedAppManager* const externally_managed_app_manager_impl_;
 
     base::WeakPtrFactory<TestExternallyManagedAppRegistrationTask>
         weak_ptr_factory_{this};

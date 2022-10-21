@@ -5,6 +5,7 @@
 #include "components/autofill_assistant/browser/selector.h"
 
 #include "base/containers/flat_set.h"
+#include "base/macros.h"
 #include "components/autofill_assistant/browser/service.pb.h"
 #include "testing/gmock/include/gmock/gmock.h"
 

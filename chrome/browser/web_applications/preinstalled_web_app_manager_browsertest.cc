@@ -273,7 +273,7 @@ class PreinstalledWebAppManagerBrowserTest
 
  private:
   std::unique_ptr<content::URLLoaderInterceptor> url_loader_interceptor_;
-  OsIntegrationManager::ScopedSuppressForTesting os_hooks_suppress_;
+  ScopedOsHooksSuppress os_hooks_suppress_;
   base::test::ScopedFeatureList feature_list_;
 };
 
@@ -994,7 +994,7 @@ IN_PROC_BROWSER_TEST_F(PreinstalledWebAppManagerBrowserTest,
       GenerateAppId(/*manifest_id=*/absl::nullopt, preinstalled_app_start_url);
 
   // Install user app.
-  auto web_application_info = std::make_unique<WebAppInstallInfo>();
+  auto web_application_info = std::make_unique<WebApplicationInfo>();
   web_application_info->start_url = user_app_start_url;
   web_application_info->title = u"Test user app";
   AppId user_app_id =

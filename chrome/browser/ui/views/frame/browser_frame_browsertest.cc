@@ -4,6 +4,7 @@
 
 #include "chrome/browser/ui/views/frame/browser_frame.h"
 
+#include "base/macros.h"
 #include "build/build_config.h"
 #include "chrome/browser/devtools/devtools_window_testing.h"
 #include "chrome/browser/ui/browser.h"
@@ -48,7 +49,7 @@ IN_PROC_BROWSER_TEST_F(BrowserFrameTest, DevToolsHasBoundsOnOpen) {
 
 // Verifies that the web app is loaded with initial bounds.
 IN_PROC_BROWSER_TEST_F(BrowserFrameTest, WebAppsHasBoundsOnOpen) {
-  auto web_app_info = std::make_unique<WebAppInstallInfo>();
+  auto web_app_info = std::make_unique<WebApplicationInfo>();
   web_app_info->start_url = GURL("http://example.org/");
   web_app::AppId app_id = web_app::test::InstallWebApp(browser()->profile(),
                                                        std::move(web_app_info));

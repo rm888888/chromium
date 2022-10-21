@@ -64,6 +64,10 @@ constexpr PrefsForManagedContentSettingsMapEntry
          CONTENT_SETTING_ASK},
         {prefs::kManagedWebUsbBlockedForUrls, ContentSettingsType::USB_GUARD,
          CONTENT_SETTING_BLOCK},
+        {prefs::kManagedFileHandlingAllowedForUrls,
+         ContentSettingsType::FILE_HANDLING, CONTENT_SETTING_ALLOW},
+        {prefs::kManagedFileHandlingBlockedForUrls,
+         ContentSettingsType::FILE_HANDLING, CONTENT_SETTING_BLOCK},
         {prefs::kManagedFileSystemReadAskForUrls,
          ContentSettingsType::FILE_SYSTEM_READ_GUARD, CONTENT_SETTING_ASK},
         {prefs::kManagedFileSystemReadBlockedForUrls,
@@ -185,6 +189,8 @@ const PolicyProvider::PrefsForManagedDefaultMapEntry
          prefs::kManagedDefaultWebBluetoothGuardSetting},
         {ContentSettingsType::USB_GUARD,
          prefs::kManagedDefaultWebUsbGuardSetting},
+        {ContentSettingsType::FILE_HANDLING,
+         prefs::kManagedDefaultFileHandlingGuardSetting},
         {ContentSettingsType::FILE_SYSTEM_READ_GUARD,
          prefs::kManagedDefaultFileSystemReadGuardSetting},
         {ContentSettingsType::FILE_SYSTEM_WRITE_GUARD,
@@ -370,7 +376,7 @@ void PolicyProvider::GetAutoSelectCertificateSettingsFromPreferences(
 
   for (const auto& it : filters_map) {
     const std::string& pattern_str = it.first;
-    const base::Value& setting = it.second;
+    const base::DictionaryValue& setting = it.second;
 
     ContentSettingsPattern pattern =
         ContentSettingsPattern::FromString(pattern_str);
@@ -438,7 +444,7 @@ bool PolicyProvider::SetWebsiteSetting(
     const ContentSettingsPattern& primary_pattern,
     const ContentSettingsPattern& secondary_pattern,
     ContentSettingsType content_type,
-    base::Value&& value,
+    std::unique_ptr<base::Value>&& value,
     const ContentSettingConstraints& constraints) {
   return false;
 }

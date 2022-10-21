@@ -163,10 +163,8 @@ export class DriveSyncHandlerImpl extends EventTarget {
         this.onFileTransfersStatusReceived_.bind(this, this.pinItem_));
     chrome.fileManagerPrivate.onDriveSyncError.addListener(
         this.onDriveSyncError_.bind(this));
-    if (!window.isSWA) {
-      chrome.fileManagerPrivate.onDriveConfirmDialog.addListener(
-          this.onDriveConfirmDialog_.bind(this));
-    }
+    chrome.fileManagerPrivate.onDriveConfirmDialog.addListener(
+        this.onDriveConfirmDialog_.bind(this));
     xfm.notifications.onButtonClicked.addListener(
         this.onNotificationButtonClicked_.bind(this));
     xfm.notifications.onClosed.addListener(

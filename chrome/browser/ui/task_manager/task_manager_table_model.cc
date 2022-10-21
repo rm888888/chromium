@@ -817,7 +817,7 @@ void TaskManagerTableModel::RetrieveSavedColumnsSettingsAndUpdateTable() {
   if (!g_browser_process->local_state())
     return;
 
-  const base::Value* dictionary =
+  const base::DictionaryValue* dictionary =
       g_browser_process->local_state()->GetDictionary(
           prefs::kTaskManagerColumnVisibility);
   if (!dictionary)
@@ -825,10 +825,10 @@ void TaskManagerTableModel::RetrieveSavedColumnsSettingsAndUpdateTable() {
 
   // Do a best effort of retrieving the correct settings from the local state.
   // Use the default settings of the value if it fails to be retrieved.
-  const std::string* sorted_col_id =
-      dictionary->FindStringKey(kSortColumnIdKey);
-  bool sort_is_ascending =
-      dictionary->FindBoolKey(kSortIsAscendingKey).value_or(true);
+  std::string sorted_col_id;
+  bool sort_is_ascending = true;
+  dictionary->GetString(kSortColumnIdKey, &sorted_col_id);
+  dictionary->GetBoolean(kSortIsAscendingKey, &sort_is_ascending);
 
   int current_visible_column_index = 0;
   for (size_t i = 0; i < kColumnsSize; ++i) {
@@ -838,17 +838,17 @@ void TaskManagerTableModel::RetrieveSavedColumnsSettingsAndUpdateTable() {
     if (col_id_key.empty())
       continue;
 
-    bool col_visibility = dictionary->FindBoolPath(col_id_key)
-                              .value_or(kColumns[i].default_visibility);
+    bool col_visibility = kColumns[i].default_visibility;
+    dictionary->GetBoolean(col_id_key, &col_visibility);
 
-    // If the above FindBoolPath() fails, the |col_visibility| remains at the
+    // If the above GetBoolean() fails, the |col_visibility| remains at the
     // default visibility.
     columns_settings_->SetBoolean(col_id_key, col_visibility);
     table_view_delegate_->SetColumnVisibility(col_id, col_visibility);
     UpdateRefreshTypes(col_id, col_visibility);
 
     if (col_visibility) {
-      if (sorted_col_id && *sorted_col_id == col_id_key) {
+      if (sorted_col_id == col_id_key) {
         table_view_delegate_->SetSortDescriptor(
             TableSortDescriptor(col_id, sort_is_ascending));
       }
@@ -863,8 +863,8 @@ void TaskManagerTableModel::StoreColumnsSettings() {
   if (!local_state)
     return;
 
-  DictionaryPrefUpdateDeprecated dict_update(
-      local_state, prefs::kTaskManagerColumnVisibility);
+  DictionaryPrefUpdate dict_update(local_state,
+                                   prefs::kTaskManagerColumnVisibility);
 
   base::DictionaryValue::Iterator it(*columns_settings_);
   while (!it.IsAtEnd()) {

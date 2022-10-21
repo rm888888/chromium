@@ -9,6 +9,10 @@
 #include "components/autofill/core/browser/payments/full_card_request.h"
 #include "components/payments/content/payment_request_display_manager.h"
 
+namespace content {
+class WebContents;
+}
+
 namespace payments {
 
 // Used to interact with a cross-platform Payment Request dialog.
@@ -36,7 +40,7 @@ class PaymentRequestDialog {
       const autofill::CreditCard& credit_card,
       base::WeakPtr<autofill::payments::FullCardRequest::ResultDelegate>
           result_delegate,
-      content::RenderFrameHost* render_frame_host) = 0;
+      content::WebContents* web_contents) = 0;
 
   // Display |url| in a new screen and run |callback| after navigation is
   // completed, passing true/false to indicate success/failure.

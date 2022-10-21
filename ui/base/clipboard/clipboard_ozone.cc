@@ -14,7 +14,6 @@
 #include "base/containers/flat_map.h"
 #include "base/containers/span.h"
 #include "base/memory/weak_ptr.h"
-#include "base/no_destructor.h"
 #include "base/notreached.h"
 #include "base/run_loop.h"
 #include "base/strings/utf_string_conversions.h"
@@ -380,7 +379,6 @@ std::vector<std::u16string> ClipboardOzone::GetStandardFormats(
         mime_type == ClipboardFormatType::BitmapType().GetName() ||
         mime_type == ClipboardFormatType::FilenamesType().GetName()) {
       types.push_back(base::UTF8ToUTF16(mime_type));
-      continue;
     }
     // `WriteText` uses the following mime types for text, so if those types are
     // available, we add kMimeTypeText to the list.
@@ -390,7 +388,6 @@ std::vector<std::u16string> ClipboardOzone::GetStandardFormats(
          mime_type == kMimeTypeLinuxUtf8String) &&
         !base::Contains(types, base::UTF8ToUTF16(kMimeTypeText))) {
       types.push_back(base::UTF8ToUTF16(kMimeTypeText));
-      continue;
     }
   }
   return types;

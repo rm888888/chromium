@@ -4,6 +4,7 @@
 
 #include "chrome/browser/ui/views/profiles/profile_customization_bubble_sync_controller.h"
 
+#include "base/metrics/histogram_functions.h"
 #include "chrome/browser/sync/sync_service_factory.h"
 #include "chrome/browser/themes/theme_service.h"
 #include "chrome/browser/themes/theme_service_factory.h"
@@ -106,7 +107,8 @@ ProfileCustomizationBubbleSyncController::
     : sync_service_(sync_service),
       theme_service_(theme_service),
       show_bubble_callback_(std::move(show_bubble_callback)),
-      suggested_profile_color_(suggested_profile_color) {
+      suggested_profile_color_(suggested_profile_color),
+      observation_start_time_(base::TimeTicks::Now()) {
   CHECK(profile);
   CHECK(anchor_view);
   CHECK(sync_service_);
@@ -118,7 +120,10 @@ ProfileCustomizationBubbleSyncController::
 }
 
 ProfileCustomizationBubbleSyncController::
-    ~ProfileCustomizationBubbleSyncController() = default;
+    ~ProfileCustomizationBubbleSyncController() {
+  base::UmaHistogramTimes("Profile.SyncCustomizationBubbleDelay",
+                          base::TimeTicks::Now() - observation_start_time_);
+}
 
 void ProfileCustomizationBubbleSyncController::Init() {
   if (!CanSyncStart(sync_service_)) {
@@ -137,7 +142,7 @@ void ProfileCustomizationBubbleSyncController::Init() {
 
   // Observe the sync service to abort waiting for theme sync if the user hits
   // any error or if custom passphrase is needed.
-  sync_observation_.Observe(sync_service_.get());
+  sync_observation_.Observe(sync_service_);
 
   theme_observation_.Observe(theme_service_->GetThemeSyncableService());
 }

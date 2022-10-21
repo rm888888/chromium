@@ -18,10 +18,7 @@ class ShellSurfaceWrapper {
  public:
   virtual ~ShellSurfaceWrapper() {}
 
-  // Initializes the ShellSurface. The implementation should not commit surface
-  // state changes and defer that to the window that owns the surface, such that
-  // the window properties are set before the initial commit
-  // (https://crbug.com/1268308).
+  // Initializes the ShellSurface.
   virtual bool Initialize() = 0;
 
   // Sends acknowledge configure event back to wayland.

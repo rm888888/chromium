@@ -262,7 +262,7 @@ ProxyPrefs::ConfigState PrefProxyConfigTrackerImpl::ReadPrefConfig(
       pref_service->FindPreference(proxy_config::prefs::kProxy);
   DCHECK(pref);
 
-  const base::Value* dict =
+  const base::DictionaryValue* dict =
       pref_service->GetDictionary(proxy_config::prefs::kProxy);
   DCHECK(dict);
   ProxyConfigDictionary proxy_dict(dict->Clone());

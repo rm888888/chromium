@@ -5,6 +5,7 @@
 #ifndef COMPONENTS_COMPONENT_UPDATER_COMPONENT_UPDATER_COMMAND_LINE_CONFIG_POLICY_H_
 #define COMPONENTS_COMPONENT_UPDATER_COMPONENT_UPDATER_COMMAND_LINE_CONFIG_POLICY_H_
 
+#include "base/macros.h"
 #include "components/update_client/command_line_config_policy.h"
 #include "url/gurl.h"
 

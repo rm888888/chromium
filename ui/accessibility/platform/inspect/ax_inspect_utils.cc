@@ -37,7 +37,6 @@ std::string AXFormatValue(const base::Value& value) {
                          base::CompareCase::SENSITIVE)) {
       return value.GetString().substr(const_prefix.length());
     }
-    // TODO: escape quotation marks if any to make the output unambiguous.
     return "'" + value.GetString() + "'";
   }
 

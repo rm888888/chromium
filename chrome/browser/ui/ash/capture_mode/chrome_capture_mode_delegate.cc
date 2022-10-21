@@ -15,8 +15,7 @@
 #include "chrome/browser/apps/app_service/app_service_proxy_factory.h"
 #include "chrome/browser/apps/app_service/launch_utils.h"
 #include "chrome/browser/ash/drive/drive_integration_service.h"
-#include "chrome/browser/ash/file_manager/path_util.h"
-#include "chrome/browser/ash/policy/dlp/dlp_content_manager_ash.h"
+#include "chrome/browser/ash/policy/dlp/dlp_content_manager.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/download/download_prefs.h"
 #include "chrome/browser/platform_util.h"
@@ -133,19 +132,19 @@ bool ChromeCaptureModeDelegate::Uses24HourFormat() const {
   return base::GetHourClockType() == base::k24HourClock;
 }
 
-void ChromeCaptureModeDelegate::CheckCaptureModeInitRestrictionByDlp(
-    ash::OnCaptureModeDlpRestrictionChecked callback) {
-  policy::DlpContentManagerAsh::Get()->CheckCaptureModeInitRestriction(
-      std::move(callback));
+bool ChromeCaptureModeDelegate::IsCaptureModeInitRestrictedByDlp() const {
+  return policy::DlpContentManager::Get()->IsCaptureModeInitRestricted();
 }
 
-void ChromeCaptureModeDelegate::CheckCaptureOperationRestrictionByDlp(
+bool ChromeCaptureModeDelegate::IsCaptureAllowedByDlp(
     const aura::Window* window,
     const gfx::Rect& bounds,
-    ash::OnCaptureModeDlpRestrictionChecked callback) {
+    bool for_video) const {
+  policy::DlpContentManager* dlp_content_manager =
+      policy::DlpContentManager::Get();
   const ScreenshotArea area = ConvertToScreenshotArea(window, bounds);
-  policy::DlpContentManagerAsh::Get()->CheckScreenshotRestriction(
-      area, std::move(callback));
+  return for_video ? !dlp_content_manager->IsVideoCaptureRestricted(area)
+                   : !dlp_content_manager->IsScreenshotRestricted(area);
 }
 
 bool ChromeCaptureModeDelegate::IsCaptureAllowedByPolicy() const {
@@ -156,18 +155,18 @@ void ChromeCaptureModeDelegate::StartObservingRestrictedContent(
     const aura::Window* window,
     const gfx::Rect& bounds,
     base::OnceClosure stop_callback) {
-  // The order here matters, since DlpContentManagerAsh::OnVideoCaptureStarted()
+  // The order here matters, since DlpContentManager::OnVideoCaptureStarted()
   // may call InterruptVideoRecordingIfAny() right away, so the callback must be
   // set first.
   interrupt_video_recording_callback_ = std::move(stop_callback);
-  policy::DlpContentManagerAsh::Get()->OnVideoCaptureStarted(
+  policy::DlpContentManager::Get()->OnVideoCaptureStarted(
       ConvertToScreenshotArea(window, bounds));
 }
 
 void ChromeCaptureModeDelegate::StopObservingRestrictedContent(
     ash::OnCaptureModeDlpRestrictionChecked callback) {
   interrupt_video_recording_callback_.Reset();
-  policy::DlpContentManagerAsh::Get()->CheckStoppedVideoCapture(
+  policy::DlpContentManager::Get()->CheckStoppedVideoCapture(
       std::move(callback));
 }
 
@@ -204,10 +203,6 @@ bool ChromeCaptureModeDelegate::GetDriveFsMountPointPath(
 
   *result = integration_service->GetMountPointPath();
   return true;
-}
-
-base::FilePath ChromeCaptureModeDelegate::GetAndroidFilesPath() const {
-  return file_manager::util::GetAndroidFilesPath();
 }
 
 std::unique_ptr<ash::RecordingOverlayView>

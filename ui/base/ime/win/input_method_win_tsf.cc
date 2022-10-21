@@ -176,4 +176,9 @@ void InputMethodWinTSF::ConfirmCompositionText() {
     ui::TSFBridge::GetInstance()->ConfirmComposition();
 }
 
+void InputMethodWinTSF::ShowVirtualKeyboardIfEnabled() {
+  if (auto* controller = GetVirtualKeyboardController())
+    controller->DisplayVirtualKeyboard();
+}
+
 }  // namespace ui

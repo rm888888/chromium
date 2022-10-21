@@ -9,6 +9,7 @@
 
 #include <string>
 
+#include "base/macros.h"
 #include "ui/gfx/geometry/size.h"
 
 namespace pwg_encoder {

@@ -96,6 +96,7 @@ typedef std::vector<CALayerOverlay> CALayerOverlayList;
 class VIZ_SERVICE_EXPORT CALayerOverlayProcessor {
  public:
   CALayerOverlayProcessor();
+
   CALayerOverlayProcessor(const CALayerOverlayProcessor&) = delete;
   CALayerOverlayProcessor& operator=(const CALayerOverlayProcessor&) = delete;
 
@@ -117,16 +118,14 @@ class VIZ_SERVICE_EXPORT CALayerOverlayProcessor {
   // Returns true if all quads in the root render pass have been replaced by
   // CALayerOverlays. Virtual for testing.
   virtual bool ProcessForCALayerOverlays(
-      AggregatedRenderPass* render_passes,
       DisplayResourceProvider* resource_provider,
       const gfx::RectF& display_rect,
+      const QuadList& quad_list,
       const base::flat_map<AggregatedRenderPassId, cc::FilterOperations*>&
           render_pass_filters,
       const base::flat_map<AggregatedRenderPassId, cc::FilterOperations*>&
           render_pass_backdrop_filters,
-      CALayerOverlayList* ca_layer_overlays);
-
-  int ca_layer_result() { return ca_layer_result_; }
+      CALayerOverlayList* ca_layer_overlays) const;
 
  private:
   // Returns whether future candidate quads should be considered
@@ -142,22 +141,7 @@ class VIZ_SERVICE_EXPORT CALayerOverlayProcessor {
           render_pass_backdrop_filters,
       gfx::ProtectedVideoType protected_video_type,
       CALayerOverlayList* ca_layer_overlays) const;
-
-  void SaveCALayerResult(int result);
-
-  // Set to false if the APIs required for overlays are not present, or the
-  // feature has been disabled.
-  const bool overlays_allowed_;
-
-  // Controls the feature of replacying all quads with overlays is enabled.
-  const bool enable_ca_renderer_;
-
-  // Controls the feature of putting HDR videos into underlays if the
-  // CARenderer fails (so that we can use the tone mapping provided by macOS).
-  const bool enable_hdr_underlays_;
-
-  size_t max_quad_list_size_ = 0;
-  int ca_layer_result_ = 0;
+  size_t max_quad_list_size_;
 };
 
 }  // namespace viz

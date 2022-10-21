@@ -10,7 +10,7 @@
 #include <utility>
 
 #include "base/command_line.h"
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/trace_event/trace_event.h"
 #include "build/build_config.h"
@@ -61,7 +61,6 @@
 
 #if BUILDFLAG(IS_CHROMEOS_LACROS)
 #include "chrome/browser/lacros/lacros_url_handling.h"
-#include "chromeos/crosapi/cpp/gurl_os_handler_utils.h"
 #endif
 
 #if defined(USE_AURA)
@@ -188,7 +187,7 @@ std::pair<Browser*, int> GetBrowserAndTabForDisposition(
         return index;
     }
 #endif
-      [[fallthrough]];
+      FALLTHROUGH;
     case WindowOpenDisposition::CURRENT_TAB:
       if (params.browser)
         return {params.browser, -1};
@@ -212,7 +211,7 @@ std::pair<Browser*, int> GetBrowserAndTabForDisposition(
           return index;
       }
     }
-      [[fallthrough]];
+      FALLTHROUGH;
     case WindowOpenDisposition::NEW_FOREGROUND_TAB:
     case WindowOpenDisposition::NEW_BACKGROUND_TAB:
       // See if we can open the tab in the window this navigator is bound to.
@@ -305,7 +304,7 @@ void NormalizeDisposition(NavigateParams* params) {
       // automatically.
       if (params->window_action == NavigateParams::NO_ACTION)
         params->window_action = NavigateParams::SHOW_WINDOW;
-      [[fallthrough]];
+      FALLTHROUGH;
     }
     case WindowOpenDisposition::NEW_FOREGROUND_TAB:
     case WindowOpenDisposition::SINGLETON_TAB:
@@ -408,8 +407,8 @@ class ScopedBrowserShower {
   }
 
  private:
-  raw_ptr<NavigateParams> params_;
-  raw_ptr<content::WebContents*> contents_;
+  NavigateParams* params_;
+  content::WebContents** contents_;
 };
 
 std::unique_ptr<content::WebContents> CreateTargetContents(
@@ -583,19 +582,9 @@ base::WeakPtr<content::NavigationHandle> Navigate(NavigateParams* params) {
   }
 #endif
 #if BUILDFLAG(IS_CHROMEOS_LACROS)
-  const GURL& source_url =
-      params->source_contents ? params->source_contents->GetURL() : GURL();
-  if (lacros_url_handling::IsNavigationInterceptable(*params, source_url) &&
+  if (source_browser &&
       lacros_url_handling::MaybeInterceptNavigation(params->url)) {
     return nullptr;
-  }
-  // If Lacros comes here with an internal os:// redirect scheme to Ash, and Ash
-  // does not accept the URL, we convert it into a Lacros chrome:// url instead.
-  // This will most likely end in a 404 inside the Lacros browser. Note that we
-  // do not want to create a "404 SWA application".
-  if (crosapi::gurl_os_handler_utils::IsAshOsUrl(params->url)) {
-    params->url =
-        crosapi::gurl_os_handler_utils::GetChromeUrlFromSystemUrl(params->url);
   }
 #endif
 
@@ -647,7 +636,9 @@ base::WeakPtr<content::NavigationHandle> Navigate(NavigateParams* params) {
   // singleton), we need to construct one if we are supposed to target a new
   // tab.
   if (!contents_to_navigate_or_insert) {
-    DCHECK(!params->url.is_empty());
+      //update on 20220614
+    //DCHECK(!params->url.is_empty());
+    //
     if (params->disposition != WindowOpenDisposition::CURRENT_TAB) {
       contents_to_insert = CreateTargetContents(*params, params->url);
       contents_to_navigate_or_insert = contents_to_insert.get();

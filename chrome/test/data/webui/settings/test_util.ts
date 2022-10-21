@@ -17,7 +17,7 @@ import {Route, Router} from 'chrome://settings/settings.js';
  */
 export function createContentSettingTypeToValuePair(
     contentType: ContentSettingsTypes,
-    value: any): {setting: ContentSettingsTypes, value: any} {
+    value: Object): {setting: ContentSettingsTypes, value: Object} {
   return {setting: contentType, value: value};
 }
 
@@ -55,6 +55,7 @@ export function createRawSiteException(
         setting: ContentSetting.ALLOW,
         source: SiteSettingSource.PREFERENCE,
         isEmbargoed: false,
+        settingDetail: null,
         type: '',
       },
       override || {});
@@ -190,7 +191,6 @@ export function createOriginInfo(
         numCookies: 0,
         hasPermissionSettings: false,
         isInstalled: false,
-        isPartitioned: false,
       },
       override || {});
 }

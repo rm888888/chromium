@@ -5,6 +5,7 @@
 #ifndef CHROME_RENDERER_EXTENSIONS_CHROME_EXTENSIONS_DISPATCHER_DELEGATE_H_
 #define CHROME_RENDERER_EXTENSIONS_CHROME_EXTENSIONS_DISPATCHER_DELEGATE_H_
 
+#include "base/macros.h"
 #include "extensions/renderer/dispatcher_delegate.h"
 
 class ChromeExtensionsDispatcherDelegate

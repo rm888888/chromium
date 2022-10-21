@@ -5,6 +5,7 @@
 #ifndef CHROME_BROWSER_UI_WEBUI_CHROMEOS_CELLULAR_SETUP_MOBILE_SETUP_UI_H_
 #define CHROME_BROWSER_UI_WEBUI_CHROMEOS_CELLULAR_SETUP_MOBILE_SETUP_UI_H_
 
+#include "base/macros.h"
 #include "ui/web_dialogs/web_dialog_ui.h"
 
 namespace chromeos {

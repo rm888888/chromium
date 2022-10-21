@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "ash/public/cpp/assistant/assistant_state.h"
+#include "base/macros.h"
 #include "base/scoped_observation.h"
 #include "chrome/browser/ui/ash/assistant/device_actions.h"
 #include "chromeos/assistant/buildflags.h"

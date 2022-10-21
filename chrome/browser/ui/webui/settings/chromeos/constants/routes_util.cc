@@ -45,6 +45,9 @@ bool IsOSSettingsSubPage(const std::string& sub_page) {
       chromeos::settings::mojom::kPeopleSectionPath,
       chromeos::settings::mojom::kMyAccountsSubpagePath,
       chromeos::settings::mojom::kSyncSubpagePath,
+      chromeos::settings::mojom::kSecurityAndSignInSubpagePath,
+      chromeos::settings::mojom::kFingerprintSubpagePath,
+      chromeos::settings::mojom::kManageOtherPeopleSubpagePath,
 
       // Device section.
       chromeos::settings::mojom::kDeviceSectionPath,
@@ -73,7 +76,6 @@ bool IsOSSettingsSubPage(const std::string& sub_page) {
       chromeos::settings::mojom::kAppDetailsSubpagePath,
       chromeos::settings::mojom::kGooglePlayStoreSubpagePath,
       chromeos::settings::mojom::kPluginVmSharedPathsSubpagePath,
-      chromeos::settings::mojom::kArcVmUsbPreferencesSubpagePath,
 
       // Crostini section.
       chromeos::settings::mojom::kCrostiniSectionPath,
@@ -83,7 +85,6 @@ bool IsOSSettingsSubPage(const std::string& sub_page) {
       chromeos::settings::mojom::kCrostiniBackupAndRestoreSubpagePath,
       chromeos::settings::mojom::kCrostiniDevelopAndroidAppsSubpagePath,
       chromeos::settings::mojom::kCrostiniPortForwardingSubpagePath,
-      chromeos::settings::mojom::kCrostiniExtraContainersSubpagePath,
 
       // Date and Time section.
       chromeos::settings::mojom::kDateAndTimeSectionPath,

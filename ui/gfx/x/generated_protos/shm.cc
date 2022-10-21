@@ -40,7 +40,6 @@
 
 #include "shm.h"
 
-#include <unistd.h>
 #include <xcb/xcb.h>
 #include <xcb/xcbext.h>
 

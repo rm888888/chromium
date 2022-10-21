@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+#include "base/macros.h"
 #include "components/component_updater/component_installer.h"
 
 namespace base {

@@ -5,6 +5,7 @@
 #ifndef CHROME_BROWSER_UI_WEBUI_HELP_TEST_VERSION_UPDATER_H_
 #define CHROME_BROWSER_UI_WEBUI_HELP_TEST_VERSION_UPDATER_H_
 
+#include "base/macros.h"
 #include "build/build_config.h"
 #include "build/chromeos_buildflags.h"
 #include "chrome/browser/ui/webui/help/version_updater.h"

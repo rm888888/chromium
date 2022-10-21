@@ -60,7 +60,6 @@ NonLoadablePluginPlaceholder::CreateFlashDeprecatedPlaceholder(
       l10n_util::GetStringFUTF8(IDS_PLUGIN_DEPRECATED, u"Adobe Flash Player"));
 }
 
-#if BUILDFLAG(ENABLE_PLUGINS)
 // static
 plugins::PluginPlaceholder* NonLoadablePluginPlaceholder::CreateErrorPlugin(
     content::RenderFrame* render_frame,
@@ -86,4 +85,3 @@ plugins::PluginPlaceholder* NonLoadablePluginPlaceholder::CreateErrorPlugin(
 
   return plugin;
 }
-#endif  // BUILDFLAG(ENABLE_PLUGINS)

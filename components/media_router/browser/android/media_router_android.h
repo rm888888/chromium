@@ -11,7 +11,7 @@
 #include <unordered_map>
 
 #include "base/containers/id_map.h"
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/observer_list.h"
 #include "components/media_router/browser/android/media_router_android_bridge.h"
 #include "components/media_router/browser/media_router_base.h"
@@ -48,6 +48,13 @@ class MediaRouterAndroid : public MediaRouterBase {
                  MediaRouteResponseCallback callback,
                  base::TimeDelta timeout,
                  bool incognito) override;
+  void ConnectRouteByRouteId(const MediaSource::Id& source,
+                             const MediaRoute::Id& route_id,
+                             const url::Origin& origin,
+                             content::WebContents* web_contents,
+                             MediaRouteResponseCallback callback,
+                             base::TimeDelta timeout,
+                             bool incognito) override;
   void DetachRoute(MediaRoute::Id route_id) override;
   void TerminateRoute(const MediaRoute::Id& route_id) override;
   void SendRouteMessage(const MediaRoute::Id& route_id,
@@ -130,7 +137,7 @@ class MediaRouterAndroid : public MediaRouterBase {
     mojo::Remote<blink::mojom::PresentationConnection> peer_;
     mojo::Receiver<blink::mojom::PresentationConnection> receiver_{this};
     // |media_router_android_| owns |this|, so it will outlive |this|.
-    raw_ptr<MediaRouterAndroid> media_router_android_;
+    MediaRouterAndroid* media_router_android_;
     MediaRoute::Id route_id_;
   };
 

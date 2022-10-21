@@ -7,6 +7,7 @@
 
 #include <stdint.h>
 
+#include "base/macros.h"
 #include "media/base/android/media_drm_bridge_delegate.h"
 
 namespace cdm {

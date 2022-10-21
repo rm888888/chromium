@@ -13,13 +13,12 @@
 #include <vector>
 
 #include "base/gtest_prod_util.h"
-#include "base/memory/raw_ptr.h"
 #include "base/task/cancelable_task_tracker.h"
 #include "build/build_config.h"
 #include "components/autofill/core/browser/autofill_client.h"
 #include "components/autofill/core/browser/autofill_driver.h"
 #include "components/autofill/core/browser/data_model/credit_card.h"
-#include "components/autofill/core/browser/metrics/form_events/credit_card_form_event_logger.h"
+#include "components/autofill/core/browser/metrics/credit_card_form_event_logger.h"
 #include "components/autofill/core/browser/payments/credit_card_cvc_authenticator.h"
 #include "components/autofill/core/browser/payments/credit_card_otp_authenticator.h"
 #include "components/autofill/core/browser/payments/payments_client.h"
@@ -384,22 +383,22 @@ class CreditCardAccessManager : public CreditCardCVCAuthenticator::Requester,
   bool is_authentication_in_progress_ = false;
 
   // The associated autofill driver. Weak reference.
-  const raw_ptr<AutofillDriver> driver_;
+  AutofillDriver* const driver_;
 
   // The associated autofill client. Weak reference.
-  const raw_ptr<AutofillClient> client_;
+  AutofillClient* const client_;
 
   // Client to interact with Payments servers.
-  raw_ptr<payments::PaymentsClient> payments_client_;
+  payments::PaymentsClient* payments_client_;
 
   // The personal data manager, used to save and load personal data to/from the
   // web database.
   // Weak reference.
   // May be NULL. NULL indicates OTR.
-  raw_ptr<PersonalDataManager> personal_data_manager_;
+  PersonalDataManager* personal_data_manager_;
 
   // For logging metrics.
-  raw_ptr<CreditCardFormEventLogger> form_event_logger_;
+  CreditCardFormEventLogger* form_event_logger_;
 
   // Timestamp used for preflight call metrics.
   absl::optional<base::TimeTicks> preflight_call_timestamp_;

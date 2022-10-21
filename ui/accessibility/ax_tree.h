@@ -14,7 +14,6 @@
 #include <unordered_map>
 #include <vector>
 
-#include "base/memory/raw_ptr.h"
 #include "base/metrics/histogram_functions.h"
 #include "base/observer_list.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
@@ -27,7 +26,6 @@
 
 namespace ui {
 
-struct AXEvent;
 class AXTableInfo;
 class AXTreeObserver;
 struct AXTreeUpdateState;
@@ -223,8 +221,10 @@ class AX_EXPORT AXTree : public AXNode::OwnerTree {
   //                  When should we initialize this?
   std::unique_ptr<AXLanguageDetectionManager> language_detection_manager;
 
-  // Event metadata while applying a tree update during unserialization.
-  AXEvent* event_data() const { return event_data_.get(); }
+  // A list of intents active during a tree update/unserialization.
+  const std::vector<AXEventIntent>& event_intents() const {
+    return event_intents_;
+  }
 
   // Notify the delegate that the tree manager for |previous_tree_id| will be
   // removed from the AXTreeManagerMap. Because we sometimes remove the tree
@@ -378,8 +378,8 @@ class AX_EXPORT AXTree : public AXNode::OwnerTree {
                                           bool allow_recursion) const;
 
   base::ObserverList<AXTreeObserver> observers_;
-  raw_ptr<AXNode> root_ = nullptr;
-  std::unordered_map<AXNodeID, std::unique_ptr<AXNode>> id_map_;
+  AXNode* root_ = nullptr;
+  std::unordered_map<AXNodeID, AXNode*> id_map_;
   std::string error_;
   AXTreeData data_;
 
@@ -462,7 +462,7 @@ class AX_EXPORT AXTree : public AXNode::OwnerTree {
   // Indicates if the tree represents a paginated document
   bool has_pagination_support_ = false;
 
-  std::unique_ptr<AXEvent> event_data_;
+  std::vector<AXEventIntent> event_intents_;
 };
 
 }  // namespace ui

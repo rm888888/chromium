@@ -307,7 +307,7 @@ void GeolocationPermissionContextAndroid::UpdateLocationSettingsBackOff(
       break;
     case LocationSettingsDialogBackOff::kOneMonth:
       backoff_level = LocationSettingsDialogBackOff::kThreeMonths;
-      [[fallthrough]];
+      FALLTHROUGH;
     case LocationSettingsDialogBackOff::kThreeMonths:
       next_show += base::Days(90);
       break;
@@ -427,6 +427,8 @@ void GeolocationPermissionContextAndroid::FinishNotifyPermissionSet(
   GeolocationPermissionContext::NotifyPermissionSet(
       id, requesting_origin, embedding_origin, std::move(callback), persist,
       content_setting, /*is_one_time=*/false);
+
+  delegate_->FinishNotifyPermissionSet(id, requesting_origin, embedding_origin);
 }
 
 void GeolocationPermissionContextAndroid::SetLocationSettingsForTesting(

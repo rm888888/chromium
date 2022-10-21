@@ -7,10 +7,9 @@
 #include <memory>
 #include <utility>
 
-#include "ash/public/cpp/update_types.h"
 #include "base/callback_helpers.h"
+#include "base/macros.h"
 #include "base/memory/ptr_util.h"
-#include "base/memory/raw_ptr.h"
 #include "base/numerics/safe_conversions.h"
 #include "base/test/mock_callback.h"
 #include "base/test/power_monitor_test.h"
@@ -20,7 +19,6 @@
 #include "base/time/time.h"
 #include "base/values.h"
 #include "build/chromeos_buildflags.h"
-#include "chrome/browser/ui/ash/system_tray_client_impl.h"
 #include "chrome/browser/upgrade_detector/upgrade_detector.h"
 #include "chrome/common/pref_names.h"
 #include "chrome/test/base/scoped_testing_local_state.h"
@@ -108,7 +106,7 @@ class FakeRelaunchNotificationController
     delegate_->OnRelaunchDeadlineExpired();
   }
 
-  raw_ptr<ControllerDelegate> delegate_;
+  ControllerDelegate* delegate_;
 };
 
 // A mock delegate for testing.
@@ -986,9 +984,7 @@ TEST_F(RelaunchNotificationControllerPlatformImplTest,
 
   // Expect the platform_impl to query for the deadline synchronously.
   ::testing::StrictMock<base::MockOnceCallback<base::Time()>> callback;
-  platform_impl().NotifyRelaunchRequired(
-      GetMockClock()->Now(), /*is_notification_type_overriden=*/false,
-      callback.Get());
+  platform_impl().NotifyRelaunchRequired(GetMockClock()->Now(), callback.Get());
   ::testing::Mock::VerifyAndClearExpectations(&callback);
 }
 
@@ -999,9 +995,7 @@ TEST_F(RelaunchNotificationControllerPlatformImplTest,
 
   ::testing::StrictMock<base::MockOnceCallback<base::Time()>> callback;
 
-  platform_impl().NotifyRelaunchRequired(
-      GetMockClock()->Now(), /*is_notification_type_overriden=*/false,
-      callback.Get());
+  platform_impl().NotifyRelaunchRequired(GetMockClock()->Now(), callback.Get());
   ::testing::Mock::VerifyAndClearExpectations(&callback);
 
   EXPECT_CALL(callback, Run());
@@ -1016,9 +1010,7 @@ TEST_F(RelaunchNotificationControllerPlatformImplTest,
 
   ::testing::StrictMock<base::MockOnceCallback<base::Time()>> callback;
 
-  platform_impl().NotifyRelaunchRequired(
-      GetMockClock()->Now(), /*is_notification_type_overriden=*/false,
-      callback.Get());
+  platform_impl().NotifyRelaunchRequired(GetMockClock()->Now(), callback.Get());
   ::testing::Mock::VerifyAndClearExpectations(&callback);
 
   EXPECT_CALL(callback, Run());
@@ -1033,9 +1025,7 @@ TEST_F(RelaunchNotificationControllerPlatformImplTest,
 
   ::testing::StrictMock<base::MockOnceCallback<base::Time()>> callback;
 
-  platform_impl().NotifyRelaunchRequired(
-      GetMockClock()->Now(), /*is_notification_type_overriden=*/false,
-      callback.Get());
+  platform_impl().NotifyRelaunchRequired(GetMockClock()->Now(), callback.Get());
   ::testing::Mock::VerifyAndClearExpectations(&callback);
 
   EXPECT_CALL(callback, Run());
@@ -1055,9 +1045,7 @@ TEST_F(RelaunchNotificationControllerPlatformImplTest,
 
   ::testing::StrictMock<base::MockOnceCallback<base::Time()>> callback;
 
-  platform_impl().NotifyRelaunchRequired(
-      GetMockClock()->Now(), /*is_notification_type_overriden=*/false,
-      callback.Get());
+  platform_impl().NotifyRelaunchRequired(GetMockClock()->Now(), callback.Get());
   ::testing::Mock::VerifyAndClearExpectations(&callback);
 
   EXPECT_CALL(callback, Run());
@@ -1068,58 +1056,6 @@ TEST_F(RelaunchNotificationControllerPlatformImplTest,
   LockScreen();
   UnLockScreen();
   ::testing::Mock::VerifyAndClearExpectations(&callback);
-}
-
-class MockSystemTrayClientImpl : public SystemTrayClientImpl {
- public:
-  MockSystemTrayClientImpl() : SystemTrayClientImpl(this) {}
-  MOCK_METHOD(void,
-              SetRelaunchNotificationState,
-              (const ash::RelaunchNotificationState&),
-              (override));
-};
-
-// Correct relaunch notification state for required notification type.
-TEST_F(RelaunchNotificationControllerPlatformImplTest,
-       RelaunchNotificationStateRequired) {
-  base::MockOnceCallback<base::Time()> callback;
-  MockSystemTrayClientImpl system_tray_client_impl;
-  ash::RelaunchNotificationState relaunch_notification_state;
-  EXPECT_CALL(system_tray_client_impl, SetRelaunchNotificationState(_))
-      .WillOnce(testing::SaveArg<0>(&relaunch_notification_state));
-
-  platform_impl().NotifyRelaunchRequired(
-      GetMockClock()->Now(), /*is_notification_type_overriden=*/false,
-      callback.Get());
-
-  EXPECT_EQ(relaunch_notification_state.requirement_type,
-            ash::RelaunchNotificationState::kRequired);
-  EXPECT_EQ(relaunch_notification_state.policy_source,
-            ash::RelaunchNotificationState::kUser);
-  EXPECT_LE(relaunch_notification_state.rounded_time_until_reboot_required,
-            base::Seconds(1));
-}
-
-// Correct relaunch notification state for required notification type with an
-// override.
-TEST_F(RelaunchNotificationControllerPlatformImplTest,
-       RelaunchNotificationStateRequiredWithOverride) {
-  base::MockOnceCallback<base::Time()> callback;
-  MockSystemTrayClientImpl system_tray_client_impl;
-  ash::RelaunchNotificationState relaunch_notification_state;
-  EXPECT_CALL(system_tray_client_impl, SetRelaunchNotificationState(_))
-      .WillOnce(testing::SaveArg<0>(&relaunch_notification_state));
-
-  platform_impl().NotifyRelaunchRequired(
-      GetMockClock()->Now(), /*is_notification_type_overriden=*/true,
-      callback.Get());
-
-  EXPECT_EQ(relaunch_notification_state.requirement_type,
-            ash::RelaunchNotificationState::kRequired);
-  EXPECT_EQ(relaunch_notification_state.policy_source,
-            ash::RelaunchNotificationState::kDevice);
-  EXPECT_LE(relaunch_notification_state.rounded_time_until_reboot_required,
-            base::Seconds(1));
 }
 
 #else  // BUILDFLAG(IS_CHROMEOS_ASH)

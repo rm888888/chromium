@@ -8,7 +8,6 @@
 
 #include "base/bind.h"
 #include "base/containers/contains.h"
-#include "base/memory/raw_ptr.h"
 #include "base/scoped_observation.h"
 #include "chrome/browser/themes/theme_properties.h"
 #include "chrome/browser/ui/layout_constants.h"
@@ -101,7 +100,7 @@ class ToolbarIconContainerView::WidgetRestoreObserver
 
  private:
   bool was_collapsed_ = true;
-  const raw_ptr<ToolbarIconContainerView> toolbar_icon_container_view_;
+  ToolbarIconContainerView* const toolbar_icon_container_view_;
   base::ScopedObservation<views::View, views::ViewObserver> scoped_observation_{
       this};
 };
@@ -111,7 +110,8 @@ ToolbarIconContainerView::ToolbarIconContainerView(bool uses_highlight)
   SetPaintToLayer();
   layer()->SetFillsBoundsOpaquely(false);
   layer()->SetFillsBoundsCompletely(false);
-  AddLayerBeneathView(border_.layer());
+  //update on 20220525
+  //AddLayerBeneathView(border_.layer());
 
   views::AnimatingLayoutManager* animating_layout =
       SetLayoutManager(std::make_unique<views::AnimatingLayoutManager>());
@@ -140,7 +140,7 @@ void ToolbarIconContainerView::AddMainItem(views::View* item) {
   if (main_button)
     ObserveButton(main_button);
 
-  AddChildView(main_item_.get());
+  AddChildView(main_item_);
 }
 
 void ToolbarIconContainerView::ObserveButton(views::Button* button) {

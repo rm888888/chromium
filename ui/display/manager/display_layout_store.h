@@ -10,6 +10,7 @@
 #include <map>
 #include <memory>
 
+#include "base/macros.h"
 #include "ui/display/display.h"
 #include "ui/display/display_layout.h"
 #include "ui/display/manager/display_manager_export.h"

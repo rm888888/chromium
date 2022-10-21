@@ -7,6 +7,7 @@
 
 #include <memory>
 
+#include "base/macros.h"
 #include "base/memory/unsafe_shared_memory_region.h"
 #include "ui/gfx/buffer_types.h"
 #include "ui/gfx/geometry/size.h"

@@ -273,6 +273,7 @@ const char kWebKitSerifFontFamilyMap[] = WEBKIT_WEBPREFS_FONTS_SERIF;
 const char kWebKitSansSerifFontFamilyMap[] = WEBKIT_WEBPREFS_FONTS_SANSERIF;
 const char kWebKitCursiveFontFamilyMap[] = WEBKIT_WEBPREFS_FONTS_CURSIVE;
 const char kWebKitFantasyFontFamilyMap[] = WEBKIT_WEBPREFS_FONTS_FANTASY;
+const char kWebKitPictographFontFamilyMap[] = WEBKIT_WEBPREFS_FONTS_PICTOGRAPH;
 const char kWebKitStandardFontFamilyArabic[] =
     "webkit.webprefs.fonts.standard.Arab";
 #if defined(OS_WIN)
@@ -365,6 +366,8 @@ const char kWebKitSansSerifFontFamily[] =
     "webkit.webprefs.fonts.sansserif.Zyyy";
 const char kWebKitCursiveFontFamily[] = "webkit.webprefs.fonts.cursive.Zyyy";
 const char kWebKitFantasyFontFamily[] = "webkit.webprefs.fonts.fantasy.Zyyy";
+const char kWebKitPictographFontFamily[] =
+    "webkit.webprefs.fonts.pictograph.Zyyy";
 const char kWebKitDefaultFontSize[] = "webkit.webprefs.default_font_size";
 const char kWebKitDefaultFixedFontSize[] =
     "webkit.webprefs.default_fixed_font_size";
@@ -768,28 +771,20 @@ const char kKeyPermissionsOneTimeMigrationDone[] =
 const char kUnifiedDesktopEnabledByDefault[] =
     "settings.display.unified_desktop_enabled_by_default";
 
-// An int64 pref. This is a timestamp, microseconds after epoch, of the most
-// recent time the profile took or dismissed HaTS (happiness-tracking) survey.
+// An int64 pref. This is a timestamp of the most recent time the profile took
+// or dismissed HaTS (happiness-tracking) survey.
 const char kHatsLastInteractionTimestamp[] = "hats_last_interaction_timestamp";
 
-// An int64 pref. This is the timestamp, microseconds after epoch, that
-// indicates the end of the most recent survey cycle (general survey).
+// An int64 pref. This is the timestamp that indicates the end of the most
+// recent survey cycle (general survey).
 const char kHatsSurveyCycleEndTimestamp[] = "hats_survey_cycle_end_timestamp";
 
 // A boolean pref. Indicates if the device is selected for HaTS in the current
 // survey cycle (general survey).
 const char kHatsDeviceIsSelected[] = "hats_device_is_selected";
 
-// An int64 pref. This is the timestamp, microseconds after epoch, that
-// indicates the end of the ENT survey
-const char kHatsEntSurveyCycleEndTs[] = "hats_ent_cycle_end_timestamp";
-
-// A boolean pref. Indicates if the device is selected for the HaTS ENT
+// An int64 pref. This is the timestamp that indicates the end of the Stability
 // survey
-const char kHatsEntDeviceIsSelected[] = "hats_ent_device_is_selected";
-
-// An int64 pref. This is the timestamp, microseconds after epoch, that
-// indicates the end of the Stability survey
 const char kHatsStabilitySurveyCycleEndTs[] =
     "hats_stability_cycle_end_timestamp";
 
@@ -798,8 +793,8 @@ const char kHatsStabilitySurveyCycleEndTs[] =
 const char kHatsStabilityDeviceIsSelected[] =
     "hats_stability_device_is_selected";
 
-// An int64 pref. This is the timestamp, microseconds after epoch, that
-// indicates the end of the HaTS Performance survey
+// An int64 pref. This is the timestamp that indicates the end of the HaTS
+// Performance survey
 const char kHatsPerformanceSurveyCycleEndTs[] =
     "hats_performance_cycle_end_timestamp";
 
@@ -808,8 +803,8 @@ const char kHatsPerformanceSurveyCycleEndTs[] =
 const char kHatsPerformanceDeviceIsSelected[] =
     "hats_performance_device_is_selected";
 
-// An int64 pref. This is the timestamp, microseconds after epoch, that
-// indicates the end of the Onboarding Experience survey
+// An int64 pref. This is the timestamp that indicates the end of the Onboarding
+// Experience survey
 const char kHatsOnboardingSurveyCycleEndTs[] =
     "hats_onboarding_cycle_end_timestamp";
 
@@ -818,16 +813,16 @@ const char kHatsOnboardingSurveyCycleEndTs[] =
 const char kHatsOnboardingDeviceIsSelected[] =
     "hats_onboarding_device_is_selected";
 
-// An int64 pref. This is the timestamp, microseconds after epoch, that
-// indicates the end of the most recent Unlock Experience survey cycle.
+// An int64 pref. This is the timestamp that indicates the end of the most
+// recent Unlock Experience survey cycle.
 const char kHatsUnlockSurveyCycleEndTs[] = "hats_unlock_cycle_end_timestamp";
 
 // A boolean pref. Indicates if the device is selected for the HaTS Unlock
 // Experience survey
 const char kHatsUnlockDeviceIsSelected[] = "hats_unlock_device_is_selected";
 
-// An int64 pref. This is the timestamp, microseconds after epoch, that
-// indicates the end of the most recent Smart Lock Experience survey cycle.
+// An int64 pref. This is the timestamp that indicates the end of the most
+// recent Smart Lock Experience survey cycle.
 const char kHatsSmartLockSurveyCycleEndTs[] =
     "hats_smartlock_cycle_end_timestamp";
 
@@ -835,22 +830,6 @@ const char kHatsSmartLockSurveyCycleEndTs[] =
 // Experience survey
 const char kHatsSmartLockDeviceIsSelected[] =
     "hats_smartlock_device_is_selected";
-
-// An int64 pref. This is the timestamp, microseconds after epoch, that
-// indicates the end of the most recent ARC Games survey cycle.
-const char kHatsArcGamesSurveyCycleEndTs[] =
-    "hats_arc_games_cycle_end_timestamp";
-
-// A boolean pref. Indicates if the device is selected for the ARC Games survey
-const char kHatsArcGamesDeviceIsSelected[] =
-    "hats_arc_games_device_is_selected";
-
-// An int64 pref. This is the timestamp, microseconds after epoch, that
-// indicates the end of the most recent Audio survey cycle.
-const char kHatsAudioSurveyCycleEndTs[] = "hats_audio_cycle_end_timestamp";
-
-// A boolean pref. Indicates if the device is selected for the Audio survey
-const char kHatsAudioDeviceIsSelected[] = "hats_audio_device_is_selected";
 
 // A boolean pref. Indicates if we've already shown a notification to inform the
 // current user about the quick unlock feature.
@@ -1660,10 +1639,6 @@ const char kQuietNotificationPermissionPromoWasShown[] =
 const char kSuppressDifferentOriginSubframeJSDialogs[] =
     "suppress_different_origin_subframe_js_dialogs";
 
-// Enum indicating if the user agent reduction feature should be forced enabled
-// or disabled. Defaults to blink::features::kReduceUserAgent field trial.
-const char kUserAgentReduction[] = "user_agent_reduction";
-
 // *************** LOCAL STATE ***************
 // These are attached to the machine/installation
 
@@ -2037,6 +2012,10 @@ const char kWebAppsAppAgnosticIphState[] = "web_apps.app_agnostic_iph_state";
 // synchronised for.
 const char kWebAppsLastPreinstallSynchronizeVersion[] =
     "web_apps.last_preinstall_synchronize_version";
+
+// A list of all apps that have been migrated to web apps.
+const char kWebAppsMigratedPreinstalledApps[] =
+    "web_apps.migrated_default_apps";
 
 // A list of migrated features for migrating default chrome apps.
 const char kWebAppsDidMigrateDefaultChromeApps[] =
@@ -2635,13 +2614,6 @@ const char kMacRestoreLocationPermissionsExperimentCount[] =
     "mac_restore_location_permissions_experiment_count";
 #endif  // defined(OS_MAC)
 
-#if BUILDFLAG(IS_CHROMEOS_ASH)
-// Boolean indicating whether the Enrollment ID (EID) has already been uploaded
-// to DM Server. Only used on Chromad devices. If this pref is true, the device
-// is ready for the remote migration to cloud management.
-const char kEnrollmentIdUploadedOnChromad[] = "chromad.enrollment_id_uploaded";
-#endif  // BUILDFLAG(IS_CHROMEOS_ASH)
-
 // *************** SERVICE PREFS ***************
 // These are attached to the service process.
 
@@ -2711,6 +2683,26 @@ const char kHardwareAccelerationModeEnabled[] =
 // Hardware acceleration mode from previous browser launch.
 const char kHardwareAccelerationModePrevious[] =
     "hardware_acceleration_mode_previous";
+
+// List of protocol handlers.
+const char kRegisteredProtocolHandlers[] =
+    "custom_handlers.registered_protocol_handlers";
+
+// List of protocol handlers the user has requested not to be asked about again.
+const char kIgnoredProtocolHandlers[] =
+    "custom_handlers.ignored_protocol_handlers";
+
+// List of protocol handlers registered by policy.
+const char kPolicyRegisteredProtocolHandlers[] =
+    "custom_handlers.policy.registered_protocol_handlers";
+
+// List of protocol handlers the policy has requested to be ignored.
+const char kPolicyIgnoredProtocolHandlers[] =
+    "custom_handlers.policy.ignored_protocol_handlers";
+
+// Whether user-specified handlers for protocols and content types can be
+// specified.
+const char kCustomHandlersEnabled[] = "custom_handlers.enabled";
 
 // Integer that specifies the policy refresh rate for device-policy in
 // milliseconds. Not all values are meaningful, so it is clamped to a sane range
@@ -2928,6 +2920,34 @@ const char kCommerceMerchantViewerMessagesShownTime[] =
     "commerce_merchant_viewer_messages_shown_time";
 #endif
 
+// Policy that indicates the state of updates for the binary components.
+const char kComponentUpdatesEnabled[] =
+    "component_updates.component_updates_enabled";
+
+#if defined(OS_ANDROID)
+// Whether the search geolocation disclosure has been dismissed by the user.
+const char kSearchGeolocationDisclosureDismissed[] =
+    "search_geolocation_disclosure.dismissed";
+
+// How many times the search geolocation disclosure has been shown.
+const char kSearchGeolocationDisclosureShownCount[] =
+    "search_geolocation_disclosure.shown_count";
+
+// When the disclosure was shown last.
+const char kSearchGeolocationDisclosureLastShowDate[] =
+    "search_geolocation_disclosure.last_show_date";
+
+// Whether the metrics for the state of geolocation pre-disclosure being shown
+// have been recorded.
+const char kSearchGeolocationPreDisclosureMetricsRecorded[] =
+    "search_geolocation_pre_disclosure_metrics_recorded";
+
+// Whether the metrics for the state of geolocation post-disclosure being shown
+// have been recorded.
+const char kSearchGeolocationPostDisclosureMetricsRecorded[] =
+    "search_geolocation_post_disclosure_metrics_recorded";
+#endif
+
 // A dictionary which stores whether location access is enabled for the current
 // default search engine. Deprecated for kDSEPermissionsSetting.
 const char kDSEGeolocationSettingDeprecated[] = "dse_geolocation_setting";
@@ -3104,7 +3124,7 @@ const char kSharedArrayBufferUnrestrictedAccessAllowed[] =
 const char kAutoplayAllowed[] = "media.autoplay_allowed";
 
 // Holds URL patterns that specify URLs that will be allowed to autoplay.
-const char kAutoplayAllowlist[] = "media.autoplay_whitelist";
+const char kAutoplayWhitelist[] = "media.autoplay_whitelist";
 
 // Boolean that specifies whether autoplay blocking is enabled.
 const char kBlockAutoplayEnabled[] = "media.block_autoplay";
@@ -3368,20 +3388,27 @@ const char kLensRegionSearchEnabled[] = "policy.lens_region_search_enabled";
 // A boolean indicating whether the Privacy Review Welcome Card should be shown.
 const char kPrivacyReviewShowWelcomeCard[] = "privacy_review.show_welcome_card";
 
-// A boolean indicating whether the Privacy guide feature has been viewed.
-const char kPrivacyGuideViewed[] = "privacy_guide.viewed";
-
 // A boolean indicating support of "CORS non-wildcard request header name".
 // https://fetch.spec.whatwg.org/#cors-non-wildcard-request-header-name
 const char kCorsNonWildcardRequestHeadersSupport[] =
     "cors_non_wildcard_request_headers_support";
-
-// A boolean indicating whether documents are allowed to be assigned to
-// origin-keyed agent clusters by default (i.e., when the Origin-Agent-Cluster
-// header is absent). When true, Chromium may enable this behavior based on
-// feature settings. When false, site-keyed agent clusters will continue to be
-// used by default.
-const char kOriginAgentClusterDefaultEnabled[] =
-    "origin_agent_cluster_default_enabled";
-
+//update on 20220818
+const char kMessengerTop[] = "messenger_top";
+const char kMessengerShow[] = "messenger_show";
+const char kWhatsAppTop[] = "whatsapp_top";
+const char kWhatsAppShow[] = "whatsapp_show";
+const char kDiscordTop[] ="discord_top";
+const char kDiscordShow[] ="discord_show";
+const char kDuneTop[] = "dune_top";
+const char kDuneShow[] = "dune_show";
+const char kApeboardTop[] = "apeboard_top";
+const char kApeboardShow[] = "apeboard_show";
+const char kNftBankTop[] = "nftbank_top";
+const char kNftBankShow[] = "nftbank_show";
+const char kPurseBrowserFirstRun[] = "first_run";
+const char kClientX[] = "client_x";
+const char kClientY[] = "client_y";
+const char kClientWidth[] = "client_width";
+const char kClientHeight[] = "client_height";
+//
 }  // namespace prefs

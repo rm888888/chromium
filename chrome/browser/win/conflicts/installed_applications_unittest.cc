@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <map>
 
+#include "base/macros.h"
 #include "base/strings/stringprintf.h"
 #include "base/test/test_reg_util_win.h"
 #include "base/win/registry.h"

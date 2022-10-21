@@ -41,6 +41,7 @@ UpdateContext::UpdateContext(
     PersistedData* persisted_data)
     : config(config),
       is_foreground(is_foreground),
+      enabled_component_updates(config->EnabledComponentUpdates()),
       ids(ids),
       crx_state_change_callback(crx_state_change_callback),
       notify_observers_callback(notify_observers_callback),
@@ -162,6 +163,7 @@ void UpdateEngine::DoUpdateCheck(scoped_refptr<UpdateContext> update_context) {
       update_context->session_id,
       update_context->components_to_check_for_updates,
       update_context->components, config_->ExtraRequestParams(),
+      update_context->enabled_component_updates,
       base::BindOnce(&UpdateEngine::UpdateCheckResultsAvailable, this,
                      update_context));
 }
@@ -327,7 +329,7 @@ void UpdateEngine::HandleComponentComplete(
     queue.pop();
     if (!component->events().empty()) {
       ping_manager_->SendPing(
-          *component, *metadata_,
+          *component,
           base::BindOnce([](base::OnceClosure callback, int,
                             const std::string&) { std::move(callback).Run(); },
                          std::move(callback)));

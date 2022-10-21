@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 #include "ui/events/ozone/gamepad/gamepad_provider_ozone.h"
+#include "base/macros.h"
 #include "base/memory/singleton.h"
 #include "ui/events/ozone/gamepad/gamepad_observer.h"
 

@@ -112,17 +112,11 @@ size_t AutocompleteResult::GetMaxMatches(bool is_zero_suggest) {
 
 // static
 size_t AutocompleteResult::GetDynamicMaxMatches() {
-#if defined(OS_ANDROID)
-  constexpr const int kDynamicMaxMatchesLimit = 15;
-#else  // !defined(OS_ANDROID)
-  constexpr const int kDynamicMaxMatchesLimit = 10;
-#endif
   if (!base::FeatureList::IsEnabled(omnibox::kDynamicMaxAutocomplete))
     return AutocompleteResult::GetMaxMatches();
   return base::GetFieldTrialParamByFeatureAsInt(
       omnibox::kDynamicMaxAutocomplete,
-      OmniboxFieldTrial::kDynamicMaxAutocompleteIncreasedLimitParam,
-      kDynamicMaxMatchesLimit);
+      OmniboxFieldTrial::kDynamicMaxAutocompleteIncreasedLimitParam, 10);
 }
 
 AutocompleteResult::AutocompleteResult() {
@@ -822,7 +816,7 @@ void AutocompleteResult::DeduplicateMatches(ACMatches* matches) {
   });
 }
 
-std::u16string AutocompleteResult::GetCommonPrefix() {
+void AutocompleteResult::InlineTailPrefixes() {
   std::u16string common_prefix;
 
   for (const auto& match : matches_) {
@@ -837,25 +831,9 @@ std::u16string AutocompleteResult::GetCommonPrefix() {
       break;
     }
   }
-  return common_prefix;
-}
-
-void AutocompleteResult::SetTailSuggestCommonPrefixes() {
-  std::u16string common_prefix = GetCommonPrefix();
-
-  if (!common_prefix.empty()) {
+  if (common_prefix.size()) {
     for (auto& match : matches_)
-      match.SetTailSuggestCommonPrefix(common_prefix);
-  }
-}
-
-void AutocompleteResult::SetTailSuggestContentPrefixes() {
-  std::u16string common_prefix = GetCommonPrefix();
-
-  if (!common_prefix.empty()) {
-    for (auto& match : matches_) {
-      match.SetTailSuggestContentPrefix(common_prefix);
-    }
+      match.InlineTailPrefix(common_prefix);
   }
 }
 
@@ -990,7 +968,7 @@ void AutocompleteResult::MaybeCullTailSuggestions(
   // as a default match (and that's a non-tail suggestion).
   // 1) above.
   if (default_tail != matches->end() && default_non_tail == matches->end()) {
-    base::EraseIf(*matches, std::not_fn(is_tail));
+    base::EraseIf(*matches, std::not1(is_tail));
     return;
   }
   // 2) above.

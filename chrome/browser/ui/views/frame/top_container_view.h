@@ -5,10 +5,12 @@
 #ifndef CHROME_BROWSER_UI_VIEWS_FRAME_TOP_CONTAINER_VIEW_H_
 #define CHROME_BROWSER_UI_VIEWS_FRAME_TOP_CONTAINER_VIEW_H_
 
-#include "base/memory/raw_ptr.h"
+#include "base/compiler_specific.h"
 #include "ui/base/metadata/metadata_header_macros.h"
 #include "ui/views/view.h"
-
+//update on 20220407
+#include "ui/gfx/geometry/rect.h"
+//
 class BrowserView;
 
 // Container for the BrowserView's tab strip, toolbar, and sometimes bookmark
@@ -25,10 +27,12 @@ class TopContainerView : public views::View {
   // views::View overrides:
   void PaintChildren(const views::PaintInfo& paint_info) override;
   void ChildPreferredSizeChanged(views::View* child) override;
-
+  //update on 20220407
+  void UpdateBounds(const gfx::Rect rc);
+  //
  private:
   // The parent of this view. Not owned.
-  raw_ptr<BrowserView> browser_view_;
+  BrowserView* browser_view_;
 };
 
 #endif  // CHROME_BROWSER_UI_VIEWS_FRAME_TOP_CONTAINER_VIEW_H_

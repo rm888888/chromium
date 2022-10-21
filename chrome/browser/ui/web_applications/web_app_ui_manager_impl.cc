@@ -25,7 +25,6 @@
 #include "chrome/browser/ui/web_applications/web_app_metrics.h"
 #include "chrome/browser/ui/webui/web_app_internals/web_app_internals_source.h"
 #include "chrome/browser/web_applications/extensions/web_app_extension_shortcut.h"
-#include "chrome/browser/web_applications/os_integration_manager.h"
 #include "chrome/browser/web_applications/system_web_apps/system_web_app_manager.h"
 #include "chrome/browser/web_applications/web_app_callback_app_identity.h"
 #include "chrome/browser/web_applications/web_app_provider.h"
@@ -51,12 +50,6 @@
 #endif
 
 #if defined(OS_WIN)
-#include "base/process/process.h"
-#include "chrome/browser/browser_process.h"
-#include "chrome/browser/ui/browser_list.h"
-#include "chrome/browser/web_applications/web_app_install_finalizer.h"
-#include "components/keep_alive_registry/keep_alive_types.h"
-#include "components/keep_alive_registry/scoped_keep_alive.h"
 #include "ui/gfx/native_widget_types.h"
 #endif  // defined(OS_WIN)
 
@@ -75,36 +68,23 @@ bool IsAppInstalled(Profile* profile, const AppId& app_id) {
 }
 
 #if defined(OS_WIN)
-// ScopedKeepAlive not only keeps the process from terminating early
-// during uninstall, it also ensures the process will terminate when it
-// is destroyed if there is no active browser window.
+
+// UninstallWebAppWithDialogFromStartupSwitch handles WebApp uninstallation from
+// the Windows Settings.
 void UninstallWebAppWithDialogFromStartupSwitch(const AppId& app_id,
                                                 Profile* profile,
                                                 WebAppProvider* provider) {
-  // ScopedKeepAlive does not only keeps the process from early termination,
-  // but ensure the process termination when there is no active browser window.
-  std::unique_ptr<ScopedKeepAlive> scoped_keep_alive =
-      std::make_unique<ScopedKeepAlive>(KeepAliveOrigin::WEB_APP_UNINSTALL,
-                                        KeepAliveRestartOption::DISABLED);
-  if (provider->install_finalizer().CanUserUninstallWebApp(app_id)) {
-    WebAppUiManagerImpl::Get(provider)->dialog_manager().UninstallWebApp(
-        app_id, webapps::WebappUninstallSource::kOsSettings,
-        gfx::kNullNativeWindow,
-        base::BindOnce([](std::unique_ptr<ScopedKeepAlive> scoped_keep_alive,
-                          bool success) {},
-                       std::move(scoped_keep_alive)));
-  } else {
-    // There is a chance that a previous invalid uninstall operation (due
-    // to a crash or otherwise) could end up orphaning an OsSettings entry.
-    // In this case we clean up the OsSettings entry.
-    web_app::OsHooksOptions options;
-    options[OsHookType::kUninstallationViaOsSettings] = true;
-    provider->os_integration_manager().UninstallOsHooks(
-        app_id, options,
-        base::BindOnce([](std::unique_ptr<ScopedKeepAlive> scoped_keep_alive,
-                          OsHooksErrors os_hooks_errors) {},
-                       std::move(scoped_keep_alive)));
+  if (!provider->registrar().IsLocallyInstalled(app_id)) {
+    // App does not exist and controller is destroyed.
+    return;
   }
+
+  // Note: WebAppInstallFinalizer::UninstallWebApp creates a ScopedKeepAlive
+  // object which ensures the browser stays alive during the WebApp
+  // uninstall.
+  WebAppUiManagerImpl::Get(provider)->dialog_manager().UninstallWebApp(
+      app_id, webapps::WebappUninstallSource::kOsSettings,
+      gfx::kNullNativeWindow, base::DoNothing());
 }
 
 #endif  // defined(OS_WIN)
@@ -314,7 +294,7 @@ void WebAppUiManagerImpl::OnShortcutLocationGathered(
   auto* proxy = apps::AppServiceProxyFactory::GetForProfile(profile_);
 
   const bool is_extension = proxy->AppRegistryCache().GetAppType(from_app) ==
-                            apps::mojom::AppType::kChromeApp;
+                            apps::mojom::AppType::kExtension;
   if (is_extension) {
     WaitForExtensionShortcutsDeleted(
         from_app,
@@ -359,17 +339,6 @@ void WebAppUiManagerImpl::AddAppToQuickLaunchBar(const AppId& app_id) {
     controller->UpdateV1AppState(app_id);
   }
 #endif  // BUILDFLAG(IS_CHROMEOS_ASH)
-}
-
-bool WebAppUiManagerImpl::IsAppInQuickLaunchBar(const AppId& app_id) const {
-  DCHECK(CanAddAppToQuickLaunchBar());
-#if BUILDFLAG(IS_CHROMEOS_ASH)
-  // ChromeShelfController does not exist in unit tests.
-  if (auto* controller = ChromeShelfController::instance()) {
-    return IsAppWithIDPinnedToShelf(app_id);
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS_ASH)
-  return false;
 }
 
 bool WebAppUiManagerImpl::IsInAppWindow(content::WebContents* web_contents,

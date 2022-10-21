@@ -10,7 +10,6 @@
 
 #include "base/containers/flat_map.h"
 #include "chrome/browser/enterprise/connectors/device_trust/attestation/common/signals_type.h"
-#include "chrome/browser/ui/webui/connectors_internals/connectors_internals.mojom.h"
 
 namespace enterprise_connectors {
 namespace utils {
@@ -18,10 +17,6 @@ namespace utils {
 // Manually converts the given `signals` proto to a map.
 base::flat_map<std::string, std::string> SignalsToMap(
     std::unique_ptr<SignalsType> signals);
-
-// Retrieves the KeyInfo containing any information about the currently loaded
-// key.
-connectors_internals::mojom::KeyInfoPtr GetKeyInfo();
 
 }  // namespace utils
 }  // namespace enterprise_connectors

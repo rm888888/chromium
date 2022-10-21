@@ -4,6 +4,7 @@
 
 #include "ui/aura/scoped_keyboard_hook.h"
 
+#include "base/macros.h"
 #include "ui/aura/window_tree_host.h"
 #include "ui/events/keycodes/dom/dom_code.h"
 

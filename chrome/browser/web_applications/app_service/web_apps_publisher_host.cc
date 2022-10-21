@@ -128,7 +128,7 @@ void WebAppsPublisherHost::SetPublisherForTesting(
 }
 
 void WebAppsPublisherHost::OnReady() {
-  if (!remote_publisher_ || publisher_helper().IsShuttingDown()) {
+  if (!remote_publisher_) {
     return;
   }
 
@@ -163,20 +163,11 @@ void WebAppsPublisherHost::UnpauseApp(const std::string& app_id) {
 
 void WebAppsPublisherHost::LoadIcon(const std::string& app_id,
                                     apps::mojom::IconKeyPtr icon_key,
-                                    apps::IconType icon_type,
+                                    apps::mojom::IconType icon_type,
                                     int32_t size_hint_in_dip,
-                                    apps::LoadIconCallback callback) {
-  if (!icon_key) {
-    // On failure, we still run the callback, with an empty IconValue.
-    std::move(callback).Run(std::make_unique<apps::IconValue>());
-    return;
-  }
-
-  std::unique_ptr<apps::IconKey> key =
-      apps::ConvertMojomIconKeyToIconKey(icon_key);
-  publisher_helper().LoadIcon(app_id, icon_type, size_hint_in_dip,
-                              static_cast<IconEffects>(icon_key->icon_effects),
-                              std::move(callback));
+                                    LoadIconCallback callback) {
+  publisher_helper().LoadIcon(app_id, std::move(icon_key), std::move(icon_type),
+                              size_hint_in_dip, std::move(callback));
 }
 
 void WebAppsPublisherHost::OpenNativeSettings(const std::string& app_id) {
@@ -245,17 +236,32 @@ void WebAppsPublisherHost::Launch(crosapi::mojom::LaunchParamsPtr launch_params,
       ReturnLaunchResult(profile_, web_contents, std::move(callback));
       return;
     }
+    auto params = apps::CreateAppLaunchParamsForIntent(
+        launch_params->app_id, ui::EF_NONE, launch_params->launch_source,
+        display::kDefaultDisplayId,
+        ConvertDisplayModeToAppLaunchContainer(
+            registrar().GetAppEffectiveDisplayMode(launch_params->app_id)),
+        apps_util::ConvertCrosapiToAppServiceIntent(launch_params->intent,
+                                                    profile_),
+        profile_);
+    if (launch_params->intent->files.has_value()) {
+      if (base::FeatureList::IsEnabled(
+              features::kDesktopPWAsFileHandlingSettingsGated)) {
+        // File handling may create the WebContents asynchronously.
+        // TODO(crbug/1261263): implement.
+        NOTIMPLEMENTED();
+      } else {
+        for (const auto& file : launch_params->intent->files.value()) {
+          params.launch_files.push_back(file->file_path);
+        }
+      }
+    }
+    web_contents = publisher_helper().LaunchAppWithParams(std::move(params));
+  } else {
+    web_contents =
+        publisher_helper().Launch(launch_params->app_id, ui::EF_NONE,
+                                  launch_params->launch_source, nullptr);
   }
-
-  auto params = apps::ConvertCrosapiToLaunchParams(launch_params, profile_);
-  if (!params.launch_files.empty() && !launch_params->intent) {
-    // File handling may create the WebContents asynchronously.
-    // TODO(crbug/1261263): implement.
-    NOTIMPLEMENTED_LOG_ONCE();
-    params.launch_files.clear();
-  }
-
-  web_contents = publisher_helper().LaunchAppWithParams(std::move(params));
 
   ReturnLaunchResult(profile_, web_contents, std::move(callback));
 }
@@ -273,7 +279,7 @@ void WebAppsPublisherHost::OnShortcutsMenuIconsRead(
 
   size_t menu_item_index = 0;
 
-  for (const WebAppShortcutsMenuItemInfo& menu_item_info :
+  for (const WebApplicationShortcutsMenuItemInfo& menu_item_info :
        web_app->shortcuts_menu_item_infos()) {
     const std::map<SquareSizePx, SkBitmap>* menu_item_icon_bitmaps = nullptr;
     if (menu_item_index < shortcuts_menu_icon_bitmaps.size()) {

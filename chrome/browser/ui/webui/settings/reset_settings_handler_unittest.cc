@@ -4,6 +4,7 @@
 
 #include <stddef.h>
 
+#include "base/macros.h"
 #include "base/values.h"
 #include "chrome/browser/google/google_brand.h"
 #include "chrome/browser/profile_resetter/profile_resetter.h"

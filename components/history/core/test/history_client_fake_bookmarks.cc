@@ -7,6 +7,7 @@
 #include <map>
 #include <memory>
 
+#include "base/macros.h"
 #include "base/synchronization/lock.h"
 #include "build/build_config.h"
 #include "components/history/core/browser/history_backend_client.h"

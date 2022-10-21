@@ -52,8 +52,7 @@ void EncodePinnedTabs(Browser* browser, base::Value* serialized_tabs) {
 // on success.
 absl::optional<StartupTab> DecodeTab(const base::Value& value) {
   const std::string* const url_string = value.FindStringPath(kURL);
-  return url_string ? absl::make_optional(StartupTab(GURL(*url_string),
-                                                     StartupTab::Type::kPinned))
+  return url_string ? absl::make_optional(StartupTab(GURL(*url_string), true))
                     : absl::nullopt;
 }
 
@@ -87,7 +86,7 @@ void PinnedTabCodec::WritePinnedTabs(Profile* profile,
   if (!prefs)
     return;
 
-  ListPrefUpdateDeprecated update(prefs, prefs::kPinnedTabs);
+  ListPrefUpdate update(prefs, prefs::kPinnedTabs);
   base::Value* values = update.Get();
   values->ClearList();
   for (const auto& tab : tabs)

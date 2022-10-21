@@ -5,6 +5,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/macros.h"
 #include "base/test/task_environment.h"
 #include "mojo/public/cpp/bindings/receiver_set.h"
 #include "mojo/public/cpp/bindings/remote.h"

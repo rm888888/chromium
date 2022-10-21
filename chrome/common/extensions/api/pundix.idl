@@ -1,0 +1,55 @@
+// Use the <code>chrome.pundix</code> API
+namespace pundix {
+  // Call State
+  enum EchoState {
+    OK,
+    ERROR
+  };
+  // event
+  dictionary WalletEvent {
+    // event id
+    long evt;
+    // result info
+    DOMString errmsg;
+    // result code
+    long errcode;
+  };
+  //client rect
+  dictionary Rect{
+  //x
+  long x;
+  //y
+  long y;
+  //width
+  long width;
+  //height
+  long height;
+  };
+  //position
+  dictionary Point{
+  //x
+  long x;
+  //y
+  long y;
+  };
+  //callback fuction
+  callback FunctionCallback = void(EchoState state,long id,DOMString result);
+
+  interface Functions {
+    //signature.
+    static void signatureString(DOMString input,FunctionCallback callback);
+    //add widget to suspend view.
+    static void addWidget(long id,DOMString url,Rect rect,FunctionCallback callback);
+    //remove the widget for suspend view.
+    static void removeWidget(long id,FunctionCallback callback);
+    //move the widget position.
+    static void moveWidget(long id,Point position,FunctionCallback callback);
+    //set the widget radius.
+    static void setWidgetRadius(long id,long radius,FunctionCallback callback);
+  };
+ 
+  interface Events {
+    //event.
+    static void onFinished(DOMString ret);
+  };
+};

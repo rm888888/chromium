@@ -11,6 +11,7 @@
 #include <memory>
 
 #include "base/files/scoped_file.h"
+#include "base/macros.h"
 #include "ui/gfx/buffer_types.h"
 #include "ui/gfx/client_native_pixmap.h"
 #include "ui/gfx/geometry/size.h"

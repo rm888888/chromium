@@ -7,6 +7,7 @@
 
 #include <string>
 
+#include "base/macros.h"
 #include "components/payments/mojom/payment_request_data.mojom.h"
 
 namespace payments {

@@ -7,13 +7,10 @@
 #include <stdint.h>
 
 #include "base/command_line.h"
-#include "base/run_loop.h"
 #include "base/test/task_environment.h"
 #include "base/test/test_timeouts.h"
-#include "base/time/time.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 #include "third_party/icu/fuzzers/fuzzer_utils.h"
-#include "url/gurl.h"
 
 #include "chrome/renderer/subresource_redirect/robots_rules_parser.h"
 
@@ -40,15 +37,13 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
 
   FuzzedDataProvider provider(data, size);
   std::string rules = provider.ConsumeRandomLengthString();
-  const GURL url(provider.ConsumeRandomLengthString());
-  if (!url.is_valid())  // Required by RobotsRulesParser::CheckRobotsRules.
-    return 0;
+  std::string url = provider.ConsumeRandomLengthString();
 
   base::RunLoop run_loop;
 
   RobotsRulesParser parser(base::Seconds(1));
   parser.UpdateRobotsRules({std::move(rules)});
-  parser.CheckRobotsRules(0, url,
+  parser.CheckRobotsRules(0, GURL(std::move(url)),
                           base::BindOnce(
                               [](base::RepeatingClosure run_loop_quit,
                                  RobotsRulesParser::CheckResult result) {

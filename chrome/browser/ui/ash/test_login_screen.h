@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "ash/public/cpp/login_screen.h"
+#include "base/macros.h"
 #include "chrome/browser/ui/ash/test_login_screen_model.h"
 
 namespace ash {

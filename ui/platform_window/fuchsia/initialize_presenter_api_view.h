@@ -14,12 +14,9 @@
 namespace ui {
 namespace fuchsia {
 
-using ScenicPresentViewCallback =
+using PresentViewCallback =
     base::RepeatingCallback<void(::fuchsia::ui::views::ViewHolderToken,
                                  ::fuchsia::ui::views::ViewRef)>;
-
-using FlatlandPresentViewCallback =
-    base::RepeatingCallback<void(::fuchsia::ui::views::ViewportCreationToken)>;
 
 // Generates and sets the view tokens that are required to utilize the
 // Presenter API. |window_properties_out| must be a valid value.
@@ -31,17 +28,10 @@ void InitializeViewTokenAndPresentView(
 // TODO(1241868): Once workstation offers the right FIDL API to open new
 // windows, this can be removed.
 COMPONENT_EXPORT(PLATFORM_WINDOW)
-void SetScenicViewPresenter(ScenicPresentViewCallback view_presenter);
+void SetScenicViewPresenter(PresentViewCallback view_presenter);
 
 COMPONENT_EXPORT(PLATFORM_WINDOW)
-const ScenicPresentViewCallback& GetScenicViewPresenter();
-
-// Register and exposes an API that let OzonePlatformFlatland present new views.
-COMPONENT_EXPORT(PLATFORM_WINDOW)
-void SetFlatlandViewPresenter(FlatlandPresentViewCallback view_presenter);
-
-COMPONENT_EXPORT(PLATFORM_WINDOW)
-const FlatlandPresentViewCallback& GetFlatlandViewPresenter();
+const PresentViewCallback& GetScenicViewPresenter();
 
 // Ignores presentation requests, for tests which don't rely on a functioning
 // Presenter service.

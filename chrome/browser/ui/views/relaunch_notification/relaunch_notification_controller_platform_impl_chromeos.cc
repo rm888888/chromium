@@ -32,17 +32,16 @@ void RelaunchNotificationControllerPlatformImpl::NotifyRelaunchRecommended(
 
 void RelaunchNotificationControllerPlatformImpl::NotifyRelaunchRequired(
     base::Time deadline,
-    bool is_notification_type_overriden,
     base::OnceCallback<base::Time()> on_visible) {
   if (!relaunch_required_timer_) {
     relaunch_required_timer_ = std::make_unique<RelaunchRequiredTimer>(
-        deadline, base::BindRepeating(
-                      &RelaunchNotificationControllerPlatformImpl::
-                          RefreshRelaunchRequiredTitle,
-                      base::Unretained(this), is_notification_type_overriden));
+        deadline,
+        base::BindRepeating(&RelaunchNotificationControllerPlatformImpl::
+                                RefreshRelaunchRequiredTitle,
+                            base::Unretained(this)));
   }
 
-  RefreshRelaunchRequiredTitle(is_notification_type_overriden);
+  RefreshRelaunchRequiredTitle();
 
   if (!CanScheduleReboot()) {
     on_visible_ = std::move(on_visible);
@@ -83,17 +82,12 @@ bool RelaunchNotificationControllerPlatformImpl::IsRequiredNotificationShown()
   return relaunch_required_timer_ != nullptr;
 }
 
-void RelaunchNotificationControllerPlatformImpl::RefreshRelaunchRequiredTitle(
-    bool is_notification_type_overriden) {
+void RelaunchNotificationControllerPlatformImpl::
+    RefreshRelaunchRequiredTitle() {
   // SystemTrayClientImpl may not exist in unit tests.
   if (SystemTrayClientImpl::Get()) {
     SystemTrayClientImpl::Get()->SetRelaunchNotificationState(
         {.requirement_type = ash::RelaunchNotificationState::kRequired,
-         // We only override notification type to kRequired in the
-         // MinimumVersionPolicyHandler that handles device policies.
-         .policy_source = is_notification_type_overriden
-                              ? ash::RelaunchNotificationState::kDevice
-                              : ash::RelaunchNotificationState::kUser,
          .rounded_time_until_reboot_required =
              relaunch_required_timer_->GetRoundedDeadlineDelta()});
   }

@@ -9,6 +9,7 @@
 #include <memory>
 #include <string>
 
+#include "base/macros.h"
 #include "components/payments/core/payment_manifest_downloader.h"
 
 class GURL;

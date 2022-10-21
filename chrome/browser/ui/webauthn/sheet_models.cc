@@ -1179,9 +1179,11 @@ const gfx::VectorIcon& AuthenticatorQRSheetModel::GetStepIllustration(
 }
 
 std::u16string AuthenticatorQRSheetModel::GetStepTitle() const {
-  return l10n_util::GetStringUTF16(IDS_WEBAUTHN_CABLEV2_ADD_PHONE);
+  // TODO: i18n once final strings are ready.
+  return u"Use your phone";
 }
 
 std::u16string AuthenticatorQRSheetModel::GetStepDescription() const {
-  return l10n_util::GetStringUTF16(IDS_BROWSER_SHARING_QR_CODE_DIALOG_TOOLTIP);
+  // TODO: i18n once final strings are ready.
+  return u"Scan this QR Code with your Android phone.";
 }

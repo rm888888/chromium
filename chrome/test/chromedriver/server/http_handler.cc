@@ -955,10 +955,6 @@ HttpHandler::HttpHandler(
           WrapToCommand("SetSinkToUse",
                         base::BindRepeating(&ExecuteSetSinkToUse))),
       VendorPrefixedCommandMapping(
-          kPost, "session/:sessionId/%s/cast/start_desktop_mirroring",
-          WrapToCommand("StartDesktopMirroring",
-                        base::BindRepeating(&ExecuteStartDesktopMirroring))),
-      VendorPrefixedCommandMapping(
           kPost, "session/:sessionId/%s/cast/start_tab_mirroring",
           WrapToCommand("StartTabMirroring",
                         base::BindRepeating(&ExecuteStartTabMirroring))),
@@ -1329,11 +1325,11 @@ HttpHandler::PrepareStandardResponse(
 
   base::DictionaryValue body_params;
   if (status.IsError()){
-    base::Value* inner_params =
-        body_params.SetKey("value", base::Value(base::Value::Type::DICTIONARY));
-    inner_params->SetStringKey("error", StatusCodeToString(status.code()));
-    inner_params->SetStringKey("message", status.message());
-    inner_params->SetStringKey("stacktrace", status.stack_trace());
+    std::unique_ptr<base::DictionaryValue> inner_params(
+        new base::DictionaryValue());
+    inner_params->SetString("error", StatusCodeToString(status.code()));
+    inner_params->SetString("message", status.message());
+    inner_params->SetString("stacktrace", status.stack_trace());
     // According to
     // https://www.w3.org/TR/2018/REC-webdriver1-20180605/#dfn-annotated-unexpected-alert-open-error
     // error UnexpectedAlertOpen should contain 'data.text' with alert text
@@ -1342,18 +1338,18 @@ HttpHandler::PrepareStandardResponse(
       auto first = message.find("{");
       auto last = message.find_last_of("}");
       if (first == std::string::npos || last == std::string::npos) {
-        inner_params->SetStringPath("data.text", "");
+        inner_params->SetString("data.text", "");
       } else {
         std::string alertText = message.substr(first, last - first);
         auto colon = alertText.find(":");
         if (colon != std::string::npos && alertText.size() > (colon + 2))
           alertText = alertText.substr(colon + 2);
-        inner_params->SetStringPath("data.text", alertText);
+        inner_params->SetString("data.text", alertText);
       }
     }
+    body_params.SetDictionary("value", std::move(inner_params));
   } else {
-    body_params.SetKey("value",
-                       base::Value::FromUniquePtrValue(std::move(value)));
+    body_params.Set("value", std::move(value));
   }
 
   std::string body;

@@ -25,8 +25,7 @@ constexpr double kBackoffJitterFactor = 0.5;
 // local limits.
 constexpr base::TimeDelta kDefaultPollInterval = base::Hours(8);
 
-// Minimum and maximum interval for exponential backoff.
-constexpr base::TimeDelta kMinBackoffTime = base::Seconds(1);
+// Maximum interval for exponential backoff.
 constexpr base::TimeDelta kMaxBackoffTime = base::Minutes(10);
 
 // After a failure contacting sync servers, specifies how long to wait before

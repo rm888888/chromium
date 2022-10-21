@@ -9,6 +9,7 @@
 #include <map>
 #include <set>
 
+#include "base/macros.h"
 #include "components/feature_engagement/internal/condition_validator.h"
 
 namespace feature_engagement {

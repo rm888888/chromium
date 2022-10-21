@@ -6,7 +6,6 @@
 
 #include <memory>
 #include <numeric>
-#include <tuple>
 #include <vector>
 
 #include "ash/constants/ash_switches.h"
@@ -867,7 +866,7 @@ IN_PROC_BROWSER_TEST_F(TopControlsSlideControllerTest,
   EXPECT_TRUE(bool_result);
   // Evaluate an empty sentence to make sure that the event processing is done
   // in the content.
-  std::ignore = content::EvalJs(contents, ";");
+  ignore_result(content::EvalJs(contents, ";"));
 
   SCOPED_TRACE("Scroll to hide should now work.");
   ScrollAndExpectTopChromeToBe(ScrollDirection::kDown,
@@ -1085,7 +1084,7 @@ IN_PROC_BROWSER_TEST_F(TopControlsSlideControllerTest, TestDropDowns) {
   send_key_event(ui::VKEY_RETURN);
   // Evaluate an empty sentence to make sure that the event processing is done
   // in the content.
-  std::ignore = content::EvalJs(contents, ";");
+  ignore_result(content::EvalJs(contents, ";"));
 
   // Verify that the selected option has changed and the fourth option is
   // selected.
@@ -1411,14 +1410,7 @@ IN_PROC_BROWSER_TEST_F(TopControlsSlideControllerTest, TestPermissionBubble) {
                                TopChromeShownState::kFullyHidden);
 }
 
-// Flaky on ChromeOS Release bots. https://crbug.com/1033648
-#if defined(OS_CHROMEOS) && defined(NDEBUG)
-#define MAYBE_TestToggleChromeVox DISABLED_TestToggleChromeVox
-#else
-#define MAYBE_TestToggleChromeVox TestToggleChromeVox
-#endif
-IN_PROC_BROWSER_TEST_F(TopControlsSlideControllerTest,
-                       MAYBE_TestToggleChromeVox) {
+IN_PROC_BROWSER_TEST_F(TopControlsSlideControllerTest, TestToggleChromeVox) {
   ToggleTabletMode();
   ASSERT_TRUE(GetTabletModeEnabled());
   EXPECT_TRUE(top_controls_slide_controller()->IsEnabled());

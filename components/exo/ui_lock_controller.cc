@@ -250,9 +250,7 @@ void UILockController::OnKeyEvent(ui::KeyEvent* event) {
   }
 }
 
-void UILockController::OnSurfaceFocused(Surface* gained_focus,
-                                        Surface* lost_focus,
-                                        bool has_focused_surface) {
+void UILockController::OnSurfaceFocused(Surface* gained_focus) {
   if (gained_focus != focused_surface_to_unlock_)
     StopTimer();
 

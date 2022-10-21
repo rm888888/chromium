@@ -7,7 +7,6 @@
 
 #include <memory>
 
-#include "base/memory/raw_ptr.h"
 #include "chrome/browser/web_applications/system_web_apps/system_web_app_delegate.h"
 #include "chrome/browser/web_applications/system_web_apps/system_web_app_manager.h"
 #include "chrome/browser/web_applications/system_web_apps/test/test_system_web_app_web_ui_controller_factory.h"
@@ -23,24 +22,22 @@ class UnittestingSystemAppDelegate : public SystemWebAppDelegate {
   UnittestingSystemAppDelegate(SystemAppType type,
                                const std::string& name,
                                const GURL& url,
-                               WebAppInstallInfoFactory info_factory);
+                               WebApplicationInfoFactory info_factory);
   UnittestingSystemAppDelegate(const UnittestingSystemAppDelegate&) = delete;
   UnittestingSystemAppDelegate& operator=(const UnittestingSystemAppDelegate&) =
       delete;
   ~UnittestingSystemAppDelegate() override;
 
-  std::unique_ptr<WebAppInstallInfo> GetWebAppInfo() const override;
+  std::unique_ptr<WebApplicationInfo> GetWebAppInfo() const override;
 
   std::vector<AppId> GetAppIdsToUninstallAndReplace() const override;
   gfx::Size GetMinimumWindowSize() const override;
-  bool ShouldReuseExistingWindow() const override;
+  bool ShouldBeSingleWindow() const override;
   bool ShouldShowNewWindowMenuOption() const override;
-  base::FilePath GetLaunchDirectory(
-      const apps::AppLaunchParams& params) const override;
+  bool ShouldIncludeLaunchDirectory() const override;
   std::vector<int> GetAdditionalSearchTerms() const override;
   bool ShouldShowInLauncher() const override;
   bool ShouldShowInSearch() const override;
-  bool ShouldHandleFileOpenIntents() const override;
   bool ShouldCaptureNavigations() const override;
   bool ShouldAllowResize() const override;
   bool ShouldAllowMaximize() const override;
@@ -50,18 +47,16 @@ class UnittestingSystemAppDelegate : public SystemWebAppDelegate {
   absl::optional<SystemAppBackgroundTaskInfo> GetTimerInfo() const override;
   gfx::Rect GetDefaultBounds(Browser* browser) const override;
   bool IsAppEnabled() const override;
-  bool IsUrlInSystemAppScope(const GURL& url) const override;
 
   void SetAppIdsToUninstallAndReplace(const std::vector<AppId>&);
   void SetMinimumWindowSize(const gfx::Size&);
-  void SetShouldReuseExistingWindow(bool);
+  void SetShouldBeSingleWindow(bool);
   void SetShouldShowNewWindowMenuOption(bool);
   void SetShouldIncludeLaunchDirectory(bool);
   void SetEnabledOriginTrials(const OriginTrialsMap&);
   void SetAdditionalSearchTerms(const std::vector<int>&);
   void SetShouldShowInLauncher(bool);
   void SetShouldShowInSearch(bool);
-  void SetShouldHandleFileOpenIntents(bool);
   void SetShouldCaptureNavigations(bool);
   void SetShouldAllowResize(bool);
   void SetShouldAllowMaximize(bool);
@@ -73,7 +68,7 @@ class UnittestingSystemAppDelegate : public SystemWebAppDelegate {
   void SetUrlInSystemAppScope(const GURL& url);
 
  private:
-  WebAppInstallInfoFactory info_factory_;
+  WebApplicationInfoFactory info_factory_;
 
   std::vector<AppId> uninstall_and_replace_;
   gfx::Size minimum_window_size_;
@@ -83,14 +78,12 @@ class UnittestingSystemAppDelegate : public SystemWebAppDelegate {
   std::vector<int> additional_search_terms_;
   bool show_in_launcher_ = true;
   bool show_in_search_ = true;
-  bool handles_file_open_intents_ = false;
   bool capture_navigations_ = false;
   bool is_resizeable_ = true;
   bool is_maximizable_ = true;
   bool has_tab_strip_ = false;
   bool should_have_reload_button_in_minimal_ui_ = true;
   bool allow_scripts_to_close_windows_ = false;
-  GURL url_in_system_app_scope_;
 
   base::RepeatingCallback<gfx::Rect(Browser*)> get_default_bounds_ =
       base::NullCallback();
@@ -130,9 +123,6 @@ class TestSystemWebAppInstallation {
 
   static std::unique_ptr<TestSystemWebAppInstallation>
   SetUpAppNotShownInSearch();
-
-  static std::unique_ptr<TestSystemWebAppInstallation>
-  SetUpAppThatHandlesFileOpenIntents();
 
   static std::unique_ptr<TestSystemWebAppInstallation>
   SetUpAppWithAdditionalSearchTerms();
@@ -201,7 +191,7 @@ class TestSystemWebAppInstallation {
   // Must be called in SetUp*App() methods, before WebAppProvider is created.
   void RegisterAutoGrantedPermissions(ContentSettingsType permission);
 
-  raw_ptr<Profile> profile_;
+  Profile* profile_;
   SystemWebAppManager::UpdatePolicy update_policy_ =
       SystemWebAppManager::UpdatePolicy::kAlwaysUpdate;
   std::unique_ptr<FakeWebAppProviderCreator> fake_web_app_provider_creator_;

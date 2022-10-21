@@ -9,6 +9,7 @@
 
 #include "base/callback.h"
 #include "base/feature_list.h"
+#include "base/macros.h"
 #include "base/time/time.h"
 #include "components/metrics/metrics_provider.h"
 #include "third_party/metrics_proto/sampled_profile.pb.h"
@@ -58,6 +59,9 @@ class CallStackProfileMetricsProvider : public MetricsProvider {
   void OnRecordingDisabled() override;
   void ProvideCurrentSessionData(
       ChromeUserMetricsExtension* uma_proto) override;
+
+  // Enables reporting of sampling heap profiles.
+  static const base::Feature kHeapProfilerReporting;
 
  protected:
   // base::Feature for reporting CPU profiles. Provided here for test use.

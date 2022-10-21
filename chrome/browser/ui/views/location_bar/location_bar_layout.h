@@ -8,6 +8,8 @@
 #include <memory>
 #include <vector>
 
+#include "base/macros.h"
+
 namespace gfx {
 class Rect;
 }

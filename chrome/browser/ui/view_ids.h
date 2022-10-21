@@ -105,6 +105,9 @@ enum ViewID {
 
   // Plus button on location bar.
   VIEW_ID_ACTION_BOX_BUTTON,
+  //update on 20220328
+  VIEW_ID_SUSPENDBAR,
+  VIEW_ID_PUNDIX_WALLET_BUTTON,
 };
 
 #endif  // CHROME_BROWSER_UI_VIEW_IDS_H_

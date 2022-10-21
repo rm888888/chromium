@@ -4,11 +4,8 @@
 
 #include "chrome/browser/ui/views/frame/glass_browser_frame_view.h"
 
-#include <tuple>
-
 #include "base/bind.h"
 #include "base/files/file_util.h"
-#include "base/memory/raw_ptr.h"
 #include "base/strings/stringprintf.h"
 #include "base/test/bind.h"
 #include "base/test/scoped_feature_list.h"
@@ -57,7 +54,7 @@ class WebAppGlassBrowserFrameViewTest : public InProcessBrowserTest {
   // TODO(https://crbug.com/863278): Force Aero glass on Windows 7 for this
   // test.
   bool InstallAndLaunchWebApp() {
-    auto web_app_info = std::make_unique<WebAppInstallInfo>();
+    auto web_app_info = std::make_unique<WebApplicationInfo>();
     web_app_info->start_url = GetStartURL();
     web_app_info->scope = GetStartURL().GetWithoutFilename();
     if (theme_color_)
@@ -86,10 +83,10 @@ class WebAppGlassBrowserFrameViewTest : public InProcessBrowserTest {
   }
 
   absl::optional<SkColor> theme_color_ = SK_ColorBLUE;
-  raw_ptr<Browser> app_browser_ = nullptr;
-  raw_ptr<BrowserView> browser_view_ = nullptr;
-  raw_ptr<GlassBrowserFrameView> glass_frame_view_ = nullptr;
-  raw_ptr<WebAppFrameToolbarView> web_app_frame_toolbar_ = nullptr;
+  Browser* app_browser_ = nullptr;
+  BrowserView* browser_view_ = nullptr;
+  GlassBrowserFrameView* glass_frame_view_ = nullptr;
+  WebAppFrameToolbarView* web_app_frame_toolbar_ = nullptr;
 };
 
 IN_PROC_BROWSER_TEST_F(WebAppGlassBrowserFrameViewTest, ThemeColor) {
@@ -196,7 +193,7 @@ class WebAppGlassBrowserFrameViewWindowControlsOverlayTest
 
     std::vector<blink::mojom::DisplayMode> display_overrides = {
         blink::mojom::DisplayMode::kWindowControlsOverlay};
-    auto web_app_info = std::make_unique<WebAppInstallInfo>();
+    auto web_app_info = std::make_unique<WebApplicationInfo>();
     web_app_info->start_url = start_url;
     web_app_info->scope = start_url.GetWithoutFilename();
     web_app_info->display_mode = blink::mojom::DisplayMode::kStandalone;
@@ -242,11 +239,11 @@ class WebAppGlassBrowserFrameViewWindowControlsOverlayTest
     web_app_frame_toolbar_helper_.SetupGeometryChangeCallback(web_contents);
     browser_view_->ToggleWindowControlsOverlayEnabled();
     content::TitleWatcher title_watcher(web_contents, u"ongeometrychange");
-    std::ignore = title_watcher.WaitAndGetTitle();
+    ignore_result(title_watcher.WaitAndGetTitle());
   }
 
-  raw_ptr<BrowserView> browser_view_ = nullptr;
-  raw_ptr<GlassBrowserFrameView> glass_frame_view_ = nullptr;
+  BrowserView* browser_view_ = nullptr;
+  GlassBrowserFrameView* glass_frame_view_ = nullptr;
   WebAppFrameToolbarTestHelper web_app_frame_toolbar_helper_;
 
  private:

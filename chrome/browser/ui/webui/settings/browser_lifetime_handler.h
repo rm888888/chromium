@@ -5,6 +5,7 @@
 #ifndef CHROME_BROWSER_UI_WEBUI_SETTINGS_BROWSER_LIFETIME_HANDLER_H_
 #define CHROME_BROWSER_UI_WEBUI_SETTINGS_BROWSER_LIFETIME_HANDLER_H_
 
+#include "base/macros.h"
 #include "build/chromeos_buildflags.h"
 #include "chrome/browser/ui/webui/settings/settings_page_ui_handler.h"
 
@@ -35,13 +36,6 @@ class BrowserLifetimeHandler : public SettingsPageUIHandler {
   void HandleSignOutAndRestart(const base::ListValue* /*args*/);
   void HandleFactoryReset(const base::ListValue* /*args*/);
 #endif  // BUILDFLAG(IS_CHROMEOS_ASH)
-
-#if !BUILDFLAG(IS_CHROMEOS_ASH)
-  void HandleGetRelaunchConfirmationDialogDescription(
-      const base::ListValue* /*args*/);
-  void HandleShouldShowRelaunchConfirmationDialog(
-      const base::ListValue* /*args*/);
-#endif
 };
 
 }  // namespace settings

@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 #include "base/bind.h"
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/scoped_observation.h"
 #include "base/strings/utf_string_conversions.h"
 #include "build/build_config.h"
@@ -218,7 +218,7 @@ class MenuViewDragAndDropTest : public MenuTestBase,
                    ui::mojom::DragOperation& output_drag_op);
 
   // The special view in the menu, which supports its own drag and drop.
-  raw_ptr<TestTargetView> target_view_ = nullptr;
+  TestTargetView* target_view_ = nullptr;
 
   // Whether or not we have been asked to close on drag complete.
   bool asked_to_close_ = false;
@@ -236,7 +236,7 @@ void MenuViewDragAndDropTest::BuildMenu(views::MenuItemView* menu) {
   // drop...
   views::MenuItemView* menu_item_view = menu->AppendMenuItem(1, u"item 1");
   target_view_ = new TestTargetView();
-  menu_item_view->AddChildView(target_view_.get());
+  menu_item_view->AddChildView(target_view_);
   // ... as well as two other, normal items.
   menu->AppendMenuItem(2, u"item 2");
   menu->AppendMenuItem(3, u"item 3");
@@ -547,15 +547,7 @@ void MenuViewDragAndDropForDropStayOpen::DoTestWithMenuOpen() {
 // Test that if a menu is opened for a drop which is handled by a child view
 // that the menu does not immediately try to close.
 // If this flakes, disable and log details in http://crbug.com/523255.
-// Flaky on Lacros. https://crbug.com/1281104
-#if BUILDFLAG(IS_CHROMEOS_LACROS)
-#define MAYBE_MenuViewStaysOpenForNestedDrag \
-  DISABLED_MenuViewStaysOpenForNestedDrag
-#else
-#define MAYBE_MenuViewStaysOpenForNestedDrag MenuViewStaysOpenForNestedDrag
-#endif
-VIEW_TEST(MenuViewDragAndDropForDropStayOpen,
-          MAYBE_MenuViewStaysOpenForNestedDrag)
+VIEW_TEST(MenuViewDragAndDropForDropStayOpen, MenuViewStaysOpenForNestedDrag)
 
 class MenuViewDragAndDropForDropCancel : public MenuViewDragAndDropTest {
  public:
@@ -584,11 +576,4 @@ void MenuViewDragAndDropForDropCancel::DoTestWithMenuOpen() {
 
 // Test that if a menu is opened for a drop handled entirely by menu code, the
 // menu will try to close if it does not receive any drag updates.
-// Flaky on Lacros. https://crbug.com/1281103
-#if BUILDFLAG(IS_CHROMEOS_LACROS)
-#define MAYBE_MenuViewCancelsForOwnDrag \
-  DISABLED_MenuViewCancelsForOwnDrag
-#else
-#define MAYBE_MenuViewCancelsForOwnDrag MenuViewCancelsForOwnDrag
-#endif
-VIEW_TEST(MenuViewDragAndDropForDropCancel, MAYBE_MenuViewCancelsForOwnDrag)
+VIEW_TEST(MenuViewDragAndDropForDropCancel, MenuViewCancelsForOwnDrag)

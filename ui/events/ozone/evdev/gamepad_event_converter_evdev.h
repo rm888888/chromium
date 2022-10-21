@@ -11,6 +11,7 @@
 #include "base/containers/flat_set.h"
 #include "base/files/file_path.h"
 #include "base/files/scoped_file.h"
+#include "base/macros.h"
 #include "ui/events/devices/input_device.h"
 #include "ui/events/event.h"
 #include "ui/events/ozone/evdev/event_converter_evdev.h"

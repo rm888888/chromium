@@ -129,7 +129,7 @@ public class ChromeTabUtils {
     private static boolean loadComplete(Tab tab, String url) {
         return !tab.isLoading()
                 && (url == null || TextUtils.equals(getUrlStringOnUiThread(tab), url))
-                && !tab.getWebContents().shouldShowLoadingUI();
+                && !tab.getWebContents().isLoadingToDifferentDocument();
     }
 
     public static String getTitleOnUiThread(Tab tab) {
@@ -243,7 +243,7 @@ public class ChromeTabUtils {
                                 + "loading: %b, web contents init: %b, web contents loading: %b",
                         url, getUrlStringOnUiThread(tab), Math.round(100 * tab.getProgress()),
                         tab.isLoading(), webContents != null,
-                        webContents == null ? false : webContents.shouldShowLoadingUI()));
+                        webContents == null ? false : webContents.isLoadingToDifferentDocument()));
             }
         }
     }
@@ -371,7 +371,7 @@ public class ChromeTabUtils {
     public static void switchTabInCurrentTabModel(final ChromeActivity activity,
             final int tabIndex) {
         TestThreadUtils.runOnUiThreadBlocking(
-                () -> { TabModelUtils.setIndex(activity.getCurrentTabModel(), tabIndex, false); });
+                () -> { TabModelUtils.setIndex(activity.getCurrentTabModel(), tabIndex); });
     }
 
     /**

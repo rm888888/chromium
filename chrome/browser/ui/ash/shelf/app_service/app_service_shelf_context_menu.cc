@@ -133,8 +133,7 @@ void AppServiceShelfContextMenu::ExecuteCommand(int command_id,
       if (app_type_ == apps::mojom::AppType::kCrostini) {
         ShelfContextMenu::ExecuteCommand(ash::MENU_OPEN_NEW, event_flags);
       } else if (app_type_ == apps::mojom::AppType::kStandaloneBrowser) {
-        crosapi::BrowserManager::Get()->NewWindow(
-            /*incongnito=*/false, /*should_trigger_session_restore=*/false);
+        crosapi::BrowserManager::Get()->NewWindow(/*incongnito=*/false);
       } else {
         ash::NewWindowDelegate::GetInstance()->NewWindow(
             /*incognito=*/false,
@@ -146,8 +145,7 @@ void AppServiceShelfContextMenu::ExecuteCommand(int command_id,
 
     case ash::MENU_NEW_INCOGNITO_WINDOW:
       if (app_type_ == apps::mojom::AppType::kStandaloneBrowser) {
-        crosapi::BrowserManager::Get()->NewWindow(
-            /*incognito=*/true, /*should_trigger_session_restore=*/false);
+        crosapi::BrowserManager::Get()->NewWindow(/*incognito=*/true);
       } else {
         ash::NewWindowDelegate::GetInstance()->NewWindow(
             /*incognito=*/true,
@@ -172,13 +170,13 @@ void AppServiceShelfContextMenu::ExecuteCommand(int command_id,
       break;
 
     case ash::LAUNCH_TYPE_TABBED_WINDOW:
-      [[fallthrough]];
+      FALLTHROUGH;
     case ash::LAUNCH_TYPE_PINNED_TAB:
-      [[fallthrough]];
+      FALLTHROUGH;
     case ash::LAUNCH_TYPE_REGULAR_TAB:
-      [[fallthrough]];
+      FALLTHROUGH;
     case ash::LAUNCH_TYPE_WINDOW:
-      [[fallthrough]];
+      FALLTHROUGH;
     case ash::LAUNCH_TYPE_FULLSCREEN:
       SetLaunchType(command_id);
       break;
@@ -241,7 +239,7 @@ bool AppServiceShelfContextMenu::IsCommandIdChecked(int command_id) const {
       }
       return ShelfContextMenu::IsCommandIdChecked(command_id);
     }
-    case apps::mojom::AppType::kChromeApp:
+    case apps::mojom::AppType::kExtension:
       if (command_id >= ash::LAUNCH_TYPE_PINNED_TAB &&
           command_id <= ash::LAUNCH_TYPE_WINDOW) {
         return GetExtensionLaunchType() ==
@@ -253,15 +251,15 @@ bool AppServiceShelfContextMenu::IsCommandIdChecked(int command_id) const {
                 extension_menu_items_->IsCommandIdChecked(command_id));
       }
     case apps::mojom::AppType::kArc:
-      [[fallthrough]];
+      FALLTHROUGH;
     case apps::mojom::AppType::kCrostini:
-      [[fallthrough]];
+      FALLTHROUGH;
     case apps::mojom::AppType::kBuiltIn:
-      [[fallthrough]];
+      FALLTHROUGH;
     case apps::mojom::AppType::kPluginVm:
-      [[fallthrough]];
+      FALLTHROUGH;
     case apps::mojom::AppType::kBorealis:
-      [[fallthrough]];
+      FALLTHROUGH;
     default:
       return ShelfContextMenu::IsCommandIdChecked(command_id);
   }
@@ -295,7 +293,7 @@ void AppServiceShelfContextMenu::OnGetMenuModel(
   // The special rule to ensure that FilesManager's first menu item is "New
   // window".
   const bool build_extension_menu_before_pin =
-      (app_type_ == apps::mojom::AppType::kChromeApp &&
+      (app_type_ == apps::mojom::AppType::kExtension &&
        item().id.app_id == extension_misc::kFilesManagerAppId);
 
   if (build_extension_menu_before_pin)
@@ -479,19 +477,19 @@ void AppServiceShelfContextMenu::SetLaunchType(int command_id) {
       }
       return;
     }
-    case apps::mojom::AppType::kChromeApp:
+    case apps::mojom::AppType::kExtension:
       SetExtensionLaunchType(command_id);
       return;
     case apps::mojom::AppType::kArc:
-      [[fallthrough]];
+      FALLTHROUGH;
     case apps::mojom::AppType::kCrostini:
-      [[fallthrough]];
+      FALLTHROUGH;
     case apps::mojom::AppType::kBuiltIn:
-      [[fallthrough]];
+      FALLTHROUGH;
     case apps::mojom::AppType::kPluginVm:
-      [[fallthrough]];
+      FALLTHROUGH;
     case apps::mojom::AppType::kBorealis:
-      [[fallthrough]];
+      FALLTHROUGH;
     default:
       return;
   }
@@ -569,10 +567,10 @@ bool AppServiceShelfContextMenu::ShouldAddPinMenu() {
     }
     case apps::mojom::AppType::kCrostini:
     case apps::mojom::AppType::kBorealis:
-    case apps::mojom::AppType::kChromeApp:
+    case apps::mojom::AppType::kExtension:
     case apps::mojom::AppType::kWeb:
     case apps::mojom::AppType::kSystemWeb:
-    case apps::mojom::AppType::kStandaloneBrowserChromeApp:
+    case apps::mojom::AppType::kStandaloneBrowserExtension:
       return true;
     case apps::mojom::AppType::kStandaloneBrowser:
       // Lacros behaves like the Chrome browser icon and cannot be unpinned.
@@ -583,7 +581,6 @@ bool AppServiceShelfContextMenu::ShouldAddPinMenu() {
       return false;
     case apps::mojom::AppType::kMacOs:
     case apps::mojom::AppType::kRemote:
-    case apps::mojom::AppType::kExtension:
       NOTREACHED() << "Type " << app_type_ << " should not appear in shelf.";
       return false;
   }

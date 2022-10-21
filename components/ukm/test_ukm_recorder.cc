@@ -38,14 +38,20 @@ void MergeEntry(const mojom::UkmEntry* in, mojom::UkmEntry* out) {
 
 TestUkmRecorder::TestUkmRecorder() {
   EnableRecording(/*extensions=*/true);
-  InitDecodeMap();
-  SetSamplingForTesting(1);  // 1-in-1 == unsampled
+  StoreWhitelistedEntries();
+  DisableSamplingForTesting();
 }
 
 TestUkmRecorder::~TestUkmRecorder() {}
 
 bool TestUkmRecorder::ShouldRestrictToWhitelistedSourceIds() const {
   // In tests, we want to record all source ids (not just those that are
+  // whitelisted).
+  return false;
+}
+
+bool TestUkmRecorder::ShouldRestrictToWhitelistedEntries() const {
+  // In tests, we want to record all entries (not just those that are
   // whitelisted).
   return false;
 }

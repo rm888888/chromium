@@ -36,9 +36,6 @@ public class FirstRunControllerTest {
     @Rule
     public final TestRule mChain = RuleChain.outerRule(mChromeUiRule).around(mUiAutomatorRule);
 
-    @Rule
-    public TestRule mCommandLineFlagsRule = CommandLineFlags.getTestRule();
-
     @Before
     public void setUp() {
         mChromeUiRule.launchApplication();

@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "base/files/file_path.h"
+#include "base/macros.h"
 #include "components/upload_list/upload_list.h"
 
 // Loads and parses an upload list text file of the line-based JSON format:

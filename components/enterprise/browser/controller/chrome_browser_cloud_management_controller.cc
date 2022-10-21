@@ -41,12 +41,6 @@ const base::FilePath::CharType
     ChromeBrowserCloudManagementController::kPolicyDir[] =
         FILE_PATH_LITERAL("Policy");
 
-std::unique_ptr<enterprise_connectors::DeviceTrustKeyManager>
-ChromeBrowserCloudManagementController::Delegate::
-    CreateDeviceTrustKeyManager() {
-  return nullptr;
-}
-
 void ChromeBrowserCloudManagementController::Delegate::DeferInitialization(
     base::OnceClosure callback) {
   NOTREACHED();
@@ -334,14 +328,6 @@ void ChromeBrowserCloudManagementController::ShutDown() {
   delegate_->ShutDown();
   if (report_scheduler_)
     report_scheduler_.reset();
-}
-
-enterprise_connectors::DeviceTrustKeyManager*
-ChromeBrowserCloudManagementController::GetDeviceTrustKeyManager() {
-  if (!device_trust_key_manager_) {
-    device_trust_key_manager_ = delegate_->CreateDeviceTrustKeyManager();
-  }
-  return device_trust_key_manager_.get();
 }
 
 void ChromeBrowserCloudManagementController::SetGaiaURLLoaderFactory(

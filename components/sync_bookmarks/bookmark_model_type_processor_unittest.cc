@@ -11,7 +11,6 @@
 
 #include "base/callback_helpers.h"
 #include "base/guid.h"
-#include "base/memory/raw_ptr.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/test/bind.h"
 #include "base/test/gmock_move_support.h"
@@ -85,7 +84,7 @@ syncer::UpdateResponseData CreateUpdateResponseData(
     const base::GUID& guid) {
   syncer::EntityData data;
   data.id = bookmark_info.server_id;
-  data.legacy_parent_id = bookmark_info.parent_id;
+  data.parent_id = bookmark_info.parent_id;
   data.server_defined_unique_tag = bookmark_info.server_tag;
   data.originator_client_item_id = guid.AsLowercaseString();
 
@@ -239,7 +238,7 @@ class ProxyCommitQueue : public syncer::CommitQueue {
   void NudgeForCommit() override { commit_queue_->NudgeForCommit(); }
 
  private:
-  raw_ptr<CommitQueue> commit_queue_ = nullptr;
+  CommitQueue* commit_queue_ = nullptr;
 };
 
 class BookmarkModelTypeProcessorTest : public testing::Test {
@@ -827,7 +826,6 @@ TEST_F(BookmarkModelTypeProcessorTest, ShouldReuploadLegacyBookmarksOnStart) {
 
   sync_pb::BookmarkModelMetadata model_metadata =
       processor()->GetTrackerForTest()->BuildBookmarkModelMetadata();
-  model_metadata.clear_bookmarks_hierarchy_fields_reuploaded();
   ASSERT_FALSE(processor()->GetTrackerForTest()->HasLocalChanges());
 
   // Simulate browser restart, enable sync reupload and initialize the processor

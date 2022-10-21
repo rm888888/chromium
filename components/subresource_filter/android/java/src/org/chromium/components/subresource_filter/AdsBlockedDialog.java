@@ -11,6 +11,7 @@ import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.TextUtils;
 import android.text.style.ClickableSpan;
+import android.view.View;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.VisibleForTesting;
@@ -25,7 +26,6 @@ import org.chromium.ui.modaldialog.ModalDialogManager.ModalDialogType;
 import org.chromium.ui.modaldialog.ModalDialogProperties;
 import org.chromium.ui.modaldialog.ModalDialogProperties.ButtonType;
 import org.chromium.ui.modelutil.PropertyModel;
-import org.chromium.ui.text.NoUnderlineClickableSpan;
 
 /**
  * Java part of AdsBlockedDialog pair providing communication between native ads blocked
@@ -82,8 +82,12 @@ public class AdsBlockedDialog implements ModalDialogProperties.Controller {
     @CalledByNative
     void show(boolean shouldPostDialog) {
         Resources resources = mContext.getResources();
-        mClickableSpan = new NoUnderlineClickableSpan(
-                resources, (view) -> AdsBlockedDialogJni.get().onLearnMoreClicked(mNativeDialog));
+        mClickableSpan = new ClickableSpan() {
+            @Override
+            public void onClick(View view) {
+                AdsBlockedDialogJni.get().onLearnMoreClicked(mNativeDialog);
+            }
+        };
         mDialogModel = new PropertyModel.Builder(ModalDialogProperties.ALL_KEYS)
                                .with(ModalDialogProperties.CONTROLLER, this)
                                .with(ModalDialogProperties.TITLE, resources,
@@ -94,7 +98,6 @@ public class AdsBlockedDialog implements ModalDialogProperties.Controller {
                                .with(ModalDialogProperties.NEGATIVE_BUTTON_TEXT, resources,
                                        R.string.cancel)
                                .with(ModalDialogProperties.CANCEL_ON_TOUCH_OUTSIDE, true)
-                               .with(ModalDialogProperties.FOCUS_DIALOG, true)
                                .build();
 
         // shouldPostDialog determines if ModalDialogManager#showDialog should be invoked directly

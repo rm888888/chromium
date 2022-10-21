@@ -16,7 +16,7 @@ import android.widget.ImageView;
 import androidx.annotation.VisibleForTesting;
 import androidx.core.view.ViewCompat;
 
-import org.chromium.components.browser_ui.styles.SemanticColorUtils;
+import org.chromium.base.ApiCompatibilityUtils;
 
 /**
  * An alternative progress bar implemented using ClipDrawable for simplicity and performance.
@@ -72,8 +72,10 @@ public class ClipDrawableProgressBar extends ImageView {
 
         mDesiredVisibility = getVisibility();
 
-        int foregroundColor = SemanticColorUtils.getProgressBarForeground(getContext());
-        mBackgroundColor = getContext().getColor(R.color.progress_bar_bg_color);
+        int foregroundColor =
+                ApiCompatibilityUtils.getColor(getResources(), R.color.progress_bar_foreground);
+        mBackgroundColor =
+                ApiCompatibilityUtils.getColor(getResources(), R.color.progress_bar_background);
 
         mForegroundDrawable = new ColorDrawable(foregroundColor);
         setImageDrawable(

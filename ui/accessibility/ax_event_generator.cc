@@ -8,7 +8,6 @@
 
 #include "base/containers/contains.h"
 #include "ui/accessibility/ax_enums.mojom.h"
-#include "ui/accessibility/ax_event.h"
 #include "ui/accessibility/ax_live_region_tracker.h"
 #include "ui/accessibility/ax_node.h"
 #include "ui/accessibility/ax_role_properties.h"
@@ -203,7 +202,7 @@ AXEventGenerator::AXEventGenerator() = default;
 
 AXEventGenerator::AXEventGenerator(AXTree* tree) : tree_(tree) {
   if (tree_) {
-    tree_event_observation_.Observe(tree_.get());
+    tree_event_observation_.Observe(tree_);
     live_region_tracker_ = std::make_unique<AXLiveRegionTracker>(*tree_);
   }
 }
@@ -212,13 +211,13 @@ AXEventGenerator::~AXEventGenerator() = default;
 
 void AXEventGenerator::SetTree(AXTree* new_tree) {
   if (tree_) {
-    DCHECK(tree_event_observation_.IsObservingSource(tree_.get()));
+    DCHECK(tree_event_observation_.IsObservingSource(tree_));
     tree_event_observation_.Reset();
     live_region_tracker_.reset();
   }
   tree_ = new_tree;
   if (tree_) {
-    tree_event_observation_.Observe(tree_.get());
+    tree_event_observation_.Observe(tree_);
     live_region_tracker_ = std::make_unique<AXLiveRegionTracker>(*tree_);
   }
 }
@@ -270,11 +269,9 @@ void AXEventGenerator::AddEvent(AXNode* node, AXEventGenerator::Event event) {
   if (node->GetRole() == ax::mojom::Role::kInlineTextBox)
     return;
 
-  DCHECK(tree_->event_data());
   std::set<EventParams>& node_events = tree_events_[node->id()];
-  node_events.emplace(event, tree_->event_data()->event_from,
-                      tree_->event_data()->event_from_action,
-                      tree_->event_data()->event_intents);
+  node_events.emplace(event, ax::mojom::EventFrom::kNone,
+                      ax::mojom::Action::kNone, tree_->event_intents());
 }
 
 void AXEventGenerator::OnIgnoredWillChange(AXTree* tree,
@@ -305,12 +302,6 @@ void AXEventGenerator::OnNodeDataChanged(AXTree* tree,
   // and line layout. We don't expose those to platform APIs, though, so
   // suppress CHILDREN_CHANGED events on static text nodes.
   if (new_node_data.child_ids != old_node_data.child_ids && !node->IsText()) {
-    if (node->IsIgnored()) {
-      AXNode* unignored_parent = node->GetUnignoredParent();
-      if (unignored_parent)
-        AddEvent(unignored_parent, Event::CHILDREN_CHANGED);
-      return;
-    }
     AddEvent(node, Event::CHILDREN_CHANGED);
   }
 }
@@ -780,14 +771,6 @@ void AXEventGenerator::OnTreeDataChanged(AXTree* tree,
 void AXEventGenerator::OnNodeWillBeDeleted(AXTree* tree, AXNode* node) {
   live_region_tracker_->OnNodeWillBeDeleted(*node);
 
-  // TODO(accessibility): This should also handle firing MENU_POPUP_END when a
-  // node with the menu role is removed. The issue to be solved is that after we
-  // add MENU_POPUP_END here, the node gets removed from the tree. Then
-  // PostprocessEvents removes the events from that now-removed node, thus
-  // MENU_POPUP_END never gets fired. We work around this issue currently by
-  // firing the event from BrowserAccessibilityManager. Adding the ability to
-  // fire generated events immediately should make it possible to fire
-  // MENU_POPUP_END here.
   DCHECK_EQ(tree_, tree);
   tree_events_.erase(node->id());
 }
@@ -810,29 +793,11 @@ void AXEventGenerator::OnNodeReparented(AXTree* tree, AXNode* node) {
   AddEvent(node, Event::PARENT_CHANGED);
 }
 
-void AXEventGenerator::OnNodeCreated(AXTree* tree, AXNode* node) {
-  DCHECK_EQ(tree_, tree);
-  if (node->GetRole() == ax::mojom::Role::kMenu &&
-      !node->IsInvisibleOrIgnored()) {
-    AddEvent(node, Event::MENU_POPUP_START);
-  }
-}
-
 void AXEventGenerator::OnAtomicUpdateFinished(
     AXTree* tree,
     bool root_changed,
     const std::vector<Change>& changes) {
   DCHECK_EQ(tree_, tree);
-
-  // Extra Mac nodes directly call AXTreeObserver::OnAtomicUpdateFinished, which
-  // skips all unserialization logic, including those used in AXEventGenerator.
-  //
-  // It only makes sense to generate events when we are called here within
-  // AXTree::Unserialize. The below condition also guards against any future
-  // callers of this type, whether Mac or not.
-  if (!tree_->event_data())
-    return;
-
   DCHECK(tree->root());
 
   if (root_changed && ShouldFireLoadEvents(tree->root())) {
@@ -1156,14 +1121,6 @@ void AXEventGenerator::PostprocessEvents() {
         parent = parent->GetUnignoredParent();
       }
     }
-
-    // Don't fire parent changed on ignored events, because these nodes do not
-    // exist for platform accessibility. If the node toggles the ignored state,
-    // that's an IGNORED_CHANGED event and it's treated differently. In some
-    // occasions it may result in a PARENT_CHANGED event on a different node
-    // (see AXEventGenerator::OnIgnoredChanged).
-    if (node->IsIgnored())
-      RemoveEvent(&node_events, Event::PARENT_CHANGED);
 
     // Don't fire subtree created on this node if any of its ancestors also has
     // subtree created.

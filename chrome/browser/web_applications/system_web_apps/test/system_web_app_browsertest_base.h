@@ -102,7 +102,7 @@ class SystemWebAppBrowserTestBase : public InProcessBrowserTest {
                                   bool wait_for_load,
                                   Browser** out_browser);
 
-  OsIntegrationManager::ScopedSuppressForTesting os_hooks_suppress_;
+  ScopedOsHooksSuppress os_hooks_suppress_;
 };
 
 class SystemWebAppManagerBrowserTest

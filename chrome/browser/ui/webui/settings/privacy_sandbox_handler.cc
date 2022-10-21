@@ -5,8 +5,8 @@
 #include "chrome/browser/ui/webui/settings/privacy_sandbox_handler.h"
 
 #include "chrome/browser/federated_learning/floc_id_provider_factory.h"
-#include "chrome/browser/privacy_sandbox/privacy_sandbox_service.h"
-#include "chrome/browser/privacy_sandbox/privacy_sandbox_service_factory.h"
+#include "chrome/browser/privacy_sandbox/privacy_sandbox_settings.h"
+#include "chrome/browser/privacy_sandbox/privacy_sandbox_settings_factory.h"
 #include "chrome/browser/profiles/profile.h"
 
 namespace settings {
@@ -20,22 +20,23 @@ constexpr char kNextUpdate[] = "nextUpdate";
 constexpr char kCanReset[] = "canReset";
 
 base::Value GetFlocIdInformation(Profile* profile) {
-  auto* privacy_sandbox_service =
-      PrivacySandboxServiceFactory::GetForProfile(profile);
-  DCHECK(privacy_sandbox_service);
+  auto* privacy_sandbox_settings =
+      PrivacySandboxSettingsFactory::GetForProfile(profile);
+  DCHECK(privacy_sandbox_settings);
 
   base::DictionaryValue floc_id_information;
   floc_id_information.SetKey(
       kTrialStatus,
-      base::Value(privacy_sandbox_service->GetFlocStatusForDisplay()));
+      base::Value(privacy_sandbox_settings->GetFlocStatusForDisplay()));
   floc_id_information.SetKey(
-      kCohort, base::Value(privacy_sandbox_service->GetFlocIdForDisplay()));
+      kCohort, base::Value(privacy_sandbox_settings->GetFlocIdForDisplay()));
   floc_id_information.SetKey(
       kNextUpdate,
-      base::Value(privacy_sandbox_service->GetFlocIdNextUpdateForDisplay(
-          base::Time::Now())));
+      base::Value(PrivacySandboxSettings::GetFlocIdNextUpdateForDisplay(
+          federated_learning::FlocIdProviderFactory::GetForProfile(profile),
+          profile->GetPrefs(), base::Time::Now())));
   floc_id_information.SetKey(
-      kCanReset, base::Value(privacy_sandbox_service->IsFlocIdResettable()));
+      kCanReset, base::Value(privacy_sandbox_settings->IsFlocIdResettable()));
 
   return std::move(floc_id_information);
 }
@@ -66,11 +67,11 @@ void PrivacySandboxHandler::HandleResetFlocId(const base::ListValue* args) {
   CHECK_EQ(0U, args->GetList().size());
   AllowJavascript();
 
-  auto* privacy_sandbox_service =
-      PrivacySandboxServiceFactory::GetForProfile(Profile::FromWebUI(web_ui()));
-  DCHECK(privacy_sandbox_service);
+  auto* privacy_sandbox_settings = PrivacySandboxSettingsFactory::GetForProfile(
+      Profile::FromWebUI(web_ui()));
+  DCHECK(privacy_sandbox_settings);
 
-  privacy_sandbox_service->ResetFlocId(/*user_initiated=*/true);
+  privacy_sandbox_settings->ResetFlocId(/*user_initiated=*/true);
 
   // The identifier will have been immediately invalidated in response to
   // the clearing action, so synchronously retrieving the FLoC ID will retrieve

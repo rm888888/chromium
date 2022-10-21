@@ -6,7 +6,6 @@
 
 #include <algorithm>
 #include <memory>
-#include <tuple>
 #include <utility>
 
 #include "base/ranges/algorithm.h"
@@ -62,7 +61,7 @@ void FakeAffiliationAPI::FailNextRequest() {
 void FakeAffiliationAPI::IgnoreNextRequest() {
   if (!fake_fetcher_factory_->has_pending_fetchers())
     return;
-  std::ignore = fake_fetcher_factory_->PopNextFetcher();
+  ignore_result(fake_fetcher_factory_->PopNextFetcher());
 }
 
 }  // namespace password_manager

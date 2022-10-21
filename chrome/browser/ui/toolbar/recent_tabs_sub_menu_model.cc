@@ -399,16 +399,23 @@ void RecentTabsSubMenuModel::BuildLocalEntries() {
         case sessions::TabRestoreService::WINDOW: {
           auto& window =
               static_cast<sessions::TabRestoreService::Window&>(*entry);
-          BuildLocalWindowItem(entry->id, CreateWindowSubMenuModel(window),
-                               window.tabs.size(), ++last_local_model_index_);
+          BuildLocalWindowItem(
+              entry->id,
+              base::FeatureList::IsEnabled(features::kTabRestoreSubMenus)
+                  ? CreateWindowSubMenuModel(window)
+                  : nullptr,
+              window.tabs.size(), ++last_local_model_index_);
           break;
         }
         case sessions::TabRestoreService::GROUP: {
           auto& group =
               static_cast<const sessions::TabRestoreService::Group&>(*entry);
-          BuildLocalGroupItem(group.id, group.visual_data,
-                              CreateGroupSubMenuModel(group), group.tabs.size(),
-                              ++last_local_model_index_);
+          BuildLocalGroupItem(
+              group.id, group.visual_data,
+              base::FeatureList::IsEnabled(features::kTabRestoreSubMenus)
+                  ? CreateGroupSubMenuModel(group)
+                  : nullptr,
+              group.tabs.size(), ++last_local_model_index_);
           break;
         }
       }
@@ -507,13 +514,22 @@ void RecentTabsSubMenuModel::BuildLocalWindowItem(
     int num_tabs,
     int curr_model_index) {
   const int command_id = GetAndIncrementNextMenuID();
-  InsertSubMenuAt(
-      curr_model_index, command_id,
-      l10n_util::GetPluralStringFUTF16(IDS_RECENTLY_CLOSED_WINDOW, num_tabs),
-      window_model.get());
-  local_sub_menu_items_.emplace(
-      command_id, SubMenuItem(command_id, std::move(window_model)));
-  SetIcon(curr_model_index, CreateFavicon(kTabIcon));
+  if (base::FeatureList::IsEnabled(features::kTabRestoreSubMenus)) {
+    InsertSubMenuAt(
+        curr_model_index, command_id,
+        l10n_util::GetPluralStringFUTF16(IDS_RECENTLY_CLOSED_WINDOW, num_tabs),
+        window_model.get());
+    local_sub_menu_items_.emplace(
+        command_id, SubMenuItem(command_id, std::move(window_model)));
+    SetIcon(curr_model_index, CreateFavicon(kTabIcon));
+  } else {
+    // See comments in BuildLocalEntries() about usage of InsertItem*At().
+    InsertItemAt(
+        curr_model_index, command_id,
+        l10n_util::GetPluralStringFUTF16(IDS_RECENTLY_CLOSED_WINDOW, num_tabs));
+    local_window_items_.emplace(command_id, window_id);
+    SetIcon(curr_model_index, CreateFavicon(kTabIcon));
+  }
 }
 
 void RecentTabsSubMenuModel::BuildLocalGroupItem(
@@ -525,9 +541,16 @@ void RecentTabsSubMenuModel::BuildLocalGroupItem(
   const int command_id = GetAndIncrementNextMenuID();
   // Set the item label to the name of the group and the number of tabs.
   std::u16string item_label = GetGroupItemLabel(visual_data.title(), num_tabs);
-  InsertSubMenuAt(curr_model_index, command_id, item_label, group_model.get());
-  local_sub_menu_items_.emplace(
-      command_id, SubMenuItem(command_id, std::move(group_model)));
+  // See comments in BuildLocalEntries() about usage of InsertItem*At().
+  if (base::FeatureList::IsEnabled(features::kTabRestoreSubMenus)) {
+    InsertSubMenuAt(curr_model_index, command_id, item_label,
+                    group_model.get());
+    local_sub_menu_items_.emplace(
+        command_id, SubMenuItem(command_id, std::move(group_model)));
+  } else {
+    InsertItemAt(curr_model_index, command_id, item_label);
+    local_group_items_.emplace(command_id, session_id);
+  }
 
   // Set the item icon to the group color.
   const auto& theme =
@@ -558,6 +581,7 @@ void RecentTabsSubMenuModel::BuildOtherDevicesTabItem(
 std::unique_ptr<ui::SimpleMenuModel>
 RecentTabsSubMenuModel::CreateWindowSubMenuModel(
     const sessions::TabRestoreService::Window& window) {
+  DCHECK(base::FeatureList::IsEnabled(features::kTabRestoreSubMenus));
   std::unique_ptr<ui::SimpleMenuModel> window_model =
       std::make_unique<ui::SimpleMenuModel>(this);
   const int restore_all_command_id = GetAndIncrementNextMenuID();
@@ -619,6 +643,7 @@ RecentTabsSubMenuModel::CreateWindowSubMenuModel(
 std::unique_ptr<ui::SimpleMenuModel>
 RecentTabsSubMenuModel::CreateGroupSubMenuModel(
     const sessions::TabRestoreService::Group& group) {
+  DCHECK(base::FeatureList::IsEnabled(features::kTabRestoreSubMenus));
   std::unique_ptr<ui::SimpleMenuModel> group_model =
       std::make_unique<ui::SimpleMenuModel>(this);
   int command_id = GetAndIncrementNextMenuID();

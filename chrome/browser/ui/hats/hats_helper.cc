@@ -23,8 +23,7 @@
 HatsHelper::~HatsHelper() = default;
 
 HatsHelper::HatsHelper(content::WebContents* web_contents)
-    : WebContentsObserver(web_contents),
-      content::WebContentsUserData<HatsHelper>(*web_contents) {}
+    : WebContentsObserver(web_contents) {}
 
 void HatsHelper::DidFinishNavigation(
     content::NavigationHandle* navigation_handle) {

@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "base/callback_forward.h"
+#include "base/macros.h"
 #include "base/memory/singleton.h"
 #include "base/synchronization/lock.h"
 #include "base/threading/thread_checker.h"

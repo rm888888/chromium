@@ -5,6 +5,7 @@
 #include "components/autofill_assistant/browser/protocol_utils.h"
 
 #include "base/containers/flat_map.h"
+#include "base/macros.h"
 #include "components/autofill_assistant/browser/selector.h"
 #include "components/autofill_assistant/browser/service.pb.h"
 #include "components/autofill_assistant/browser/test_util.h"
@@ -214,7 +215,7 @@ TEST_F(ProtocolUtilsTest, ParseActionsValid) {
   proto.set_global_payload("global_payload");
   proto.set_script_payload("script_payload");
   proto.add_actions()->mutable_tell();
-  proto.add_actions()->mutable_stop();
+  proto.add_actions()->mutable_highlight_element();
 
   std::string proto_str;
   proto.SerializeToString(&proto_str);

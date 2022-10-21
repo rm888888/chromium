@@ -291,6 +291,20 @@ TEST_F('CrExtensionsDetailViewTest', 'Warnings', function() {
 });
 
 ////////////////////////////////////////////////////////////////////////////////
+// Extension Site Access Tests
+
+var CrExtensionsSiteAccessTest = class extends CrExtensionsBrowserTest {
+  /** @override */
+  get browsePreload() {
+    return 'chrome://extensions/test_loader.html?module=extensions/site_access_test.js';
+  }
+};
+
+TEST_F('CrExtensionsSiteAccessTest', 'All', () => {
+  mocha.run();
+});
+
+////////////////////////////////////////////////////////////////////////////////
 // Extension Item List Tests
 
 var CrExtensionsItemListTest = class extends CrExtensionsBrowserTest {
@@ -479,20 +493,6 @@ TEST_F(
       this.runMochaTest(extension_manager_tests.TestNames.PageTitleUpdate);
     });
 
-TEST_F(
-    'CrExtensionsManagerTestWithMultipleExtensionTypesInstalled',
-    'NavigateToSitePermissionsFail', function() {
-      this.runMochaTest(
-          extension_manager_tests.TestNames.NavigateToSitePermissionsFail);
-    });
-
-TEST_F(
-    'CrExtensionsManagerTestWithMultipleExtensionTypesInstalled',
-    'NavigateToSitePermissionsSuccess', function() {
-      this.runMochaTest(
-          extension_manager_tests.TestNames.NavigateToSitePermissionsSuccess);
-    });
-
 var CrExtensionsManagerTestWithIdQueryParam =
     class extends CrExtensionsBrowserTestWithInstalledExtension {
   /** @override */
@@ -521,6 +521,13 @@ TEST_F(
           extension_manager_tests.TestNames.UrlNavigationToActivityLogFail);
     });
 
+TEST_F(
+    'CrExtensionsManagerTestWithIdQueryParam', 'UrlNavigationToSiteAccessFail',
+    function() {
+      this.runMochaTest(
+          extension_manager_tests.TestNames.UrlNavigationToSiteAccessFail);
+    });
+
 CrExtensionsManagerTestWithActivityLogFlag =
     class extends CrExtensionsManagerTestWithIdQueryParam {
   /** @override */
@@ -541,6 +548,26 @@ TEST_F(
     'UrlNavigationToActivityLogSuccess', function() {
       this.runMochaTest(
           extension_manager_tests.TestNames.UrlNavigationToActivityLogSuccess);
+    });
+
+CrExtensionsManagerTestWithNewSiteAccess =
+    class extends CrExtensionsManagerTestWithIdQueryParam {
+  /** @override */
+  get browsePreload() {
+    return 'chrome://extensions/test_loader.html?module=extensions/manager_test_with_new_site_access.js';
+  }
+
+  /** @override */
+  get featureList() {
+    return {enabled: ['features::kExtensionsMenuAccessControl']};
+  }
+};
+
+TEST_F(
+    'CrExtensionsManagerTestWithNewSiteAccess',
+    'UrlNavigationToSiteAccessSuccess', function() {
+      this.runMochaTest(
+          extension_manager_tests.TestNames.UrlNavigationToSiteAccessSuccess);
     });
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -738,17 +765,12 @@ var CrExtensionsErrorConsoleTest = class extends CrExtensionsBrowserTest {
   /** @override */
   testGenPreamble() {
     GEN('  SetDevModeEnabled(true);');
-    // TODO(https://crbug.com/1269161): Update the associated extensions to
-    // Manifest V3 and stop ignoring deprecated manifest version warnings.
-    GEN('  SetSilenceDeprecatedManifestVersionWarnings(true);');
     GEN('  InstallErrorsExtension();');
   }
 
   /** @override */
   testGenPostamble() {
-    // Return settings to default.
-    GEN('  SetDevModeEnabled(false);');
-    GEN('  SetSilenceDeprecatedManifestVersionWarnings(false);');
+    GEN('  SetDevModeEnabled(false);');  // Return this to default.
   }
 };
 

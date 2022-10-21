@@ -5,7 +5,7 @@
 #ifndef UI_VIEWS_WIDGET_DESKTOP_AURA_DESKTOP_FOCUS_RULES_H_
 #define UI_VIEWS_WIDGET_DESKTOP_AURA_DESKTOP_FOCUS_RULES_H_
 
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "ui/wm/core/base_focus_rules.h"
 
 namespace views {
@@ -33,7 +33,7 @@ class DesktopFocusRules : public wm::BaseFocusRules {
 
   // The content window. This is an activatable window even though it is a
   // child.
-  raw_ptr<aura::Window> content_window_;
+  aura::Window* content_window_;
 };
 
 }  // namespace views

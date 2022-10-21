@@ -7,17 +7,15 @@
 #import <Cocoa/Cocoa.h>
 
 #include "base/mac/foundation_util.h"
-#include "base/no_destructor.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/trace_event/trace_event.h"
 #include "ui/accessibility/ax_action_data.h"
 #include "ui/accessibility/ax_enums.mojom.h"
 #include "ui/accessibility/platform/ax_platform_node_mac.h"
 #include "ui/accessibility/platform/ax_private_attributes_mac.h"
-#include "ui/accessibility/platform/ax_private_roles_mac.h"
 #include "ui/base/l10n/l10n_util.h"
 #import "ui/gfx/mac/coordinate_conversion.h"
-#include "ui/strings/grit/ax_strings.h"
+#include "ui/strings/grit/ui_strings.h"
 
 namespace ui {
 
@@ -205,7 +203,7 @@ RoleMap BuildRoleMap() {
       {ax::mojom::Role::kRadioButton, NSAccessibilityRadioButtonRole},
       {ax::mojom::Role::kRadioGroup, NSAccessibilityRadioGroupRole},
       {ax::mojom::Role::kRegion, NSAccessibilityGroupRole},
-      {ax::mojom::Role::kRootWebArea, NSAccessibilityWebAreaRole},
+      {ax::mojom::Role::kRootWebArea, @"AXWebArea"},
       {ax::mojom::Role::kRow, NSAccessibilityRowRole},
       {ax::mojom::Role::kRowGroup, NSAccessibilityGroupRole},
       {ax::mojom::Role::kRowHeader, @"AXCell"},
@@ -417,10 +415,6 @@ bool IsAXSetter(SEL selector) {
 // Returns AXValue, or nil if AXValue isn't an NSString.
 - (NSString*)getAXValueAsString;
 
-// Returns this node's internal role, i.e. the one that is stored in
-// the internal accessibility tree as opposed to the platform tree.
-- (ax::mojom::Role)internalRole;
-
 // Returns the native wrapper for the given node id.
 - (AXPlatformNodeCocoa*)fromNodeID:(ui::AXNodeID)id;
 @end
@@ -488,12 +482,6 @@ bool IsAXSetter(SEL selector) {
   return [value isKindOfClass:[NSString class]] ? value : nil;
 }
 
-- (ax::mojom::Role)internalRole {
-  if ([self instanceActive])
-    return _node->GetRole();
-  return ax::mojom::Role::kUnknown;
-}
-
 - (AXPlatformNodeCocoa*)fromNodeID:(ui::AXNodeID)id {
   ui::AXPlatformNode* cell = _node->GetDelegate()->GetFromNodeID(id);
   if (cell)
@@ -518,9 +506,8 @@ bool IsAXSetter(SEL selector) {
 
   NSString* name = [self getName];
   NSString* announcementText =
-      [name length] > 0
-          ? name
-          : base::SysUTF16ToNSString(_node->GetTextContentUTF16());
+      [name length] > 0 ? name
+                        : base::SysUTF16ToNSString(_node->GetInnerText());
   if ([announcementText length] == 0)
     return nullptr;
 
@@ -653,8 +640,6 @@ bool IsAXSetter(SEL selector) {
 
   // These attributes are required on all accessibility objects.
   NSArray* const kAllRoleAttributes = @[
-    NSAccessibilityDOMClassList,
-    NSAccessibilityDOMIdentifierAttribute,
     NSAccessibilityChildrenAttribute,
     NSAccessibilityParentAttribute,
     NSAccessibilityPositionAttribute,
@@ -757,7 +742,6 @@ bool IsAXSetter(SEL selector) {
       break;
     case ax::mojom::Role::kMathMLMultiscripts:
       [axAttributes addObjectsFromArray:@[
-        NSAccessibilityMathBaseAttribute,
         NSAccessibilityMathPostscriptsAttribute,
         NSAccessibilityMathPrescriptsAttribute
       ]];
@@ -787,11 +771,10 @@ bool IsAXSetter(SEL selector) {
   if (_node->HasIntAttribute(ax::mojom::IntAttribute::kAriaCurrentState))
     [axAttributes addObject:NSAccessibilityARIACurrentAttribute];
 
-  // Control element.
+  // Focusable element or a control element.
   if (ui::IsControl(role)) {
     [axAttributes addObjectsFromArray:@[
       NSAccessibilityAccessKeyAttribute,
-      NSAccessibilityInvalidAttribute,
     ]];
   }
 
@@ -804,39 +787,13 @@ bool IsAXSetter(SEL selector) {
     [axAttributes addObject:NSAccessibilityDetailsElementsAttribute];
   }
 
-  if (ui::SupportsRequired(role)) {
-    [axAttributes addObject:NSAccessibilityRequiredAttributeChrome];
-  }
-
-  // Url: add the url attribute only if the object has a valid url.
-  if ([self accessibilityURL])
-    [axAttributes addObject:NSAccessibilityURLAttribute];
-
   // Table and grid.
   if (ui::IsTableLike(role)) {
-    [axAttributes addObjectsFromArray:@[
-      NSAccessibilityColumnHeaderUIElementsAttribute,
-      NSAccessibilityARIAColumnCountAttribute,
-      NSAccessibilityARIARowCountAttribute,
-    ]];
-  }
-  if (ui::IsCellOrTableHeader(role)) {
-    [axAttributes addObjectsFromArray:@[
-      NSAccessibilityARIAColumnIndexAttribute,
-      NSAccessibilityARIARowIndexAttribute,
-    ]];
+    [axAttributes addObject:NSAccessibilityColumnHeaderUIElementsAttribute];
   }
   if (ui::IsCellOrTableHeader(role) && role != ax::mojom::Role::kColumnHeader) {
     [axAttributes addObject:NSAccessibilityColumnHeaderUIElementsAttribute];
   }
-
-  // Popup
-  if (_node->HasIntAttribute(ax::mojom::IntAttribute::kHasPopup)) {
-    [axAttributes addObjectsFromArray:@[
-      NSAccessibilityHasPopupAttribute, NSAccessibilityPopupValueAttribute
-    ]];
-  }
-
   return axAttributes.autorelease();
 }
 
@@ -942,28 +899,6 @@ bool IsAXSetter(SEL selector) {
   return @"false";
 }
 
-- (NSNumber*)AXARIAColumnCount {
-  if (![self instanceActive])
-    return nil;
-  absl::optional<int> ariaColCount =
-      _node->GetDelegate()->GetTableAriaColCount();
-  if (!ariaColCount)
-    return nil;
-  return @(*ariaColCount);
-}
-
-- (NSNumber*)AXARIAColumnIndex {
-  if (![self instanceActive])
-    return nil;
-
-  absl::optional<int> ariaColIndex =
-      _node->GetDelegate()->GetTableCellAriaColIndex();
-  if (!ariaColIndex)
-
-    return nil;
-  return @(*ariaColIndex);
-}
-
 - (NSString*)AXARIALive {
   if (![self instanceActive])
     return nil;
@@ -976,26 +911,6 @@ bool IsAXSetter(SEL selector) {
     return nil;
 
   return [self getStringAttribute:ax::mojom::StringAttribute::kLiveRelevant];
-}
-
-- (NSNumber*)AXARIARowCount {
-  if (![self instanceActive])
-    return nil;
-  absl::optional<int> ariaRowCount =
-      _node->GetDelegate()->GetTableAriaRowCount();
-  if (!ariaRowCount)
-    return nil;
-  return @(*ariaRowCount);
-}
-
-- (NSNumber*)AXARIARowIndex {
-  if (![self instanceActive])
-    return nil;
-  absl::optional<int> ariaRowIndex =
-      _node->GetDelegate()->GetTableCellAriaRowIndex();
-  if (!ariaRowIndex)
-    return nil;
-  return @(*ariaRowIndex);
 }
 
 - (NSString*)AXAutocompleteValue {
@@ -1024,78 +939,6 @@ bool IsAXSetter(SEL selector) {
   return [elements count] ? elements : nil;
 }
 
-- (NSArray*)AXDOMClassList {
-  if (![self instanceActive])
-    return nil;
-
-  NSMutableArray* ret = [[[NSMutableArray alloc] init] autorelease];
-
-  std::string classes;
-  if (_node->GetStringAttribute(ax::mojom::StringAttribute::kClassName,
-                                &classes)) {
-    std::vector<std::string> split_classes = base::SplitString(
-        classes, " ", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
-    for (const auto& className : split_classes)
-      [ret addObject:(base::SysUTF8ToNSString(className))];
-  }
-  return ret;
-}
-
-- (NSString*)AXDOMIdentifier {
-  if (![self instanceActive])
-    return nil;
-
-  std::string id;
-  if (_node->GetHtmlAttribute("id", &id))
-    return base::SysUTF8ToNSString(id);
-
-  return @"";
-}
-
-- (NSNumber*)AXHasPopup {
-  if (![self instanceActive])
-    return nil;
-  return @(_node->HasIntAttribute(ax::mojom::IntAttribute::kHasPopup));
-}
-
-- (NSString*)AXInvalid {
-  if (![self instanceActive])
-    return nil;
-  switch (_node->GetData().GetInvalidState()) {
-    case ax::mojom::InvalidState::kNone:
-    case ax::mojom::InvalidState::kFalse:
-      return @"false";
-    case ax::mojom::InvalidState::kTrue:
-      return @"true";
-  }
-}
-
-- (NSString*)AXPopupValue {
-  if (![self instanceActive])
-    return nil;
-  int hasPopup = _node->GetIntAttribute(ax::mojom::IntAttribute::kHasPopup);
-  switch (static_cast<ax::mojom::HasPopup>(hasPopup)) {
-    case ax::mojom::HasPopup::kFalse:
-      return @"false";
-    case ax::mojom::HasPopup::kTrue:
-      return @"true";
-    case ax::mojom::HasPopup::kMenu:
-      return @"menu";
-    case ax::mojom::HasPopup::kListbox:
-      return @"listbox";
-    case ax::mojom::HasPopup::kTree:
-      return @"tree";
-    case ax::mojom::HasPopup::kGrid:
-      return @"grid";
-    case ax::mojom::HasPopup::kDialog:
-      return @"dialog";
-  }
-}
-
-- (NSNumber*)AXRequired {
-  return [self accessibilityRequired];
-}
-
 - (NSString*)AXRole {
   if (!_node)
     return nil;
@@ -1104,7 +947,23 @@ bool IsAXSetter(SEL selector) {
 }
 
 - (NSString*)AXRoleDescription {
-  return [self accessibilityRoleDescription];
+  if (_node->HasStringAttribute(ax::mojom::StringAttribute::kRoleDescription)) {
+    return [base::SysUTF8ToNSString(_node->GetStringAttribute(
+        ax::mojom::StringAttribute::kRoleDescription)) lowercaseString];
+  }
+  switch (_node->GetRole()) {
+    case ax::mojom::Role::kTab:
+      // There is no NSAccessibilityTabRole or similar (AXRadioButton is used
+      // instead). Do the same as NSTabView and put "tab" in the description.
+      return [l10n_util::GetNSStringWithFixup(IDS_ACCNAME_TAB_ROLE_DESCRIPTION)
+          lowercaseString];
+    case ax::mojom::Role::kDisclosureTriangle:
+      return [l10n_util::GetNSStringWithFixup(
+          IDS_ACCNAME_DISCLOSURE_TRIANGLE_ROLE_DESCRIPTION) lowercaseString];
+    default:
+      break;
+  }
+  return NSAccessibilityRoleDescription([self AXRole], [self AXSubrole]);
 }
 
 - (NSString*)AXSubrole {
@@ -1118,10 +977,6 @@ bool IsAXSetter(SEL selector) {
       break;
   }
   return [AXPlatformNodeCocoa nativeSubroleFromAXRole:role];
-}
-
-- (NSURL*)AXURL {
-  return [self accessibilityURL];
 }
 
 - (NSString*)AXHelp {
@@ -1240,8 +1095,6 @@ bool IsAXSetter(SEL selector) {
 }
 
 - (NSNumber*)AXARIAPosInSet {
-  if (![self instanceActive])
-    return nil;
   absl::optional<int> posInSet = _node->GetPosInSet();
   if (!posInSet)
     return nil;
@@ -1249,8 +1102,6 @@ bool IsAXSetter(SEL selector) {
 }
 
 - (NSNumber*)AXARIASetSize {
-  if (![self instanceActive])
-    return nil;
   absl::optional<int> setSize = _node->GetSetSize();
   if (!setSize)
     return nil;
@@ -1295,37 +1146,37 @@ bool IsAXSetter(SEL selector) {
 // Parameterized text-specific attributes.
 
 - (id)AXLineForIndex:(id)parameter {
+  DCHECK([parameter isKindOfClass:[NSNumber class]]);
   // TODO: multiline is not supported on views.
   return @0;
 }
 
 - (id)AXRangeForLine:(id)parameter {
-  if (![parameter isKindOfClass:[NSNumber class]] || [parameter intValue] != 0)
-    return nil;
-
+  DCHECK([parameter isKindOfClass:[NSNumber class]]);
+  DCHECK_EQ(0, [parameter intValue]);
   return [NSValue valueWithRange:{0, [[self getAXValueAsString] length]}];
 }
 
 - (id)AXStringForRange:(id)parameter {
-  if (![parameter isKindOfClass:[NSValue class]] ||
-      (0 != strcmp([parameter objCType], @encode(NSRange))))
-    return nil;
-
+  DCHECK([parameter isKindOfClass:[NSValue class]]);
   return [[self getAXValueAsString] substringWithRange:[parameter rangeValue]];
 }
 
 - (id)AXRangeForPosition:(id)parameter {
+  DCHECK([parameter isKindOfClass:[NSValue class]]);
   // TODO(tapted): Hit-test [parameter pointValue] and return an NSRange.
   NOTIMPLEMENTED();
   return nil;
 }
 
 - (id)AXRangeForIndex:(id)parameter {
+  DCHECK([parameter isKindOfClass:[NSNumber class]]);
   NOTIMPLEMENTED();
   return nil;
 }
 
 - (id)AXBoundsForRange:(id)parameter {
+  DCHECK([parameter isKindOfClass:[NSValue class]]);
   // TODO(tapted): Provide an accessor on AXPlatformNodeDelegate to obtain this
   // from ui::TextInputClient::GetCompositionCharacterBounds().
   NOTIMPLEMENTED();
@@ -1333,23 +1184,20 @@ bool IsAXSetter(SEL selector) {
 }
 
 - (id)AXRTFForRange:(id)parameter {
+  DCHECK([parameter isKindOfClass:[NSValue class]]);
   NOTIMPLEMENTED();
   return nil;
 }
 
 - (id)AXStyleRangeForIndex:(id)parameter {
-  if (![parameter isKindOfClass:[NSNumber class]])
-    return nil;
-
+  DCHECK([parameter isKindOfClass:[NSNumber class]]);
   // TODO(https://crbug.com/958811): Implement this for real.
   return [NSValue
       valueWithRange:NSMakeRange(0, [self accessibilityNumberOfCharacters])];
 }
 
 - (id)AXAttributedStringForRange:(id)parameter {
-  if (![parameter isKindOfClass:[NSValue class]])
-    return nil;
-
+  DCHECK([parameter isKindOfClass:[NSValue class]]);
   // TODO(https://crbug.com/958811): Implement this for real.
   base::scoped_nsobject<NSAttributedString> attributedString(
       [[NSAttributedString alloc]
@@ -1411,23 +1259,16 @@ bool IsAXSetter(SEL selector) {
   return [self AXValue];
 }
 
-// NSAccessibility protocol:
-- (NSNumber*)accessibilityRequired {
-  TRACE_EVENT1("accessibility", "accessibilityRequired",
-               "role=", ui::ToString([self internalRole]));
-
-  if (![self instanceActive])
-    return nil;
-
-  return _node->HasState(ax::mojom::State::kRequired) ? @YES : @NO;
-}
-
 - (NSAccessibilityRole)accessibilityRole {
   return [self AXRole];
 }
 
 - (NSAccessibilitySubrole)accessibilitySubrole {
   return [self AXSubrole];
+}
+
+- (NSString*)accessibilityRoleDescription {
+  return [self AXRoleDescription];
 }
 
 - (BOOL)isAccessibilitySelectorAllowed:(SEL)selector {
@@ -1622,157 +1463,7 @@ bool IsAXSetter(SEL selector) {
 }
 
 //
-// NSAccessibility protocol: setting content and values.
-//
-
-- (NSURL*)accessibilityURL {
-  TRACE_EVENT1("accessibility", "accessibilityURL",
-               "role=", ui::ToString([self internalRole]));
-  if (![self instanceActive])
-    return nil;
-
-  std::string url;
-  if ([[self accessibilityRole] isEqualToString:NSAccessibilityWebAreaRole])
-    url = _node->GetDelegate()->GetTreeData().url;
-  else
-    url = _node->GetStringAttribute(ax::mojom::StringAttribute::kUrl);
-
-  if (url.empty())
-    return nil;
-
-  return [NSURL URLWithString:(base::SysUTF8ToNSString(url))];
-}
-
-//
-// NSAccessibility protocol: assigning roles.
-//
-
-- (NSString*)accessibilityRoleDescription {
-  TRACE_EVENT1("accessibility", "accessibilityRoleDescription",
-               "role=", ui::ToString([self internalRole]));
-  if (![self instanceActive])
-    return nil;
-
-  // Image annotations.
-  if (_node->GetData().GetImageAnnotationStatus() ==
-          ax::mojom::ImageAnnotationStatus::kEligibleForAnnotation ||
-      _node->GetData().GetImageAnnotationStatus() ==
-          ax::mojom::ImageAnnotationStatus::kSilentlyEligibleForAnnotation) {
-    return base::SysUTF16ToNSString(
-        _node->GetDelegate()->GetLocalizedRoleDescriptionForUnlabeledImage());
-  }
-
-  // ARIA role description.
-  std::string roleDescription;
-  if (_node->GetStringAttribute(ax::mojom::StringAttribute::kRoleDescription,
-                                &roleDescription)) {
-    return [base::SysUTF8ToNSString(_node->GetStringAttribute(
-        ax::mojom::StringAttribute::kRoleDescription)) lowercaseString];
-  }
-
-  NSString* role = [self accessibilityRole];
-
-  // The following descriptions are specific to webkit.
-  if ([role isEqualToString:NSAccessibilityWebAreaRole]) {
-    return l10n_util::GetNSString(IDS_AX_ROLE_WEB_AREA);
-  }
-
-  if ([role isEqualToString:NSAccessibilityLinkRole]) {
-    return l10n_util::GetNSString(IDS_AX_ROLE_LINK);
-  }
-
-  if ([role isEqualToString:@"AXHeading"]) {
-    return l10n_util::GetNSString(IDS_AX_ROLE_HEADING);
-  }
-
-  if (([role isEqualToString:NSAccessibilityGroupRole] ||
-       [role isEqualToString:NSAccessibilityRadioButtonRole]) &&
-      !_node->GetDelegate()->IsWebAreaForPresentationalIframe()) {
-    std::string role_attribute;
-    if (_node->GetHtmlAttribute("role", &role_attribute)) {
-      ax::mojom::Role internalRole = _node->GetRole();
-      if ((internalRole != ax::mojom::Role::kBlockquote &&
-           internalRole != ax::mojom::Role::kCaption &&
-           internalRole != ax::mojom::Role::kGroup &&
-           internalRole != ax::mojom::Role::kListItem &&
-           internalRole != ax::mojom::Role::kMark &&
-           internalRole != ax::mojom::Role::kParagraph) ||
-          internalRole == ax::mojom::Role::kTab) {
-        // TODO(dtseng): This is not localized; see crbug/84814.
-        return base::SysUTF8ToNSString(role_attribute);
-      }
-    }
-  }
-
-  switch (_node->GetRole()) {
-    case ax::mojom::Role::kArticle:
-      return l10n_util::GetNSString(IDS_AX_ROLE_ARTICLE);
-    case ax::mojom::Role::kBanner:
-      return l10n_util::GetNSString(IDS_AX_ROLE_BANNER);
-    case ax::mojom::Role::kCheckBox:
-      return l10n_util::GetNSString(IDS_AX_ROLE_CHECK_BOX);
-    case ax::mojom::Role::kComment:
-      return l10n_util::GetNSString(IDS_AX_ROLE_COMMENT);
-    case ax::mojom::Role::kComplementary:
-      return l10n_util::GetNSString(IDS_AX_ROLE_COMPLEMENTARY);
-    case ax::mojom::Role::kContentInfo:
-      return l10n_util::GetNSString(IDS_AX_ROLE_CONTENT_INFO);
-    case ax::mojom::Role::kDescriptionList:
-      return l10n_util::GetNSString(IDS_AX_ROLE_DESCRIPTION_LIST);
-    case ax::mojom::Role::kDescriptionListDetail:
-      return l10n_util::GetNSString(IDS_AX_ROLE_DEFINITION);
-    case ax::mojom::Role::kDescriptionListTerm:
-      return l10n_util::GetNSString(IDS_AX_ROLE_DESCRIPTION_TERM);
-    case ax::mojom::Role::kDisclosureTriangle:
-      return l10n_util::GetNSString(IDS_AX_ROLE_DISCLOSURE_TRIANGLE);
-    case ax::mojom::Role::kFigure:
-      return l10n_util::GetNSString(IDS_AX_ROLE_FIGURE);
-    case ax::mojom::Role::kFooter:
-      return l10n_util::GetNSString(IDS_AX_ROLE_FOOTER);
-    case ax::mojom::Role::kForm:
-      return l10n_util::GetNSString(IDS_AX_ROLE_FORM);
-    case ax::mojom::Role::kHeader:
-      return l10n_util::GetNSString(IDS_AX_ROLE_BANNER);
-    case ax::mojom::Role::kMain:
-      return l10n_util::GetNSString(IDS_AX_ROLE_MAIN_CONTENT);
-    case ax::mojom::Role::kMark:
-      return l10n_util::GetNSString(IDS_AX_ROLE_MARK);
-    case ax::mojom::Role::kMath:
-    case ax::mojom::Role::kMathMLMath:
-      return l10n_util::GetNSString(IDS_AX_ROLE_MATH);
-    case ax::mojom::Role::kNavigation:
-      return l10n_util::GetNSString(IDS_AX_ROLE_NAVIGATIONAL_LINK);
-    case ax::mojom::Role::kRegion:
-      return l10n_util::GetNSString(IDS_AX_ROLE_REGION);
-    case ax::mojom::Role::kSpinButton:
-      // This control is similar to what VoiceOver calls a "stepper".
-      return l10n_util::GetNSString(IDS_AX_ROLE_STEPPER);
-    case ax::mojom::Role::kStatus:
-      return l10n_util::GetNSString(IDS_AX_ROLE_STATUS);
-    case ax::mojom::Role::kSearchBox:
-      return l10n_util::GetNSString(IDS_AX_ROLE_SEARCH_BOX);
-    case ax::mojom::Role::kSuggestion:
-      return l10n_util::GetNSString(IDS_AX_ROLE_SUGGESTION);
-    case ax::mojom::Role::kSwitch:
-      return l10n_util::GetNSString(IDS_AX_ROLE_SWITCH);
-    case ax::mojom::Role::kTab:
-      // There is no NSAccessibilityTabRole or similar (AXRadioButton is used
-      // instead). Do the same as NSTabView and put "tab" in the description.
-      return l10n_util::GetNSString(IDS_AX_ROLE_TAB);
-    case ax::mojom::Role::kTerm:
-      return l10n_util::GetNSString(IDS_AX_ROLE_DESCRIPTION_TERM);
-    case ax::mojom::Role::kToggleButton:
-      return l10n_util::GetNSString(IDS_AX_ROLE_TOGGLE_BUTTON);
-    default:
-      break;
-  }
-
-  return NSAccessibilityRoleDescription(role, [self accessibilitySubrole]);
-}
-
-//
-// NSAccessibility protocol: configuring table and outline views.
-//
+// NSAccessibility protocol: configuring table and outline views
 
 - (NSArray*)accessibilityColumnHeaderUIElements {
   if (![self instanceActive])
@@ -1854,7 +1545,7 @@ bool IsAXSetter(SEL selector) {
   NSArray* children = [self AXChildren];
   if (_node->GetRole() == ax::mojom::Role::kMathMLRoot) {
     if ([children count] >= 1)
-      return [NSArray arrayWithObjects:children[0], nil];
+      return [[NSArray arrayWithObjects:children[0], nil] autorelease];
     return nil;
   }
   return children;
@@ -1975,7 +1666,7 @@ static NSDictionary* createMathSubSupScriptsPair(
   bool foundBaseElement = false;
   AXPlatformNodeCocoa* subscript = nullptr;
   for (AXPlatformNodeCocoa* child in [self AXChildren]) {
-    if ([child internalRole] == ax::mojom::Role::kMathMLPrescriptDelimiter)
+    if ([child node]->GetRole() == ax::mojom::Role::kMathMLPrescriptDelimiter)
       break;
     if (!foundBaseElement) {
       foundBaseElement = true;
@@ -2001,8 +1692,8 @@ static NSDictionary* createMathSubSupScriptsPair(
   AXPlatformNodeCocoa* subscript = nullptr;
   for (AXPlatformNodeCocoa* child in [self AXChildren]) {
     if (!foundPrescriptDelimiter) {
-      foundPrescriptDelimiter =
-          ([child internalRole] == ax::mojom::Role::kMathMLPrescriptDelimiter);
+      foundPrescriptDelimiter = ([child node]->GetRole() ==
+                                 ax::mojom::Role::kMathMLPrescriptDelimiter);
       continue;
     }
     if (!subscript) {

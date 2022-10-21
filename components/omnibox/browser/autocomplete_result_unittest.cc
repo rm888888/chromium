@@ -11,7 +11,6 @@
 #include <vector>
 
 #include "base/cxx17_backports.h"
-#include "base/memory/raw_ptr.h"
 #include "base/metrics/field_trial.h"
 #include "base/metrics/field_trial_params.h"
 #include "base/strings/string_number_conversions.h"
@@ -1468,7 +1467,7 @@ TEST_F(AutocompleteResultTest, SortAndCullPromoteUnconsecutiveMatches) {
 
 struct EntityTestData {
   AutocompleteMatchType::Type type;
-  raw_ptr<FakeAutocompleteProvider> provider;
+  FakeAutocompleteProvider* provider;
   std::string destination_url;
   int relevance;
   bool allowed_to_be_default_match;
@@ -1941,7 +1940,7 @@ TEST_F(AutocompleteResultTest, InlineTailPrefixes) {
                                   "this is a test");
   AutocompleteResult result;
   result.AppendMatches(AutocompleteInput(), matches);
-  result.SetTailSuggestContentPrefixes();
+  result.InlineTailPrefixes();
   for (size_t i = 0; i < base::size(cases); ++i) {
     EXPECT_EQ(result.match_at(i)->contents,
               base::UTF8ToUTF16(cases[i].after_contents));
@@ -1949,7 +1948,7 @@ TEST_F(AutocompleteResultTest, InlineTailPrefixes) {
                                      cases[i].after_contents_class));
   }
   // Run twice and make sure that it doesn't re-prepend ellipsis.
-  result.SetTailSuggestContentPrefixes();
+  result.InlineTailPrefixes();
   for (size_t i = 0; i < base::size(cases); ++i) {
     EXPECT_EQ(result.match_at(i)->contents,
               base::UTF8ToUTF16(cases[i].after_contents));

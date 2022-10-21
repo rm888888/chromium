@@ -22,7 +22,6 @@ class WebContents;
 namespace webshare {
 
 class PrepareDirectoryTask;
-class PrepareSubDirectoryTask;
 
 // Chrome-OS implementation of navigator.share() sharing to
 // sharesheet::SharesheetService.
@@ -53,8 +52,6 @@ class SharesheetClient : public content::WebContentsObserver {
 
  private:
   void OnPrepareDirectory(blink::mojom::ShareError);
-
-  void OnPrepareSubdirectory(blink::mojom::ShareError);
 
   void OnStoreFiles(blink::mojom::ShareError);
 
@@ -91,7 +88,6 @@ class SharesheetClient : public content::WebContentsObserver {
     blink::mojom::ShareService::ShareCallback callback;
 
     std::unique_ptr<PrepareDirectoryTask> prepare_directory_task;
-    std::unique_ptr<PrepareSubDirectoryTask> prepare_subdirectory_task;
   };
 
   absl::optional<CurrentShare> current_share_;

@@ -10,15 +10,14 @@
 #include <utility>
 #include <vector>
 
+#include "base/compiler_specific.h"
 #include "base/gtest_prod_util.h"
-#include "base/memory/raw_ptr.h"
 #include "base/memory/ref_counted.h"
 #include "base/observer_list.h"
 #include "base/scoped_observation.h"
 #include "base/time/time.h"
 #include "base/timer/timer.h"
 #include "build/build_config.h"
-#include "chrome/browser/ui/tabs/tab_enums.h"
 #include "chrome/browser/ui/tabs/tab_types.h"
 #include "chrome/browser/ui/tabs/tab_utils.h"
 #include "chrome/browser/ui/views/frame/browser_root_view.h"
@@ -89,6 +88,8 @@ class TabStrip : public views::View,
   TabStrip(const TabStrip&) = delete;
   TabStrip& operator=(const TabStrip&) = delete;
   ~TabStrip() override;
+
+  DECLARE_CLASS_ELEMENT_IDENTIFIER_VALUE(TabStrip, kTabStripIdentifier);
 
   void SetAvailableWidthCallback(
       base::RepeatingCallback<int()> available_width_callback);
@@ -362,7 +363,7 @@ class TabStrip : public views::View,
                                     ui::MenuSourceType source_type) override;
 
    private:
-    const raw_ptr<TabStrip> parent_;
+    TabStrip* const parent_;
   };
 
   // Used during a drop session of a url. Tracks the position of the drop as
@@ -397,9 +398,9 @@ class TabStrip : public views::View,
     bool point_down_ = false;
 
     // Renders the drop indicator.
-    raw_ptr<views::Widget> arrow_window_ = nullptr;
+    views::Widget* arrow_window_ = nullptr;
 
-    raw_ptr<views::ImageView> arrow_view_ = nullptr;
+    views::ImageView* arrow_view_ = nullptr;
 
     base::ScopedObservation<views::Widget, views::WidgetObserver>
         scoped_observation_{this};

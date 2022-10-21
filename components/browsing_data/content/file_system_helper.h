@@ -13,6 +13,7 @@
 #include <set>
 
 #include "base/callback.h"
+#include "base/macros.h"
 #include "base/memory/ref_counted.h"
 #include "storage/common/file_system/file_system_types.h"
 #include "url/origin.h"
@@ -101,10 +102,9 @@ class FileSystemHelper : public base::RefCountedThreadSafe<FileSystemHelper> {
   // task runner.
   void FetchFileSystemInfoInFileThread(FetchCallback callback);
 
-  // Deletes all file systems associated with `storage_key`. This must be called
-  // on the file task runner.
-  void DeleteFileSystemForStorageKeyInFileThread(
-      const blink::StorageKey& storage_key);
+  // Deletes all file systems associated with |origin|. This must be called on
+  // the file task runner.
+  void DeleteFileSystemOriginInFileThread(const url::Origin& origin);
 
   // Called when FetchFileSystemInfoInFileThread completes and starts fetching
   // the NativeIOData.

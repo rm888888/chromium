@@ -8,6 +8,7 @@
 #include <stdint.h>
 #include <string>
 
+#include "base/macros.h"
 #include "components/background_task_scheduler/task_ids.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 

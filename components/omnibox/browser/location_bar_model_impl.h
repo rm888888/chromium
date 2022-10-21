@@ -10,7 +10,7 @@
 #include <string>
 
 #include "base/compiler_specific.h"
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "components/omnibox/browser/location_bar_model.h"
 #include "components/url_formatter/url_formatter.h"
 #include "url/gurl.h"
@@ -52,7 +52,7 @@ class LocationBarModelImpl : public LocationBarModel {
   std::u16string GetFormattedURL(
       url_formatter::FormatUrlTypes format_types) const;
 
-  raw_ptr<LocationBarModelDelegate> delegate_;
+  LocationBarModelDelegate* delegate_;
   const size_t max_url_display_chars_;
 };
 

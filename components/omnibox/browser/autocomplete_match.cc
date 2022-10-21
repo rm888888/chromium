@@ -721,14 +721,7 @@ bool AutocompleteMatch::IsSearchHistoryType(Type type) {
 bool AutocompleteMatch::IsActionCompatibleType(Type type) {
   // Note: There is a PEDAL type, but it is deprecated because Pedals always
   // attach to matches of other types instead of creating dedicated matches.
-  return type != AutocompleteMatchType::SEARCH_SUGGEST_ENTITY &&
-         // Attaching to Tail Suggest types looks weird, and is actually
-         // technically wrong because the Pedals annotator (and history clusters
-         // annotator) both use match.contents. If we do want to turn on Actions
-         // for tail suggest in the future, we should switch to using
-         // match.fill_into_edit or maybe page title for URL matches, and come
-         // up with a UI design for the button in the tail suggest layout.
-         type != AutocompleteMatchType::SEARCH_SUGGEST_TAIL;
+  return type != AutocompleteMatchType::SEARCH_SUGGEST_ENTITY;
 }
 
 // static
@@ -825,7 +818,8 @@ GURL AutocompleteMatch::GURLToStrippedGURL(
       (input.terms_prefixed_by_http_or_https().empty() ||
        !WordMatchesURLContent(
            input.terms_prefixed_by_http_or_https(), url))) {
-    replacements.SetSchemeStr(url::kHttpScheme);
+    replacements.SetScheme(url::kHttpScheme,
+                           url::Component(0, strlen(url::kHttpScheme)));
     needs_replacement = true;
   }
 
@@ -1140,21 +1134,11 @@ void AutocompleteMatch::SetAllowedToBeDefault(const AutocompleteInput& input) {
   }
 }
 
-void AutocompleteMatch::SetTailSuggestCommonPrefix(
-    const std::u16string& common_prefix) {
+void AutocompleteMatch::InlineTailPrefix(const std::u16string& common_prefix) {
   // Prevent re-addition of prefix.
   if (type == AutocompleteMatchType::SEARCH_SUGGEST_TAIL &&
       tail_suggest_common_prefix.empty()) {
     tail_suggest_common_prefix = common_prefix;
-  }
-}
-
-void AutocompleteMatch::SetTailSuggestContentPrefix(
-    const std::u16string& common_prefix) {
-  // Prevent re-addition of prefix.
-  if (type == AutocompleteMatchType::SEARCH_SUGGEST_TAIL &&
-      tail_suggest_common_prefix.empty()) {
-    SetTailSuggestCommonPrefix(common_prefix);
     // Insert an ellipsis before uncommon part.
     const std::u16string ellipsis = kEllipsis;
     contents = ellipsis + contents;

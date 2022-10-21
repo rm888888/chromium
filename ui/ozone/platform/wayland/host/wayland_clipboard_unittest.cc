@@ -10,12 +10,12 @@
 #include <vector>
 
 #include "base/bind.h"
+#include "base/containers/contains.h"
 #include "base/containers/flat_set.h"
 #include "base/location.h"
 #include "base/run_loop.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/task/thread_pool/thread_pool_instance.h"
-#include "base/test/bind.h"
 #include "base/test/mock_callback.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "testing/gtest/include/gtest/gtest.h"
@@ -23,7 +23,6 @@
 #include "ui/base/clipboard/clipboard_constants.h"
 #include "ui/events/base_event_utils.h"
 #include "ui/ozone/platform/wayland/host/wayland_clipboard.h"
-#include "ui/ozone/platform/wayland/host/wayland_connection_test_api.h"
 #include "ui/ozone/platform/wayland/test/mock_surface.h"
 #include "ui/ozone/platform/wayland/test/test_data_device.h"
 #include "ui/ozone/platform/wayland/test/test_data_device_manager.h"
@@ -56,48 +55,7 @@ ui::PlatformClipboard::Data ToClipboardData(const StringType& data_string) {
 
 }  // namespace
 
-class WaylandClipboardTestBase : public WaylandTest {
- public:
-  void SetUp() override {
-    WaylandTest::SetUp();
-
-    // As of now, WaylandClipboard::RequestClipboardData is implemented in a
-    // blocking way, which requires a roundtrip before attempting the data
-    // from the selection fd. As Wayland events polling is single-threaded for
-    // tests, WaylandConnection's roundtrip implementation must be hooked up
-    // here to make sure that the required test compositor calls are done,
-    // otherwise tests will enter in a dead lock.
-    // TODO(crbug.com/443355): Remove once Clipboard API becomes async.
-    WaylandConnectionTestApi(connection_.get())
-        .SetRoundtripClosure(base::BindLambdaForTesting([&]() {
-          wl_display_flush(connection_->display());
-          Sync();
-          base::ThreadPoolInstance::Get()->FlushForTesting();
-        }));
-
-    clipboard_ = connection_->clipboard();
-    ASSERT_TRUE(clipboard_);
-  }
-
-  void TearDown() override {
-    WaylandTest::TearDown();
-    clipboard_ = nullptr;
-  }
-
- protected:
-  // Ensure the requests/events are flushed and posted tasks get processed.
-  // Actual clipboard data reading is performed in the ThreadPool. Also,
-  // wl::TestSelection{Source,Offer} currently use ThreadPool task runners.
-  void WaitForClipboardTasks() {
-    Sync();
-    base::ThreadPoolInstance::Get()->FlushForTesting();
-    base::RunLoop().RunUntilIdle();
-  }
-
-  WaylandClipboard* clipboard_ = nullptr;
-};
-
-class WaylandClipboardTest : public WaylandClipboardTestBase {
+class WaylandClipboardTest : public WaylandTest {
  public:
   WaylandClipboardTest() = default;
 
@@ -107,12 +65,15 @@ class WaylandClipboardTest : public WaylandClipboardTestBase {
   ~WaylandClipboardTest() override = default;
 
   void SetUp() override {
-    WaylandClipboardTestBase::SetUp();
+    WaylandTest::SetUp();
 
     ASSERT_TRUE(server_.data_device_manager());
     ASSERT_TRUE(GetParam().primary_selection_protocol ==
                     wl::PrimarySelectionProtocol::kNone ||
                 server_.primary_selection_device_manager());
+
+    clipboard_ = connection_->clipboard();
+    ASSERT_TRUE(clipboard_);
 
     // Make sure clipboard instance for the available primary selection protocol
     // gets properly created, ie: the corresponding 'get_device' request is
@@ -157,14 +118,16 @@ class WaylandClipboardTest : public WaylandClipboardTestBase {
     clipboard_->OfferClipboardData(buffer, offered_data_, offer_callback.Get());
   }
 
+  WaylandClipboard* clipboard_ = nullptr;
   PlatformClipboard::DataMap offered_data_;
 };
 
-class CopyPasteOnlyClipboardTest : public WaylandClipboardTestBase {
+class CopyPasteOnlyClipboardTest : public WaylandTest {
  public:
   void SetUp() override {
-    WaylandClipboardTestBase::SetUp();
+    WaylandTest::SetUp();
 
+    clipboard_ = connection_->clipboard();
     ASSERT_FALSE(clipboard_->IsSelectionBufferAvailable());
 
     ASSERT_EQ(wl::PrimarySelectionProtocol::kNone,
@@ -172,6 +135,14 @@ class CopyPasteOnlyClipboardTest : public WaylandClipboardTestBase {
     ASSERT_TRUE(server_.data_device_manager());
     ASSERT_FALSE(server_.primary_selection_device_manager());
   }
+
+  void TearDown() override {
+    WaylandTest::TearDown();
+    clipboard_ = nullptr;
+  }
+
+ protected:
+  WaylandClipboard* clipboard_ = nullptr;
 };
 
 TEST_P(WaylandClipboardTest, WriteToClipboard) {
@@ -187,8 +158,13 @@ TEST_P(WaylandClipboardTest, WriteToClipboard) {
     delivered_text = std::string(data.begin(), data.end());
   });
   GetServerSelectionSource()->ReadData(kMimeTypeTextUtf8, callback.Get());
+  Sync();
 
-  WaitForClipboardTasks();
+  // 3. Ensure the requests/events are flushed and posted tasks get processed.
+  // wl::TestSelection{Source,Offer} currently use ThreadPool task runners.
+  base::ThreadPoolInstance::Get()->FlushForTesting();
+  base::RunLoop().RunUntilIdle();
+
   ASSERT_EQ(kSampleClipboardText, delivered_text);
 }
 
@@ -212,7 +188,8 @@ TEST_P(WaylandClipboardTest, ReadFromClipboard) {
 
   clipboard_->RequestClipboardData(GetBuffer(), kMimeTypeTextUtf8,
                                    callback.Get());
-  WaitForClipboardTasks();
+  Sync();
+  base::RunLoop().RunUntilIdle();
   EXPECT_EQ(kSampleClipboardText, text);
 }
 
@@ -236,7 +213,8 @@ TEST_P(WaylandClipboardTest, ReadFromClipboardPrioritizeUtf) {
 
   clipboard_->RequestClipboardData(GetBuffer(), kMimeTypeTextUtf8,
                                    callback.Get());
-  WaitForClipboardTasks();
+  Sync();
+  base::RunLoop().RunUntilIdle();
   EXPECT_EQ("utf8_text", text);
 }
 
@@ -244,10 +222,10 @@ TEST_P(WaylandClipboardTest, ReadFromClipboardWithoutOffer) {
   // When no data offer is advertised and client requests clipboard data from
   // the server, the response callback should be gracefully called with null
   // data.
-  base::MockCallback<PlatformClipboard::RequestDataClosure> callback;
-  EXPECT_CALL(callback, Run(Eq(nullptr))).Times(1);
+  auto callback = base::BindOnce(
+      [](const PlatformClipboard::Data& data) { ASSERT_FALSE(data); });
   clipboard_->RequestClipboardData(GetBuffer(), kMimeTypeTextUtf8,
-                                   callback.Get());
+                                   std::move(callback));
 }
 
 TEST_P(WaylandClipboardTest, IsSelectionOwner) {
@@ -299,7 +277,10 @@ TEST_P(WaylandClipboardTest, OverlapReadingFromDifferentBuffers) {
   clipboard_->RequestClipboardData(GetBuffer(), kMimeTypeTextUtf8,
                                    got_text.Get());
 
-  WaitForClipboardTasks();
+  Sync();
+  base::RunLoop().RunUntilIdle();
+  Sync();
+
   EXPECT_EQ(kSampleClipboardText, text);
 }
 
@@ -347,8 +328,7 @@ TEST_P(CopyPasteOnlyClipboardTest, PrimarySelectionRequestsNoop) {
 
 // Makes sure overlapping read requests for the same clipboard buffer are
 // properly handled.
-// TODO(crbug.com/443355): Re-enable once Clipboard API becomes async.
-TEST_P(CopyPasteOnlyClipboardTest, DISABLED_OverlappingReadRequests) {
+TEST_P(CopyPasteOnlyClipboardTest, OverlappingReadRequests) {
   // Create an selection data offer containing plain and html mime types.
   auto* data_device = server_.data_device_manager()->data_device();
   auto* data_offer = data_device->OnDataOffer();
@@ -380,9 +360,11 @@ TEST_P(CopyPasteOnlyClipboardTest, DISABLED_OverlappingReadRequests) {
   clipboard_->RequestClipboardData(ClipboardBuffer::kCopyPaste, kMimeTypeText,
                                    got_text.Get());
 
-  // Wait for clipboard tasks to complete and ensure both requests were
-  // processed correctly.
-  WaitForClipboardTasks();
+  Sync();
+  base::RunLoop().RunUntilIdle();
+  Sync();
+
+  // Ensures both requests were processed correctly.
   EXPECT_EQ("html", html);
   EXPECT_EQ("text", text);
 }

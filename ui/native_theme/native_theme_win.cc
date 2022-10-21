@@ -15,7 +15,6 @@
 #include "base/check.h"
 #include "base/command_line.h"
 #include "base/feature_list.h"
-#include "base/no_destructor.h"
 #include "base/notreached.h"
 #include "base/threading/sequenced_task_runner_handle.h"
 #include "base/win/scoped_gdi_object.h"
@@ -458,7 +457,7 @@ void NativeThemeWin::PaintDirect(SkCanvas* destination_canvas,
           PaintLeftMenuArrowThemed(hdc, handle, part_id, state_id, rect);
           return;
         }
-        [[fallthrough]];
+        FALLTHROUGH;
       case kCheckbox:
       case kInnerSpinButton:
       case kMenuCheck:
@@ -1425,7 +1424,7 @@ int NativeThemeWin::GetWindowsState(Part part,
     case kScrollbarVerticalThumb:
       if ((state == kHovered) && !extra.scrollbar_thumb.is_hovering)
         return SCRBS_HOT;
-      [[fallthrough]];
+      FALLTHROUGH;
     case kScrollbarHorizontalTrack:
     case kScrollbarVerticalTrack:
       switch (state) {

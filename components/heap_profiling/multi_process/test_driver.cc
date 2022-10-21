@@ -343,14 +343,13 @@ TestDriver::TestDriver()
     : wait_for_ui_thread_(base::WaitableEvent::ResetPolicy::AUTOMATIC,
                           base::WaitableEvent::InitialState::NOT_SIGNALED) {
   base::PartitionAllocGlobalInit(HandleOOM);
-  partition_allocator_.init({
-      base::PartitionOptions::AlignedAlloc::kDisallowed,
-      base::PartitionOptions::ThreadCache::kDisabled,
-      base::PartitionOptions::Quarantine::kDisallowed,
-      base::PartitionOptions::Cookie::kAllowed,
-      base::PartitionOptions::BackupRefPtr::kDisabled,
-      base::PartitionOptions::UseConfigurablePool::kNo,
-  });
+  partition_allocator_.init({base::PartitionOptions::AlignedAlloc::kDisallowed,
+                             base::PartitionOptions::ThreadCache::kDisabled,
+                             base::PartitionOptions::Quarantine::kDisallowed,
+                             base::PartitionOptions::Cookie::kAllowed,
+                             base::PartitionOptions::BackupRefPtr::kDisabled,
+                             base::PartitionOptions::UseConfigurablePool::kNo,
+                             base::PartitionOptions::LazyCommit::kEnabled});
 }
 TestDriver::~TestDriver() {
   base::PartitionAllocGlobalUninitForTesting();

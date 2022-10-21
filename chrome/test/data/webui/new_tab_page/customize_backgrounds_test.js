@@ -4,7 +4,7 @@
 
 import 'chrome://new-tab-page/lazy_load.js';
 
-import {NewTabPageProxy, WindowProxy} from 'chrome://new-tab-page/new_tab_page.js';
+import {BackgroundSelectionType, NewTabPageProxy, WindowProxy} from 'chrome://new-tab-page/new_tab_page.js';
 import {assertNotStyle, assertStyle, installMock} from 'chrome://test/new_tab_page/test_support.js';
 import {TestBrowserProxy} from 'chrome://test/test_browser_proxy.js';
 import {eventToPromise, flushTasks, isVisible} from 'chrome://test/test_util.js';
@@ -167,9 +167,16 @@ suite('NewTabPageCustomizeBackgroundsTest', () => {
         customizeBackgrounds.shadowRoot.querySelector('#images .tile');
     const item = customizeBackgrounds.$.imagesRepeat.itemForElement(element);
     assertEquals(image.attribution1, item.attribution1);
+    assertEquals(
+        BackgroundSelectionType.NO_SELECTION,
+        customizeBackgrounds.backgroundSelection.type);
     assertFalse(element.classList.contains('selected'));
     element.click();
-    assertEquals(1, handler.getCallCount('setBackgroundImage'));
+    assertEquals(
+        BackgroundSelectionType.IMAGE,
+        customizeBackgrounds.backgroundSelection.type);
+    assertDeepEquals(image, customizeBackgrounds.backgroundSelection.image);
+    assertTrue(element.classList.contains('selected'));
   });
 
   test('image selected by current theme', async () => {
@@ -207,7 +214,11 @@ suite('NewTabPageCustomizeBackgroundsTest', () => {
     const element =
         customizeBackgrounds.shadowRoot.querySelector('#images .tile');
     element.click();
-    assertEquals(1, handler.getCallCount('setBackgroundImage'));
+    assertTrue(element.classList.contains('selected'));
+    customizeBackgrounds.backgroundSelection = {
+      type: BackgroundSelectionType.NO_BACKGROUND
+    };
+    assertFalse(element.classList.contains('selected'));
   });
 
   test('choosing local dispatches cancel', async () => {
@@ -227,32 +238,61 @@ suite('NewTabPageCustomizeBackgroundsTest', () => {
       customizeBackgrounds = await createCustomizeBackgrounds();
     });
 
-    function assertSetNoBackgroundImageNotCalled() {
-      assertEquals(0, handler.getCallCount('setNoBackgroundImage'));
+    function assertNotSelected() {
+      assertFalse(
+          !!customizeBackgrounds.$.noBackground.querySelector('.selected'));
     }
 
-    function assertSetNoBackgroundImageCalled() {
-      assertEquals(1, handler.getCallCount('setNoBackgroundImage'));
+    function assertSelected() {
+      assertTrue(
+          !!customizeBackgrounds.$.noBackground.querySelector('.selected'));
     }
 
     test('no background selected by default', () => {
-      assertSetNoBackgroundImageNotCalled();
+      assertSelected();
     });
 
     test('no background selected when clicked', () => {
       customizeBackgrounds.theme = {backgroundImage: {url: {url: 'http://a'}}};
+      customizeBackgrounds.backgroundSelection = {
+        type: BackgroundSelectionType.NO_SELECTION
+      };
+      assertNotSelected();
       customizeBackgrounds.$.noBackground.click();
-      assertSetNoBackgroundImageCalled();
+      assertSelected();
     });
 
     test('not selected when refresh collection set', () => {
+      customizeBackgrounds.backgroundSelection = {
+        type: BackgroundSelectionType.NO_SELECTION
+      };
+      customizeBackgrounds.theme = {};
+      assertSelected();
       customizeBackgrounds.theme = {dailyRefreshCollectionId: 'landscape'};
-      assertSetNoBackgroundImageNotCalled();
+      assertNotSelected();
     });
 
     test('not selected when refresh collection set', () => {
+      customizeBackgrounds.backgroundSelection = {
+        type: BackgroundSelectionType.NO_SELECTION
+      };
+      customizeBackgrounds.theme = {};
+      assertSelected();
       customizeBackgrounds.theme = {backgroundImage: {url: {url: 'http://a'}}};
-      assertSetNoBackgroundImageNotCalled();
+      assertNotSelected();
+    });
+
+    test('not selected when refresh toggle changed', () => {
+      customizeBackgrounds.backgroundSelection = {
+        type: BackgroundSelectionType.NO_SELECTION
+      };
+      customizeBackgrounds.theme = {};
+      assertSelected();
+      customizeBackgrounds.backgroundSelection = {
+        type: BackgroundSelectionType.DAILY_REFRESH,
+        dailyRefreshCollectionId: 'landscape',
+      };
+      assertNotSelected();
     });
   });
 });

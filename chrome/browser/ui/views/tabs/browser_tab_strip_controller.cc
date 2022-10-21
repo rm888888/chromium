@@ -13,7 +13,6 @@
 #include "base/callback.h"
 #include "base/command_line.h"
 #include "base/feature_list.h"
-#include "base/memory/raw_ptr.h"
 #include "base/metrics/histogram_functions.h"
 #include "base/metrics/histogram_macros.h"
 #include "base/metrics/user_metrics.h"
@@ -183,12 +182,12 @@ class BrowserTabStripController::TabContextMenuContents
   std::unique_ptr<views::MenuRunner> menu_runner_;
 
   // The tab we're showing a menu for.
-  raw_ptr<Tab> tab_;
+  Tab* tab_;
 
   // A pointer back to our hosting controller, for command state information.
-  raw_ptr<BrowserTabStripController> controller_;
+  BrowserTabStripController* controller_;
 
-  const raw_ptr<FeaturePromoController> feature_promo_controller_;
+  FeaturePromoController* const feature_promo_controller_;
 
   // Handle we keep if showing menu IPH for tab groups.
   absl::optional<FeaturePromoController::PromoHandle> tab_groups_promo_handle_;

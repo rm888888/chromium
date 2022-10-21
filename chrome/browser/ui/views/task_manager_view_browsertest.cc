@@ -4,6 +4,7 @@
 
 #include <stddef.h>
 
+#include "base/macros.h"
 #include "base/strings/pattern.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/test/scoped_feature_list.h"
@@ -76,7 +77,7 @@ class TaskManagerViewTest : public InProcessBrowserTest {
   }
 
   views::TableView* GetTable() const {
-    return GetView() ? GetView()->tab_table_.get() : nullptr;
+    return GetView() ? GetView()->tab_table_ : nullptr;
   }
 
   void PressKillButton() { GetView()->Accept(); }
@@ -86,9 +87,9 @@ class TaskManagerViewTest : public InProcessBrowserTest {
     if (!local_state)
       FAIL();
 
-    DictionaryPrefUpdateDeprecated dict_update(
-        local_state, prefs::kTaskManagerColumnVisibility);
-    dict_update->DictClear();
+    DictionaryPrefUpdate dict_update(local_state,
+                                     prefs::kTaskManagerColumnVisibility);
+    dict_update->Clear();
   }
 
   void ToggleColumnVisibility(TaskManagerView* view, int col_id) {

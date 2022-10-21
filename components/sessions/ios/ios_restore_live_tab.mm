@@ -33,7 +33,7 @@ int RestoreIOSLiveTab::GetPendingEntryIndex() {
 
 sessions::SerializedNavigationEntry RestoreIOSLiveTab::GetEntryAtIndex(
     int index) {
-  NSArray<CRWNavigationItemStorage*>* item_storages = session_.itemStorages;
+  NSArray* item_storages = session_.itemStorages;
   CRWNavigationItemStorage* item = item_storages[index];
   return sessions::IOSSerializedNavigationBuilder::FromNavigationStorageItem(
       index, item);

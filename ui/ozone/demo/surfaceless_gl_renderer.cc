@@ -12,6 +12,7 @@
 #include "base/callback_helpers.h"
 #include "base/command_line.h"
 #include "base/cxx17_backports.h"
+#include "base/macros.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/trace_event/trace_event.h"
 #include "ui/display/types/display_snapshot.h"
@@ -306,7 +307,7 @@ void SurfacelessGlRenderer::PostRenderFrameTask(
         if (!buffers_[i]->Initialize(widget_, primary_plane_rect_.size()))
           LOG(FATAL) << "Failed to recreate buffer";
       }
-      [[fallthrough]];  // We want to render a new frame anyways.
+      FALLTHROUGH;  // We want to render a new frame anyways.
     case gfx::SwapResult::SWAP_ACK:
       base::ThreadTaskRunnerHandle::Get()->PostTask(
           FROM_HERE, base::BindOnce(&SurfacelessGlRenderer::RenderFrame,

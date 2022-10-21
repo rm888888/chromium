@@ -10,14 +10,15 @@
 #include "base/callback.h"
 #include "base/files/file.h"
 #include "base/files/file_path.h"
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/memory/ref_counted.h"
 #include "base/task/single_thread_task_runner.h"
 #include "components/subresource_filter/content/browser/ruleset_publisher.h"
 #include "components/subresource_filter/content/browser/ruleset_version.h"
 #include "components/subresource_filter/content/browser/verified_ruleset_dealer.h"
+#include "content/public/browser/notification_observer.h"
+#include "content/public/browser/notification_registrar.h"
 #include "content/public/browser/render_process_host.h"
-#include "content/public/browser/render_process_host_creation_observer.h"
 
 namespace subresource_filter {
 
@@ -29,7 +30,7 @@ class RulesetService;
 // renderer processes, where they will be memory-mapped as-needed by the
 // UnverifiedRulesetDealer.
 class RulesetPublisherImpl : public RulesetPublisher,
-                             public content::RenderProcessHostCreationObserver {
+                             public content::NotificationObserver {
  public:
   RulesetPublisherImpl(
       RulesetService* ruleset_service,
@@ -60,14 +61,17 @@ class RulesetPublisherImpl : public RulesetPublisher,
                                           content::RenderProcessHost* rph);
 
  private:
-  // content::RenderProcessHostCreationObserver:
-  void OnRenderProcessHostCreated(content::RenderProcessHost* rph) override;
+  // content::NotificationObserver:
+  void Observe(int type,
+               const content::NotificationSource& source,
+               const content::NotificationDetails& details) override;
 
+  content::NotificationRegistrar notification_registrar_;
   RulesetFilePtr ruleset_data_{nullptr, base::OnTaskRunnerDeleter{nullptr}};
   base::OnceClosure ruleset_published_callback_;
 
   // The service owns the publisher, and therefore outlives it.
-  raw_ptr<RulesetService> ruleset_service_;
+  RulesetService* ruleset_service_;
   std::unique_ptr<VerifiedRulesetDealer::Handle> ruleset_dealer_;
   scoped_refptr<base::SingleThreadTaskRunner> best_effort_task_runner_;
 };

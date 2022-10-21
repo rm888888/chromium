@@ -226,8 +226,6 @@ download_pb::InProgressInfo DownloadDBConversions::InProgressInfoToProto(
   }
   proto.set_credentials_mode(
       static_cast<int32_t>(in_progress_info.credentials_mode));
-  proto.set_range_request_from(in_progress_info.range_request_from);
-  proto.set_range_request_to(in_progress_info.range_request_to);
   return proto;
 }
 
@@ -291,10 +289,6 @@ InProgressInfo DownloadDBConversions::InProgressInfoFromProto(
     info.credentials_mode = static_cast<::network::mojom::CredentialsMode>(
         proto.credentials_mode());
   }
-  if (proto.has_range_request_from())
-    info.range_request_from = proto.range_request_from();
-  if (proto.has_range_request_to())
-    info.range_request_to = proto.range_request_to();
 
   return info;
 }

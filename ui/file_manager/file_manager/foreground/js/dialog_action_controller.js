@@ -107,7 +107,7 @@ export class DialogActionController {
   /**
    * @private
    */
-  async processOKActionForSaveDialog_() {
+  processOKActionForSaveDialog_() {
     const selection = this.fileSelectionHandler_.selection;
 
     // If OK action is clicked when a directory is selected, open the directory.
@@ -125,18 +125,21 @@ export class DialogActionController {
       throw new Error('Missing filename!');
     }
 
-    try {
-      const url =
-          await this.namingController_.validateFileNameForSaving(filename);
-
-      this.selectFilesAndClose_({
-        urls: [url],
-        multiple: false,
-        filterIndex: this.dialogFooter_.selectedFilterIndex
-      });
-    } catch (error) {
-      console.error(error);
-    }
+    this.namingController_.validateFileNameForSaving(filename)
+        .then(url => {
+          // TODO(mtomasz): Clean this up by avoiding constructing a URL
+          //                via string concatenation.
+          this.selectFilesAndClose_({
+            urls: [url],
+            multiple: false,
+            filterIndex: this.dialogFooter_.selectedFilterIndex
+          });
+        })
+        .catch(error => {
+          if (error instanceof Error) {
+            console.error(error.stack && error);
+          }
+        });
   }
 
   /**

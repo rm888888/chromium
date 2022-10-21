@@ -22,7 +22,6 @@
 #include "components/account_manager_core/chromeos/access_token_fetcher.h"
 #include "components/account_manager_core/chromeos/account_manager.h"
 #include "components/account_manager_core/chromeos/account_manager_ui.h"
-#include "components/account_manager_core/chromeos/fake_account_manager_ui.h"
 #include "components/prefs/testing_pref_service.h"
 #include "google_apis/gaia/gaia_urls.h"
 #include "google_apis/gaia/google_service_auth_error.h"
@@ -111,6 +110,65 @@ class TestAccountManagerObserver
   mojo::Receiver<mojom::AccountManagerObserver> receiver_;
 };
 
+class FakeAccountManagerUI : public account_manager::AccountManagerUI {
+ public:
+  FakeAccountManagerUI() = default;
+  FakeAccountManagerUI(const FakeAccountManagerUI&) = delete;
+  FakeAccountManagerUI& operator=(const FakeAccountManagerUI&) = delete;
+  ~FakeAccountManagerUI() override = default;
+
+  void SetIsDialogShown(bool is_dialog_shown) {
+    is_dialog_shown_ = is_dialog_shown;
+  }
+
+  void CloseDialog() {
+    if (!close_dialog_closure_.is_null()) {
+      std::move(close_dialog_closure_).Run();
+    }
+    is_dialog_shown_ = false;
+  }
+
+  int show_account_addition_dialog_calls() const {
+    return show_account_addition_dialog_calls_;
+  }
+
+  int show_account_reauthentication_dialog_calls() const {
+    return show_account_reauthentication_dialog_calls_;
+  }
+
+  int show_manage_accounts_settings_calls() const {
+    return show_manage_accounts_settings_calls_;
+  }
+
+ private:
+  // AccountManagerUI overrides:
+  void ShowAddAccountDialog(base::OnceClosure close_dialog_closure) override {
+    close_dialog_closure_ = std::move(close_dialog_closure);
+    show_account_addition_dialog_calls_++;
+    is_dialog_shown_ = true;
+  }
+
+  void ShowReauthAccountDialog(
+      const std::string& email,
+      base::OnceClosure close_dialog_closure) override {
+    close_dialog_closure_ = std::move(close_dialog_closure);
+    show_account_reauthentication_dialog_calls_++;
+    is_dialog_shown_ = true;
+  }
+
+  bool IsDialogShown() override { return is_dialog_shown_; }
+
+  void ShowManageAccountsSettings() override {
+    show_manage_accounts_settings_calls_++;
+  }
+
+  base::OnceClosure close_dialog_closure_;
+  bool is_dialog_shown_ = false;
+  int show_account_addition_dialog_calls_ = 0;
+  int show_account_reauthentication_dialog_calls_ = 0;
+  int show_manage_accounts_settings_calls_ = 0;
+};
+
 // A test spy for intercepting AccountManager calls.
 class AccountManagerSpy : public account_manager::AccountManager {
  public:
@@ -189,17 +247,15 @@ class AccountManagerMojoServiceTest : public ::testing::Test {
   mojom::AccountAdditionResultPtr ShowAddAccountDialog(
       base::OnceClosure quit_closure) {
     auto add_account_result = mojom::AccountAdditionResult::New();
-    account_manager_mojo_service_->ShowAddAccountDialog(
-        crosapi::mojom::AccountAdditionOptions::New(),
-        base::BindOnce(
-            [](base::OnceClosure quit_closure,
-               mojom::AccountAdditionResultPtr* add_account_result,
-               mojom::AccountAdditionResultPtr result) {
-              (*add_account_result)->status = result->status;
-              (*add_account_result)->account = std::move(result->account);
-              std::move(quit_closure).Run();
-            },
-            std::move(quit_closure), &add_account_result));
+    account_manager_mojo_service_->ShowAddAccountDialog(base::BindOnce(
+        [](base::OnceClosure quit_closure,
+           mojom::AccountAdditionResultPtr* add_account_result,
+           mojom::AccountAdditionResultPtr result) {
+          (*add_account_result)->status = result->status;
+          (*add_account_result)->account = std::move(result->account);
+          std::move(quit_closure).Run();
+        },
+        std::move(quit_closure), &add_account_result));
     return add_account_result;
   }
 
@@ -371,7 +427,7 @@ TEST_F(AccountManagerMojoServiceTest,
   GetFakeAccountManagerUI()->SetIsDialogShown(true);
   mojom::AccountAdditionResultPtr account_addition_result;
   account_manager_async_waiter()->ShowAddAccountDialog(
-      crosapi::mojom::AccountAdditionOptions::New(), &account_addition_result);
+      &account_addition_result);
 
   // Check status.
   EXPECT_EQ(mojom::AccountAdditionResult::Status::kAlreadyInProgress,

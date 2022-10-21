@@ -129,8 +129,10 @@ void PerFrameContentTranslateDriver::PendingRequestStats::Report() {
 
 PerFrameContentTranslateDriver::PerFrameContentTranslateDriver(
     content::WebContents& web_contents,
+    content::NavigationController* nav_controller,
     language::UrlLanguageHistogram* url_language_histogram)
     : ContentTranslateDriver(web_contents,
+                             nav_controller,
                              url_language_histogram,
                              /*translate_model_service=*/nullptr) {}
 
@@ -321,15 +323,15 @@ void PerFrameContentTranslateDriver::DOMContentLoaded(
   // Start language detection now if not waiting for sub frames
   // to load to use for detection.
   if (!translate::IsSubFrameLanguageDetectionEnabled() &&
-      translate::IsTranslatableURL(web_contents()->GetLastCommittedURL())) {
+      translate::IsTranslatableURL(web_contents()->GetURL())) {
     StartLanguageDetection();
   }
 }
 
-void PerFrameContentTranslateDriver::
-    DocumentOnLoadCompletedInPrimaryMainFrame() {
+void PerFrameContentTranslateDriver::DocumentOnLoadCompletedInMainFrame(
+    content::RenderFrameHost* render_frame_host) {
   if (translate::IsSubFrameLanguageDetectionEnabled() &&
-      translate::IsTranslatableURL(web_contents()->GetLastCommittedURL())) {
+      translate::IsTranslatableURL(web_contents()->GetURL())) {
     StartLanguageDetection();
   }
 }

@@ -9,6 +9,7 @@
 
 #include <memory>
 
+#include "base/macros.h"
 #include "components/metrics/metrics_log.h"
 
 namespace metrics {

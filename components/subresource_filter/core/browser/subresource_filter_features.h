@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "base/feature_list.h"
+#include "base/macros.h"
 #include "base/memory/ref_counted.h"
 #include "base/metrics/field_trial_params.h"
 #include "base/strings/string_piece.h"

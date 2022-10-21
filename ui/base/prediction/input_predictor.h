@@ -8,6 +8,7 @@
 #include <memory>
 
 #include "base/component_export.h"
+#include "base/macros.h"
 #include "base/time/time.h"
 #include "ui/gfx/geometry/point_f.h"
 

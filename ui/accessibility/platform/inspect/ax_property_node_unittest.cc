@@ -4,6 +4,7 @@
 
 #include "ui/accessibility/platform/inspect/ax_property_node.h"
 
+#include "base/macros.h"
 #include "testing/gtest/include/gtest/gtest.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/accessibility/platform/inspect/ax_inspect.h"

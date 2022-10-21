@@ -41,7 +41,10 @@
 #include "ui/views/controls/menu/menu_model_adapter.h"
 #include "ui/views/controls/menu/menu_runner.h"
 #include "ui/views/mouse_constants.h"
-
+//update on 20220527
+#include "ui/compositor/layer.h"
+#include "ui/views/background.h"
+//
 using views::LabelButtonBorder;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -137,17 +140,38 @@ void ToolbarActionView::UpdateState() {
   gfx::ImageSkia icon(
       view_controller_->GetIcon(web_contents, GetPreferredSize())
           .AsImageSkia());
-
-  if (!icon.isNull())
-    SetImageModel(views::Button::STATE_NORMAL,
-                  ui::ImageModel::FromImageSkia(icon));
+//update on 20220525
+    image_ = icon;
+    auto icon_resize = gfx::ImageSkiaOperations::CreateResizedImage(
+            icon,skia::ImageOperations::ResizeMethod::RESIZE_FIRST_QUALITY_METHOD,gfx::Size(480,480)
+    );
+   if (!icon_resize.isNull()) {
+       SetImageModel(views::Button::STATE_NORMAL,
+                     ui::ImageModel::FromImageSkia(icon_resize));
+       printf("!icon_resize.isNull():%s,%d,%d","suc",icon_resize.width(),icon_resize.height());
+   }
+//
+//  if (!icon.isNull())
+//    SetImageModel(views::Button::STATE_NORMAL,
+//                  ui::ImageModel::FromImageSkia(icon));
 
   SetTooltipText(view_controller_->GetTooltip(web_contents));
 
-  Layout();  // We need to layout since we may have added an icon as a result.
+   //update on 20220527
+  //Layout();  // We need to layout since we may have added an icon as a result.
   SchedulePaint();
 }
 
+//update on 20220525
+void ToolbarActionView::ResizeIcon(gfx::Size size){
+     auto icon_resize = gfx::ImageSkiaOperations::CreateResizedImage(
+        image_,skia::ImageOperations::ResizeMethod::RESIZE_BEST,size
+        );
+    if (!icon_resize.isNull())
+        SetImageModel(views::Button::STATE_NORMAL,
+                      ui::ImageModel::FromImageSkia(icon_resize));
+}
+//
 gfx::ImageSkia ToolbarActionView::GetIconForTest() {
   return GetImage(views::Button::STATE_NORMAL);
 }
@@ -157,7 +181,9 @@ int ToolbarActionView::GetDragOperationsForTest(const gfx::Point& point) {
 }
 
 gfx::Size ToolbarActionView::CalculatePreferredSize() const {
-  return delegate_->GetToolbarActionSize();
+//  return delegate_->GetToolbarActionSize();
+//update on 20220525
+    return gfx::Size(80,80);
 }
 
 bool ToolbarActionView::OnMousePressed(const ui::MouseEvent& event) {
@@ -276,12 +302,20 @@ void ToolbarActionView::ButtonPressed() {
         "Extensions.Toolbar.ExtensionActivatedFromToolbar"));
     view_controller_->ExecuteAction(
         true, ToolbarActionViewController::InvocationSource::kToolbarButton);
+    //update on 20220510
+      printf("ToolbarActionView::ButtonPressed():--%s\r\n",view_controller_->GetId().c_str());
   } else {
     // If the action isn't enabled, show the context menu as a fallback.
     context_menu_controller()->ShowContextMenuForView(this, GetMenuPosition(),
                                                       ui::MENU_SOURCE_NONE);
+      //update on 20220510
+      printf("ToolbarActionView::ButtonPressed():--%s\r\n",view_controller_->GetId().c_str());
   }
 }
 
+//update on 20220426
+void ToolbarActionView::OnButtonClick(){
+    ButtonPressed();
+}
 BEGIN_METADATA(ToolbarActionView, views::MenuButton)
 END_METADATA

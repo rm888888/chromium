@@ -6,13 +6,12 @@
 
 #include <lib/zx/channel.h>
 #include <vulkan/vulkan.h>
-
 #include <memory>
-#include <tuple>
 
 #include "base/callback_helpers.h"
 #include "base/files/file_path.h"
 #include "base/fuchsia/fuchsia_logging.h"
+#include "base/macros.h"
 #include "base/native_library.h"
 #include "gpu/ipc/common/vulkan_ycbcr_info.h"
 #include "gpu/vulkan/fuchsia/vulkan_fuchsia_ext.h"
@@ -157,7 +156,7 @@ VkSemaphore VulkanImplementationFlatland::ImportSemaphoreHandle(
   }
 
   // Vulkan took ownership of the handle.
-  std::ignore = event.release();
+  ignore_result(event.release());
 
   return semaphore;
 }

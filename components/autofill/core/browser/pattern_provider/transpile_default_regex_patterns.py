@@ -16,7 +16,7 @@ def build_cpp_map_population(input):
   def output(line):
     lines.append(line)
 
-  output('constexpr JsonPattern patterns[] = {')
+  output('JsonPattern patterns[] = {')
   for key1 in input:
     for key2 in input[key1]:
       for pattern in input[key1][key2]:
@@ -35,17 +35,9 @@ def build_cpp_map_population(input):
         else:
           negative_pattern = 'u' + to_string_literal(negative_pattern)
 
-        match_field_attributes = map(
-                lambda i: 'To<MatchAttribute, {}>()'.format(i),
-                match_field_attributes)
-        match_field_input_types = map(
-                lambda i: 'To<MatchFieldType, {}>()'.format(i),
-                match_field_input_types)
-
-        match_field_attributes = '{{ {} }}'.format(
-                ','.join(match_field_attributes))
-        match_field_input_types = '{{ {} }}'.format(
-                ','.join(match_field_input_types))
+        # Shift to the right to match the MatchFieldTypes enum, which
+        # temporarily starts at 1<<2 instead of 1<<0.
+        match_field_input_types = '{} << 2'.format(match_field_input_types)
 
         output('{')
         output('.name = {},'.format(name))
@@ -80,17 +72,6 @@ def build_cpp_function(cpp, output_handle):
   output('\n')
   output('namespace autofill {\n')
   output('\n')
-  output('namespace {\n')
-  output('\n')
-  output('template<typename Enum, int i>\n')
-  output('constexpr Enum To() {\n')
-  output('  static_assert(0 <= i);\n')
-  output('  static_assert(static_cast<Enum>(i) <= Enum::kMaxValue);\n')
-  output('  return static_cast<Enum>(i);\n')
-  output('}\n')
-  output('\n')
-  output('}  // namespace\n')
-  output('\n')
   output('PatternProvider::Map CreateDefaultRegexPatterns() {\n')
   output('  struct JsonPattern {\n')
   output('    const char* name;\n')
@@ -98,8 +79,8 @@ def build_cpp_function(cpp, output_handle):
   output('    const char16_t* positive_pattern;\n')
   output('    const char16_t* negative_pattern;\n')
   output('    float positive_score;\n')
-  output('    DenseSet<MatchAttribute> match_field_attributes;\n')
-  output('    DenseSet<MatchFieldType> match_field_input_types;\n')
+  output('    uint8_t match_field_attributes;\n')
+  output('    uint16_t match_field_input_types;\n')
   output('  };\n')
   output('\n')
   for line in build_cpp_map_population(cpp):

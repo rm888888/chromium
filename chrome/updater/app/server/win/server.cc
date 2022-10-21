@@ -39,7 +39,6 @@
 #include "chrome/updater/win/setup/setup_util.h"
 #include "chrome/updater/win/setup/uninstall.h"
 #include "chrome/updater/win/win_constants.h"
-#include "chrome/updater/win/win_util.h"
 #include "components/prefs/pref_service.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 
@@ -60,31 +59,6 @@ std::wstring COMGroup(UpdaterScope scope) {
 
 std::wstring COMGroupInternal(UpdaterScope scope) {
   return GetCOMGroup(L"Internal", scope);
-}
-
-// Update the registry value for the "UninstallCmdLine" under the UPDATER_KEY.
-bool SwapUninstallCmdLine(UpdaterScope scope,
-                          const base::FilePath& updater_path,
-                          HKEY root,
-                          WorkItemList* list) {
-  DCHECK(list);
-
-  base::CommandLine uninstall_if_unused_command(updater_path);
-
-  // TODO(crbug.com/1270520) - use a switch that can uninstall immediately if
-  // unused, instead of requiring server starts.
-  uninstall_if_unused_command.AppendSwitch(kUninstallIfUnusedSwitch);
-  if (scope == UpdaterScope::kSystem)
-    uninstall_if_unused_command.AppendSwitch(kSystemSwitch);
-  uninstall_if_unused_command.AppendSwitch(kEnableLoggingSwitch);
-  uninstall_if_unused_command.AppendSwitchASCII(kLoggingModuleSwitch,
-                                                kLoggingModuleSwitchValue);
-  list->AddCreateRegKeyWorkItem(root, UPDATER_KEY, Wow6432(0));
-  list->AddSetRegValueWorkItem(
-      root, UPDATER_KEY, Wow6432(0), kRegValueUninstallCmdLine,
-      uninstall_if_unused_command.GetCommandLineString(), true);
-
-  return true;
 }
 
 }  // namespace
@@ -181,7 +155,7 @@ void ComServerApp::UninstallSelf() {
   UninstallCandidate(updater_scope());
 }
 
-bool ComServerApp::SwapInNewVersion() {
+bool ComServerApp::SwapRPCInterfaces() {
   std::unique_ptr<WorkItemList> list(WorkItem::CreateWorkItemList());
 
   const absl::optional<base::FilePath> versioned_directory =
@@ -192,27 +166,25 @@ bool ComServerApp::SwapInNewVersion() {
   const base::FilePath updater_path =
       versioned_directory->Append(FILE_PATH_LITERAL("updater.exe"));
 
-  HKEY root = (updater_scope() == UpdaterScope::kSystem) ? HKEY_LOCAL_MACHINE
-                                                         : HKEY_CURRENT_USER;
-  if (!SwapUninstallCmdLine(updater_scope(), updater_path, root, list.get()))
-    return false;
-
   if (IsCOMService()) {
     AddComServiceWorkItems(updater_path, false, list.get());
-  } else {
-    for (const CLSID& clsid : GetActiveServers(updater_scope())) {
-      AddInstallServerWorkItems(root, clsid, updater_path, false, list.get());
-    }
+    return list->Do();
+  }
 
-    for (const GUID& iid : GetActiveInterfaces()) {
-      AddInstallComInterfaceWorkItems(root, updater_path, iid, list.get());
-    }
+  HKEY root = (updater_scope() == UpdaterScope::kSystem) ? HKEY_LOCAL_MACHINE
+                                                         : HKEY_CURRENT_USER;
+  for (const CLSID& clsid : GetActiveServers(updater_scope())) {
+    AddInstallServerWorkItems(root, clsid, updater_path, false, list.get());
+  }
+
+  for (const GUID& iid : GetActiveInterfaces()) {
+    AddInstallComInterfaceWorkItems(root, updater_path, iid, list.get());
   }
 
   return list->Do();
 }
 
-bool ComServerApp::MigrateLegacyUpdaters(
+bool ComServerApp::ConvertLegacyUpdaters(
     base::RepeatingCallback<void(const RegistrationRequest&)>
         register_callback) {
   // TODO(crbug.com/1250524): Implement. Note we will need both user and system

@@ -9,7 +9,6 @@
 
 #include "base/bind.h"
 #include "base/memory/ptr_util.h"
-#include "base/memory/raw_ptr.h"
 #include "base/metrics/histogram_macros.h"
 #include "base/numerics/safe_conversions.h"
 #include "base/time/time.h"
@@ -199,7 +198,7 @@ class OverlayWindowFrameView : public views::NonClientFrameView {
   }
 
  private:
-  raw_ptr<views::Widget> widget_;
+  views::Widget* widget_;
 };
 
 // OverlayWindow implementation of WidgetDelegate.
@@ -377,7 +376,7 @@ void OverlayWindowViews::SetUpViews() {
   auto controls_scrim_view = std::make_unique<views::View>();
   auto controls_container_view = std::make_unique<views::View>();
   auto close_controls_view =
-      std::make_unique<CloseImageButton>(base::BindRepeating(
+      std::make_unique<views::CloseImageButton>(base::BindRepeating(
           [](OverlayWindowViews* overlay) {
             // Only pause the video if play/pause is available.
             const bool should_pause_video = overlay->show_play_pause_button_;
@@ -386,7 +385,7 @@ void OverlayWindowViews::SetUpViews() {
           },
           base::Unretained(this)));
 
-  std::unique_ptr<BackToTabImageButton> back_to_tab_image_button;
+  std::unique_ptr<views::BackToTabImageButton> back_to_tab_image_button;
   std::unique_ptr<BackToTabLabelButton> back_to_tab_label_button;
   auto back_to_tab_callback = base::BindRepeating(
       [](OverlayWindowViews* overlay) {
@@ -398,11 +397,11 @@ void OverlayWindowViews::SetUpViews() {
     back_to_tab_label_button =
         std::make_unique<BackToTabLabelButton>(std::move(back_to_tab_callback));
   } else {
-    back_to_tab_image_button =
-        std::make_unique<BackToTabImageButton>(std::move(back_to_tab_callback));
+    back_to_tab_image_button = std::make_unique<views::BackToTabImageButton>(
+        std::move(back_to_tab_callback));
   }
 
-  auto previous_track_controls_view = std::make_unique<TrackImageButton>(
+  auto previous_track_controls_view = std::make_unique<views::TrackImageButton>(
       base::BindRepeating(
           [](OverlayWindowViews* overlay) {
             overlay->controller_->PreviousTrack();
@@ -413,13 +412,13 @@ void OverlayWindowViews::SetUpViews() {
       l10n_util::GetStringUTF16(
           IDS_PICTURE_IN_PICTURE_PREVIOUS_TRACK_CONTROL_ACCESSIBLE_TEXT));
   auto play_pause_controls_view =
-      std::make_unique<PlaybackImageButton>(base::BindRepeating(
+      std::make_unique<views::PlaybackImageButton>(base::BindRepeating(
           [](OverlayWindowViews* overlay) {
             overlay->TogglePlayPause();
             overlay->RecordButtonPressed(OverlayWindowControl::kPlayPause);
           },
           base::Unretained(this)));
-  auto next_track_controls_view = std::make_unique<TrackImageButton>(
+  auto next_track_controls_view = std::make_unique<views::TrackImageButton>(
       base::BindRepeating(
           [](OverlayWindowViews* overlay) {
             overlay->controller_->NextTrack();
@@ -430,7 +429,7 @@ void OverlayWindowViews::SetUpViews() {
       l10n_util::GetStringUTF16(
           IDS_PICTURE_IN_PICTURE_NEXT_TRACK_CONTROL_ACCESSIBLE_TEXT));
   auto skip_ad_controls_view =
-      std::make_unique<SkipAdLabelButton>(base::BindRepeating(
+      std::make_unique<views::SkipAdLabelButton>(base::BindRepeating(
           [](OverlayWindowViews* overlay) {
             overlay->controller_->SkipAd();
             overlay->RecordButtonPressed(OverlayWindowControl::kSkipAd);
@@ -458,8 +457,8 @@ void OverlayWindowViews::SetUpViews() {
       },
       base::Unretained(this)));
 #if BUILDFLAG(IS_CHROMEOS_ASH)
-  auto resize_handle_view =
-      std::make_unique<ResizeHandleButton>(views::Button::PressedCallback());
+  auto resize_handle_view = std::make_unique<views::ResizeHandleButton>(
+      views::Button::PressedCallback());
 #endif
 
   window_background_view->SetPaintToLayer(ui::LAYER_SOLID_COLOR);
@@ -851,7 +850,12 @@ bool OverlayWindowViews::IsActive() const {
 
 void OverlayWindowViews::Close() {
   views::Widget::Close();
-  MaybeUnregisterFrameSinkHierarchy();
+
+  if (has_registered_frame_sink_hierarchy_) {
+    DCHECK(GetCurrentFrameSinkId());
+    GetCompositor()->RemoveChildFrameSink(*GetCurrentFrameSinkId());
+    has_registered_frame_sink_hierarchy_ = false;
+  }
 }
 
 void OverlayWindowViews::ShowInactive() {
@@ -884,7 +888,12 @@ void OverlayWindowViews::ShowInactive() {
 
 void OverlayWindowViews::Hide() {
   views::Widget::Hide();
-  MaybeUnregisterFrameSinkHierarchy();
+
+  if (has_registered_frame_sink_hierarchy_) {
+    DCHECK(GetCurrentFrameSinkId());
+    GetCompositor()->RemoveChildFrameSink(*GetCurrentFrameSinkId());
+    has_registered_frame_sink_hierarchy_ = false;
+  }
 }
 
 bool OverlayWindowViews::IsVisible() {
@@ -986,7 +995,10 @@ void OverlayWindowViews::SetSurfaceId(const viz::SurfaceId& surface_id) {
   // The PiP window may have a previous surface set. If the window stays open
   // since then, we need to unregister the previous frame sink; otherwise the
   // surface frame sink should already be removed when the window closed.
-  MaybeUnregisterFrameSinkHierarchy();
+  if (has_registered_frame_sink_hierarchy_) {
+    DCHECK(GetCurrentFrameSinkId());
+    GetCompositor()->RemoveChildFrameSink(*GetCurrentFrameSinkId());
+  }
 
   // Add the new frame sink to the PiP window and set the surface.
   GetCompositor()->AddChildFrameSink(surface_id.frame_sink_id());
@@ -1009,11 +1021,6 @@ void OverlayWindowViews::OnNativeBlur() {
   UpdateControlsVisibility(false);
 
   views::Widget::OnNativeBlur();
-}
-
-void OverlayWindowViews::OnNativeWidgetDestroying() {
-  views::Widget::OnNativeWidgetDestroying();
-  MaybeUnregisterFrameSinkHierarchy();
 }
 
 void OverlayWindowViews::OnNativeWidgetDestroyed() {
@@ -1062,22 +1069,6 @@ void OverlayWindowViews::OnNativeWidgetWorkspaceChanged() {
   // TODO(apacible): Update sizes and maybe resize the current
   // Picture-in-Picture window. Currently, switching between workspaces on linux
   // does not trigger this function. http://crbug.com/819673
-}
-
-// When the PiP window is moved to different displays on Chrome OS, we need to
-// re-parent the frame sink since the compositor will change. After
-// OnNativeWidgetRemovingFromCompositor() is called, the window layer containing
-// the compositor will be removed in Window::RemoveChildImpl(), and
-// OnNativeWidgetAddedToCompositor() is called once another compositor is added.
-void OverlayWindowViews::OnNativeWidgetAddedToCompositor() {
-  if (!has_registered_frame_sink_hierarchy_ && GetCurrentFrameSinkId()) {
-    GetCompositor()->AddChildFrameSink(*GetCurrentFrameSinkId());
-    has_registered_frame_sink_hierarchy_ = true;
-  }
-}
-
-void OverlayWindowViews::OnNativeWidgetRemovingFromCompositor() {
-  MaybeUnregisterFrameSinkHierarchy();
 }
 
 void OverlayWindowViews::OnKeyEvent(ui::KeyEvent* event) {
@@ -1336,23 +1327,23 @@ void OverlayWindowViews::TogglePlayPause() {
   play_pause_controls_view_->SetPlaybackState(is_active ? kPlaying : kPaused);
 }
 
-PlaybackImageButton* OverlayWindowViews::play_pause_controls_view_for_testing()
-    const {
+views::PlaybackImageButton*
+OverlayWindowViews::play_pause_controls_view_for_testing() const {
   return play_pause_controls_view_;
 }
 
-TrackImageButton* OverlayWindowViews::next_track_controls_view_for_testing()
-    const {
+views::TrackImageButton*
+OverlayWindowViews::next_track_controls_view_for_testing() const {
   return next_track_controls_view_;
 }
 
-TrackImageButton* OverlayWindowViews::previous_track_controls_view_for_testing()
-    const {
+views::TrackImageButton*
+OverlayWindowViews::previous_track_controls_view_for_testing() const {
   return previous_track_controls_view_;
 }
 
-SkipAdLabelButton* OverlayWindowViews::skip_ad_controls_view_for_testing()
-    const {
+views::SkipAdLabelButton*
+OverlayWindowViews::skip_ad_controls_view_for_testing() const {
   return skip_ad_controls_view_;
 }
 
@@ -1375,7 +1366,7 @@ BackToTabLabelButton* OverlayWindowViews::back_to_tab_label_button_for_testing()
   return back_to_tab_label_button_;
 }
 
-CloseImageButton* OverlayWindowViews::close_button_for_testing() const {
+views::CloseImageButton* OverlayWindowViews::close_button_for_testing() const {
   return close_controls_view_;
 }
 
@@ -1407,12 +1398,4 @@ const viz::FrameSinkId* OverlayWindowViews::GetCurrentFrameSinkId() const {
     return &surface->frame_sink_id();
 
   return nullptr;
-}
-
-void OverlayWindowViews::MaybeUnregisterFrameSinkHierarchy() {
-  if (has_registered_frame_sink_hierarchy_) {
-    DCHECK(GetCurrentFrameSinkId());
-    GetCompositor()->RemoveChildFrameSink(*GetCurrentFrameSinkId());
-    has_registered_frame_sink_hierarchy_ = false;
-  }
 }

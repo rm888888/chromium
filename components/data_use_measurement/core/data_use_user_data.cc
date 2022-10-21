@@ -6,12 +6,11 @@
 
 #include <memory>
 
-#include "build/build_config.h"
-#include "net/url_request/url_fetcher.h"
-
 #if defined(OS_ANDROID)
 #include "base/android/application_status_listener.h"
 #endif
+
+#include "net/url_request/url_fetcher.h"
 
 namespace data_use_measurement {
 

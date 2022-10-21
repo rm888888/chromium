@@ -9,7 +9,6 @@
 
 #include "base/bind.h"
 #include "base/callback.h"
-#include "base/memory/raw_ptr.h"
 #include "components/password_manager/core/browser/password_form.h"
 #include "components/password_manager/core/browser/password_reuse_detector.h"
 #include "components/password_manager/core/browser/password_store_consumer.h"
@@ -45,9 +44,7 @@ class InsecureCredentialsHelper : public PasswordStoreConsumer {
 
   base::OnceCallback<void(LoginsResult)> operation_;
 
-  raw_ptr<PasswordStoreInterface> store_;
-
-  base::WeakPtrFactory<InsecureCredentialsHelper> weak_ptr_factory_{this};
+  PasswordStoreInterface* store_;
 };
 
 InsecureCredentialsHelper::InsecureCredentialsHelper(
@@ -64,7 +61,7 @@ void InsecureCredentialsHelper::AddPhishedCredentials(
   operation_ =
       base::BindOnce(&InsecureCredentialsHelper::AddPhishedCredentialsInternal,
                      base::Owned(this), credential);
-  store_->GetLogins(digest, weak_ptr_factory_.GetWeakPtr());
+  store_->GetLogins(digest, this);
 }
 
 void InsecureCredentialsHelper::RemovePhishedCredentials(
@@ -75,7 +72,7 @@ void InsecureCredentialsHelper::RemovePhishedCredentials(
   operation_ = base::BindOnce(
       &InsecureCredentialsHelper::RemovePhishedCredentialsInternal,
       base::Owned(this), credential);
-  store_->GetLogins(digest, weak_ptr_factory_.GetWeakPtr());
+  store_->GetLogins(digest, this);
 }
 
 void InsecureCredentialsHelper::OnGetPasswordStoreResults(

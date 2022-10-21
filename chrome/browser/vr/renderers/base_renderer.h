@@ -5,6 +5,7 @@
 #ifndef CHROME_BROWSER_VR_RENDERERS_BASE_RENDERER_H_
 #define CHROME_BROWSER_VR_RENDERERS_BASE_RENDERER_H_
 
+#include "base/macros.h"
 #include "device/vr/gl_bindings.h"
 
 namespace vr {

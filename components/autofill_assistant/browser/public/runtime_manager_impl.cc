@@ -14,8 +14,9 @@ RuntimeManagerImpl* RuntimeManagerImpl::GetForWebContents(
   return RuntimeManagerImpl::FromWebContents(contents);
 }
 
-RuntimeManagerImpl::RuntimeManagerImpl(content::WebContents* web_contents)
-    : content::WebContentsUserData<RuntimeManagerImpl>(*web_contents) {}
+RuntimeManagerImpl::RuntimeManagerImpl(content::WebContents* web_contents) {}
+
+RuntimeManagerImpl::RuntimeManagerImpl() = default;
 
 RuntimeManagerImpl::~RuntimeManagerImpl() = default;
 
@@ -40,7 +41,7 @@ void RuntimeManagerImpl::SetUIState(UIState state) {
   }
 }
 
-base::WeakPtr<RuntimeManager> RuntimeManagerImpl::GetWeakPtr() {
+base::WeakPtr<RuntimeManagerImpl> RuntimeManagerImpl::GetWeakPtr() {
   return weak_ptr_factory_.GetWeakPtr();
 }
 

@@ -10,6 +10,7 @@
 #include "base/command_line.h"
 #include "base/logging.h"
 #import "base/mac/foundation_util.h"
+#include "base/macros.h"
 #include "base/metrics/histogram_functions.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/sys_string_conversions.h"
@@ -137,10 +138,7 @@ class AccountConsistencyService::AccountConsistencyHandler
   // Handles the AddAccount request depending on |has_cookie_changed|.
   void HandleAddAccountRequest(GURL url, BOOL has_cookie_changed);
 
-  // The consistency web sign-in needs to be shown once the page is loaded.
-  // It is required to avoid having the keyboard showing up on top of the web
-  // sign-in dialog.
-  bool show_consistency_web_signin_ = false;
+  bool show_consistency_promo_ = false;
   AccountConsistencyService* account_consistency_service_;  // Weak.
   AccountReconcilor* account_reconcilor_;                   // Weak.
   signin::IdentityManager* identity_manager_;
@@ -202,6 +200,11 @@ void AccountConsistencyService::AccountConsistencyHandler::ShouldAllowResponse(
         {url, GURL(kGoogleUrl)});
   }
 
+  // Reset boolean that tracks displaying the sign-in consistency promo. This
+  // ensures that the promo is cancelled once navigation has started and the
+  // WKWebView is cancelling previous navigations.
+  show_consistency_promo_ = false;
+
   if (!gaia::IsGaiaSignonRealm(url.DeprecatedGetOriginAsURL())) {
     std::move(callback).Run(PolicyDecision::Allow());
     return;
@@ -216,7 +219,7 @@ void AccountConsistencyService::AccountConsistencyHandler::ShouldAllowResponse(
     NSString* x_autologin_header = [[http_response allHeaderFields]
         objectForKey:[NSString stringWithUTF8String:signin::kAutoLoginHeader]];
     if (x_autologin_header) {
-      show_consistency_web_signin_ = true;
+      show_consistency_promo_ = true;
     }
     std::move(callback).Run(PolicyDecision::Allow());
     return;
@@ -252,6 +255,13 @@ void AccountConsistencyService::AccountConsistencyHandler::ShouldAllowResponse(
           // have been restored.
           return;
         }
+      } else if (!identity_manager_->GetAccountsWithRefreshTokens().empty()) {
+        show_consistency_promo_ = true;
+        // Allows the URL response to load before showing the consistency promo.
+        // The promo should always be displayed in the foreground of Gaia
+        // sign-on.
+        std::move(callback).Run(PolicyDecision::Allow());
+        return;
       }
       [delegate_ onAddAccount];
       break;
@@ -303,11 +313,11 @@ void AccountConsistencyService::AccountConsistencyHandler::PageLoaded(
     return;
   }
 
-  if (show_consistency_web_signin_ &&
+  if (show_consistency_promo_ &&
       gaia::IsGaiaSignonRealm(url.DeprecatedGetOriginAsURL())) {
     [delegate_ onShowConsistencyPromo:url webState:web_state];
+    show_consistency_promo_ = false;
   }
-  show_consistency_web_signin_ = false;
 }
 
 void AccountConsistencyService::AccountConsistencyHandler::WebStateDestroyed(
@@ -350,7 +360,7 @@ BOOL AccountConsistencyService::RestoreGaiaCookies(
     cookie_manager->GetCookieList(
         GaiaUrls::GetInstance()->secure_google_url(),
         net::CookieOptions::MakeAllInclusive(),
-        net::CookiePartitionKeyCollection::Todo(),
+        net::CookiePartitionKeychain::Todo(),
         base::BindOnce(
             &AccountConsistencyService::TriggerGaiaCookieChangeIfDeleted,
             base::Unretained(this), std::move(cookies_restored_callback)));

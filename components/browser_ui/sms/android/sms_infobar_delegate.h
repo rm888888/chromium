@@ -6,6 +6,7 @@
 #define COMPONENTS_BROWSER_UI_SMS_ANDROID_SMS_INFOBAR_DELEGATE_H_
 
 #include "base/callback.h"
+#include "base/macros.h"
 #include "components/infobars/core/confirm_infobar_delegate.h"
 #include "url/origin.h"
 

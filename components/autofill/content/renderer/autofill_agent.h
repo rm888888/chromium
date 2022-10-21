@@ -11,6 +11,7 @@
 
 #include "base/compiler_specific.h"
 #include "base/gtest_prod_util.h"
+#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "base/timer/timer.h"
 #include "components/autofill/content/common/mojom/autofill_agent.mojom.h"
@@ -115,9 +116,10 @@ class AutofillAgent : public content::RenderFrameObserver,
   void SetSecureContextRequired(bool required) override;
   void SetFocusRequiresScroll(bool require) override;
   void SetQueryPasswordSuggestion(bool required) override;
-  void GetElementFormAndFieldDataForDevToolsNodeId(
-      int backend_node_id,
-      GetElementFormAndFieldDataForDevToolsNodeIdCallback callback) override;
+  void GetElementFormAndFieldDataAtIndex(
+      const std::string& selector,
+      int index,
+      GetElementFormAndFieldDataAtIndexCallback callback) override;
   void SetAssistantKeyboardSuppressState(bool suppress) override;
   void EnableHeavyFormDataScraping() override;
   void SetFieldsEligibleForManualFilling(
@@ -148,6 +150,8 @@ class AutofillAgent : public content::RenderFrameObserver,
   bool is_heavy_form_data_scraping_enabled() {
     return is_heavy_form_data_scraping_enabled_;
   }
+
+  void SelectWasUpdated(const blink::WebFormControlElement& element);
 
   bool IsPrerendering() const;
 
@@ -305,12 +309,6 @@ class AutofillAgent : public content::RenderFrameObserver,
   // label, visibility, control type) have changed after an autofill.
   void TriggerRefillIfNeeded(const FormData& form);
 
-  // Helpers for SelectFieldOptionsChanged() and DataListOptionsChanged(), which
-  // get called after a timer that is restarted when another event of the same
-  // type started.
-  void BatchSelectOptionChange(const blink::WebFormControlElement& element);
-  void BatchDataListOptionChange(const blink::WebFormControlElement& element);
-
   // Formerly cached forms for all frames, now only caches forms for the current
   // frame.
   FormCache form_cache_;
@@ -395,8 +393,7 @@ class AutofillAgent : public content::RenderFrameObserver,
   bool was_last_action_fill_ = false;
 
   // Timers for throttling handling of frequent events.
-  base::OneShotTimer select_option_change_batch_timer_;
-  base::OneShotTimer datalist_option_change_batch_timer_;
+  base::OneShotTimer on_select_update_timer_;
   base::OneShotTimer reparse_timer_;
 
   // Will be set when accessibility mode changes, depending on what the new mode

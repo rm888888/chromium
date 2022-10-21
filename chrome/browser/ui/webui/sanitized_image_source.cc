@@ -6,6 +6,7 @@
 
 #include "base/memory/ref_counted_memory.h"
 #include "base/strings/strcat.h"
+#include "base/task/sequenced_task_runner.h"
 #include "base/task/task_traits.h"
 #include "base/task/thread_pool.h"
 #include "chrome/browser/image_fetcher/image_decoder_impl.h"
@@ -35,7 +36,10 @@ SanitizedImageSource::SanitizedImageSource(
     scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory,
     std::unique_ptr<image_fetcher::ImageDecoder> image_decoder)
     : url_loader_factory_(url_loader_factory),
-      image_decoder_(std::move(image_decoder)) {}
+      image_decoder_(std::move(image_decoder)),
+      encode_task_runner_(base::ThreadPool::CreateSequencedTaskRunner(
+          {base::MayBlock(), base::TaskPriority::USER_VISIBLE,
+           base::TaskShutdownBehavior::SKIP_ON_SHUTDOWN})) {}
 
 SanitizedImageSource::~SanitizedImageSource() = default;
 
@@ -134,7 +138,7 @@ void SanitizedImageSource::OnImageDecoded(
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
 
   // Re-encode vetted image as PNG and send to requester.
-  base::ThreadPool::PostTaskAndReplyWithResult(
+  encode_task_runner_->PostTaskAndReplyWithResult(
       FROM_HERE,
       base::BindOnce(
           [](const SkBitmap& bitmap) {

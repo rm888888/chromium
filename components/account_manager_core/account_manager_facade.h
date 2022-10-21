@@ -70,12 +70,8 @@ class COMPONENT_EXPORT(ACCOUNT_MANAGER_CORE) AccountManagerFacade {
     kChromeProfileCreation = 7,
     // Account addition flow launched by the user from One Google Bar.
     kOgbAddAccount = 8,
-    // Avatar bubble -> Signin again button.
-    kAvatarBubbleReauthAccountButton = 9,
-    // A Chrome extension required account re-authentication.
-    kChromeExtensionReauth = 10,
 
-    kMaxValue = kChromeExtensionReauth
+    kMaxValue = kOgbAddAccount
   };
 
   AccountManagerFacade();

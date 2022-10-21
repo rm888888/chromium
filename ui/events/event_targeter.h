@@ -5,6 +5,7 @@
 #ifndef UI_EVENTS_EVENT_TARGETER_H_
 #define UI_EVENTS_EVENT_TARGETER_H_
 
+#include "base/compiler_specific.h"
 #include "ui/events/events_export.h"
 
 namespace ui {

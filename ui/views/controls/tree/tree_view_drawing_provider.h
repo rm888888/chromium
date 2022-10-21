@@ -32,8 +32,6 @@ class VIEWS_EXPORT TreeViewDrawingProvider {
                                             ui::TreeModelNode* node);
   virtual SkColor GetTextColorForNode(TreeView* tree_view,
                                       ui::TreeModelNode* node);
-  virtual SkColor GetAuxiliaryTextColorForNode(TreeView* tree_view,
-                                               ui::TreeModelNode* node);
 
   // The auxiliary text for a node is descriptive text drawn on the trailing end
   // of the node's row in the treeview.

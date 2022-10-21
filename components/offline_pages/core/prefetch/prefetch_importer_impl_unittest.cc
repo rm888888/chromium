@@ -4,8 +4,6 @@
 
 #include "components/offline_pages/core/prefetch/prefetch_importer_impl.h"
 
-#include <tuple>
-
 #include "base/files/file_util.h"
 #include "base/files/scoped_temp_dir.h"
 #include "base/run_loop.h"
@@ -37,7 +35,7 @@ std::string TestAttribution() {
 
 class TestOfflinePageModel : public StubOfflinePageModel {
  public:
-  TestOfflinePageModel() { std::ignore = archive_dir_.CreateUniqueTempDir(); }
+  TestOfflinePageModel() { ignore_result(archive_dir_.CreateUniqueTempDir()); }
 
   TestOfflinePageModel(const TestOfflinePageModel&) = delete;
   TestOfflinePageModel& operator=(const TestOfflinePageModel&) = delete;

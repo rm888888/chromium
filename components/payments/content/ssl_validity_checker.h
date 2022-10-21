@@ -7,6 +7,7 @@
 
 #include <string>
 
+#include "base/macros.h"
 #include "components/security_state/core/security_state.h"
 
 namespace content {

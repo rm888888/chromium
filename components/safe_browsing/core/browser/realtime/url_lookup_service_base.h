@@ -10,7 +10,6 @@
 
 #include "base/callback.h"
 #include "base/containers/flat_map.h"
-#include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/sequence_checker.h"
 #include "base/time/time.h"
@@ -148,6 +147,9 @@ class RealTimeUrlLookupServiceBase : public KeyedService {
   // Returns true if real time URL lookup with GAIA token is enabled.
   virtual bool CanPerformFullURLLookupWithToken() const = 0;
 
+  // Returns true if referrer chain should be attached to requests.
+  virtual bool CanAttachReferrerChain() const = 0;
+
   // Returns the user gesture limit of the referrer chain.
   virtual int GetReferrerUserGestureLimit() const = 0;
 
@@ -215,8 +217,7 @@ class RealTimeUrlLookupServiceBase : public KeyedService {
       const GURL& url,
       absl::optional<std::string> access_token_string,
       RTLookupResponseCallback response_callback,
-      scoped_refptr<base::SequencedTaskRunner> callback_task_runner,
-      ChromeUserPopulation::UserPopulation user_population);
+      scoped_refptr<base::SequencedTaskRunner> callback_task_runner);
 
   // Called when the response from the real-time lookup remote endpoint is
   // received. |url_loader| is the unowned loader that was used to send the
@@ -228,7 +229,6 @@ class RealTimeUrlLookupServiceBase : public KeyedService {
       const GURL& url,
       absl::optional<std::string> access_token_string,
       network::SimpleURLLoader* url_loader,
-      ChromeUserPopulation::UserPopulation user_population,
       base::TimeTicks request_start_time,
       scoped_refptr<base::SequencedTaskRunner> response_callback_task_runner,
       std::unique_ptr<std::string> response_body);
@@ -264,7 +264,7 @@ class RealTimeUrlLookupServiceBase : public KeyedService {
   scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory_;
 
   // Unowned object used for getting and storing real time url check cache.
-  raw_ptr<VerdictCacheManager> cache_manager_;
+  VerdictCacheManager* cache_manager_;
 
   // All requests that are sent but haven't received a response yet.
   PendingRTLookupRequests pending_requests_;
@@ -273,7 +273,7 @@ class RealTimeUrlLookupServiceBase : public KeyedService {
   base::RepeatingCallback<ChromeUserPopulation()> get_user_population_callback_;
 
   // Unowned object used to retrieve referrer chains.
-  raw_ptr<ReferrerChainProvider> referrer_chain_provider_;
+  ReferrerChainProvider* referrer_chain_provider_;
 
   friend class RealTimeUrlLookupServiceTest;
   friend class ChromeEnterpriseRealTimeUrlLookupServiceTest;

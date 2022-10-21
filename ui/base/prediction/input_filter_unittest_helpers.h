@@ -7,6 +7,7 @@
 
 #include "ui/base/prediction/input_filter.h"
 
+#include "base/macros.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
 namespace ui {

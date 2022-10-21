@@ -7,6 +7,7 @@
 
 #include <string>
 
+#include "base/macros.h"
 #include "base/strings/string_piece_forward.h"
 #include "components/content_settings/core/common/content_settings_pattern.h"
 

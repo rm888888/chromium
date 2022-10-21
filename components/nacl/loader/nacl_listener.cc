@@ -51,6 +51,8 @@
 
 #if defined(OS_WIN)
 #include <io.h>
+
+#include "content/public/common/sandbox_init.h"
 #endif
 
 namespace {

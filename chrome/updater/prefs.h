@@ -5,8 +5,6 @@
 #ifndef CHROME_UPDATER_PREFS_H_
 #define CHROME_UPDATER_PREFS_H_
 
-#include <string>
-
 #include "base/memory/ref_counted.h"
 
 class PrefService;
@@ -46,11 +44,9 @@ class GlobalPrefs : virtual public UpdaterPrefs {
   GlobalPrefs() = default;
 
   virtual std::string GetActiveVersion() const = 0;
-  virtual void SetActiveVersion(const std::string& value) = 0;
+  virtual void SetActiveVersion(std::string value) = 0;
   virtual bool GetSwapping() const = 0;
   virtual void SetSwapping(bool value) = 0;
-  virtual bool GetMigratedLegacyUpdaters() const = 0;
-  virtual void SetMigratedLegacyUpdaters() = 0;
 
   // The server starts counter is a global pref value that counts the number of
   // active server starts for the updater. If there are no apps registered by

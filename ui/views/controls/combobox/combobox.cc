@@ -10,7 +10,6 @@
 
 #include "base/bind.h"
 #include "base/check_op.h"
-#include "base/memory/raw_ptr.h"
 #include "build/build_config.h"
 #include "ui/accessibility/ax_action_data.h"
 #include "ui/accessibility/ax_enums.mojom.h"
@@ -212,8 +211,8 @@ class Combobox::ComboboxMenuModel : public ui::MenuModel {
 
   MenuModel* GetSubmenuModelAt(int index) const override { return nullptr; }
 
-  raw_ptr<Combobox> owner_;           // Weak. Owns this.
-  raw_ptr<ui::ComboboxModel> model_;  // Weak.
+  Combobox* owner_;           // Weak. Owns this.
+  ui::ComboboxModel* model_;  // Weak.
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -245,7 +244,7 @@ Combobox::Combobox(ui::ComboboxModel* model, int text_context, int text_style)
   UpdateBorder();
 
   arrow_button_->SetVisible(true);
-  AddChildView(arrow_button_.get());
+  AddChildView(arrow_button_);
 
   // A layer is applied to make sure that canvas bounds are snapped to pixel
   // boundaries (for the sake of drawing the arrow).
@@ -307,7 +306,7 @@ void Combobox::SetModel(ui::ComboboxModel* model) {
   }
 
   if (model_) {
-    DCHECK(observation_.IsObservingSource(model_.get()));
+    DCHECK(observation_.IsObservingSource(model_));
     observation_.Reset();
   }
 
@@ -316,7 +315,7 @@ void Combobox::SetModel(ui::ComboboxModel* model) {
   if (model_) {
     model_ = model;
     menu_model_ = std::make_unique<ComboboxMenuModel>(this, model_);
-    observation_.Observe(model_.get());
+    observation_.Observe(model_);
     SetSelectedIndex(model_->GetDefaultIndex());
     OnComboboxModelChanged(model_);
   }
@@ -361,10 +360,6 @@ void Combobox::SetSizeToLargestLabel(bool size_to_largest_label) {
   size_to_largest_label_ = size_to_largest_label;
   content_size_ = GetContentSize();
   OnPropertyChanged(&selected_index_, kPropertyEffectsPreferredSizeChanged);
-}
-
-bool Combobox::IsMenuRunning() const {
-  return menu_runner_ && menu_runner_->IsRunning();
 }
 
 void Combobox::OnThemeChanged() {
@@ -682,7 +677,7 @@ void Combobox::ShowDropDownMenu(ui::MenuSourceType source_type) {
 
   // Allow |menu_runner_| to be set by the testing API, but if this method is
   // ever invoked recursively, ensure the old menu is closed.
-  if (!menu_runner_ || IsMenuRunning()) {
+  if (!menu_runner_ || menu_runner_->IsRunning()) {
     menu_runner_ = std::make_unique<MenuRunner>(
         menu_model_.get(), MenuRunner::COMBOBOX,
         base::BindRepeating(&Combobox::OnMenuClosed, base::Unretained(this),

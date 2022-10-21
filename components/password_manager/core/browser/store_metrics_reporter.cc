@@ -407,10 +407,10 @@ StoreMetricsReporter::StoreMetricsReporter(
   }
 
   if (profile_store_)
-    profile_store_->GetAllLogins(weak_ptr_factory_.GetWeakPtr());
+    profile_store_->GetAllLogins(this);
 
   if (account_store_)
-    account_store_->GetAllLogins(weak_ptr_factory_.GetWeakPtr());
+    account_store_->GetAllLogins(this);
 }
 
 void StoreMetricsReporter::OnGetPasswordStoreResults(

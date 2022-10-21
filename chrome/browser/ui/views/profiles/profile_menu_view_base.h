@@ -12,7 +12,7 @@
 #include <string>
 #include <vector>
 
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "chrome/app/vector_icons/vector_icons.h"
 #include "chrome/browser/profiles/profile_metrics.h"
 #include "chrome/browser/ui/browser_window.h"
@@ -24,7 +24,9 @@
 #include "ui/views/bubble/bubble_dialog_delegate_view.h"
 #include "ui/views/layout/box_layout.h"
 #include "ui/views/style/typography.h"
-
+//update on 20220803
+#include "chrome/browser/ui/views/suspend_bar/setting_view.h"
+//
 class Browser;
 
 namespace views {
@@ -93,7 +95,12 @@ class ProfileMenuViewBase : public content::WebContentsDelegate,
                          views::Button* anchor_button,
                          Browser* browser,
                          bool is_source_accelerator);
-
+  //update on 20220216
+//  static void ShowWalletBubble(profiles::BubbleViewMode view_mode,
+//  views::Button* anchor_button,
+//  Browser* browser,
+//  bool is_source_accelerator);
+  //
   static bool IsShowing();
   static void Hide();
 
@@ -112,6 +119,10 @@ class ProfileMenuViewBase : public content::WebContentsDelegate,
   // Override to supply a sync icon for the profile menu.
   virtual gfx::ImageSkia GetSyncIcon() const;
 
+  //update on 20220803
+  void SetLeftPanelSetting(SettingRepeatingCallBack call);
+  int  kMenuWidth;
+  //
   // If |profile_name| is empty, no heading will be displayed.
   void SetProfileIdentityInfo(
       const std::u16string& profile_name,
@@ -195,25 +206,25 @@ class ProfileMenuViewBase : public content::WebContentsDelegate,
 
   void ButtonPressed(base::RepeatingClosure action);
 
-  const raw_ptr<Browser> browser_;
+  Browser* const browser_;
 
-  const raw_ptr<views::Button> anchor_button_;
+  views::Button* const anchor_button_;
 
   // Component containers.
-  raw_ptr<views::View> heading_container_ = nullptr;
-  raw_ptr<views::View> identity_info_container_ = nullptr;
-  raw_ptr<views::View> sync_info_container_ = nullptr;
-  raw_ptr<views::View> shortcut_features_container_ = nullptr;
-  raw_ptr<views::View> features_container_ = nullptr;
-  raw_ptr<views::View> profile_mgmt_separator_container_ = nullptr;
-  raw_ptr<views::View> profile_mgmt_heading_container_ = nullptr;
-  raw_ptr<views::View> selectable_profiles_container_ = nullptr;
-  raw_ptr<views::View> profile_mgmt_shortcut_features_container_ = nullptr;
-  raw_ptr<views::View> profile_mgmt_features_container_ = nullptr;
+  views::View* heading_container_ = nullptr;
+  views::View* identity_info_container_ = nullptr;
+  views::View* sync_info_container_ = nullptr;
+  views::View* shortcut_features_container_ = nullptr;
+  views::View* features_container_ = nullptr;
+  views::View* profile_mgmt_separator_container_ = nullptr;
+  views::View* profile_mgmt_heading_container_ = nullptr;
+  views::View* selectable_profiles_container_ = nullptr;
+  views::View* profile_mgmt_shortcut_features_container_ = nullptr;
+  views::View* profile_mgmt_features_container_ = nullptr;
 
   // The first profile button that should be focused when the menu is opened
   // using a key accelerator.
-  raw_ptr<views::Button> first_profile_button_ = nullptr;
+  views::Button* first_profile_button_ = nullptr;
 
   // May be disabled by tests that only watch to histogram records and don't
   // care about actual actions.

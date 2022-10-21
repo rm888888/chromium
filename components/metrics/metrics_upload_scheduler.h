@@ -7,6 +7,7 @@
 
 #include "base/callback.h"
 #include "base/feature_list.h"
+#include "base/macros.h"
 #include "base/time/time.h"
 #include "components/metrics/metrics_scheduler.h"
 

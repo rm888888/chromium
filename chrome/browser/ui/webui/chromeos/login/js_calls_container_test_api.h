@@ -5,6 +5,7 @@
 #ifndef CHROME_BROWSER_UI_WEBUI_CHROMEOS_LOGIN_JS_CALLS_CONTAINER_TEST_API_H_
 #define CHROME_BROWSER_UI_WEBUI_CHROMEOS_LOGIN_JS_CALLS_CONTAINER_TEST_API_H_
 
+#include "base/macros.h"
 #include "testing/gmock/include/gmock/gmock.h"
 
 namespace chromeos {

@@ -8,6 +8,7 @@
 #include <memory>
 
 #include "base/component_export.h"
+#include "base/macros.h"
 #include "base/metrics/histogram.h"
 #include "base/time/time.h"
 

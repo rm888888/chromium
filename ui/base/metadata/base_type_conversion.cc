@@ -85,10 +85,7 @@ std::u16string TypeConverter<base::TimeDelta>::ToString(
 
 std::u16string TypeConverter<gfx::Insets>::ToString(
     const gfx::Insets& source_value) {
-  // This is different from gfx::Insets::ToString().
-  return base::ASCIIToUTF16(
-      base::StringPrintf("%d,%d,%d,%d", source_value.top(), source_value.left(),
-                         source_value.bottom(), source_value.right()));
+  return base::ASCIIToUTF16(source_value.ToString());
 }
 
 std::u16string TypeConverter<gfx::Point>::ToString(

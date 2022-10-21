@@ -13,8 +13,6 @@
 
 #include "chrome/updater/win/installer/installer.h"
 
-#include "base/memory/raw_ptr.h"
-
 // #define needed to link in RtlGenRandom(), a.k.a. SystemFunction036.  See the
 // "Community Additions" comment on MSDN here:
 // http://msdn.microsoft.com/en-us/library/windows/desktop/aa387694.aspx
@@ -24,7 +22,6 @@
 
 #include <sddl.h>
 #include <shellapi.h>
-#include <shlobj.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
@@ -62,17 +59,9 @@ bool CreateTemporaryAndUnpackDirectories(
     base::FilePath* unpack_path) {
   DCHECK(temp_path && unpack_path);
 
-  // Because there is no UpdaterScope yet, ::IsUserAnAdmin() is used to
-  // determine whether the process is running with Admin privileges. If the
-  // process is running with Admin privileges, a secure unpack location under
-  // %ProgramFiles% (a directory that only admins can write to by default) is
-  // used.
   base::FilePath temp_dir;
-  if (!base::PathService::Get(
-          ::IsUserAnAdmin() ? base::DIR_PROGRAM_FILES : base::DIR_TEMP,
-          &temp_dir)) {
+  if (!base::PathService::Get(base::DIR_TEMP, &temp_dir))
     return false;
-  }
 
   if (!temp_path->Initialize(temp_dir, kTempPrefix)) {
     PLOG(ERROR) << "Could not create temporary path.";
@@ -111,7 +100,7 @@ struct Context {
   const wchar_t* base_path = nullptr;
 
   // First output from call back method. Specifies the path of resource archive.
-  raw_ptr<PathString> updater_resource_path = nullptr;
+  PathString* updater_resource_path = nullptr;
 };
 
 // Calls CreateProcess with good default parameters and waits for the process to

@@ -11,6 +11,7 @@
 
 #include "base/callback_forward.h"
 #include "base/component_export.h"
+#include "base/macros.h"
 #include "base/memory/ref_counted.h"
 #include "base/sequence_checker.h"
 #include "third_party/skia/include/core/SkBitmap.h"

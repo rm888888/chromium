@@ -21,6 +21,7 @@ VIZ_COMMON_EXPORT extern const char kDocumentTransitionSlowdownFactor[];
 VIZ_COMMON_EXPORT extern const char kDoubleBufferCompositing[];
 VIZ_COMMON_EXPORT extern const char kEnableDeJelly[];
 VIZ_COMMON_EXPORT extern const char kEnableHardwareOverlays[];
+VIZ_COMMON_EXPORT extern const char kEnableVizHitTestDebug[];
 
 #if defined(OS_CHROMEOS)
 VIZ_COMMON_EXPORT extern const char

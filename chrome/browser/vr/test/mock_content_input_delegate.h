@@ -5,6 +5,7 @@
 #ifndef CHROME_BROWSER_VR_TEST_MOCK_CONTENT_INPUT_DELEGATE_H_
 #define CHROME_BROWSER_VR_TEST_MOCK_CONTENT_INPUT_DELEGATE_H_
 
+#include "base/macros.h"
 #include "chrome/browser/vr/content_input_delegate.h"
 #include "testing/gmock/include/gmock/gmock.h"
 

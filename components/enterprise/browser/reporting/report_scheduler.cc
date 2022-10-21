@@ -61,23 +61,7 @@ void OnExtensionRequestEnqueued(bool success) {
   // So far, there is nothing handle the enqueue failure as the CBCM status
   // report will cover all failed requests. However, we may need a retry logic
   // here if Extension workflow is decoupled from the status report.
-  if (!success)
-    LOG(ERROR) << "Extension request failed to be added to the pipeline.";
-}
-
-ReportType TriggerToReportType(ReportScheduler::ReportTrigger trigger) {
-  switch (trigger) {
-    case ReportScheduler::kTriggerNone:
-    case ReportScheduler::kTriggerExtensionRequestRealTime:
-      NOTREACHED();
-      [[fallthrough]];
-    case ReportScheduler::kTriggerTimer:
-      return ReportType::kFull;
-    case ReportScheduler::kTriggerUpdate:
-      return ReportType::kBrowserVersion;
-    case ReportScheduler::kTriggerNewVersion:
-      return ReportType::kBrowserVersion;
-  }
+  LOG(ERROR) << "Extension request failed to be added to the pipeline.";
 }
 
 }  // namespace
@@ -244,11 +228,28 @@ void ReportScheduler::GenerateAndUploadReport(ReportTrigger trigger) {
   }
 
   active_trigger_ = trigger;
+  ReportType report_type = ReportType::kFull;
+  switch (trigger) {
+    case kTriggerNone:
+    case kTriggerExtensionRequestRealTime:
+      NOTREACHED();
+      FALLTHROUGH;
+    case kTriggerTimer:
+      VLOG(1) << "Generating enterprise report.";
+      break;
+    case kTriggerUpdate:
+      VLOG(1) << "Generating basic enterprise report upon update.";
+      report_type = ReportType::kBrowserVersion;
+      break;
+    case kTriggerNewVersion:
+      VLOG(1) << "Generating basic enterprise report upon new version.";
+      report_type = ReportType::kBrowserVersion;
+      break;
+  }
 
   report_generator_->Generate(
-      TriggerToReportType(trigger),
-      base::BindOnce(&ReportScheduler::OnReportGenerated,
-                     base::Unretained(this)));
+      report_type, base::BindOnce(&ReportScheduler::OnReportGenerated,
+                                  base::Unretained(this)));
 }
 
 void ReportScheduler::GenerateAndUploadRealtimeReport(
@@ -260,7 +261,8 @@ void ReportScheduler::GenerateAndUploadRealtimeReport(
   }
 }
 
-void ReportScheduler::OnReportGenerated(ReportRequestQueue requests) {
+void ReportScheduler::OnReportGenerated(
+    ReportGenerator::ReportRequests requests) {
   DCHECK_NE(active_trigger_, kTriggerNone);
   if (requests.empty()) {
     SYSLOG(ERROR)
@@ -278,9 +280,8 @@ void ReportScheduler::OnReportGenerated(ReportRequestQueue requests) {
   }
   RecordUploadTrigger(active_trigger_);
   report_uploader_->SetRequestAndUpload(
-      TriggerToReportType(active_trigger_), std::move(requests),
-      base::BindOnce(&ReportScheduler::OnReportUploaded,
-                     base::Unretained(this)));
+      std::move(requests), base::BindOnce(&ReportScheduler::OnReportUploaded,
+                                          base::Unretained(this)));
 }
 
 void ReportScheduler::OnReportUploaded(ReportUploader::ReportStatus status) {
@@ -299,7 +300,7 @@ void ReportScheduler::OnReportUploaded(ReportUploader::ReportStatus status) {
 
       delegate_->GetLocalState()->SetTime(kLastUploadSucceededTimestamp,
                                           base::Time::Now());
-      [[fallthrough]];
+      FALLTHROUGH;
     case ReportUploader::kTransientError:
       // Stop retrying and schedule the next report to avoid stale report.
       // Failure count is not reset so retry delay remains.

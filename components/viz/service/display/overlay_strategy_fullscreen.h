@@ -7,7 +7,7 @@
 
 #include <vector>
 
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "components/viz/service/display/overlay_processor_using_strategy.h"
 #include "components/viz/service/viz_service_export.h"
 
@@ -57,16 +57,13 @@ class VIZ_SERVICE_EXPORT OverlayStrategyFullscreen
       const PrimaryPlane* primary_plane,
       OverlayCandidateList* candidates,
       std::vector<gfx::Rect>* content_bounds,
-      const OverlayProposedCandidate& proposed_candidate) override;
-
-  void CommitCandidate(const OverlayProposedCandidate& proposed_candidate,
-                       AggregatedRenderPass* render_pass) override;
+      OverlayProposedCandidate* proposed_candidate) override;
 
   bool RemoveOutputSurfaceAsOverlay() override;
   OverlayStrategy GetUMAEnum() const override;
 
  private:
-  raw_ptr<OverlayProcessorUsingStrategy> capability_checker_;  // Weak.
+  OverlayProcessorUsingStrategy* capability_checker_;  // Weak.
 };
 
 }  // namespace viz

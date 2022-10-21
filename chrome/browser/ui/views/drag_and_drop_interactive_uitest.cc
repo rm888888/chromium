@@ -13,8 +13,8 @@
 #include "base/bind.h"
 #include "base/callback.h"
 #include "base/files/file_path.h"
+#include "base/macros.h"
 #include "base/memory/ptr_util.h"
-#include "base/memory/raw_ptr.h"
 #include "base/memory/ref_counted.h"
 #include "base/run_loop.h"
 #include "base/strings/pattern.h"
@@ -191,13 +191,7 @@ class DragAndDropSimulator {
     active_drag_event_->set_root_location_f(event_root_location);
 
     delegate->OnDragUpdated(*active_drag_event_);
-    auto drop_cb = delegate->GetDropCallback(*active_drag_event_);
-    // 'drop_cb' should have a value because WebContentsViewAura
-    // (DragDropDelegate) doesn't return NullCallback.
-    DCHECK(drop_cb);
-    ui::mojom::DragOperation output_drag_op = ui::mojom::DragOperation::kNone;
-    std::move(drop_cb).Run(*active_drag_event_, std::move(os_exchange_data_),
-                           output_drag_op);
+    delegate->OnPerformDrop(*active_drag_event_, std::move(os_exchange_data_));
     return true;
   }
 
@@ -219,10 +213,7 @@ class DragAndDropSimulator {
     active_drag_event_->set_root_location_f(gfx::PointF(location));
 
     delegate->OnDragUpdated(*active_drag_event_);
-    auto drop_cb = delegate->GetDropCallback(*active_drag_event_);
-    ui::mojom::DragOperation output_drag_op = ui::mojom::DragOperation::kNone;
-    std::move(drop_cb).Run(*active_drag_event_, std::move(os_exchange_data_),
-                           output_drag_op);
+    delegate->OnPerformDrop(*active_drag_event_, std::move(os_exchange_data_));
     return true;
   }
 
@@ -297,8 +288,8 @@ class DragAndDropSimulator {
 
   // WebContents for where the drag and drop occurs. These can be the same if
   // the drag and drop happens within the same WebContents.
-  raw_ptr<content::WebContents> drag_contents_;
-  raw_ptr<content::WebContents> drop_contents_;
+  content::WebContents* drag_contents_;
+  content::WebContents* drop_contents_;
 
   std::unique_ptr<ui::DropTargetEvent> active_drag_event_;
   std::unique_ptr<ui::OSExchangeData> os_exchange_data_;
@@ -433,9 +424,9 @@ class DragStartWaiter : public aura::client::DragDropClient {
   }
 
  private:
-  raw_ptr<content::WebContents> web_contents_;
+  content::WebContents* web_contents_;
   scoped_refptr<content::MessageLoopRunner> message_loop_runner_;
-  raw_ptr<aura::client::DragDropClient> old_client_;
+  aura::client::DragDropClient* old_client_;
   base::OnceClosure callback_to_run_inside_drag_and_drop_message_loop_;
   bool suppress_passing_of_start_drag_further_;
 
@@ -1279,10 +1270,6 @@ IN_PROC_BROWSER_TEST_P(DragAndDropBrowserTest, DragStartInFrame) {
 // a drag-and-drop loop run by Windows OS.
 #define MAYBE_DragSameOriginImageBetweenFrames \
   DISABLED_DragSameOriginImageBetweenFrames
-#elif defined(OS_LINUX)
-// Failing to receive final drop event on linux crbug.com/1268407.
-#define MAYBE_DragSameOriginImageBetweenFrames \
-  DISABLED_DragSameOriginImageBetweenFrames
 #else
 #define MAYBE_DragSameOriginImageBetweenFrames DragSameOriginImageBetweenFrames
 #endif
@@ -1310,9 +1297,6 @@ IN_PROC_BROWSER_TEST_P(DragAndDropBrowserTest,
 #if defined(OS_WIN)
 #define MAYBE_DragCorsSameOriginImageBetweenFrames \
   DISABLED_DragCorsSameOriginImageBetweenFrames
-#elif defined(OS_LINUX)
-#define MAYBE_DragCorsSameOriginImageBetweenFrames \
-  DISABLED_DragCorsSameOriginImageBetweenFrames
 #else
 #define MAYBE_DragCorsSameOriginImageBetweenFrames \
   DragCorsSameOriginImageBetweenFrames
@@ -1329,9 +1313,6 @@ IN_PROC_BROWSER_TEST_P(DragAndDropBrowserTest,
 }
 
 #if defined(OS_WIN)
-#define MAYBE_DragCrossOriginImageBetweenFrames \
-  DISABLED_DragCrossOriginImageBetweenFrames
-#elif defined(OS_LINUX)
 #define MAYBE_DragCrossOriginImageBetweenFrames \
   DISABLED_DragCrossOriginImageBetweenFrames
 #else

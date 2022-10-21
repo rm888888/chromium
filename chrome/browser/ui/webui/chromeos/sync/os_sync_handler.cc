@@ -33,6 +33,7 @@ OSSyncHandler::OSSyncHandler(Profile* profile) : profile_(profile) {
 
 OSSyncHandler::~OSSyncHandler() {
   RemoveSyncServiceObserver();
+  CommitFeatureEnabledPref();
 }
 
 void OSSyncHandler::RegisterMessages() {
@@ -47,6 +48,10 @@ void OSSyncHandler::RegisterMessages() {
   web_ui()->RegisterDeprecatedMessageCallback(
       "OsSyncPrefsDispatch",
       base::BindRepeating(&OSSyncHandler::HandleOsSyncPrefsDispatch,
+                          base::Unretained(this)));
+  web_ui()->RegisterDeprecatedMessageCallback(
+      "SetOsSyncFeatureEnabled",
+      base::BindRepeating(&OSSyncHandler::HandleSetOsSyncFeatureEnabled,
                           base::Unretained(this)));
   web_ui()->RegisterDeprecatedMessageCallback(
       "SetOsSyncDatatypes",
@@ -74,23 +79,35 @@ void OSSyncHandler::HandleDidNavigateToOsSyncPage(const base::ListValue* args) {
 void OSSyncHandler::HandleOsSyncPrefsDispatch(const base::ListValue* args) {
   AllowJavascript();
 
+  // Cache the feature enabled pref.
+  SyncService* service = GetSyncService();
+  if (service)
+    feature_enabled_ = service->GetUserSettings()->IsOsSyncFeatureEnabled();
   PushSyncPrefs();
 }
 
 void OSSyncHandler::HandleDidNavigateAwayFromOsSyncPage(
     const base::ListValue* args) {
-  // TODO(https://crbug.com/1278325): Remove this.
+  CommitFeatureEnabledPref();
+}
+
+void OSSyncHandler::HandleSetOsSyncFeatureEnabled(const base::ListValue* args) {
+  const auto& list = args->GetList();
+  CHECK(!list.empty());
+  feature_enabled_ = list[0].GetBool();
+  should_commit_feature_enabled_ = true;
+  // Changing the feature enabled state may change toggle state.
+  PushSyncPrefs();
 }
 
 void OSSyncHandler::HandleSetOsSyncDatatypes(const base::ListValue* args) {
   CHECK_EQ(1u, args->GetList().size());
-  const base::Value& result_value = args->GetList()[0];
-  CHECK(result_value.is_dict());
-  const base::DictionaryValue& result =
-      base::Value::AsDictionaryValue(result_value);
+  const base::DictionaryValue* result;
+  CHECK(args->GetDictionary(0, &result));
 
   // Wallpaper sync status is stored directly to the profile's prefs.
-  bool wallpaper_synced = result.FindBoolPath(kWallpaperEnabledKey).value();
+  bool wallpaper_synced;
+  CHECK(result->GetBoolean(kWallpaperEnabledKey, &wallpaper_synced));
   profile_->GetPrefs()->SetBoolean(chromeos::settings::prefs::kSyncOsWallpaper,
                                    wallpaper_synced);
 
@@ -102,15 +119,16 @@ void OSSyncHandler::HandleSetOsSyncDatatypes(const base::ListValue* args) {
   if (!service || !service->IsEngineInitialized())
     return;
 
-  bool sync_all_os_types = result.FindBoolKey("syncAllOsTypes").value();
+  bool sync_all_os_types;
+  CHECK(result->GetBoolean("syncAllOsTypes", &sync_all_os_types));
 
   UserSelectableOsTypeSet selected_types;
   for (UserSelectableOsType type : UserSelectableOsTypeSet::All()) {
     std::string key =
         syncer::GetUserSelectableOsTypeName(type) + std::string("Synced");
-    absl::optional<bool> sync_value = result.FindBoolPath(key);
-    CHECK(sync_value.has_value()) << key;
-    if (sync_value.value())
+    bool sync_value;
+    CHECK(result->GetBoolean(key, &sync_value)) << key;
+    if (sync_value)
       selected_types.Put(type);
   }
 
@@ -128,6 +146,16 @@ void OSSyncHandler::HandleSetOsSyncDatatypes(const base::ListValue* args) {
 
 void OSSyncHandler::SetWebUIForTest(content::WebUI* web_ui) {
   set_web_ui(web_ui);
+}
+
+void OSSyncHandler::CommitFeatureEnabledPref() {
+  if (!should_commit_feature_enabled_)
+    return;
+  SyncService* service = GetSyncService();
+  if (!service)
+    return;
+  service->GetUserSettings()->SetOsSyncFeatureEnabled(feature_enabled_);
+  should_commit_feature_enabled_ = false;
 }
 
 void OSSyncHandler::PushSyncPrefs() {
@@ -157,7 +185,8 @@ void OSSyncHandler::PushSyncPrefs() {
                       profile_->GetPrefs()->GetBoolean(
                           chromeos::settings::prefs::kSyncOsWallpaper));
 
-  FireWebUIListener("os-sync-prefs-changed", args);
+  FireWebUIListener("os-sync-prefs-changed", base::Value(feature_enabled_),
+                    args);
 }
 
 syncer::SyncService* OSSyncHandler::GetSyncService() const {

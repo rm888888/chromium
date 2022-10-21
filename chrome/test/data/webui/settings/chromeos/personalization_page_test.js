@@ -5,10 +5,9 @@
 // clang-format off
 // #import 'chrome://os-settings/chromeos/os_settings.js';
 
-// #import {PersonalizationHubBrowserProxyImpl, WallpaperBrowserProxyImpl, routes, Router} from 'chrome://os-settings/chromeos/os_settings.js';
+// #import {WallpaperBrowserProxyImpl, routes, Router} from 'chrome://os-settings/chromeos/os_settings.js';
 // #import {assertEquals, assertFalse, assertTrue} from '../../chai_assert.js';
 // #import {flush} from 'chrome://resources/polymer/v3_0/polymer/polymer_bundled.min.js';
-// #import {TestPersonalizationHubBrowserProxy} from './test_personalization_hub_browser_proxy.m.js';
 // #import {TestWallpaperBrowserProxy} from './test_wallpaper_browser_proxy.m.js';
 // #import {getDeepActiveElement} from 'chrome://resources/js/util.m.js';
 // #import {flushTasks, waitAfterNextRender} from 'chrome://test/test_util.js';
@@ -16,14 +15,10 @@
 
 let personalizationPage = null;
 
-/** @type {?settings.TestPersonalizationHubBrowserProxy} */
-let PersonalizationHubBrowserProxy = null;
-
 /** @type {?settings.TestWallpaperBrowserProxy} */
 let WallpaperBrowserProxy = null;
 
 function createPersonalizationPage() {
-  PersonalizationHubBrowserProxy.reset();
   WallpaperBrowserProxy.reset();
   PolymerTest.clearBody();
 
@@ -64,10 +59,6 @@ suite('PersonalizationHandler', function() {
   setup(function() {
     WallpaperBrowserProxy = new settings.TestWallpaperBrowserProxy();
     settings.WallpaperBrowserProxyImpl.instance_ = WallpaperBrowserProxy;
-    PersonalizationHubBrowserProxy =
-        new settings.TestPersonalizationHubBrowserProxy();
-    settings.PersonalizationHubBrowserProxyImpl.instance_ =
-        PersonalizationHubBrowserProxy;
     createPersonalizationPage();
   });
 
@@ -83,8 +74,7 @@ suite('PersonalizationHandler', function() {
     // the page to be recreated.
     createPersonalizationPage();
     await WallpaperBrowserProxy.whenCalled('isWallpaperPolicyControlled');
-    const button =
-        personalizationPage.shadowRoot.getElementById('wallpaperButton');
+    const button = personalizationPage.$.wallpaperButton;
     assertTrue(!!button);
     assertFalse(button.disabled);
     button.click();
@@ -115,8 +105,7 @@ suite('PersonalizationHandler', function() {
         settings.routes.PERSONALIZATION, params);
 
     const deepLinkElement =
-        personalizationPage.shadowRoot.getElementById('wallpaperButton')
-            .shadowRoot.querySelector('#icon');
+        personalizationPage.$.wallpaperButton.shadowRoot.querySelector('#icon');
     await test_util.waitAfterNextRender(deepLinkElement);
     assertEquals(
         deepLinkElement, getDeepActiveElement(),
@@ -124,8 +113,7 @@ suite('PersonalizationHandler', function() {
   });
 
   test('changePicture', function() {
-    const row =
-        personalizationPage.shadowRoot.getElementById('changePictureRow');
+    const row = personalizationPage.$.changePictureRow;
     assertTrue(!!row);
     row.click();
     assertEquals(
@@ -198,33 +186,5 @@ suite('PersonalizationHandler', function() {
     assertEquals(
         deepLinkElement, getDeepActiveElement(),
         'Account picture elem should be focused for settingId=503.');
-  });
-
-  test('Personalization hub feature shows only link to hub', async () => {
-    loadTimeData.overrideValues({isPersonalizationHubEnabled: true});
-    assertTrue(loadTimeData.getBoolean('isPersonalizationHubEnabled'));
-    createPersonalizationPage();
-    Polymer.dom.flush();
-    await test_util.waitAfterNextRender(personalizationPage);
-
-    const crLinks =
-        personalizationPage.shadowRoot.querySelectorAll('cr-link-row');
-
-    assertEquals(1, crLinks.length);
-    assertEquals('personalizationHubButton', crLinks[0].id);
-  });
-
-  test('Opens personalization hub when clicked', async () => {
-    loadTimeData.overrideValues({isPersonalizationHubEnabled: true});
-    assertTrue(loadTimeData.getBoolean('isPersonalizationHubEnabled'));
-    createPersonalizationPage();
-    Polymer.dom.flush();
-    await test_util.waitAfterNextRender(personalizationPage);
-
-    const hubLink = personalizationPage.shadowRoot.getElementById(
-        'personalizationHubButton');
-    hubLink.click();
-
-    await PersonalizationHubBrowserProxy.whenCalled('openPersonalizationHub');
   });
 });

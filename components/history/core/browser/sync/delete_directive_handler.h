@@ -11,6 +11,7 @@
 #include <set>
 
 #include "base/callback_forward.h"
+#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "base/task/cancelable_task_tracker.h"
 #include "base/threading/thread_checker.h"

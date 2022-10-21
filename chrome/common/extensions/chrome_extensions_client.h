@@ -7,6 +7,8 @@
 
 #include <memory>
 
+#include "base/compiler_specific.h"
+#include "base/macros.h"
 #include "chrome/common/extensions/permissions/chrome_permission_message_provider.h"
 #include "extensions/common/extensions_client.h"
 #include "url/gurl.h"
@@ -42,7 +44,7 @@ class ChromeExtensionsClient : public ExtensionsClient {
   bool IsScriptableURL(const GURL& url, std::string* error) const override;
   const GURL& GetWebstoreBaseURL() const override;
   const GURL& GetWebstoreUpdateURL() const override;
-  bool IsBlocklistUpdateURL(const GURL& url) const override;
+  bool IsBlacklistUpdateURL(const GURL& url) const override;
   std::set<base::FilePath> GetBrowserImagePaths(
       const Extension* extension) override;
   void AddOriginAccessPermissions(

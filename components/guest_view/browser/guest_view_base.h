@@ -8,7 +8,7 @@
 #include <memory>
 
 #include "base/containers/circular_deque.h"
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "base/values.h"
 #include "components/guest_view/common/guest_view_constants.h"
@@ -128,7 +128,7 @@ class GuestViewBase : public content::BrowserPluginGuestDelegate,
   bool initialized() const { return initialized_; }
 
   content::WebContents* embedder_web_contents() const {
-    return attached() ? owner_web_contents_.get() : nullptr;
+    return attached() ? owner_web_contents_ : nullptr;
   }
 
   content::WebContents* owner_web_contents() const {
@@ -164,10 +164,7 @@ class GuestViewBase : public content::BrowserPluginGuestDelegate,
   // Returns the user browser context of the embedder.
   content::BrowserContext* browser_context() const { return browser_context_; }
 
-  // Returns the URL of the owner WebContents' SiteInstance.
-  // WARNING: Be careful using this with GuestViews where
-  // `CanBeEmbeddedInsideCrossProcessFrames` is true. This returns the site of
-  // the WebContents, not the embedding frame.
+  // Returns the URL of the owner WebContents.
   const GURL& GetOwnerSiteURL() const;
 
   // Returns the host of the owner WebContents. For extensions, this is the
@@ -204,7 +201,7 @@ class GuestViewBase : public content::BrowserPluginGuestDelegate,
 
   // Returns true if the corresponding guest is allowed to be embedded inside an
   // <iframe> which is cross process.
-  virtual bool CanBeEmbeddedInsideCrossProcessFrames() const;
+  virtual bool CanBeEmbeddedInsideCrossProcessFrames();
 
  protected:
   explicit GuestViewBase(content::WebContents* owner_web_contents);
@@ -349,7 +346,7 @@ class GuestViewBase : public content::BrowserPluginGuestDelegate,
                           bool exited) final;
   void ContentsZoomChange(bool zoom_in) final;
   void LoadingStateChanged(content::WebContents* source,
-                           bool should_show_loading_ui) final;
+                           bool to_different_document) final;
   void ResizeDueToAutoResize(content::WebContents* web_contents,
                              const gfx::Size& new_size) final;
   void RunFileChooser(content::RenderFrameHost* render_frame_host,
@@ -408,9 +405,9 @@ class GuestViewBase : public content::BrowserPluginGuestDelegate,
   // This guest tracks the lifetime of the WebContents specified by
   // |owner_web_contents_|. If |owner_web_contents_| is destroyed then this
   // guest will also self-destruct.
-  raw_ptr<content::WebContents> owner_web_contents_;
+  content::WebContents* owner_web_contents_;
   std::string owner_host_;
-  const raw_ptr<content::BrowserContext> browser_context_;
+  content::BrowserContext* const browser_context_;
 
   // |guest_instance_id_| is a profile-wide unique identifier for a guest
   // WebContents.
@@ -464,7 +461,7 @@ class GuestViewBase : public content::BrowserPluginGuestDelegate,
   gfx::Size guest_size_;
 
   // A pointer to the guest_host.
-  raw_ptr<content::GuestHost> guest_host_;
+  content::GuestHost* guest_host_;
 
   // Indicates whether autosize mode is enabled or not.
   bool auto_size_enabled_;

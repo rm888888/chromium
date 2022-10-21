@@ -18,6 +18,7 @@
 #include <vector>
 
 #include "base/component_export.h"
+#include "base/macros.h"
 #include "ui/events/ozone/evdev/event_device_info.h"
 
 namespace ui {
@@ -150,9 +151,6 @@ class COMPONENT_EXPORT(EVDEV) GesturePropertyProvider {
       const std::string& match_type,
       const std::string& arg);
 
-  // Load the DMI product name from sysfs. Returns true if successful.
-  bool LoadDmiProductName();
-
   // Create a property that comes from the conf files.
   std::unique_ptr<GesturesProp> CreateDefaultProperty(const std::string& name,
                                                       const std::string& value);
@@ -173,11 +171,6 @@ class COMPONENT_EXPORT(EVDEV) GesturePropertyProvider {
   // A vector of parsed sections in configuration files. Owns MatchCriterias,
   // GesturesProps and ConfigurationSections in it.
   std::vector<std::unique_ptr<internal::ConfigurationSection>> configurations_;
-
-  // The system's DMI product name.
-  std::string dmi_product_name_;
-  // Whether dmi_product_name_ has been loaded successfully yet.
-  bool dmi_product_name_loaded_ = false;
 };
 
 // Wrapper of GesturesProp related functions. We group them together so that we
@@ -275,7 +268,7 @@ class GesturesPropFunctionsWrapper {
 
 extern const GesturesPropProvider kGesturePropProvider;
 
-}  // namespace ui
+}  // namspace ui
 
 // GesturesProp logging function.
 std::ostream& operator<<(std::ostream& os, const GesturesProp& prop);

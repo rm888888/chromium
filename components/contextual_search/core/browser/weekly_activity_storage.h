@@ -5,6 +5,8 @@
 #ifndef COMPONENTS_CONTEXTUAL_SEARCH_CORE_BROWSER_WEEKLY_ACTIVITY_STORAGE_H_
 #define COMPONENTS_CONTEXTUAL_SEARCH_CORE_BROWSER_WEEKLY_ACTIVITY_STORAGE_H_
 
+#include "base/macros.h"
+
 namespace contextual_search {
 
 // An abstract class that stores weekly user interaction data in device-specific

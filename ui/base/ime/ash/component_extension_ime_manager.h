@@ -11,6 +11,7 @@
 
 #include "base/component_export.h"
 #include "base/files/file_path.h"
+#include "base/macros.h"
 #include "ui/base/ime/ash/component_extension_ime_manager_delegate.h"
 #include "ui/base/ime/ash/input_method_descriptor.h"
 
@@ -85,7 +86,7 @@ class COMPONENT_EXPORT(UI_BASE_IME_ASH) ComponentExtensionIMEManager {
  private:
   // Finds ComponentExtensionIME and EngineDescription associated with
   // |input_method_id|. This function retruns true if it is found, otherwise
-  // returns false. |out_extension| and |out_engine| can be nullptr.
+  // returns false. |out_extension| and |out_engine| can be NULL.
   bool FindEngineEntry(const std::string& input_method_id,
                        ComponentExtensionIME* out_extension);
 

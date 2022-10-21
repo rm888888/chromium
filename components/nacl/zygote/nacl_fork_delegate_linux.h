@@ -11,6 +11,7 @@
 
 #include "base/compiler_specific.h"
 #include "base/gtest_prod_util.h"
+#include "base/macros.h"
 #include "content/public/common/zygote/zygote_fork_delegate_linux.h"
 
 namespace base {
@@ -30,9 +31,11 @@ void AddNaClZygoteForkDelegates(
 // ZygoteMain().
 class NaClForkDelegate : public content::ZygoteForkDelegate {
  public:
-  NaClForkDelegate();
+  explicit NaClForkDelegate(bool nonsfi_mode);
+
   NaClForkDelegate(const NaClForkDelegate&) = delete;
   NaClForkDelegate& operator=(const NaClForkDelegate&) = delete;
+
   ~NaClForkDelegate() override;
 
   void Init(int sandboxdesc, bool enable_layer1_sandbox) override;
@@ -67,6 +70,7 @@ class NaClForkDelegate : public content::ZygoteForkDelegate {
     kNaClHelperStatusBoundary  // Must be one greater than highest value used.
   };
 
+  const bool nonsfi_mode_;
   NaClHelperStatus status_;
   int fd_;
 

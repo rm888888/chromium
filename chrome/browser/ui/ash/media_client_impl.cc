@@ -105,6 +105,10 @@ constexpr char kCameraPrivacySwitchOnToastId[] =
 constexpr char kCameraPrivacySwitchOffToastId[] =
     "ash.media.camera.privacy_switch_off";
 
+// The amount of time for which the camera privacy switch toasts will remain
+// displayed.
+constexpr int kCameraPrivacySwitchToastDurationMs = 6 * 1000;
+
 MediaCaptureState& operator|=(MediaCaptureState& lhs, MediaCaptureState rhs) {
   lhs = static_cast<MediaCaptureState>(static_cast<int>(lhs) |
                                        static_cast<int>(rhs));
@@ -398,7 +402,8 @@ void MediaClientImpl::OnCameraPrivacySwitchStatusChanged(
       ash::ToastData toast(
           kCameraPrivacySwitchOnToastId,
           l10n_util::GetStringUTF16(IDS_CAMERA_PRIVACY_SWITCH_ON_TOAST),
-          ash::ToastData::kDefaultToastDurationMs,
+          kCameraPrivacySwitchToastDurationMs,
+          /*dismiss_text=*/absl::nullopt,
           /*visible_on_lock_screen=*/true);
       ash::ToastManager::Get()->Show(toast);
       break;
@@ -433,7 +438,8 @@ void MediaClientImpl::OnCameraPrivacySwitchStatusChanged(
       ash::ToastData toast(
           kCameraPrivacySwitchOffToastId,
           l10n_util::GetStringUTF16(IDS_CAMERA_PRIVACY_SWITCH_OFF_TOAST),
-          ash::ToastData::kDefaultToastDurationMs,
+          kCameraPrivacySwitchToastDurationMs,
+          /*dismiss_text=*/absl::nullopt,
           /*visible_on_lock_screen=*/true);
       ash::ToastManager::Get()->Show(toast);
       break;

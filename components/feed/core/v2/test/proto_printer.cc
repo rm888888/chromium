@@ -152,7 +152,7 @@ class TextProtoPrinter {
   }
   TextProtoPrinter& operator<<(const feedwire::ActionPayload& v) {
     BeginMessage();
-    PRINT_FIELD(batched_action_payload_data);
+    PRINT_FIELD(action_payload_data);
     EndMessage();
     return *this;
   }
@@ -189,7 +189,6 @@ class TextProtoPrinter {
   TextProtoPrinter& operator<<(const feedstore::StreamData& v) {
     BeginMessage();
     PRINT_FIELD(content_id);
-    PRINT_FIELD(root_event_id);
     PRINT_FIELD(next_page_token);
     PRINT_FIELD(last_added_time_millis);
     PRINT_FIELD(shared_state_ids);

@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+#include "base/macros.h"
 #include "base/strings/string_piece.h"
 #include "base/test/values_test_util.h"
 #include "components/media_router/browser/issue_manager.h"
@@ -51,10 +52,14 @@ class MockMediaSinksObserver : public MediaSinksObserver {
 
 class MockMediaRoutesObserver : public MediaRoutesObserver {
  public:
-  explicit MockMediaRoutesObserver(MediaRouter* router);
+  explicit MockMediaRoutesObserver(
+      MediaRouter* router,
+      const MediaSource::Id source_id = std::string());
   ~MockMediaRoutesObserver() override;
 
-  MOCK_METHOD1(OnRoutesUpdated, void(const std::vector<MediaRoute>& routes));
+  MOCK_METHOD2(OnRoutesUpdated,
+               void(const std::vector<MediaRoute>& routes,
+                    const std::vector<MediaRoute::Id>& joinable_route_ids));
 };
 
 class MockPresentationConnectionProxy

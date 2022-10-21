@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <utility>
 
+#include "ash/keyboard/ui/keyboard_ui_controller.h"
 #include "base/check.h"
 #include "base/logging.h"
 #include "base/strings/string_piece.h"
@@ -18,7 +19,6 @@
 #include "ui/aura/window_tree_host.h"
 #include "ui/base/ime/input_method.h"
 #include "ui/base/ime/utf_offset.h"
-#include "ui/base/ime/virtual_keyboard_controller.h"
 #include "ui/events/event.h"
 
 namespace exo {
@@ -37,6 +37,8 @@ TextInput::TextInput(std::unique_ptr<Delegate> delegate)
     : delegate_(std::move(delegate)) {}
 
 TextInput::~TextInput() {
+  if (keyboard_ui_controller_)
+    keyboard_ui_controller_->RemoveObserver(this);
   if (input_method_)
     Deactivate();
 }
@@ -60,12 +62,12 @@ void TextInput::ShowVirtualKeyboardIfEnabled() {
     pending_vk_visible_ = true;
     return;
   }
-  input_method_->SetVirtualKeyboardVisibilityIfEnabled(true);
+  input_method_->ShowVirtualKeyboardIfEnabled();
 }
 
 void TextInput::HideVirtualKeyboard() {
-  if (input_method_)
-    input_method_->SetVirtualKeyboardVisibilityIfEnabled(false);
+  if (keyboard_ui_controller_)
+    keyboard_ui_controller_->HideKeyboardByUser();
   pending_vk_visible_ = false;
 }
 
@@ -84,11 +86,6 @@ void TextInput::SetSurroundingText(const std::u16string& text,
                                    const gfx::Range& cursor_pos) {
   surrounding_text_ = text;
   cursor_pos_ = cursor_pos;
-
-  // TODO(b/206068262): Consider introducing an API to notify surrounding text
-  // update explicitly.
-  if (input_method_)
-    input_method_->OnCaretBoundsChanged(this);
 }
 
 void TextInput::SetTypeModeFlags(ui::TextInputType type,
@@ -144,10 +141,16 @@ void TextInput::InsertText(const std::u16string& text,
                            InsertTextCursorBehavior cursor_behavior) {
   // TODO(crbug.com/1155331): Handle |cursor_behavior| correctly.
   delegate_->Commit(text);
-  composition_ = ui::CompositionText();
 }
 
 void TextInput::InsertChar(const ui::KeyEvent& event) {
+  char16_t ch = event.GetCharacter();
+  if (u_isprint(ch)) {
+    InsertText(
+        std::u16string(1, ch),
+        ui::TextInputClient::InsertTextCursorBehavior::kMoveCursorAfterText);
+    return;
+  }
   // TextInput is currently used only for Lacros, and this is the
   // short term workaround not to duplicate KeyEvent there.
   // This is what we do for ARC, which is being removed in the near
@@ -286,11 +289,7 @@ void TextInput::OnInputMethodChanged() {
   if (input_method == input_method_)
     return;
   input_method_->DetachTextInputClient(this);
-  if (auto* controller = input_method_->GetVirtualKeyboardController())
-    controller->RemoveObserver(this);
   input_method_ = input_method;
-  if (auto* controller = input_method_->GetVirtualKeyboardController())
-    controller->AddObserver(this);
   input_method_->SetFocusedTextInputClient(this);
 }
 
@@ -395,12 +394,8 @@ void GetActiveTextInputControlLayoutBounds(
   NOTIMPLEMENTED_LOG_ONCE();
 }
 
-void TextInput::OnKeyboardVisible(const gfx::Rect& keyboard_rect) {
-  delegate_->OnVirtualKeyboardVisibilityChanged(true);
-}
-
-void TextInput::OnKeyboardHidden() {
-  delegate_->OnVirtualKeyboardVisibilityChanged(false);
+void TextInput::OnKeyboardVisibilityChanged(bool is_visible) {
+  delegate_->OnVirtualKeyboardVisibilityChanged(is_visible);
 }
 
 void TextInput::AttachInputMethod() {
@@ -415,13 +410,20 @@ void TextInput::AttachInputMethod() {
   input_mode_ = ui::TEXT_INPUT_MODE_TEXT;
   input_type_ = ui::TEXT_INPUT_TYPE_TEXT;
   input_method_ = input_method;
-  if (auto* controller = input_method_->GetVirtualKeyboardController())
-    controller->AddObserver(this);
   input_method_->SetFocusedTextInputClient(this);
   delegate_->Activated();
 
+  if (!keyboard_ui_controller_ &&
+      keyboard::KeyboardUIController::HasInstance()) {
+    auto* keyboard_ui_controller = keyboard::KeyboardUIController::Get();
+    if (keyboard_ui_controller->IsEnabled()) {
+      keyboard_ui_controller_ = keyboard_ui_controller;
+      keyboard_ui_controller_->AddObserver(this);
+    }
+  }
+
   if (pending_vk_visible_) {
-    input_method_->SetVirtualKeyboardVisibilityIfEnabled(true);
+    input_method_->ShowVirtualKeyboardIfEnabled();
     pending_vk_visible_ = false;
   }
 }
@@ -434,8 +436,6 @@ void TextInput::DetachInputMethod() {
   input_mode_ = ui::TEXT_INPUT_MODE_DEFAULT;
   input_type_ = ui::TEXT_INPUT_TYPE_NONE;
   input_method_->DetachTextInputClient(this);
-  if (auto* controller = input_method_->GetVirtualKeyboardController())
-    controller->RemoveObserver(this);
   input_method_ = nullptr;
   delegate_->Deactivated();
 }

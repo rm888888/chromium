@@ -5,6 +5,7 @@
 #ifndef CHROME_BROWSER_UI_TABS_PINNED_TAB_SERVICE_FACTORY_H_
 #define CHROME_BROWSER_UI_TABS_PINNED_TAB_SERVICE_FACTORY_H_
 
+#include "base/compiler_specific.h"
 #include "base/memory/singleton.h"
 #include "components/keyed_service/content/browser_context_keyed_service_factory.h"
 

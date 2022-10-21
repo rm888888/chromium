@@ -11,6 +11,7 @@
 #include "base/callback_helpers.h"
 #include "base/containers/contains.h"
 #include "base/containers/flat_set.h"
+#include "base/macros.h"
 #include "base/strings/string_util.h"
 #include "base/test/bind.h"
 #include "base/test/task_environment.h"
@@ -197,8 +198,8 @@ TEST_F(AuthenticatorRequestDialogModelTest, Mechanisms) {
 
       // If there are linked phones then AOA doesn't show up, but the phones do,
       // and sorted. The selection sheet should show.
-      {mc, {usb, aoa, cable}, {}, {"a", "b"}, {t(usb), p("a"), p("b")}, mss},
-      {ga, {usb, aoa, cable}, {}, {"a", "b"}, {t(usb), p("a"), p("b")}, mss},
+      {mc, {usb, aoa, cable}, {}, {"b", "a"}, {t(usb), p("a"), p("b")}, mss},
+      {ga, {usb, aoa, cable}, {}, {"b", "a"}, {t(usb), p("a"), p("b")}, mss},
 
       // On Windows, if there are linked phones we'll show a selection sheet.
       {mc, {cable}, {has_winapi}, {"a"}, {winapi, p("a")}, mss},

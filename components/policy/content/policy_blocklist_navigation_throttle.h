@@ -5,7 +5,6 @@
 #ifndef COMPONENTS_POLICY_CONTENT_POLICY_BLOCKLIST_NAVIGATION_THROTTLE_H_
 #define COMPONENTS_POLICY_CONTENT_POLICY_BLOCKLIST_NAVIGATION_THROTTLE_H_
 
-#include "base/memory/raw_ptr.h"
 #include "base/time/time.h"
 #include "base/timer/timer.h"
 #include "components/policy/content/safe_sites_navigation_throttle.h"
@@ -50,10 +49,7 @@ class PolicyBlocklistNavigationThrottle
   void OnFirstPoliciesLoadedImpl(bool timeout);
 
  private:
-  // Returns TRUE if this navigation is to view-source: and view-source is on
-  // the URLBlocklist.
-  bool IsBlockedViewSourceNavigation();
-
+  ThrottleCheckResult GetUrlThrottleResult(const GURL& url);
   // To ensure both allow and block policies override Safe Sites,
   // SafeSitesNavigationThrottle must be consulted as part of this throttle
   // rather than added separately to the list of throttles.
@@ -62,13 +58,13 @@ class PolicyBlocklistNavigationThrottle
                                  ThrottleCheckResult cancel_result);
   SafeSitesNavigationThrottle safe_sites_navigation_throttle_;
 
-  raw_ptr<PolicyBlocklistService> blocklist_service_;
+  PolicyBlocklistService* blocklist_service_;
 
   // While this is not null, we are not sure policies from all the possible
   // sources have been loaded. This is null if policies have been loaded.
-  raw_ptr<policy::PolicyService> policy_service_;
+  policy::PolicyService* policy_service_;
 
-  raw_ptr<PrefService> prefs_;
+  PrefService* prefs_;
 
   // Time where the navigation was deferred because all policies were not
   // loaded.

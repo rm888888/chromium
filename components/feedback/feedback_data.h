@@ -9,8 +9,7 @@
 #include <string>
 
 #include "base/callback.h"
-#include "base/memory/raw_ptr.h"
-#include "base/memory/weak_ptr.h"
+#include "base/macros.h"
 #include "base/sequence_checker.h"
 #include "components/feedback/feedback_common.h"
 #include "components/feedback/feedback_uploader.h"
@@ -26,8 +25,7 @@ namespace feedback {
 
 class FeedbackData : public FeedbackCommon {
  public:
-  FeedbackData(base::WeakPtr<feedback::FeedbackUploader> uploader,
-               TracingManager* tracing_manager);
+  FeedbackData(FeedbackUploader* uploader, TracingManager* tracing_manager);
 
   FeedbackData(const FeedbackData&) = delete;
   FeedbackData& operator=(const FeedbackData&) = delete;
@@ -116,15 +114,13 @@ class FeedbackData : public FeedbackCommon {
 
   SEQUENCE_CHECKER(sequence_checker_);
 
-  // The uploader_ is tied to a profile. When the profile is deleted, the
-  // uploader_ will be destroyed.
-  base::WeakPtr<feedback::FeedbackUploader> uploader_;
+  feedback::FeedbackUploader* const uploader_ = nullptr;  // Not owned.
 
   std::string attached_filename_ GUARDED_BY_CONTEXT(sequence_checker_);
   std::string attached_file_uuid_ GUARDED_BY_CONTEXT(sequence_checker_);
   std::string screenshot_uuid_ GUARDED_BY_CONTEXT(sequence_checker_);
 
-  const raw_ptr<TracingManager> tracing_manager_ = nullptr;  // Not owned.
+  TracingManager* const tracing_manager_ = nullptr;  // Not owned.
   int trace_id_ GUARDED_BY_CONTEXT(sequence_checker_) = 0;
 
   int pending_op_count_ GUARDED_BY_CONTEXT(sequence_checker_) = 1;

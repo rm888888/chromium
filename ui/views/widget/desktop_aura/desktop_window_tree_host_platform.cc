@@ -147,6 +147,7 @@ ui::PlatformWindowInitProperties ConvertWidgetInitParamsToInitProperties(
 
 #if defined(OS_FUCHSIA)
   properties.enable_keyboard = true;
+  properties.enable_virtual_keyboard = true;
 #endif
 
   return properties;
@@ -581,10 +582,6 @@ void DesktopWindowTreeHostPlatform::ClearNativeFocus() {
     aura::client::GetFocusClient(GetContentWindow())
         ->FocusWindow(GetContentWindow());
   }
-}
-
-bool DesktopWindowTreeHostPlatform::IsMoveLoopSupported() const {
-  return platform_window()->IsClientControlledWindowMovementSupported();
 }
 
 Widget::MoveLoopResult DesktopWindowTreeHostPlatform::RunMoveLoop(

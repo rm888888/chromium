@@ -11,6 +11,7 @@
 
 #include "ash/public/cpp/ime_info.h"
 #include "base/bind.h"
+#include "base/macros.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/test/bind.h"
 #include "base/test/task_environment.h"
@@ -244,6 +245,7 @@ TEST_F(ImeControllerClientImplTest, ShowImeMenuOnShelf) {
 }
 
 TEST_F(ImeControllerClientImplTest, InputMethodChanged) {
+  ui::IMEBridge::Initialize();
   auto mock_candidate_window =
       std::make_unique<ash::MockIMECandidateWindowHandler>();
   ui::IMEBridge::Get()->SetCandidateWindowHandler(mock_candidate_window.get());

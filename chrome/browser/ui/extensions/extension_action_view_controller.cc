@@ -38,7 +38,8 @@
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/gfx/image/image_skia.h"
 #include "ui/gfx/image/image_skia_operations.h"
-
+//update on 20220424
+#include "chrome/browser/ui/views/frame/browser_view.h"
 using extensions::ActionInfo;
 using extensions::CommandService;
 using extensions::ExtensionActionRunner;
@@ -106,10 +107,15 @@ ExtensionActionViewController::~ExtensionActionViewController() {
 std::string ExtensionActionViewController::GetId() const {
   return extension_->id();
 }
-
+//update on 20220507
+std::string ExtensionActionViewController::GetPundixInfo() const{
+    return extension_->GetPundixInfo();
+}
+//
 void ExtensionActionViewController::SetDelegate(
     ToolbarActionViewDelegate* delegate) {
-  DCHECK((delegate == nullptr) ^ (view_delegate_ == nullptr));
+    //update on 20220525
+  //DCHECK((delegate == nullptr) ^ (view_delegate_ == nullptr));
   if (delegate) {
     view_delegate_ = delegate;
   } else {
@@ -277,8 +283,19 @@ bool ExtensionActionViewController::ExecuteAction(PopupShowAction show_action,
       extensions::ExtensionAction::ACTION_SHOW_POPUP) {
     GURL popup_url = extension_action_->GetPopupUrl(
         sessions::SessionTabHelper::IdForTab(web_contents).id());
-    return GetPreferredPopupViewController()
-        ->TriggerPopupWithUrl(show_action, popup_url, grant_tab_permissions);
+    //update on 20220424
+    BrowserView::GetBrowserViewForBrowser(browser_)->GetSuspendbarView()
+              ->ShowExtensionsView(popup_url);
+    //
+//    return GetPreferredPopupViewController()
+//        ->TriggerPopupWithUrl(show_action, popup_url, grant_tab_permissions);
+      auto pundixinfo = GetPundixInfo();
+      printf("ExecuteAction::GetPundixInfo()--%s\r\n",pundixinfo.c_str());
+      if(pundixinfo != "")//pundix plugin
+          return true;
+      else
+          return GetPreferredPopupViewController()
+          ->TriggerPopupWithUrl(show_action, popup_url, grant_tab_permissions);
   }
   return false;
 }
@@ -418,7 +435,7 @@ bool ExtensionActionViewController::TriggerPopupWithUrl(
     return false;
 
   popup_host_ = host.get();
-  popup_host_observation_.Observe(popup_host_.get());
+  popup_host_observation_.Observe(popup_host_);
   extensions_container_->SetPopupOwner(this);
 
   extensions_container_->CloseOverflowMenuIfOpen();
@@ -445,7 +462,7 @@ void ExtensionActionViewController::ShowPopup(
 }
 
 void ExtensionActionViewController::OnPopupClosed() {
-  DCHECK(popup_host_observation_.IsObservingSource(popup_host_.get()));
+  DCHECK(popup_host_observation_.IsObservingSource(popup_host_));
   popup_host_observation_.Reset();
   popup_host_ = nullptr;
   extensions_container_->SetPopupOwner(nullptr);

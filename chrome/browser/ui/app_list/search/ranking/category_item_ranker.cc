@@ -15,33 +15,29 @@
 
 namespace app_list {
 
-void CategoryItemRanker::UpdateCategoryRanks(const ResultsMap& results,
-                                             CategoriesList& categories,
-                                             ProviderType provider) {
+void CategoryItemRanker::Rank(ResultsMap& results,
+                              CategoriesMap& categories,
+                              ProviderType provider) {
   const auto& it = results.find(provider);
   DCHECK(it != results.end());
 
-  // Populate a map with the current scores.
-  base::flat_map<Category, double> high_scores;
-  for (const auto& category : categories)
-    high_scores[category.category] = category.score;
-
-  // Update it with the scores from new results.
   for (const auto& result : it->second) {
     Scoring& scoring = result->scoring();
 
     // Ignore best match results for the purposes of deciding category scores,
     // because they're displayed outside their category.
-    if (result->best_match())
+    if (result->best_match()) {
       continue;
+    }
 
-    high_scores[result->category()] =
-        std::max(high_scores[result->category()], scoring.normalized_relevance);
+    const Category category = result->category();
+    const auto& it = categories.find(category);
+    if (it != categories.end()) {
+      categories[category] = std::max(it->second, scoring.normalized_relevance);
+    } else {
+      categories[category] = scoring.normalized_relevance;
+    }
   }
-
-  // Update the category objects with the new scores .
-  for (auto& category : categories)
-    category.score = high_scores[category.category];
 }
 
 }  // namespace app_list

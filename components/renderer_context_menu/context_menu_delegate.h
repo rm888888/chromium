@@ -7,6 +7,8 @@
 
 #include <memory>
 
+#include "base/macros.h"
+
 class RenderViewContextMenuBase;
 
 namespace content {

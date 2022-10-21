@@ -54,7 +54,7 @@ constexpr char kIsPlaceholder[] = "is_placeholder";
 const base::Value* GetPreferenceValue(const PrefService* pref_service,
                                       const AppId& app_id) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
-  const base::Value* urls_to_dicts =
+  const base::DictionaryValue* urls_to_dicts =
       pref_service->GetDictionary(prefs::kWebAppsExtensionIDs);
   if (!urls_to_dicts) {
     return nullptr;
@@ -94,8 +94,7 @@ bool ExternallyInstalledWebAppPrefs::HasAppId(const PrefService* pref_service,
 // TODO(crbug.com/1236159): Can be removed after M99.
 void ExternallyInstalledWebAppPrefs::RemoveTerminalPWA(
     PrefService* pref_service) {
-  DictionaryPrefUpdateDeprecated update(pref_service,
-                                        prefs::kWebAppsExtensionIDs);
+  DictionaryPrefUpdate update(pref_service, prefs::kWebAppsExtensionIDs);
   update->RemoveKey("chrome-untrusted://terminal/html/pwa.html");
 }
 
@@ -116,7 +115,7 @@ bool ExternallyInstalledWebAppPrefs::HasAppIdWithInstallSource(
 std::map<AppId, GURL> ExternallyInstalledWebAppPrefs::BuildAppIdsMap(
     const PrefService* pref_service,
     ExternalInstallSource install_source) {
-  const base::Value* urls_to_dicts =
+  const base::DictionaryValue* urls_to_dicts =
       pref_service->GetDictionary(prefs::kWebAppsExtensionIDs);
 
   std::map<AppId, GURL> ids_to_urls;
@@ -165,8 +164,7 @@ void ExternallyInstalledWebAppPrefs::Insert(
   dict.SetKey(kExtensionId, base::Value(app_id));
   dict.SetKey(kInstallSource, base::Value(static_cast<int>(install_source)));
 
-  DictionaryPrefUpdateDeprecated update(pref_service_,
-                                        prefs::kWebAppsExtensionIDs);
+  DictionaryPrefUpdate update(pref_service_, prefs::kWebAppsExtensionIDs);
   update->SetKey(url.spec(), std::move(dict));
 }
 
@@ -189,7 +187,7 @@ absl::optional<AppId> ExternallyInstalledWebAppPrefs::LookupAppId(
 bool ExternallyInstalledWebAppPrefs::HasNoApps() const {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
-  const base::Value* dict =
+  const base::DictionaryValue* dict =
       pref_service_->GetDictionary(prefs::kWebAppsExtensionIDs);
   return dict->DictEmpty();
 }
@@ -216,9 +214,8 @@ void ExternallyInstalledWebAppPrefs::SetIsPlaceholder(const GURL& url,
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
   DCHECK(pref_service_->GetDictionary(prefs::kWebAppsExtensionIDs)
-             ->FindKey(url.spec()));
-  DictionaryPrefUpdateDeprecated update(pref_service_,
-                                        prefs::kWebAppsExtensionIDs);
+             ->HasKey(url.spec()));
+  DictionaryPrefUpdate update(pref_service_, prefs::kWebAppsExtensionIDs);
   base::Value* map = update.Get();
 
   auto* app_entry = map->FindKey(url.spec());

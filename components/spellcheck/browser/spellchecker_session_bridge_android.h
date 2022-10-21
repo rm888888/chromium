@@ -11,6 +11,7 @@
 #include <string>
 
 #include "base/android/scoped_java_ref.h"
+#include "base/macros.h"
 #include "components/spellcheck/common/spellcheck.mojom.h"
 
 // A class used to interface between the Java class of the same name and the

@@ -6,13 +6,15 @@
 #define COMPONENTS_ENTERPRISE_BROWSER_REPORTING_REPORT_GENERATOR_H_
 
 #include <memory>
+#include <queue>
 #include <string>
 
 #include "base/callback.h"
+#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "base/system/sys_info.h"
 #include "components/enterprise/browser/reporting/browser_report_generator.h"
-#include "components/enterprise/browser/reporting/report_request.h"
+#include "components/enterprise/browser/reporting/report_request_definition.h"
 #include "components/enterprise/browser/reporting/report_request_queue_generator.h"
 #include "components/enterprise/browser/reporting/report_type.h"
 #include "components/policy/proto/device_management_backend.pb.h"
@@ -23,7 +25,9 @@ class ReportingDelegateFactory;
 
 class ReportGenerator {
  public:
-  using ReportCallback = base::OnceCallback<void(ReportRequestQueue)>;
+  using ReportRequest = definition::ReportRequest;
+  using ReportRequests = std::queue<std::unique_ptr<ReportRequest>>;
+  using ReportCallback = base::OnceCallback<void(ReportRequests)>;
 
   class Delegate {
    public:
@@ -50,6 +54,8 @@ class ReportGenerator {
   // included for all loaded profiles. Otherwise, the report only contains
   // information that are needed by that particular type.
   virtual void Generate(ReportType report_type, ReportCallback callback);
+
+  void SetMaximumReportSizeForTesting(size_t size);
 
  protected:
   // Creates a basic request that will be used by all Profiles.

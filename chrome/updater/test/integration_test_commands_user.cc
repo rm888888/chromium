@@ -16,7 +16,6 @@
 #include "chrome/updater/test/integration_tests_impl.h"
 #include "chrome/updater/test/server.h"
 #include "chrome/updater/test_scope.h"
-#include "chrome/updater/update_service.h"
 #include "chrome/updater/updater_scope.h"
 #include "chrome/updater/util.h"
 #include "testing/gtest/include/gtest/gtest.h"
@@ -135,8 +134,8 @@ class IntegrationTestCommandsUser : public IntegrationTestCommands {
     updater::test::RegisterApp(updater_scope_, app_id);
   }
 
-  void WaitForUpdaterExit() const override {
-    updater::test::WaitForUpdaterExit(updater_scope_);
+  void WaitForServerExit() const override {
+    updater::test::WaitForServerExit(updater_scope_);
   }
 
 #if defined(OS_WIN)
@@ -144,19 +143,13 @@ class IntegrationTestCommandsUser : public IntegrationTestCommands {
     updater::test::ExpectInterfacesRegistered(updater_scope_);
   }
 
-  void ExpectLegacyUpdate3WebSucceeds(const std::string& app_id,
-                                      int expected_final_state,
-                                      int expected_error_code) const override {
-    updater::test::ExpectLegacyUpdate3WebSucceeds(
-        updater_scope_, app_id, expected_final_state, expected_error_code);
+  void ExpectLegacyUpdate3WebSucceeds(
+      const std::string& app_id) const override {
+    updater::test::ExpectLegacyUpdate3WebSucceeds(updater_scope_, app_id);
   }
 
   void ExpectLegacyProcessLauncherSucceeds() const override {
     updater::test::ExpectLegacyProcessLauncherSucceeds(updater_scope_);
-  }
-
-  void RunUninstallCmdLine() const override {
-    updater::test::RunUninstallCmdLine(updater_scope_);
   }
 
   void SetUpTestService() const override {}
@@ -176,15 +169,6 @@ class IntegrationTestCommandsUser : public IntegrationTestCommands {
 
   void StressUpdateService() const override {
     updater::test::StressUpdateService(updater_scope_);
-  }
-
-  void CallServiceUpdate(const std::string& app_id,
-                         UpdateService::PolicySameVersionUpdate
-                             policy_same_version_update) const override {
-    updater::test::CallServiceUpdate(
-        updater_scope_, app_id,
-        policy_same_version_update ==
-            UpdateService::PolicySameVersionUpdate::kAllowed);
   }
 
  private:

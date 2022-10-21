@@ -8,6 +8,7 @@
 #include <memory>
 
 #include "base/compiler_specific.h"
+#include "base/macros.h"
 #include "base/observer_list.h"
 
 class BrowserView;

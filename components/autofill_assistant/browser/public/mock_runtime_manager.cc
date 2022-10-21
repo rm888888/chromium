@@ -7,9 +7,4 @@
 namespace autofill_assistant {
 MockRuntimeManager::MockRuntimeManager() = default;
 MockRuntimeManager::~MockRuntimeManager() = default;
-
-base::WeakPtr<RuntimeManager> MockRuntimeManager::GetWeakPtr() {
-  return weak_ptr_factory_.GetWeakPtr();
-}
-
 }  // namespace autofill_assistant

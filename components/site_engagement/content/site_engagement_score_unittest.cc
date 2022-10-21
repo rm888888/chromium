@@ -6,6 +6,7 @@
 
 #include <utility>
 
+#include "base/macros.h"
 #include "base/test/simple_test_clock.h"
 #include "base/values.h"
 #include "components/site_engagement/core/mojom/site_engagement_details.mojom.h"

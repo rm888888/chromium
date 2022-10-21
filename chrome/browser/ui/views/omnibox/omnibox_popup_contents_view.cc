@@ -181,7 +181,9 @@ OmniboxPopupContentsView::OmniboxPopupContentsView(
             &OmniboxPopupContentsView::OnSuggestionGroupVisibilityUpdate,
             base::Unretained(this)));
   }
+//update on 20220722
 
+//
   views::SetCascadingThemeProviderColor(
       this, views::kCascadingBackgroundColor,
       ThemeProperties::COLOR_OMNIBOX_RESULTS_BG);
@@ -221,7 +223,6 @@ gfx::Image OmniboxPopupContentsView::GetMatchIcon(
 
 void OmniboxPopupContentsView::SetSelectedIndex(size_t index) {
   DCHECK(HasMatchAt(index));
-
   OmniboxPopupSelection::LineState line_state = OmniboxPopupSelection::NORMAL;
   edit_model_->SetPopupSelection(OmniboxPopupSelection(index, line_state));
   OnPropertyChanged(edit_model_, views::kPropertyEffectsNone);
@@ -358,11 +359,14 @@ void OmniboxPopupContentsView::UpdatePopupAppearance() {
   }
 
   // Fix-up any matches due to tail suggestions, before display below.
-  edit_model_->autocomplete_controller()->SetTailSuggestContentPrefixes();
+  edit_model_->autocomplete_controller()->InlineTailPrefixes();
 
   // Update the match cached by each row, in the process of doing so make sure
   // we have enough row views.
   const size_t result_size = edit_model_->result().size();
+  //update on 20220725
+    printf("\nedit_model_->result():%d\n",(int)result_size);
+  //
   if (base::FeatureList::IsEnabled(omnibox::kWebUIOmniboxPopup)) {
     if (!webui_view_) {
       webui_view_ = AddChildView(std::make_unique<WebUIOmniboxPopupView>(

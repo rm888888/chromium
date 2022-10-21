@@ -8,38 +8,10 @@ import {flush} from 'chrome://resources/polymer/v3_0/polymer/polymer_bundled.min
 import {Route, Router, StoredAccount, SyncStatus} from 'chrome://settings/settings.js';
 // clang-format on
 
-type SyncAllPrefs = {
-  appsRegistered: boolean,
-  appsSynced: boolean,
-  autofillRegistered: boolean,
-  autofillSynced: boolean,
-  bookmarksRegistered: boolean,
-  bookmarksSynced: boolean,
-  encryptAllData: boolean,
-  customPassphraseAllowed: boolean,
-  extensionsRegistered: boolean,
-  extensionsSynced: boolean,
-  passphraseRequired: boolean,
-  passwordsRegistered: boolean,
-  passwordsSynced: boolean,
-  paymentsIntegrationEnabled: boolean,
-  preferencesRegistered: boolean,
-  preferencesSynced: boolean,
-  readingListRegistered: boolean,
-  readingListSynced: boolean,
-  syncAllDataTypes: boolean,
-  tabsRegistered: boolean,
-  tabsSynced: boolean,
-  themesRegistered: boolean,
-  themesSynced: boolean,
-  typedUrlsRegistered: boolean,
-  typedUrlsSynced: boolean,
-};
-
 /**
  * Returns sync prefs with everything synced and no passphrase required.
  */
-export function getSyncAllPrefs(): SyncAllPrefs {
+export function getSyncAllPrefs(): {[key: string]: boolean} {
   return {
     appsRegistered: true,
     appsSynced: true,
@@ -69,16 +41,6 @@ export function getSyncAllPrefs(): SyncAllPrefs {
   };
 }
 
-export type SyncRoutes = {
-  BASIC: Route,
-  PEOPLE: Route,
-  SYNC: Route,
-  SYNC_ADVANCED: Route,
-  SIGN_OUT: Route
-  ADVANCED: Route,
-  ABOUT: Route,
-};
-
 export function setupRouterWithSyncRoutes() {
   const BASIC = new Route('/');
   const PEOPLE = BASIC.createSection('/people', 'people');
@@ -88,7 +50,7 @@ export function setupRouterWithSyncRoutes() {
   const SIGN_OUT = BASIC.createChild('/signOut');
   SIGN_OUT.isNavigableDialog = true;
 
-  const routes: SyncRoutes = {
+  const routes = {
     BASIC,
     PEOPLE,
     SYNC,
@@ -101,12 +63,12 @@ export function setupRouterWithSyncRoutes() {
   Router.resetInstanceForTesting(new Router(routes));
 }
 
-export function simulateSyncStatus(status: SyncStatus|undefined) {
+export function simulateSyncStatus(status: SyncStatus) {
   webUIListenerCallback('sync-status-changed', status);
   flush();
 }
 
-export function simulateStoredAccounts(accounts: StoredAccount[]|undefined) {
+export function simulateStoredAccounts(accounts: StoredAccount[]) {
   webUIListenerCallback('stored-accounts-updated', accounts);
   flush();
 }

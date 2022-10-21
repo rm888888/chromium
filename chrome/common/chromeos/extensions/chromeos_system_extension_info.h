@@ -10,12 +10,6 @@
 
 namespace chromeos {
 
-namespace switches {
-
-extern const char kTelemetryExtensionPwaOriginOverrideForTesting[];
-
-}  // namespace switches
-
 struct ChromeOSSystemExtensionInfo {
   ChromeOSSystemExtensionInfo(const std::string& manufacturer,
                               const std::string& pwa_origin);
@@ -23,11 +17,11 @@ struct ChromeOSSystemExtensionInfo {
   ~ChromeOSSystemExtensionInfo();
 
   const std::string manufacturer;
-  std::string pwa_origin;
+  const std::string pwa_origin;
 };
 
 size_t GetChromeOSSystemExtensionInfosSize();
-ChromeOSSystemExtensionInfo GetChromeOSExtensionInfoForId(
+const ChromeOSSystemExtensionInfo& GetChromeOSExtensionInfoForId(
     const std::string& id);
 bool IsChromeOSSystemExtension(const std::string& id);
 

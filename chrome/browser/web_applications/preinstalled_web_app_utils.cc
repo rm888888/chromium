@@ -16,7 +16,6 @@
 #include "chrome/browser/web_applications/file_utils_wrapper.h"
 #include "chrome/common/pref_names.h"
 #include "components/prefs/scoped_user_pref_update.h"
-#include "components/webapps/common/constants.h"
 #include "third_party/blink/public/common/manifest/manifest_util.h"
 #include "ui/gfx/codec/png_codec.h"
 
@@ -170,7 +169,7 @@ constexpr char kOemInstalled[] = "oem_installed";
 constexpr char kDisableIfTouchScreenWithStylusNotSupported[] =
     "disable_if_touchscreen_with_stylus_not_supported";
 
-void EnsureContains(ListPrefUpdateDeprecated& update, base::StringPiece value) {
+void EnsureContains(ListPrefUpdate& update, base::StringPiece value) {
   for (const base::Value& item : update->GetList()) {
     if (item.is_string() && item.GetString() == value)
       return;
@@ -382,14 +381,14 @@ OptionsOrError ParseConfig(FileUtilsWrapper& file_utils,
   // offline_manifest
   value = app_config.FindDictKey(kOfflineManifest);
   if (value) {
-    WebAppInstallInfoFactoryOrError offline_manifest_result =
+    WebApplicationInfoFactoryOrError offline_manifest_result =
         ParseOfflineManifest(file_utils, dir, file, *value);
     if (std::string* error =
             absl::get_if<std::string>(&offline_manifest_result)) {
       return std::move(*error);
     }
-    options.app_info_factory =
-        std::move(absl::get<WebAppInstallInfoFactory>(offline_manifest_result));
+    options.app_info_factory = std::move(
+        absl::get<WebApplicationInfoFactory>(offline_manifest_result));
   }
 
   if (options.only_use_app_info_factory && !options.app_info_factory) {
@@ -430,12 +429,12 @@ OptionsOrError ParseConfig(FileUtilsWrapper& file_utils,
   return options;
 }
 
-WebAppInstallInfoFactoryOrError ParseOfflineManifest(
+WebApplicationInfoFactoryOrError ParseOfflineManifest(
     FileUtilsWrapper& file_utils,
     const base::FilePath& dir,
     const base::FilePath& file,
     const base::Value& offline_manifest) {
-  WebAppInstallInfo app_info;
+  WebApplicationInfo app_info;
 
   // name
   const std::string* name_string =
@@ -562,7 +561,7 @@ WebAppInstallInfoFactoryOrError ParseOfflineManifest(
   }
 
   return base::BindRepeating(
-      &std::make_unique<WebAppInstallInfo, const WebAppInstallInfo&>,
+      &std::make_unique<WebApplicationInfo, const WebApplicationInfo&>,
       std::move(app_info));
 }
 
@@ -586,8 +585,8 @@ bool IsReinstallPastMilestoneNeeded(
 }
 
 bool WasAppMigratedToWebApp(Profile* profile, const std::string& app_id) {
-  const base::Value* migrated_apps =
-      profile->GetPrefs()->GetList(webapps::kWebAppsMigratedPreinstalledApps);
+  const base::ListValue* migrated_apps =
+      profile->GetPrefs()->GetList(prefs::kWebAppsMigratedPreinstalledApps);
   if (!migrated_apps)
     return false;
 
@@ -602,8 +601,8 @@ bool WasAppMigratedToWebApp(Profile* profile, const std::string& app_id) {
 void MarkAppAsMigratedToWebApp(Profile* profile,
                                const std::string& app_id,
                                bool was_migrated) {
-  ListPrefUpdateDeprecated update(profile->GetPrefs(),
-                                  webapps::kWebAppsMigratedPreinstalledApps);
+  ListPrefUpdate update(profile->GetPrefs(),
+                        prefs::kWebAppsMigratedPreinstalledApps);
   if (was_migrated)
     EnsureContains(update, app_id);
   else
@@ -611,7 +610,7 @@ void MarkAppAsMigratedToWebApp(Profile* profile,
 }
 
 bool WasMigrationRun(Profile* profile, base::StringPiece feature_name) {
-  const base::Value* migrated_features =
+  const base::ListValue* migrated_features =
       profile->GetPrefs()->GetList(prefs::kWebAppsDidMigrateDefaultChromeApps);
   if (!migrated_features)
     return false;
@@ -627,8 +626,8 @@ bool WasMigrationRun(Profile* profile, base::StringPiece feature_name) {
 void SetMigrationRun(Profile* profile,
                      base::StringPiece feature_name,
                      bool was_migrated) {
-  ListPrefUpdateDeprecated update(profile->GetPrefs(),
-                                  prefs::kWebAppsDidMigrateDefaultChromeApps);
+  ListPrefUpdate update(profile->GetPrefs(),
+                        prefs::kWebAppsDidMigrateDefaultChromeApps);
   if (was_migrated)
     EnsureContains(update, feature_name);
   else
@@ -637,7 +636,7 @@ void SetMigrationRun(Profile* profile,
 
 bool WasPreinstalledAppUninstalled(Profile* profile,
                                    const std::string& app_id) {
-  const base::Value* uninstalled_apps =
+  const base::ListValue* uninstalled_apps =
       profile->GetPrefs()->GetList(prefs::kWebAppsUninstalledDefaultChromeApps);
   if (!uninstalled_apps)
     return false;
@@ -654,8 +653,8 @@ void MarkPreinstalledAppAsUninstalled(Profile* profile,
                                       const std::string& app_id) {
   if (WasPreinstalledAppUninstalled(profile, app_id))
     return;
-  ListPrefUpdateDeprecated update(profile->GetPrefs(),
-                                  prefs::kWebAppsUninstalledDefaultChromeApps);
+  ListPrefUpdate update(profile->GetPrefs(),
+                        prefs::kWebAppsUninstalledDefaultChromeApps);
   EnsureContains(update, app_id);
 }
 }  // namespace web_app

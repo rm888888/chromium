@@ -193,7 +193,7 @@ TEST_F(OsIntegrationManagerTest, UpdateOsHooksEverything) {
   const AppId app_id = "test";
   testing::StrictMock<MockOsIntegrationManager> manager;
 
-  WebAppInstallInfo web_app_info;
+  WebApplicationInfo web_app_info;
   base::StringPiece old_name = "test-name";
 
   EXPECT_CALL(
@@ -207,7 +207,7 @@ TEST_F(OsIntegrationManagerTest, UpdateOsHooksEverything) {
       .Times(1);
 
   manager.UpdateOsHooks(app_id, old_name, FileHandlerUpdateAction::kUpdate,
-                        web_app_info, base::DoNothing());
+                        web_app_info);
 }
 
 TEST_F(OsIntegrationManagerTest, UpdateProtocolHandlers) {

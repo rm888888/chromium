@@ -5,13 +5,10 @@
 #ifndef CHROME_BROWSER_UI_VIEWS_OVERLAY_TOGGLE_MICROPHONE_BUTTON_H_
 #define CHROME_BROWSER_UI_VIEWS_OVERLAY_TOGGLE_MICROPHONE_BUTTON_H_
 
-#include "chrome/browser/ui/views/overlay/overlay_window_image_button.h"
-#include "ui/base/metadata/metadata_header_macros.h"
+#include "ui/views/controls/button/image_button.h"
 
-class ToggleMicrophoneButton : public OverlayWindowImageButton {
+class ToggleMicrophoneButton : public views::ImageButton {
  public:
-  METADATA_HEADER(ToggleMicrophoneButton);
-
   explicit ToggleMicrophoneButton(PressedCallback callback);
   ToggleMicrophoneButton(const ToggleMicrophoneButton&) = delete;
   ToggleMicrophoneButton& operator=(const ToggleMicrophoneButton&) = delete;

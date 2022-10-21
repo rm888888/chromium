@@ -26,6 +26,9 @@ POLICY_EXPORT extern const char kUserPolicyRefreshRate[];
 POLICY_EXPORT extern const char kIntensiveWakeUpThrottlingEnabled[];
 POLICY_EXPORT extern const char kTargetBlankImpliesNoOpener[];
 POLICY_EXPORT extern const char kUserAgentClientHintsGREASEUpdateEnabled[];
+//update on 20220819
+POLICY_EXPORT extern const char kPurseBrowserIsFirstRun[];
+//
 #if defined(OS_ANDROID)
 POLICY_EXPORT extern const char kBackForwardCacheEnabled[];
 #endif  // defined(OS_ANDROID)

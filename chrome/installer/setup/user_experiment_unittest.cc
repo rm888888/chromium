@@ -4,6 +4,7 @@
 
 #include "chrome/installer/setup/user_experiment.h"
 
+#include "base/macros.h"
 #include "base/test/test_reg_util_win.h"
 #include "base/win/registry.h"
 #include "chrome/common/chrome_version.h"

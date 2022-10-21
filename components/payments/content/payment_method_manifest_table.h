@@ -16,7 +16,7 @@ class WebDatabase;
 
 namespace payments {
 
-struct SecurePaymentConfirmationCredential;
+struct SecurePaymentConfirmationInstrument;
 
 // This class manages Web Payment tables in SQLite database. It expects the
 // following schema.
@@ -33,10 +33,8 @@ struct SecurePaymentConfirmationCredential;
 //                         (WebAppManifestSection.id).
 //
 // secure_payment_confirmation_instrument
-//                         This table stores credential information for secure
-//                         payment confirmation method. Historically it also
-//                         stored instrument information, hence the name and
-//                         the (no longer used) label and icon fields.
+//                         This table stores instrument information for secure
+//                         payment confirmation method.
 //
 //   credential_id         The WebAuthn credential identifier blob. Primary key.
 //   relying_party_id      The relying party identifier string.
@@ -65,10 +63,10 @@ class PaymentMethodManifestTable : public WebDatabaseTable {
   // Remove expired data.
   void RemoveExpiredData();
 
-  // Clears all of the secure payment confirmation credential information
+  // Clears all of the secure payment confirmation instrument information
   // created in the given time range `begin` and `end`. Return false for
   // failure.
-  bool ClearSecurePaymentConfirmationCredentials(base::Time begin,
+  bool ClearSecurePaymentConfirmationInstruments(base::Time begin,
                                                  base::Time end);
 
   // Adds `payment_method`'s manifest. `web_app_ids` contains supported web apps
@@ -80,18 +78,18 @@ class PaymentMethodManifestTable : public WebDatabaseTable {
   // exists for this method.
   std::vector<std::string> GetManifest(const std::string& payment_method);
 
-  // Adds a secure payment confirmation `credential`. All existing data for the
-  // credential's (relying_party_id, credential_id) tuple is erased before the
+  // Adds a secure payment confirmation `instrument`. All existing data for the
+  // instrument's (relying_party_id, credential_id) tuple is erased before the
   // new data is added.
   //
-  // Each field in the `credential` should be non-empty and `relying_party_id`
+  // Each field in the `instrument` should be non-empty and `relying_party_id`
   // field should be a valid domain string. See:
   // https://url.spec.whatwg.org/#valid-domain-string
   //
   // Returns false for invalid data, e.g., credential reuse between relying
   // parties, or on failure.
-  bool AddSecurePaymentConfirmationCredential(
-      const SecurePaymentConfirmationCredential& credential);
+  bool AddSecurePaymentConfirmationInstrument(
+      const SecurePaymentConfirmationInstrument& instrument);
 
   // Executes a SQL statement for testing.
   //
@@ -108,16 +106,16 @@ class PaymentMethodManifestTable : public WebDatabaseTable {
   // Returns true if a column with the given name exists in the given table.
   bool DoesColumnExistForTest(const char* table_name, const char* column_name);
 
-  // Gets the list of secure payment confirmation credentials for the given list
+  // Gets the list of secure payment confirmation instruments for the given list
   // of `credential_ids`.
   //
   // Returns an empty vector when no data is found or when a read error occurs.
-  // Does not return invalid credentials.
+  // Does not return invalid instruments.
   //
   // Please use `std::move()` for `credential_ids` parameter to avoid extra
   // copies.
-  std::vector<std::unique_ptr<SecurePaymentConfirmationCredential>>
-  GetSecurePaymentConfirmationCredentials(
+  std::vector<std::unique_ptr<SecurePaymentConfirmationInstrument>>
+  GetSecurePaymentConfirmationInstruments(
       std::vector<std::vector<uint8_t>> credential_ids);
 };
 

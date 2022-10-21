@@ -65,9 +65,7 @@ class Keyboard : public ui::EventHandler,
   void OnSurfaceDestroying(Surface* surface) override;
 
   // Overridden from SeatObserver:
-  void OnSurfaceFocused(Surface* gained_focus,
-                        Surface* lost_focus,
-                        bool has_focused_surface) override;
+  void OnSurfaceFocused(Surface* gained_focus) override;
 
   // Overridden from ash::KeyboardControllerObserver:
   void OnKeyboardEnableFlagsChanged(

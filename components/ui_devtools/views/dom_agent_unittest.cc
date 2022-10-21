@@ -14,9 +14,7 @@
 #include "components/ui_devtools/views/overlay_agent_views.h"
 #include "components/ui_devtools/views/view_element.h"
 #include "components/ui_devtools/views/widget_element.h"
-#include "ui/base/interaction/element_identifier.h"
 #include "ui/views/test/views_test_base.h"
-#include "ui/views/view_class_properties.h"
 #include "ui/views/widget/native_widget_private.h"
 #include "ui/views/widget/widget.h"
 
@@ -724,13 +722,10 @@ TEST_F(DOMAgentTest, DomSearchForStylesPanel) {
   EXPECT_TRUE(!node_ids);
 }
 
-DECLARE_ELEMENT_IDENTIFIER_VALUE(kTestElementID);
-DEFINE_ELEMENT_IDENTIFIER_VALUE(kTestElementID);
-
-TEST_F(DOMAgentTest, DomSearchForElementID) {
+TEST_F(DOMAgentTest, DomSearchForBackingElementID) {
   std::unique_ptr<views::Widget> widget = CreateTestWidget();
   views::View* test_view = new views::View;
-  test_view->SetProperty(views::kElementIdentifierKey, kTestElementID);
+  test_view->SetID(1001);
   widget->GetRootView()->AddChildView(test_view);
 
   std::unique_ptr<DOM::Node> root;
@@ -741,22 +736,14 @@ TEST_F(DOMAgentTest, DomSearchForElementID) {
   std::unique_ptr<protocol::Array<int>> node_ids;
 
   // Match ID for View element.
-  dom_agent()->performSearch("id: kTestElementID", false, &search_id,
-                             &result_count);
+  dom_agent()->performSearch("id: 1001", false, &search_id, &result_count);
   EXPECT_EQ(result_count, 1);
   dom_agent()->getSearchResults(search_id, 0, result_count, &node_ids);
   EXPECT_EQ(node_ids->size(), 1u);
   node_ids.reset();
 
   // Won't match substring of ID for View element.
-  dom_agent()->performSearch("id: kTestElement", false, &search_id,
-                             &result_count);
-  EXPECT_EQ(result_count, 0);
-  dom_agent()->getSearchResults(search_id, 0, 1, &node_ids);
-  EXPECT_TRUE(!node_ids);
-
-  // Won't match empty query.
-  dom_agent()->performSearch("id:", false, &search_id, &result_count);
+  dom_agent()->performSearch("id: 100", false, &search_id, &result_count);
   EXPECT_EQ(result_count, 0);
   dom_agent()->getSearchResults(search_id, 0, 1, &node_ids);
   EXPECT_TRUE(!node_ids);

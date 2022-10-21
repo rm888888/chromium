@@ -42,8 +42,7 @@ SkRRect BrowserFrameViewLinux::GetRestoredClipRegion() const {
   return clip;
 }
 
-// static
-gfx::ShadowValues BrowserFrameViewLinux::GetShadowValues() {
+gfx::ShadowValues BrowserFrameViewLinux::GetShadowValues() const {
   int elevation = ChromeLayoutProvider::Get()->GetShadowElevationMetric(
       views::Emphasis::kMaximum);
   return gfx::ShadowValue::MakeMdShadowValues(elevation);

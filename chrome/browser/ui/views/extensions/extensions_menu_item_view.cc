@@ -25,8 +25,6 @@
 #include "ui/color/color_provider.h"
 #include "ui/gfx/color_utils.h"
 #include "ui/gfx/paint_vector_icon.h"
-#include "ui/strings/grit/ui_strings.h"
-#include "ui/views/accessibility/view_accessibility.h"
 #include "ui/views/animation/ink_drop.h"
 #include "ui/views/animation/ink_drop_host_view.h"
 #include "ui/views/border.h"
@@ -37,6 +35,9 @@
 #include "ui/views/vector_icons.h"
 #include "ui/views/view_class_properties.h"
 
+//update on 20220507
+#include "chrome/browser/ui/extensions/extension_action_view_controller.h"
+//
 namespace {
 
 constexpr int kSecondaryIconSizeDp = 16;
@@ -64,65 +65,90 @@ void SetButtonIconWithColor(HoverButton* button,
 constexpr gfx::Size ExtensionsMenuItemView::kIconSize;
 
 ExtensionsMenuItemView::ExtensionsMenuItemView(
-    MenuItemType item_type,
     Browser* browser,
     std::unique_ptr<ToolbarActionViewController> controller,
     bool allow_pinning)
-    : item_type_(item_type),
-      profile_(browser->profile()),
-      primary_action_button_(
-          new ExtensionsMenuButton(browser, controller.get(), allow_pinning)),
+    : profile_(browser->profile()),
+      primary_action_button_(new ExtensionsMenuButton(browser,
+                                                      controller.get(),
+                                                      allow_pinning)),
       controller_(std::move(controller)),
       model_(ToolbarActionsModel::Get(profile_)) {
-  // Items with kSiteAccess type should only be created if their
-  // associated extension has or requests access to the current page.
-  if (item_type == MenuItemType::kSiteAccess) {
-    DCHECK(controller_->GetPageInteractionStatus(
-               browser->tab_strip_model()->GetActiveWebContents()) !=
-           ToolbarActionViewController::PageInteractionStatus::kNone);
-  }
-
   // Set so the extension button receives enter/exit on children to retain hover
   // status when hovering child views.
   SetNotifyEnterExitOnChild(true);
+
+  context_menu_controller_ =
+      std::make_unique<ExtensionContextMenuController>(controller_.get());
 
   views::FlexLayout* layout_manager_ =
       SetLayoutManager(std::make_unique<views::FlexLayout>());
   layout_manager_->SetOrientation(views::LayoutOrientation::kHorizontal)
       .SetIgnoreDefaultMainAxisMargins(true);
 
-  AddChildView(primary_action_button_.get());
+  AddChildView(primary_action_button_);
   primary_action_button_->SetProperty(
       views::kFlexBehaviorKey,
       views::FlexSpecification(views::MinimumFlexSizeRule::kScaleToZero,
                                views::MaximumFlexSizeRule::kUnbounded));
+  //update on 20220218
+  auto pundixinfo = (static_cast<ExtensionActionViewController*>(controller_.get()))->GetPundixInfo();
+    printf("GetPundixInfo()--%s\r\n",pundixinfo.c_str());
+//  if(pundixinfo != "")//pundix plugin
+//    primary_action_button_->OnClickButton();
+  //
+  if (primary_action_button_->CanShowIconInToolbar()) {
+    auto pin_button = std::make_unique<HoverButton>(
+        base::BindRepeating(&ExtensionsMenuItemView::PinButtonPressed,
+                            base::Unretained(this)),
+        std::u16string());
+    pin_button->SetID(EXTENSION_PINNING);
+    pin_button->SetBorder(views::CreateEmptyBorder(kSecondaryButtonInsets));
 
-  if (item_type_ == MenuItemType::kExtensions) {
-    AddPinButton();
-    AddContextMenuButton();
+    pin_button_ = pin_button.get();
+    AddChildView(std::move(pin_button));
+    //update on 20220425
+//    if(pundixinfo == "")//other plugin
+//      PinButtonPressed();
   }
-  // TODO(crbug.com/1263310): Add a dropdown view for MenuItemType::kSiteAccess.
+  UpdatePinButton();
+
+  auto context_menu_button = std::make_unique<HoverButton>(
+      views::Button::PressedCallback(), std::u16string());
+  context_menu_button->SetID(EXTENSION_CONTEXT_MENU);
+  context_menu_button->SetBorder(
+      views::CreateEmptyBorder(kSecondaryButtonInsets));
+  context_menu_button->SetTooltipText(
+      l10n_util::GetStringUTF16(IDS_EXTENSIONS_MENU_CONTEXT_MENU_TOOLTIP));
+  context_menu_button->SetButtonController(
+      std::make_unique<views::MenuButtonController>(
+          context_menu_button.get(),
+          base::BindRepeating(&ExtensionsMenuItemView::ContextMenuPressed,
+                              base::Unretained(this)),
+          std::make_unique<views::Button::DefaultButtonControllerDelegate>(
+              context_menu_button.get())));
+  context_menu_button_ = AddChildView(std::move(context_menu_button));
+  //update on 20220511
+  if(pundixinfo != "")
+      SetVisible(false);
 }
 
 ExtensionsMenuItemView::~ExtensionsMenuItemView() = default;
 
 void ExtensionsMenuItemView::OnThemeChanged() {
   views::View::OnThemeChanged();
-  if (item_type_ == MenuItemType::kExtensions) {
-    const SkColor icon_color =
-        GetAdjustedIconColor(GetColorProvider()->GetColor(ui::kColorMenuIcon));
+  const SkColor icon_color =
+      GetAdjustedIconColor(GetColorProvider()->GetColor(ui::kColorMenuIcon));
 
-    if (pin_button_)
-      views::InkDrop::Get(pin_button_)->SetBaseColor(icon_color);
+  if (pin_button_)
+    views::InkDrop::Get(pin_button_)->SetBaseColor(icon_color);
 
-    SetButtonIconWithColor(context_menu_button_, kBrowserToolsIcon, icon_color);
+  SetButtonIconWithColor(context_menu_button_, kBrowserToolsIcon, icon_color);
 
-    UpdatePinButton();
-  }
+  UpdatePinButton();
 }
 
 void ExtensionsMenuItemView::UpdatePinButton() {
-  DCHECK_EQ(item_type_, MenuItemType::kExtensions);
   if (!pin_button_)
     return;
 
@@ -154,18 +180,15 @@ void ExtensionsMenuItemView::UpdatePinButton() {
 }
 
 bool ExtensionsMenuItemView::IsContextMenuRunningForTesting() const {
-  DCHECK_EQ(item_type_, MenuItemType::kExtensions);
   return context_menu_controller_->IsMenuRunning();
 }
 
 bool ExtensionsMenuItemView::IsPinned() const {
-  DCHECK_EQ(item_type_, MenuItemType::kExtensions);
   // |model_| can be null in unit tests.
   return model_ && model_->IsActionPinned(controller_->GetId());
 }
 
 void ExtensionsMenuItemView::ContextMenuPressed() {
-  DCHECK_EQ(item_type_, MenuItemType::kExtensions);
   base::RecordAction(base::UserMetricsAction(
       "Extensions.Toolbar.MoreActionsButtonPressedFromMenu"));
   // TODO(crbug.com/998298): Cleanup the menu source type.
@@ -175,58 +198,19 @@ void ExtensionsMenuItemView::ContextMenuPressed() {
 }
 
 void ExtensionsMenuItemView::PinButtonPressed() {
-  DCHECK_EQ(item_type_, MenuItemType::kExtensions);
-
   base::RecordAction(
       base::UserMetricsAction("Extensions.Toolbar.PinButtonPressed"));
   model_->SetActionVisibility(controller_->GetId(), !IsPinned());
-  GetViewAccessibility().AnnounceText(l10n_util::GetStringUTF16(
-      IsPinned() ? IDS_EXTENSION_PINNED : IDS_EXTENSION_UNPINNED));
+  //update on 20220425
+//    bool tag = IsPinned();
+//    if(!tag)
+//    model_->SetActionVisibility(controller_->GetId(), !tag);
+    UpdatePinButton();
 }
 
 ExtensionsMenuButton*
 ExtensionsMenuItemView::primary_action_button_for_testing() {
   return primary_action_button_;
-}
-
-void ExtensionsMenuItemView::AddPinButton() {
-  DCHECK_EQ(item_type_, MenuItemType::kExtensions);
-
-  if (primary_action_button_->CanShowIconInToolbar()) {
-    auto pin_button = std::make_unique<HoverButton>(
-        base::BindRepeating(&ExtensionsMenuItemView::PinButtonPressed,
-                            base::Unretained(this)),
-        std::u16string());
-    pin_button->SetID(EXTENSION_PINNING);
-    pin_button->SetBorder(views::CreateEmptyBorder(kSecondaryButtonInsets));
-
-    pin_button_ = pin_button.get();
-    AddChildView(std::move(pin_button));
-  }
-  UpdatePinButton();
-}
-
-void ExtensionsMenuItemView::AddContextMenuButton() {
-  DCHECK_EQ(item_type_, MenuItemType::kExtensions);
-
-  context_menu_controller_ =
-      std::make_unique<ExtensionContextMenuController>(controller_.get());
-
-  auto context_menu_button = std::make_unique<HoverButton>(
-      views::Button::PressedCallback(), std::u16string());
-  context_menu_button->SetID(EXTENSION_CONTEXT_MENU);
-  context_menu_button->SetBorder(
-      views::CreateEmptyBorder(kSecondaryButtonInsets));
-  context_menu_button->SetTooltipText(
-      l10n_util::GetStringUTF16(IDS_EXTENSIONS_MENU_CONTEXT_MENU_TOOLTIP));
-  context_menu_button->SetButtonController(
-      std::make_unique<views::MenuButtonController>(
-          context_menu_button.get(),
-          base::BindRepeating(&ExtensionsMenuItemView::ContextMenuPressed,
-                              base::Unretained(this)),
-          std::make_unique<views::Button::DefaultButtonControllerDelegate>(
-              context_menu_button.get())));
-  context_menu_button_ = AddChildView(std::move(context_menu_button));
 }
 
 SkColor ExtensionsMenuItemView::GetAdjustedIconColor(SkColor icon_color) const {

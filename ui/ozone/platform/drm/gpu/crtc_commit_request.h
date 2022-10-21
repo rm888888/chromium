@@ -9,7 +9,6 @@
 #include <stdint.h>
 #include <xf86drmMode.h>
 
-#include "base/trace_event/traced_value.h"
 #include "ui/gfx/geometry/point.h"
 #include "ui/ozone/platform/drm/gpu/drm_device.h"
 #include "ui/ozone/platform/drm/gpu/drm_overlay_plane.h"
@@ -49,8 +48,6 @@ class CrtcCommitRequest {
   const gfx::Point& origin() const { return origin_; }
   HardwareDisplayPlaneList* plane_list() const { return plane_list_; }
   const DrmOverlayPlaneList& overlays() const { return overlays_; }
-
-  void AsValueInto(base::trace_event::TracedValue* value) const;
 
  private:
   CrtcCommitRequest(uint32_t crtc_id,

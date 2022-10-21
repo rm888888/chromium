@@ -4,7 +4,6 @@
 
 #include "chrome/browser/ui/bluetooth/chrome_bluetooth_chooser_controller.h"
 
-#include "base/memory/weak_ptr.h"
 #include "base/notreached.h"
 #include "build/build_config.h"
 #include "build/buildflag.h"
@@ -19,8 +18,6 @@
 #include "components/strings/grit/components_strings.h"
 #include "content/public/browser/page_navigator.h"
 #include "content/public/browser/render_frame_host.h"
-#include "content/public/browser/weak_document_ptr.h"
-#include "content/public/browser/web_contents.h"
 #include "content/public/common/referrer.h"
 #include "ui/base/page_transition_types.h"
 #include "ui/base/window_open_disposition.h"
@@ -63,8 +60,8 @@ ChromeBluetoothChooserController::ChromeBluetoothChooserController(
               owner,
               IDS_BLUETOOTH_DEVICE_CHOOSER_PROMPT_ORIGIN,
               IDS_BLUETOOTH_DEVICE_CHOOSER_PROMPT_EXTENSION_NAME)) {
-  web_contents_ =
-      content::WebContents::FromRenderFrameHost(owner)->GetWeakPtr();
+  if (owner)
+    frame_tree_node_id_ = owner->GetFrameTreeNodeId();
 }
 
 ChromeBluetoothChooserController::~ChromeBluetoothChooserController() = default;
@@ -86,10 +83,11 @@ void ChromeBluetoothChooserController::OpenAdapterOffHelpUrl() const {
 
 void ChromeBluetoothChooserController::OpenPermissionPreferences() const {
 #if defined(OS_MAC)
-  if (web_contents_) {
+  content::WebContents* web_contents =
+      content::WebContents::FromFrameTreeNodeId(frame_tree_node_id_);
+  if (web_contents) {
     ExternalProtocolHandler::LaunchUrlWithoutSecurityCheck(
-        GURL(kBluetoothSettingsUri), web_contents_.get(),
-        content::WeakDocumentPtr());
+        GURL(kBluetoothSettingsUri), web_contents);
   }
 #else
   NOTREACHED();

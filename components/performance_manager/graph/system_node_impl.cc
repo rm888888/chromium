@@ -8,6 +8,7 @@
 #include <iterator>
 
 #include "base/containers/flat_set.h"
+#include "base/macros.h"
 #include "base/process/process_handle.h"
 #include "components/performance_manager/graph/frame_node_impl.h"
 #include "components/performance_manager/graph/graph_impl.h"

@@ -1,0 +1,8 @@
+callback FinishedCallback = void(DOMString msg);
+
+[Constructor]
+interface WalletInterface {
+  boolean Start();
+  DOMString Name();
+  void OnFinish(FinishedCallback callback);
+};

@@ -7,7 +7,6 @@
 
 #include "base/memory/weak_ptr.h"
 #include "content/public/app/content_main.h"
-#include "content/public/common/main_function_params.h"
 
 namespace content {
 class BrowserMainParts;
@@ -18,7 +17,7 @@ namespace test {
 
 class TestChromeBase {
  public:
-  explicit TestChromeBase(content::ContentMainParams params);
+  explicit TestChromeBase(const content::ContentMainParams& params);
   TestChromeBase(const TestChromeBase&) = delete;
   TestChromeBase& operator=(const TestChromeBase&) = delete;
   ~TestChromeBase();

@@ -467,7 +467,8 @@ bool Command::Parse(const base::DictionaryValue* command,
   }
 
   // Check if this is a global or a regular shortcut.
-  bool global = command->FindBoolPath(keys::kGlobal).value_or(false);
+  bool global = false;
+  command->GetBoolean(keys::kGlobal, &global);
 
   // Normalize the suggestions.
   for (auto iter = suggestions.begin(); iter != suggestions.end(); ++iter) {

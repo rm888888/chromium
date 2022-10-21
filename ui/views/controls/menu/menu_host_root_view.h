@@ -5,7 +5,7 @@
 #ifndef UI_VIEWS_CONTROLS_MENU_MENU_HOST_ROOT_VIEW_H_
 #define UI_VIEWS_CONTROLS_MENU_MENU_HOST_ROOT_VIEW_H_
 
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "ui/views/widget/root_view.h"
 
 namespace views {
@@ -55,7 +55,7 @@ class MenuHostRootView : public internal::RootView {
   MenuController* GetMenuControllerForInputEvents();
 
   // The SubmenuView we contain.
-  raw_ptr<SubmenuView> submenu_;
+  SubmenuView* submenu_;
 };
 
 }  // namespace views

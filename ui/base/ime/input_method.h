@@ -7,7 +7,7 @@
 
 #include <stdint.h>
 
-#include "base/compiler_specific.h"
+
 #include "build/build_config.h"
 #include "ui/base/ime/text_input_mode.h"
 #include "ui/base/ime/text_input_type.h"
@@ -64,9 +64,6 @@ class InputMethod {
 
   // Called when the top-level system window gets keyboard focus.
   virtual void OnFocus() = 0;
-
-  // Called when there is a touch within a text field that has focus.
-  virtual void OnTouch(ui::EventPointerType pointerType) = 0;
 
   // Called when the top-level system window loses keyboard focus.
   virtual void OnBlur() = 0;
@@ -141,7 +138,9 @@ class InputMethod {
   // of IME popups is not supported.
   virtual bool IsCandidatePopupOpen() const = 0;
 
-  // Sets visibility of the virtual keyboard, if enabled already.
+  // Displays an on screen keyboard if enabled.
+  virtual void ShowVirtualKeyboardIfEnabled() = 0;
+
   virtual void SetVirtualKeyboardVisibilityIfEnabled(bool should_show) = 0;
 
   // Management of the observer list.

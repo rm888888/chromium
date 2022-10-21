@@ -9,6 +9,8 @@
 
 #include <string>
 
+#include "base/compiler_specific.h"
+#include "base/macros.h"
 #include "chrome/installer/util/registry_key_backup.h"
 #include "chrome/installer/util/work_item.h"
 

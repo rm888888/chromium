@@ -5,7 +5,7 @@
 #ifndef COMPONENTS_UI_DEVTOOLS_DEVTOOLS_BASE_AGENT_H_
 #define COMPONENTS_UI_DEVTOOLS_DEVTOOLS_BASE_AGENT_H_
 
-#include "components/ui_devtools/protocol.h"
+#include "components/ui_devtools/Protocol.h"
 
 namespace ui_devtools {
 

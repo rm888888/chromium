@@ -20,8 +20,6 @@ void DummyInputMethod::SetDelegate(internal::InputMethodDelegate* delegate) {
 void DummyInputMethod::OnFocus() {
 }
 
-void DummyInputMethod::OnTouch(ui::EventPointerType pointerType) {}
-
 void DummyInputMethod::OnBlur() {
 }
 
@@ -69,6 +67,8 @@ TextInputType DummyInputMethod::GetTextInputType() const {
 bool DummyInputMethod::IsCandidatePopupOpen() const {
   return false;
 }
+
+void DummyInputMethod::ShowVirtualKeyboardIfEnabled() {}
 
 void DummyInputMethod::SetVirtualKeyboardVisibilityIfEnabled(bool should_show) {
 }

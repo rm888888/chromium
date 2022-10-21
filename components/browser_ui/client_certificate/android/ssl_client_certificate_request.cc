@@ -5,15 +5,12 @@
 #include "components/browser_ui/client_certificate/android/ssl_client_certificate_request.h"
 
 #include <stddef.h>
-
-#include <tuple>
 #include <utility>
 
 #include "base/android/jni_array.h"
 #include "base/android/jni_string.h"
 #include "base/android/scoped_java_ref.h"
 #include "base/bind.h"
-#include "base/check.h"
 #include "base/compiler_specific.h"
 #include "base/containers/queue.h"
 #include "base/logging.h"
@@ -81,9 +78,7 @@ class SSLClientCertPendingRequests
       public content::WebContentsObserver {
  public:
   explicit SSLClientCertPendingRequests(content::WebContents* web_contents)
-      : content::WebContentsUserData<SSLClientCertPendingRequests>(
-            *web_contents),
-        content::WebContentsObserver(web_contents) {}
+      : content::WebContentsObserver(web_contents) {}
   ~SSLClientCertPendingRequests() override {}
 
   void AddRequest(std::unique_ptr<ClientCertRequest> request);
@@ -212,7 +207,7 @@ static void StartClientCertificateRequest(
   }
 
   // Ownership was transferred to Java.
-  std::ignore = request.release();
+  ignore_result(request.release());
 }
 
 void SSLClientCertPendingRequests::AddRequest(
@@ -392,7 +387,6 @@ base::OnceClosure ShowSSLClientCertificateSelector(
     content::WebContents* contents,
     net::SSLCertRequestInfo* cert_request_info,
     std::unique_ptr<content::ClientCertificateDelegate> delegate) {
-  DCHECK(delegate);
   SSLClientCertPendingRequests::CreateForWebContents(contents);
   SSLClientCertPendingRequests* active_requests =
       SSLClientCertPendingRequests::FromWebContents(contents);

@@ -8,6 +8,7 @@
 #include <memory>
 #include <utility>
 
+#include "base/macros.h"
 #include "base/memory/ref_counted.h"
 #include "components/prefs/pref_registry.h"
 #include "components/prefs/pref_service.h"
@@ -79,7 +80,6 @@ class TestingPrefServiceBase : public SuperPrefService {
   TestingPrefServiceBase(TestingPrefStore* managed_prefs,
                          TestingPrefStore* supervised_user_prefs,
                          TestingPrefStore* extension_prefs,
-                         TestingPrefStore* standalone_browser_prefs,
                          TestingPrefStore* user_prefs,
                          TestingPrefStore* recommended_prefs,
                          ConstructionPrefRegistry* pref_registry,
@@ -103,7 +103,6 @@ class TestingPrefServiceBase : public SuperPrefService {
   scoped_refptr<TestingPrefStore> managed_prefs_;
   scoped_refptr<TestingPrefStore> supervised_user_prefs_;
   scoped_refptr<TestingPrefStore> extension_prefs_;
-  scoped_refptr<TestingPrefStore> standalone_browser_prefs_;
   scoped_refptr<TestingPrefStore> user_prefs_;
   scoped_refptr<TestingPrefStore> recommended_prefs_;
 };
@@ -132,7 +131,6 @@ TestingPrefServiceBase<PrefService, PrefRegistry>::TestingPrefServiceBase(
     TestingPrefStore* managed_prefs,
     TestingPrefStore* supervised_user_prefs,
     TestingPrefStore* extension_prefs,
-    TestingPrefStore* standalone_browser_prefs,
     TestingPrefStore* user_prefs,
     TestingPrefStore* recommended_prefs,
     PrefRegistry* pref_registry,
@@ -272,7 +270,6 @@ void TestingPrefServiceBase<SuperPrefService, ConstructionPrefRegistry>::
   managed_prefs_->SetInitializationCompleted();
   supervised_user_prefs_->SetInitializationCompleted();
   extension_prefs_->SetInitializationCompleted();
-  standalone_browser_prefs_->SetInitializationCompleted();
   recommended_prefs_->SetInitializationCompleted();
   // |user_prefs_| is initialized in PrefService constructor so no need to
   // set initialization status again.

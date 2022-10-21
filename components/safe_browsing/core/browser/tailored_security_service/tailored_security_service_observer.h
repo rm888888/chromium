@@ -5,20 +5,13 @@
 #ifndef COMPONENTS_SAFE_BROWSING_CORE_BROWSER_TAILORED_SECURITY_SERVICE_TAILORED_SECURITY_SERVICE_OBSERVER_H_
 #define COMPONENTS_SAFE_BROWSING_CORE_BROWSER_TAILORED_SECURITY_SERVICE_TAILORED_SECURITY_SERVICE_OBSERVER_H_
 
-#include "base/time/time.h"
-
 namespace safe_browsing {
 
 // Observes TailoredSecurityService bit.
 class TailoredSecurityServiceObserver {
  public:
-  // Called when the Tailored Security bit changed to |enabled|, and provides
-  // the last time it was changed (not including the current update).
-  virtual void OnTailoredSecurityBitChanged(bool enabled,
-                                            base::Time previous_update) {}
-
-  // Called when the service is being destroyed.
-  virtual void OnTailoredSecurityServiceDestroyed() {}
+  // Called when the Tailored Security bit changed.
+  virtual void OnTailoredSecurityBitChanged(bool enabled) = 0;
 
  protected:
   virtual ~TailoredSecurityServiceObserver() = default;

@@ -10,6 +10,7 @@
 
 #include "base/bind.h"
 #include "base/callback_helpers.h"
+#include "base/macros.h"
 #include "base/metrics/histogram_macros.h"
 #include "base/metrics/user_metrics.h"
 #include "base/strings/utf_string_conversions.h"
@@ -44,6 +45,9 @@ IncognitoMenuView::IncognitoMenuView(views::Button* anchor_button,
       chrome::DialogIdentifier::INCOGNITO_WINDOW_COUNT);
 
   base::RecordAction(base::UserMetricsAction("IncognitoMenu_Show"));
+    //update on 20220803
+    kMenuWidth = 288;
+    //
 }
 
 IncognitoMenuView::~IncognitoMenuView() = default;

@@ -8,6 +8,7 @@
 #include <memory>
 #include <vector>
 
+#include "base/macros.h"
 #include "build/chromecast_buildflags.h"
 #include "components/viz/service/display/overlay_strategy_underlay.h"
 #include "components/viz/service/viz_service_export.h"
@@ -61,10 +62,7 @@ class VIZ_SERVICE_EXPORT OverlayStrategyUnderlayCast
       const PrimaryPlane* primary_plane,
       OverlayCandidateList* candidates,
       std::vector<gfx::Rect>* content_bounds,
-      const OverlayProposedCandidate& proposed_candidate) override;
-
-  void CommitCandidate(const OverlayProposedCandidate& proposed_candidate,
-                       AggregatedRenderPass* render_pass) override;
+      OverlayProposedCandidate* proposed_candidate) override;
 
 #if BUILDFLAG(IS_CHROMECAST)
   // In Chromecast build, OverlayStrategyUnderlayCast needs a valid mojo

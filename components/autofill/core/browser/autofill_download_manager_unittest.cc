@@ -28,10 +28,10 @@
 #include "base/test/test_timeouts.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "components/autofill/core/browser/autofill_field.h"
+#include "components/autofill/core/browser/autofill_metrics.h"
 #include "components/autofill/core/browser/autofill_test_utils.h"
 #include "components/autofill/core/browser/autofill_type.h"
 #include "components/autofill/core/browser/form_structure.h"
-#include "components/autofill/core/browser/metrics/autofill_metrics.h"
 #include "components/autofill/core/browser/randomized_encoder.h"
 #include "components/autofill/core/browser/test_autofill_clock.h"
 #include "components/autofill/core/browser/test_autofill_driver.h"
@@ -1409,7 +1409,7 @@ class AutofillServerCommunicationTest
       case COMMAND_LINE_URL:
         scoped_command_line_.GetProcessCommandLine()->AppendSwitchASCII(
             switches::kAutofillServerURL, autofill_server_url.spec());
-        [[fallthrough]];
+        FALLTHROUGH;
       case DEFAULT_URL:
         scoped_feature_list_2_.InitAndEnableFeature(
             features::kAutofillServerCommunication);

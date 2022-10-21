@@ -7,7 +7,7 @@
 
 #include <string>
 
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "base/scoped_observation.h"
 #include "build/build_config.h"
@@ -124,8 +124,8 @@ class AvatarToolbarButtonDelegate : public BrowserListObserver,
                           signin::IdentityManager::Observer>
       identity_manager_observation_{this};
 
-  const raw_ptr<AvatarToolbarButton> avatar_toolbar_button_;
-  const raw_ptr<Profile> profile_;
+  AvatarToolbarButton* const avatar_toolbar_button_;
+  Profile* const profile_;
   IdentityAnimationState identity_animation_state_ =
       IdentityAnimationState::kNotShowing;
 

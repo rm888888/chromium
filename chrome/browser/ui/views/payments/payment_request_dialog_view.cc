@@ -92,7 +92,7 @@ void PaymentRequestDialogView::OnDialogClosed() {
   for (const auto& controller : controller_map_) {
     controller.second->Stop();
   }
-  RemoveChildViewT(view_stack_.get());
+  RemoveChildViewT(view_stack_);
   controller_map_.clear();
   request_->OnUserCancelled();
 }
@@ -367,7 +367,7 @@ void PaymentRequestDialogView::ShowCvcUnmaskPrompt(
     const autofill::CreditCard& credit_card,
     base::WeakPtr<autofill::payments::FullCardRequest::ResultDelegate>
         result_delegate,
-    content::RenderFrameHost* render_frame_host) {
+    content::WebContents* web_contents) {
   if (!request_->spec())
     return;
 
@@ -375,7 +375,7 @@ void PaymentRequestDialogView::ShowCvcUnmaskPrompt(
                         std::make_unique<CvcUnmaskViewController>(
                             request_->spec(), request_->state(),
                             weak_ptr_factory_.GetWeakPtr(), credit_card,
-                            result_delegate, render_frame_host),
+                            result_delegate, web_contents),
                         &controller_map_),
                     /* animate = */ true);
   if (observer_for_testing_)
@@ -517,6 +517,19 @@ PaymentRequestDialogView::~PaymentRequestDialogView() = default;
 void PaymentRequestDialogView::OnDialogOpened() {
   if (!request_->spec())
     return;
+
+  if (request_->spec()->request_shipping() &&
+      !request_->state()->selected_shipping_profile() &&
+      PaymentsExperimentalFeatures::IsEnabled(
+          features::kStrictHasEnrolledAutofillInstrument)) {
+    view_stack_->Push(
+        CreateViewAndInstallController(
+            ProfileListViewController::GetShippingProfileViewController(
+                request_->spec(), request_->state(),
+                weak_ptr_factory_.GetWeakPtr()),
+            &controller_map_),
+        /* animate = */ false);
+  }
 
   if (observer_for_testing_)
     observer_for_testing_->OnDialogOpened();

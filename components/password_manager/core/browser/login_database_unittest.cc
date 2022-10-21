@@ -8,7 +8,6 @@
 #include <stdint.h>
 
 #include <memory>
-#include <tuple>
 #include <utility>
 
 #include "base/compiler_specific.h"
@@ -1919,18 +1918,6 @@ void LoginDatabaseMigrationTest::MigrationToVCurrent(
     ASSERT_EQ(1U, result.size());
     EXPECT_EQ(form, *result[0]);
     EXPECT_TRUE(db.RemoveLogin(form, /*changes=*/nullptr));
-
-    if (version() == 31) {
-      // Check that unset values of 'insecure_credentials.create_time' are set
-      // to current time.
-      std::vector<InsecureCredential> insecure_credentials(
-          db.insecure_credentials_table().GetRows(FormPrimaryKey(1)));
-      ASSERT_EQ(2U, insecure_credentials.size());
-      base::Time time_now = base::Time::Now();
-      base::Time time_slightly_before = time_now - base::Seconds(2);
-      EXPECT_LE(insecure_credentials[0].create_time, time_now);
-      EXPECT_GE(insecure_credentials[0].create_time, time_slightly_before);
-    }
   }
   // Added 07/21. Safe to remove in a year.
   if (version() <= 29) {
@@ -2090,9 +2077,8 @@ TEST_F(LoginDatabaseUndecryptableLoginsTest, DeleteUndecryptableLoginsTest) {
   base::HistogramTester histogram_tester;
   ASSERT_TRUE(db.Init());
 
-#if defined(OS_MAC) || (defined(OS_LINUX) && !BUILDFLAG(IS_CHROMECAST))
+#if defined(OS_MAC)
   // Make sure that we can't get any logins when database is corrupted.
-  // Disabling the checks in chromecast because encryption is unavailable.
   std::vector<std::unique_ptr<PasswordForm>> result;
   EXPECT_FALSE(db.GetAutofillableLogins(&result));
   EXPECT_TRUE(result.empty());
@@ -2108,15 +2094,12 @@ TEST_F(LoginDatabaseUndecryptableLoginsTest, DeleteUndecryptableLoginsTest) {
   EXPECT_THAT(result, IsEmpty());
 
   RunUntilIdle();
-#elif (defined(OS_LINUX) && BUILDFLAG(IS_CHROMECAST))
-  EXPECT_EQ(DatabaseCleanupResult::kEncryptionUnavailable,
-            db.DeleteUndecryptableLogins());
 #else
   EXPECT_EQ(DatabaseCleanupResult::kSuccess, db.DeleteUndecryptableLogins());
 #endif
 
 // Check histograms.
-#if defined(OS_MAC) || (defined(OS_LINUX) && !BUILDFLAG(IS_CHROMECAST))
+#if defined(OS_MAC)
   histogram_tester.ExpectUniqueSample("PasswordManager.CleanedUpPasswords", 2,
                                       1);
   histogram_tester.ExpectUniqueSample(
@@ -2191,7 +2174,7 @@ TEST_F(LoginDatabaseTest, EncryptedPasswordAddWithReplaceSemantics) {
   form.password_element = u"pwd";
   form.password_value = u"example";
 
-  std::ignore = db().AddLogin(form);
+  ignore_result(db().AddLogin(form));
 
   form.password_value = u"secret";
 
@@ -2211,7 +2194,7 @@ TEST_F(LoginDatabaseTest, EncryptedPasswordUpdate) {
   form.password_element = u"pwd";
   form.password_value = u"example";
 
-  std::ignore = db().AddLogin(form);
+  ignore_result(db().AddLogin(form));
 
   form.password_value = u"secret";
 
@@ -2242,7 +2225,8 @@ TEST_F(LoginDatabaseTest, GetLoginsEncryptedPassword) {
 
 TEST_F(LoginDatabaseTest, RetrievesInsecureDataWithLogins) {
   PasswordForm form = GenerateExamplePasswordForm();
-  std::ignore = db().AddLogin(form);
+  ignore_result(db().AddLogin(form));
+
 
   base::flat_map<InsecureType, InsecurityMetadata> issues;
   issues[InsecureType::kLeaked] =
@@ -2267,7 +2251,7 @@ TEST_F(LoginDatabaseTest, RetrievesInsecureDataWithLogins) {
 TEST_F(LoginDatabaseTest, RemovingLoginRemovesInsecureCredentials) {
   PasswordForm form = GenerateExamplePasswordForm();
 
-  std::ignore = db().AddLogin(form);
+  ignore_result(db().AddLogin(form));
   InsecureCredential credential1{form.signon_realm, form.username_value,
                                  base::Time(), InsecureType::kLeaked,
                                  IsMuted(false)};
@@ -2333,7 +2317,7 @@ TEST_F(LoginDatabaseTest, GetLoginsBySignonRealmAndUsername) {
 
 TEST_F(LoginDatabaseTest, UpdateLoginWithAddedInsecureCredential) {
   PasswordForm form = GenerateExamplePasswordForm();
-  std::ignore = db().AddLogin(form);
+  ignore_result(db().AddLogin(form));
   InsecureCredential insecure_credential{form.signon_realm, form.username_value,
                                          base::Time(), InsecureType::kLeaked,
                                          IsMuted(false)};
@@ -2351,7 +2335,7 @@ TEST_F(LoginDatabaseTest, UpdateLoginWithAddedInsecureCredential) {
 
 TEST_F(LoginDatabaseTest, UpdateLoginWithUpdatedInsecureCredential) {
   PasswordForm form = GenerateExamplePasswordForm();
-  std::ignore = db().AddLogin(form);
+  ignore_result(db().AddLogin(form));
   InsecureCredential insecure_credential{form.signon_realm, form.username_value,
                                          base::Time(), InsecureType::kLeaked,
                                          IsMuted(false)};
@@ -2377,7 +2361,7 @@ TEST_F(LoginDatabaseTest, UpdateLoginWithUpdatedInsecureCredential) {
 
 TEST_F(LoginDatabaseTest, UpdateLoginWithRemovedInsecureCredentialEntry) {
   PasswordForm form = GenerateExamplePasswordForm();
-  std::ignore = db().AddLogin(form);
+  ignore_result(db().AddLogin(form));
   InsecureCredential leaked{form.signon_realm, form.username_value,
                             base::Time(), InsecureType::kLeaked,
                             IsMuted(false)};
@@ -2413,7 +2397,7 @@ TEST_F(LoginDatabaseTest,
        AddLoginWithDifferentPasswordRemovesInsecureCredentials) {
   PasswordForm form = GenerateExamplePasswordForm();
 
-  std::ignore = db().AddLogin(form);
+  ignore_result(db().AddLogin(form));
   InsecureCredential credential1{form.signon_realm, form.username_value,
                                  base::Time(), InsecureType::kLeaked,
                                  IsMuted(false)};
@@ -2467,7 +2451,7 @@ TEST_F(LoginDatabaseTest, RemoveLoginRemovesInsecureCredentials) {
   form.password_issues = {
       {InsecureType::kLeaked,
        InsecurityMetadata(base::Time::FromTimeT(1), IsMuted(false))}};
-  std::ignore = db().AddLogin(form);
+  ignore_result(db().AddLogin(form));
 
   InsecureCredential leaked{form.signon_realm, form.username_value,
                             base::Time::FromTimeT(1), InsecureType::kLeaked,

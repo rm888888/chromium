@@ -361,7 +361,6 @@ function fillUsernameAndPassword_(inputs, formData, username, password) {
   if (!(usernameInput && (usernameInput.readOnly || usernameInput.disabled))) {
     __gCrWeb.fill.setInputElementValue(username, usernameInput);
   }
-
   __gCrWeb.fill.setInputElementValue(password, passwordInput);
   return true;
 }

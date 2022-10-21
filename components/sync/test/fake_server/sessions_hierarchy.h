@@ -8,6 +8,8 @@
 #include <set>
 #include <string>
 
+#include "base/macros.h"
+
 namespace fake_server {
 
 class SessionsHierarchy;

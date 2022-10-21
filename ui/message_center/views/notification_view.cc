@@ -56,8 +56,6 @@ constexpr int kMessageViewWidth =
     kLeftContentPadding.right() - kContentRowPadding.left() -
     kContentRowPadding.right();
 
-constexpr gfx::Insets kLargeImageContainerPadding(0, 16, 16, 16);
-
 // Max number of lines for title_view_.
 constexpr int kMaxLinesForTitleView = 1;
 
@@ -291,10 +289,7 @@ NotificationView::NotificationView(
 
   AddChildView(std::move(header_row));
   AddChildView(std::move(content_row));
-  AddChildView(
-      CreateImageContainerBuilder()
-          .SetBorder(views::CreateEmptyBorder(kLargeImageContainerPadding))
-          .Build());
+  AddChildView(CreateImageContainerBuilder().Build());
   AddChildView(CreateInlineSettingsBuilder().Build());
   AddChildView(CreateActionsRow());
 
@@ -329,7 +324,7 @@ void NotificationView::CreateOrUpdateTitleView(
       notification.type() == NOTIFICATION_TYPE_PROGRESS) {
     if (title_view_) {
       DCHECK(left_content()->Contains(title_view_));
-      left_content()->RemoveChildViewT(title_view_.get());
+      left_content()->RemoveChildViewT(title_view_);
       title_view_ = nullptr;
     }
     return;
@@ -412,7 +407,7 @@ void NotificationView::CreateOrUpdateInlineSettingsViews(
           IDS_MESSAGE_CENTER_BLOCK_ALL_NOTIFICATIONS;
       break;
     case NotifierType::CROSTINI_APPLICATION:
-      [[fallthrough]];
+      FALLTHROUGH;
     // PhoneHub notifications do not have inline settings.
     case NotifierType::PHONE_HUB:
       NOTREACHED();
@@ -489,11 +484,6 @@ gfx::Size NotificationView::GetIconViewSize() const {
   return kIconViewSize;
 }
 
-int NotificationView::GetLargeImageViewMaxWidth() const {
-  return kNotificationWidth - kLargeImageContainerPadding.width() -
-         GetInsets().width();
-}
-
 void NotificationView::OnThemeChanged() {
   MessageView::OnThemeChanged();
   UpdateHeaderViewBackgroundColor();
@@ -528,7 +518,6 @@ void NotificationView::ToggleInlineSettings(const ui::Event& event) {
   dont_block_button_->SetChecked(true);
 
   NotificationViewBase::ToggleInlineSettings(event);
-  PreferredSizeChanged();
 
   if (inline_settings_row()->GetVisible())
     AddBackgroundAnimation(event);

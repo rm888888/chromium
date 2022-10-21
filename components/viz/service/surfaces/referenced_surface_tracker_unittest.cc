@@ -7,6 +7,7 @@
 #include <memory>
 
 #include "base/containers/flat_set.h"
+#include "base/macros.h"
 #include "components/viz/common/surfaces/frame_sink_id.h"
 #include "components/viz/common/surfaces/surface_id.h"
 #include "components/viz/service/surfaces/surface_reference.h"
@@ -29,8 +30,9 @@ base::flat_set<SurfaceId> MakeReferenceSet(
 }
 
 SurfaceId MakeSurfaceId(const FrameSinkId& frame_sink_id, uint32_t parent_id) {
-  return SurfaceId(frame_sink_id,
-                   LocalSurfaceId(parent_id, base::UnguessableToken::Create()));
+  return SurfaceId(
+      frame_sink_id,
+      LocalSurfaceId(parent_id, base::UnguessableToken::Deserialize(0, 1u)));
 }
 
 }  // namespace

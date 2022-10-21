@@ -4,9 +4,6 @@
 
 #include "chrome/browser/web_applications/system_web_apps/system_web_app_delegate.h"
 
-#include "chrome/browser/web_applications/web_app_provider.h"
-#include "chrome/browser/web_applications/web_app_ui_manager.h"
-
 namespace web_app {
 
 url::Origin GetOrigin(const char* url) {
@@ -30,7 +27,7 @@ SystemWebAppDelegate::SystemWebAppDelegate(
       install_url_(install_url),
       profile_(profile),
       origin_trials_map_(origin_trials_map) {
-  DCHECK(!(ShouldShowNewWindowMenuOption() && ShouldReuseExistingWindow()))
+  DCHECK(!(ShouldShowNewWindowMenuOption() && ShouldBeSingleWindow()))
       << "App can't show 'new window' menu option and be a single window at "
          "the same time.";
 }
@@ -46,7 +43,7 @@ gfx::Size SystemWebAppDelegate::GetMinimumWindowSize() const {
   return gfx::Size();
 }
 
-bool SystemWebAppDelegate::ShouldReuseExistingWindow() const {
+bool SystemWebAppDelegate::ShouldBeSingleWindow() const {
   return true;
 }
 
@@ -54,9 +51,12 @@ bool SystemWebAppDelegate::ShouldShowNewWindowMenuOption() const {
   return false;
 }
 
-base::FilePath SystemWebAppDelegate::GetLaunchDirectory(
-    const apps::AppLaunchParams& params) const {
-  return base::FilePath();
+bool SystemWebAppDelegate::ShouldIncludeLaunchDirectory() const {
+  return false;
+}
+
+const OriginTrialsMap& SystemWebAppDelegate::GetEnabledOriginTrials() const {
+  return origin_trials_map_;
 }
 
 std::vector<int> SystemWebAppDelegate::GetAdditionalSearchTerms() const {
@@ -95,10 +95,6 @@ bool SystemWebAppDelegate::ShouldAllowScriptsToCloseWindows() const {
   return false;
 }
 
-bool SystemWebAppDelegate::ShouldHandleFileOpenIntents() const {
-  return ShouldShowInLauncher();
-}
-
 absl::optional<SystemAppBackgroundTaskInfo> SystemWebAppDelegate::GetTimerInfo()
     const {
   return absl::nullopt;
@@ -132,9 +128,5 @@ bool SystemWebAppDelegate::HasTitlebarTerminalSelectNewTabButton() const {
   return false;
 }
 #endif
-
-bool SystemWebAppDelegate::IsUrlInSystemAppScope(const GURL& url) const {
-  return false;
-}
 
 }  // namespace web_app

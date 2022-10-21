@@ -65,30 +65,20 @@ class ShortcutsBackendTest : public testing::Test,
 
   ShortcutsBackend* backend() { return backend_.get(); }
 
-  base::test::ScopedFeatureList& scoped_feature_list() {
-    return scoped_feature_list_;
-  }
-
  private:
   base::ScopedTempDir profile_dir_;
-  // `scoped_feature_list_` needs to be destroyed after TaskEnvironment is
-  // destroyed, so that other threads won't access the feature list while it is
-  // being destroyed.
-  base::test::ScopedFeatureList scoped_feature_list_;
   base::test::TaskEnvironment task_environment_;
   std::unique_ptr<TemplateURLService> template_url_service_;
   std::unique_ptr<history::HistoryService> history_service_;
 
   scoped_refptr<ShortcutsBackend> backend_;
 
-  bool load_notified_ = false;
-  bool changed_notified_ = false;
+  bool load_notified_;
+  bool changed_notified_;
 };
 
-ShortcutsBackendTest::ShortcutsBackendTest() {
-  scoped_feature_list().InitAndDisableFeature(
-      omnibox::kPreserveLongerShortcutsText);
-}
+ShortcutsBackendTest::ShortcutsBackendTest()
+    : load_notified_(false), changed_notified_(false) {}
 
 ShortcutsDatabase::Shortcut::MatchCore
 ShortcutsBackendTest::MatchCoreForTesting(const std::string& url,
@@ -440,16 +430,11 @@ TEST_F(ShortcutsBackendTest, AddOrUpdateShortcut) {
   EXPECT_FALSE(ShortcutExists(u"google"));
 }
 
-class ShortcutsBackendLongerShortcutsTest : public ShortcutsBackendTest {
- public:
-  ShortcutsBackendLongerShortcutsTest() {
-    scoped_feature_list().Reset();
-    scoped_feature_list().InitAndEnableFeature(
-        omnibox::kPreserveLongerShortcutsText);
-  }
-};
-TEST_F(ShortcutsBackendLongerShortcutsTest,
-       AddOrUpdateShortcut_LongTextFeature) {
+TEST_F(ShortcutsBackendTest, AddOrUpdateShortcut_LongTextFeature) {
+  base::test::ScopedFeatureList scoped_feature_list;
+  scoped_feature_list.InitAndEnableFeature(
+      omnibox::kPreserveLongerShortcutsText);
+
   InitBackend();
 
   AutocompleteMatch match;

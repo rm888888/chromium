@@ -22,12 +22,12 @@
 #include "base/cxx17_backports.h"
 #include "base/feature_list.h"
 #include "base/i18n/rtl.h"
-#include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/metrics/histogram.h"
 #include "base/metrics/histogram_functions.h"
 #include "base/metrics/histogram_macros.h"
 #include "base/metrics/user_metrics.h"
+#include "base/no_destructor.h"
 #include "base/numerics/safe_conversions.h"
 #include "base/scoped_observation.h"
 #include "base/stl_util.h"
@@ -39,7 +39,6 @@
 #include "build/chromeos_buildflags.h"
 #include "chrome/browser/defaults.h"
 #include "chrome/browser/themes/theme_properties.h"
-#include "chrome/browser/ui/browser_element_identifiers.h"
 #include "chrome/browser/ui/layout_constants.h"
 #include "chrome/browser/ui/tabs/tab_group_theme.h"
 #include "chrome/browser/ui/tabs/tab_strip_model.h"
@@ -147,8 +146,8 @@ class TabSlotAnimationDelegate : public gfx::AnimationDelegate {
   TabSlotView* slot_view() { return slot_view_; }
 
  private:
-  const raw_ptr<TabStrip> tab_strip_;
-  const raw_ptr<TabSlotView> slot_view_;
+  TabStrip* const tab_strip_;
+  TabSlotView* const slot_view_;
   OnAnimationProgressedCallback on_animation_progressed_;
 };
 
@@ -259,7 +258,7 @@ class TabScrollingAnimation : public gfx::LinearAnimation,
   }
 
  private:
-  const raw_ptr<TabStrip> tab_strip_;
+  TabStrip* const tab_strip_;
   const gfx::Rect start_visible_rect_;
   const gfx::Rect end_visible_rect_;
 };
@@ -874,7 +873,7 @@ class TabStrip::TabDragContextImpl : public TabDragContext {
     }
   }
 
-  const raw_ptr<TabStrip> tab_strip_;
+  TabStrip* const tab_strip_;
 
   // The controller for a drag initiated from a Tab. Valid for the lifetime of
   // the drag session.
@@ -901,10 +900,18 @@ TabStrip::TabStrip(std::unique_ptr<TabStripController> controller)
   // tabs.
   views::SetCascadingThemeProviderColor(this, views::kCascadingBackgroundColor,
                                         ThemeProperties::COLOR_TOOLBAR);
+  //update on 20220412
+//    views::SetCascadingThemeProviderColor(this, views::kCascadingBackgroundColor,
+//                                          ThemeProperties::COLOR_TAB_BACKGROUND_INACTIVE_FRAME_INACTIVE);
+
+  //
   Init();
   SetEventTargeter(std::make_unique<views::ViewTargeter>(this));
 
-  SetProperty(views::kElementIdentifierKey, kTabStripElementId);
+  SetProperty(views::kElementIdentifierKey, kTabStripIdentifier);
+
+  //update on 20220518
+  //SetBackground(views::CreateSolidBackground(SkColorSetARGB(255,235,226,238)));
 }
 
 TabStrip::~TabStrip() {
@@ -2044,6 +2051,9 @@ void TabStrip::Layout() {
     // It should be as wide as possible subject to the above constraints.
     const int width = std::min(max_width, std::max(min_width, available_width));
     SetBounds(0, 0, width, GetLayoutConstant(TAB_HEIGHT));
+    //update on 20220406
+    //SetBounds(0, 0, width, GetLayoutConstant(TAB_HEIGHT)+20);
+    //
     SetTabSlotVisibility();
   }
 
@@ -2167,7 +2177,7 @@ void TabStrip::PaintChildren(const views::PaintInfo& paint_info) {
 
 gfx::Size TabStrip::GetMinimumSize() const {
   const int minimum_width = layout_helper_->CalculateMinimumWidth();
-
+  //update on 20220408
   return gfx::Size(minimum_width, GetLayoutConstant(TAB_HEIGHT));
 }
 
@@ -3120,7 +3130,7 @@ TabStrip::DropArrow::DropArrow(const BrowserRootView::DropIndex& index,
   arrow_view_ =
       arrow_window_->SetContentsView(std::make_unique<views::ImageView>());
   arrow_view_->SetImage(GetDropArrowImage(point_down_));
-  scoped_observation_.Observe(arrow_window_.get());
+  scoped_observation_.Observe(arrow_window_);
 
   arrow_window_->Show();
 }
@@ -3144,7 +3154,7 @@ void TabStrip::DropArrow::SetWindowBounds(const gfx::Rect& bounds) {
 }
 
 void TabStrip::DropArrow::OnWidgetDestroying(views::Widget* widget) {
-  DCHECK(scoped_observation_.IsObservingSource(arrow_window_.get()));
+  DCHECK(scoped_observation_.IsObservingSource(arrow_window_));
   scoped_observation_.Reset();
   arrow_window_ = nullptr;
 }
@@ -3406,3 +3416,5 @@ ADD_READONLY_PROPERTY_METADATA(int, ActiveTabWidth)
 ADD_READONLY_PROPERTY_METADATA(int, InactiveTabWidth)
 ADD_READONLY_PROPERTY_METADATA(int, AvailableWidthForTabStrip)
 END_METADATA
+
+DEFINE_CLASS_ELEMENT_IDENTIFIER_VALUE(TabStrip, kTabStripIdentifier);

@@ -79,12 +79,11 @@ void TestPaymentsClient::GetUploadDetails(
 void TestPaymentsClient::UploadCard(
     const payments::PaymentsClient::UploadRequestDetails& request_details,
     base::OnceCallback<void(AutofillClient::PaymentsRpcResult,
-                            const PaymentsClient::UploadCardResponseDetails&)>
-        callback) {
+                            const std::string&)> callback) {
   upload_card_addresses_ = request_details.profiles;
   active_experiments_ = request_details.active_experiments;
   std::move(callback).Run(AutofillClient::PaymentsRpcResult::kSuccess,
-                          upload_card_response_details_);
+                          server_id_);
 }
 
 void TestPaymentsClient::MigrateCards(
@@ -162,10 +161,8 @@ void TestPaymentsClient::AddFidoEligibleCard(std::string server_id,
       ->Append(std::move(key_info));
 }
 
-void TestPaymentsClient::SetUploadCardResponseDetailsForUploadCard(
-    const PaymentsClient::UploadCardResponseDetails&
-        upload_card_response_details) {
-  upload_card_response_details_ = upload_card_response_details;
+void TestPaymentsClient::SetServerIdForCardUpload(std::string server_id) {
+  server_id_ = server_id;
 }
 
 void TestPaymentsClient::SetSaveResultForCardsMigration(

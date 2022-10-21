@@ -9,6 +9,7 @@
 
 #include "base/callback.h"
 #include "base/location.h"
+#include "base/macros.h"
 #include "base/memory/ptr_util.h"
 #include "base/test/bind.h"
 #include "base/test/task_environment.h"

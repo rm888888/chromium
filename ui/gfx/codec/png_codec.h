@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 
+#include "base/macros.h"
 #include "ui/gfx/codec/codec_export.h"
 
 class SkBitmap;

@@ -13,6 +13,7 @@
 #include "base/command_line.h"
 #include "base/files/file_util.h"
 #include "base/files/important_file_writer.h"
+#include "base/macros.h"
 #include "base/metrics/histogram_macros.h"
 #include "base/strings/string_util.h"
 #include "base/task/post_task.h"
@@ -121,7 +122,7 @@ void RankerModelLoaderImpl::NotifyOfRankerActivity() {
       // There was no configured model path. Switch the state to IDLE and
       // fall through to consider the URL.
       state_ = LoaderState::IDLE;
-      [[fallthrough]];
+      FALLTHROUGH;
     case LoaderState::IDLE:
       if (model_url_.is_valid()) {
         StartLoadFromURL();
@@ -130,7 +131,7 @@ void RankerModelLoaderImpl::NotifyOfRankerActivity() {
       // There was no configured model URL. Switch the state to FINISHED and
       // fall through.
       state_ = LoaderState::FINISHED;
-      [[fallthrough]];
+      FALLTHROUGH;
     case LoaderState::FINISHED:
     case LoaderState::LOADING_FROM_FILE:
     case LoaderState::LOADING_FROM_URL:

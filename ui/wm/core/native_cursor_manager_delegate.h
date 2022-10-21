@@ -5,6 +5,7 @@
 #ifndef UI_WM_CORE_NATIVE_CURSOR_MANAGER_DELEGATE_H_
 #define UI_WM_CORE_NATIVE_CURSOR_MANAGER_DELEGATE_H_
 
+#include "ui/base/cursor/cursor.h"
 #include "ui/gfx/native_widget_types.h"
 #include "ui/wm/core/wm_core_export.h"
 

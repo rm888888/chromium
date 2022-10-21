@@ -235,14 +235,18 @@ void WebAppFrameToolbarView::ZoomChangedForActiveTab(bool can_show_bubble) {
       can_show_bubble);
 }
 
-SidePanelToolbarButton* WebAppFrameToolbarView::GetSidePanelButton() {
+ReadLaterToolbarButton* WebAppFrameToolbarView::GetSidePanelButton() {
   return nullptr;
 }
 
 AvatarToolbarButton* WebAppFrameToolbarView::GetAvatarToolbarButton() {
   return nullptr;
 }
-
+//update on 20220215
+AvatarToolbarButton* WebAppFrameToolbarView::GetWalletToolbarButton() {
+  return nullptr;
+}
+//
 ToolbarButton* WebAppFrameToolbarView::GetBackButton() {
   return left_container_ ? left_container_->back_button() : nullptr;
 }

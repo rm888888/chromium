@@ -10,7 +10,6 @@
 #include <algorithm>
 #include <memory>
 #include <string>
-#include <tuple>
 #include <utility>
 
 #include "base/auto_reset.h"
@@ -124,8 +123,7 @@ void ExecuteScript(blink::WebLocalFrame* frame,
   std::string json;
   base::JSONWriter::Write(parameters, &json);
   std::string script = base::StringPrintf(script_format, json.c_str());
-  frame->ExecuteScript(
-      blink::WebScriptSource(blink::WebString::FromUTF8(script)));
+  frame->ExecuteScript(blink::WebString::FromUTF8(script));
 }
 
 int GetDPI(const mojom::PrintParams& print_params) {
@@ -710,7 +708,6 @@ void PrintRenderFrameHelper::PrintHeaderAndFooter(
       /*client=*/nullptr,
       /*is_hidden=*/false, /*is_prerendering=*/false,
       /*is_inside_portal=*/false,
-      /*is_fenced_frame=*/false,
       /*compositing_enabled=*/false, /*widgets_never_composited=*/false,
       /*opener=*/nullptr, mojo::NullAssociatedReceiver(),
       *source_frame.GetAgentGroupScheduler(),
@@ -743,14 +740,14 @@ void PrintRenderFrameHelper::PrintHeaderAndFooter(
           frame_widget.BindNewEndpointAndPassDedicatedReceiver();
 
   mojo::AssociatedRemote<blink::mojom::FrameWidgetHost> frame_widget_host;
-  std::ignore = frame_widget_host.BindNewEndpointAndPassDedicatedReceiver();
+  ignore_result(frame_widget_host.BindNewEndpointAndPassDedicatedReceiver());
 
   mojo::AssociatedRemote<blink::mojom::Widget> widget_remote;
   mojo::PendingAssociatedReceiver<blink::mojom::Widget> widget_receiver =
       widget_remote.BindNewEndpointAndPassDedicatedReceiver();
 
   mojo::AssociatedRemote<blink::mojom::WidgetHost> widget_host_remote;
-  std::ignore = widget_host_remote.BindNewEndpointAndPassDedicatedReceiver();
+  ignore_result(widget_host_remote.BindNewEndpointAndPassDedicatedReceiver());
 
   blink::WebNonCompositedWidgetClient client;
   blink::WebFrameWidget* web_frame_widget = frame->InitializeFrameWidget(
@@ -869,18 +866,12 @@ class PrepareFrameAndViewForPrint : public blink::WebViewClient,
   void ResizeForPrinting();
   void RestoreSize();
   void CopySelection(const WebPreferences& preferences);
-  void ComputeScalingAndPrintParams(blink::WebLocalFrame* frame,
-                                    mojom::PrintParamsPtr& print_params,
-                                    bool is_pdf,
-                                    bool ignore_css_margins,
-                                    bool fit_to_page);
 
   FrameReference frame_;
   FrameReference original_frame_;
   blink::WebNavigationControl* navigation_control_ = nullptr;
   blink::WebNode node_to_print_;
   bool owns_web_view_ = false;
-  mojom::PrintParamsPtr selection_only_print_params_;
   blink::WebPrintParams web_print_params_;
   gfx::Size prev_view_size_;
   uint32_t expected_pages_count_ = 0;
@@ -908,18 +899,21 @@ PrepareFrameAndViewForPrint::PrepareFrameAndViewForPrint(
 
   mojom::PrintParamsPtr print_params = params.Clone();
   bool source_is_pdf = IsPrintingNodeOrPdfFrame(frame, node_to_print_);
-  if (should_print_selection_only_) {
-    // Save the parameters for use in `CopySelection()`.
-    selection_only_print_params_ = std::move(print_params);
-
-    // Printing selection not an option for PDF.
-    DCHECK(!source_is_pdf);
-  } else {
+  if (!should_print_selection_only_) {
     bool fit_to_page =
         ignore_css_margins && IsPrintScalingOptionFitToPage(*print_params);
-    ComputeScalingAndPrintParams(frame, print_params, source_is_pdf,
-                                 ignore_css_margins, fit_to_page);
+    ComputeWebKitPrintParamsInDesiredDpi(params, source_is_pdf,
+                                         &web_print_params_);
+    frame->PrintBegin(web_print_params_, node_to_print_);
+    double scale_factor = PrintRenderFrameHelper::GetScaleFactor(
+        print_params->scale_factor, source_is_pdf);
+    print_params =
+        CalculatePrintParamsForCss(frame, 0, *print_params, ignore_css_margins,
+                                   fit_to_page, &scale_factor);
+    frame->PrintEnd();
   }
+  ComputeWebKitPrintParamsInDesiredDpi(*print_params, source_is_pdf,
+                                       &web_print_params_);
 }
 
 PrepareFrameAndViewForPrint::~PrepareFrameAndViewForPrint() {
@@ -978,11 +972,9 @@ void PrepareFrameAndViewForPrint::CopySelectionIfNeeded(
 void PrepareFrameAndViewForPrint::CopySelection(
     const WebPreferences& preferences) {
   ResizeForPrinting();
-  ComputeScalingAndPrintParams(frame(), selection_only_print_params_,
-                               /*is_pdf=*/false,
-                               /*ignore_css_margins=*/false,
-                               /*fit_to_page=*/false);
+  frame()->PrintBegin(web_print_params_, node_to_print_);
   std::string html = frame()->SelectionAsMarkup().Utf8();
+  frame()->PrintEnd();
   RestoreSize();
 
   // Create a new WebView with the same settings as the current display one.
@@ -996,7 +988,6 @@ void PrepareFrameAndViewForPrint::CopySelection(
       /*is_hidden=*/false,
       /*is_prerendering=*/false,
       /*is_inside_portal=*/false,
-      /*is_fenced_frame=*/false,
       /*compositing_enabled=*/false,
       /*widgets_never_composited=*/false,
       /*opener=*/nullptr, mojo::NullAssociatedReceiver(),
@@ -1013,14 +1004,14 @@ void PrepareFrameAndViewForPrint::CopySelection(
           frame_widget.BindNewEndpointAndPassDedicatedReceiver();
 
   mojo::AssociatedRemote<blink::mojom::FrameWidgetHost> frame_widget_host;
-  std::ignore = frame_widget_host.BindNewEndpointAndPassDedicatedReceiver();
+  ignore_result(frame_widget_host.BindNewEndpointAndPassDedicatedReceiver());
 
   mojo::AssociatedRemote<blink::mojom::Widget> widget_remote;
   mojo::PendingAssociatedReceiver<blink::mojom::Widget> widget_receiver =
       widget_remote.BindNewEndpointAndPassDedicatedReceiver();
 
   mojo::AssociatedRemote<blink::mojom::WidgetHost> widget_host_remote;
-  std::ignore = widget_host_remote.BindNewEndpointAndPassDedicatedReceiver();
+  ignore_result(widget_host_remote.BindNewEndpointAndPassDedicatedReceiver());
 
   blink::WebFrameWidget* main_frame_widget = main_frame->InitializeFrameWidget(
       frame_widget_host.Unbind(), std::move(frame_widget_receiver),
@@ -1041,25 +1032,6 @@ void PrepareFrameAndViewForPrint::CopySelection(
                                                  "UTF-8", std::move(html));
   navigation_control_->CommitNavigation(std::move(params),
                                         /*extra_data=*/nullptr);
-}
-
-void PrepareFrameAndViewForPrint::ComputeScalingAndPrintParams(
-    blink::WebLocalFrame* frame,
-    mojom::PrintParamsPtr& print_params,
-    bool is_pdf,
-    bool ignore_css_margins,
-    bool fit_to_page) {
-  ComputeWebKitPrintParamsInDesiredDpi(*print_params, is_pdf,
-                                       &web_print_params_);
-  frame->PrintBegin(web_print_params_, node_to_print_);
-  double scale_factor = PrintRenderFrameHelper::GetScaleFactor(
-      print_params->scale_factor, is_pdf);
-  print_params = CalculatePrintParamsForCss(frame, /*page_index=*/0,
-                                            *print_params, ignore_css_margins,
-                                            fit_to_page, &scale_factor);
-  frame->PrintEnd();
-  ComputeWebKitPrintParamsInDesiredDpi(*print_params, is_pdf,
-                                       &web_print_params_);
 }
 
 void PrepareFrameAndViewForPrint::DidStopLoading() {
@@ -2317,16 +2289,14 @@ bool PrintRenderFrameHelper::UpdatePrintSettings(
   }
 
   // Validate expected print preview settings.
-  absl::optional<bool> is_first_request =
-      job_settings->FindBoolKey(kIsFirstRequest);
   if (!job_settings->GetInteger(kPreviewRequestID,
                                 &settings->params->preview_request_id) ||
-      !is_first_request.has_value()) {
+      !job_settings->GetBoolean(kIsFirstRequest,
+                                &settings->params->is_first_request)) {
     NOTREACHED();
     print_preview_context_.set_error(PREVIEW_ERROR_BAD_SETTING);
     return false;
   }
-  settings->params->is_first_request = is_first_request.value();
 
   settings->params->print_to_pdf = IsPrintToPdfRequested(*job_settings);
   UpdateFrameMarginsCssInfo(*job_settings);

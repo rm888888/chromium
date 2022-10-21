@@ -1,0 +1,76 @@
+<!doctype html>
+<html dir="$i18n{textdirection}"
+      hascustombackground="$i18n{hasCustomBackground}"
+      lang="$i18n{language}"
+      class="md">
+<head>
+<meta charset="utf-8">
+<meta name="color-scheme" content="light dark">
+<!-- <title>$i18n{title}</title> -->
+<!-- <link rel="icon" type="image/svg+xml" href="../../../../ui/webui/resources/images/incognito_icon.svg"> -->
+<!--update on 20220921-->
+<title>Home</title>
+<link rel="icon" type="image/svg+xml" href="../../../../ui/webui/resources/images/fingerprint_default.svg">
+<!---->
+<meta name="viewport" content="width=device-width">
+<link id="incognitothemecss" rel="stylesheet">
+<script>
+// Until themes can clear the cache, force-reload the theme stylesheet.
+document.querySelector('#incognitothemecss').href =
+    'chrome://theme/css/incognito_tab_theme.css?' + Date.now();
+</script>
+<link rel="stylesheet" href="chrome://resources/css/text_defaults_md.css">
+<link rel="stylesheet" href="incognito_tab.css">
+</head>
+<body>
+<div class="content">
+  <div class="icon" role="presentation" alt="" hidden="false"></div>
+  <h1 hidden="false">$i18n{incognitoTabHeading}</h1>
+  <p id="subtitle" hidden="false">
+    <span>$i18n{incognitoTabDescription}</span>
+    <a class="learn-more-button"
+        href="$i18n{learnMoreLink}">$i18n{learnMore}</a>
+  </p>
+  <div id="bulletpoints-wrapper" hidden="false">
+    <div class="bulletpoints first">$i18nRaw{incognitoTabFeatures}</div>
+    <div class="bulletpoints">$i18nRaw{incognitoTabWarning}</div>
+  </div>
+  <div id="cookie-controls" hidden="false">
+    <div id="cookie-controls-description">
+      <em>$i18n{cookieControlsTitle}</em>
+      $i18n{cookieControlsDescription}
+    </div>
+    <cr-tooltip-icon hidden="false" id="cookie-controls-tooltip-icon"
+        icon-aria-label="$i18n{cookieControlsTitle}"
+        icon-class="$i18n{cookieControlsToolTipIcon}"
+        tooltip-text="$i18n{cookieControlsTooltipText}"
+        role="link" style="cursor: pointer;" $i18n{hideTooltipIcon}>
+    </cr-tooltip-icon>
+    <cr-toggle  hidden="false" id="cookie-controls-toggle"
+               aria-label="$i18n{cookieControlsTitle}"
+               $i18n{cookieControlsToggleChecked} dark></cr-toggle>
+  </div>
+  <a class="learn-more-button" href="$i18n{learnMoreLink}" hidden="false">$i18n{learnMore}</a>
+  <!--update on 20220804-->
+  <div class="main-dao">
+    <div class="dao-content">
+      <div class="dao-row-1">No more reminders</div>
+      <div class="dao-row-2">+4 DAO</div>
+      <div class="dao-row-3" id="dao-row-3">You get takens rewards
+      by viewing this sponsor image.</div>
+    </div>
+    <div class="dao-progress">
+      <div class="dao-progress-row1"></div>
+      <div class="dao-progress-row2"></div>
+      <div class="dao-progress-row3"></div>
+      <div class="dao-progress-row4"></div>
+    </div>
+  </div>
+  <!---->
+</div>
+<script type="module" src="incognito_tab.js"></script>
+<!-- Lazy-load cr_elements to avoid performance penalty introduced by loading Polymer -->
+<script type="module" src="chrome://resources/cr_elements/cr_toggle/cr_toggle.m.js" async></script>
+<script type="module" src="chrome://resources/cr_elements/policy/cr_tooltip_icon.m.js" async></script>
+</body>
+</html>

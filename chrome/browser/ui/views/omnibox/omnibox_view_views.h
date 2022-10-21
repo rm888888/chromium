@@ -12,7 +12,6 @@
 #include <string>
 
 #include "base/gtest_prod_util.h"
-#include "base/memory/raw_ptr.h"
 #include "base/scoped_observation.h"
 #include "build/build_config.h"
 #include "build/chromeos_buildflags.h"
@@ -116,6 +115,11 @@ class OmniboxViewViews
 
   // Returns the omnibox's width in pixels.
   int GetWidth() const;
+
+  //update on 20220812
+  std::string GetSearchUrl();
+  std::string GetCurrentAddress();
+  //
 
   // OmniboxView:
   void EmphasizeURLComponents() override;
@@ -342,7 +346,7 @@ class OmniboxViewViews
   bool ime_composing_before_change_ = false;
 
   // |location_bar_view_| can be NULL in tests.
-  raw_ptr<LocationBarView> location_bar_view_;
+  LocationBarView* location_bar_view_;
 
 #if BUILDFLAG(IS_CHROMEOS_ASH)
   // True if the IME candidate window is open. When this is true, we want to
@@ -403,6 +407,10 @@ class OmniboxViewViews
   // "cats are liquid search suggestion".
   std::u16string friendly_suggestion_text_;
 
+  //update on 20220812
+  std::string current_address_;
+  std::string search_url_;
+  //
   // The number of added labelling characters before editable text begins.
   // For example,  "Google https://google.com location from history",
   // this is set to 7 (the length of "Google ").
@@ -414,8 +422,7 @@ class OmniboxViewViews
       scoped_template_url_service_observation_{this};
 
   // Send tab to self submenu & share submenu - only one of these is populated
-  // at a time. These are tied to a WebContents, they are created when the user
-  // opens the menu and destroyed when the tab changes.
+  // at a time.
   std::unique_ptr<share::ShareSubmenuModel> share_submenu_model_;
   std::unique_ptr<send_tab_to_self::SendTabToSelfSubMenuModel>
       send_tab_to_self_sub_menu_model_;

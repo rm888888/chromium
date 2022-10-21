@@ -32,9 +32,6 @@ extern const base::Feature kPageContentAnnotations;
 extern const base::Feature kPageTextExtraction;
 extern const base::Feature kPushNotifications;
 extern const base::Feature kOptimizationGuideMetadataValidation;
-extern const base::Feature kPageTopicsBatchAnnotations;
-extern const base::Feature kPageVisibilityBatchAnnotations;
-extern const base::Feature kUseLocalPageEntitiesMetadataProvider;
 
 // The grace period duration for how long to give outstanding page text dump
 // requests to respond after DidFinishLoad.
@@ -107,11 +104,7 @@ base::TimeDelta GetActiveTabsFetchRefreshDuration();
 base::TimeDelta GetActiveTabsStalenessTolerance();
 
 // Returns the max number of concurrent fetches to the remote Optimization Guide
-// Service that should be allowed for batch updates
-size_t MaxConcurrentBatchUpdateFetches();
-
-// Returns the max number of concurrent fetches to the remote Optimization Guide
-// Service that should be allowed for navigations.
+// Service that should be allowed.
 size_t MaxConcurrentPageNavigationFetches();
 
 // Returns the minimum number of seconds to randomly delay before starting to
@@ -134,7 +127,7 @@ base::TimeDelta StoredHostModelFeaturesFreshnessDuration();
 
 // The maximum duration for which models can remain in the
 // OptimizationGuideStore without being loaded.
-base::TimeDelta StoredModelsValidDuration();
+base::TimeDelta StoredModelsInactiveDuration();
 
 // The amount of time URL-keyed hints within the hint cache will be
 // allowed to be used and not be purged.
@@ -220,14 +213,9 @@ bool ShouldExtractRelatedSearches();
 // at most once in the returned vector. However, it is not guaranteed that it
 // will only contain models that the current PageContentAnnotationsService
 // supports, so it is up to the caller to ensure that it can execute the
-// specified models. `locale` is used for implement client-side locale filtering
-// for models that only work for some locales.
+// specified models.
 std::vector<optimization_guide::proto::OptimizationTarget>
-GetPageContentModelsToExecute(const std::string& locale);
-
-// Returns whether page entities should be retrieved from the remote
-// Optimization Guide service.
-bool RemotePageEntitiesEnabled();
+GetPageContentModelsToExecute();
 
 // The time to wait beyond the onload event before sending the hints request for
 // link predictions.
@@ -243,15 +231,6 @@ double NoiseProbabilityForRAPPORMetrics();
 
 // Returns whether the metadata validation fetch feature is host keyed.
 bool ShouldMetadataValidationFetchHostKeyed();
-
-// Returns if Page Topics Batch Annotations are enabled.
-bool PageTopicsBatchAnnotationsEnabled();
-
-// Returns if Page Visibility Batch Annotations are enabled.
-bool PageVisibilityBatchAnnotationsEnabled();
-
-// Whether to use the leveldb-based page entities metadata provider.
-bool UseLocalPageEntitiesMetadataProvider();
 
 }  // namespace features
 }  // namespace optimization_guide

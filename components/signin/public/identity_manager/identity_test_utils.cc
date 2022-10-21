@@ -162,7 +162,13 @@ CoreAccountInfo SetPrimaryAccount(IdentityManager* identity_manager,
 
   PrimaryAccountManager* primary_account_manager =
       identity_manager->GetPrimaryAccountManager();
-  primary_account_manager->SetPrimaryAccountInfo(account_info, consent_level);
+  switch (consent_level) {
+    case ConsentLevel::kSync:
+      primary_account_manager->SetSyncPrimaryAccountInfo(account_info);
+      break;
+    case ConsentLevel::kSignin:
+      primary_account_manager->SetUnconsentedPrimaryAccountInfo(account_info);
+  }
 
   DCHECK(identity_manager->HasPrimaryAccount(consent_level));
   DCHECK_EQ(account_info.gaia,

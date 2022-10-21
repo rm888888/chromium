@@ -13,6 +13,7 @@
 #include "build/build_config.h"
 #include "chrome/browser/content_settings/host_content_settings_map_factory.h"
 #include "chrome/browser/content_settings/page_specific_content_settings_delegate.h"
+#include "chrome/browser/custom_handlers/protocol_handler_registry.h"
 #include "chrome/browser/custom_handlers/test_protocol_handler_registry_delegate.h"
 #include "chrome/browser/history/history_service_factory.h"
 #include "chrome/browser/media/webrtc/media_capture_devices_dispatcher.h"
@@ -36,7 +37,6 @@
 #include "components/content_settings/browser/page_specific_content_settings.h"
 #include "components/content_settings/core/browser/host_content_settings_map.h"
 #include "components/content_settings/core/common/content_settings.h"
-#include "components/custom_handlers/protocol_handler_registry.h"
 #include "components/infobars/content/content_infobar_manager.h"
 #include "components/infobars/core/infobar_delegate.h"
 #include "components/permissions/permission_decision_auto_blocker.h"
@@ -146,7 +146,7 @@ TEST_F(ContentSettingBubbleModelTest, Cookies) {
       bubble_content_2.radio_group.radio_items[1],
       l10n_util::GetStringFUTF16(IDS_ALLOWED_COOKIES_BLOCK,
                                  url_formatter::FormatUrlForSecurityDisplay(
-                                     web_contents()->GetLastCommittedURL())));
+                                     web_contents()->GetURL())));
   EXPECT_FALSE(bubble_content_2.custom_link.empty());
   EXPECT_TRUE(bubble_content_2.custom_link_enabled);
   EXPECT_FALSE(bubble_content_2.manage_text.empty());
@@ -201,7 +201,7 @@ TEST_F(ContentSettingBubbleModelTest, BlockedMediastreamMicAndCamera) {
 
   WebContentsTester::For(web_contents())->
       NavigateAndCommit(GURL("https://www.example.com"));
-  GURL url = web_contents()->GetLastCommittedURL();
+  GURL url = web_contents()->GetURL();
 
   HostContentSettingsMap* host_content_settings_map =
       HostContentSettingsMapFactory::GetForProfile(profile());
@@ -265,7 +265,7 @@ TEST_F(ContentSettingBubbleModelTest, MediastreamContentBubble) {
 
   WebContentsTester::For(web_contents())->
       NavigateAndCommit(GURL("https://www.example.com"));
-  GURL url = web_contents()->GetLastCommittedURL();
+  GURL url = web_contents()->GetURL();
 
   HostContentSettingsMap* host_content_settings_map =
       HostContentSettingsMapFactory::GetForProfile(profile());
@@ -347,7 +347,7 @@ TEST_F(ContentSettingBubbleModelTest, MediastreamContentBubbleMediaMenus) {
 
   WebContentsTester::For(web_contents())->
       NavigateAndCommit(GURL("https://www.example.com"));
-  GURL url = web_contents()->GetLastCommittedURL();
+  GURL url = web_contents()->GetURL();
 
   blink::MediaStreamDevices audio_devices;
   blink::MediaStreamDevice fake_audio_device1(
@@ -810,7 +810,7 @@ TEST_F(ContentSettingBubbleModelTest, Geolocation) {
         bubble_content.radio_group.radio_items[1],
         l10n_util::GetStringFUTF16(IDS_ALLOWED_GEOLOCATION_BLOCK,
                                    url_formatter::FormatUrlForSecurityDisplay(
-                                       web_contents()->GetLastCommittedURL())));
+                                       web_contents()->GetURL())));
     EXPECT_EQ(bubble_content.radio_group.default_item, 0);
 
     settings_map->SetDefaultContentSetting(ContentSettingsType::GEOLOCATION,
@@ -831,7 +831,7 @@ TEST_F(ContentSettingBubbleModelTest, Geolocation) {
         bubble_content_2.radio_group.radio_items[0],
         l10n_util::GetStringFUTF16(IDS_BLOCKED_GEOLOCATION_UNBLOCK,
                                    url_formatter::FormatUrlForSecurityDisplay(
-                                       web_contents()->GetLastCommittedURL())));
+                                       web_contents()->GetURL())));
     EXPECT_EQ(bubble_content_2.radio_group.radio_items[1],
               l10n_util::GetStringUTF16(IDS_BLOCKED_GEOLOCATION_NO_ACTION));
     EXPECT_EQ(bubble_content_2.radio_group.default_item, 1);
@@ -855,7 +855,7 @@ TEST_F(ContentSettingBubbleModelTest, Geolocation) {
         bubble_content_3.radio_group.radio_items[1],
         l10n_util::GetStringFUTF16(IDS_ALLOWED_GEOLOCATION_BLOCK,
                                    url_formatter::FormatUrlForSecurityDisplay(
-                                       web_contents()->GetLastCommittedURL())));
+                                       web_contents()->GetURL())));
     EXPECT_EQ(bubble_content_3.radio_group.default_item, 0);
   }
 
@@ -884,7 +884,7 @@ TEST_F(ContentSettingBubbleModelTest, Geolocation) {
         bubble_content.radio_group.radio_items[0],
         l10n_util::GetStringFUTF16(IDS_BLOCKED_GEOLOCATION_UNBLOCK,
                                    url_formatter::FormatUrlForSecurityDisplay(
-                                       web_contents()->GetLastCommittedURL())));
+                                       web_contents()->GetURL())));
     EXPECT_EQ(bubble_content.radio_group.radio_items[1],
               l10n_util::GetStringUTF16(IDS_BLOCKED_GEOLOCATION_NO_ACTION));
     EXPECT_EQ(bubble_content.radio_group.default_item, 1);
@@ -909,7 +909,7 @@ TEST_F(ContentSettingBubbleModelTest, Geolocation) {
         bubble_content_2.radio_group.radio_items[1],
         l10n_util::GetStringFUTF16(IDS_ALLOWED_GEOLOCATION_BLOCK,
                                    url_formatter::FormatUrlForSecurityDisplay(
-                                       web_contents()->GetLastCommittedURL())));
+                                       web_contents()->GetURL())));
     EXPECT_EQ(bubble_content_2.radio_group.default_item, 0);
 
     settings_map->SetDefaultContentSetting(ContentSettingsType::GEOLOCATION,
@@ -930,7 +930,7 @@ TEST_F(ContentSettingBubbleModelTest, Geolocation) {
         bubble_content_3.radio_group.radio_items[0],
         l10n_util::GetStringFUTF16(IDS_BLOCKED_GEOLOCATION_UNBLOCK,
                                    url_formatter::FormatUrlForSecurityDisplay(
-                                       web_contents()->GetLastCommittedURL())));
+                                       web_contents()->GetURL())));
     EXPECT_EQ(bubble_content_3.radio_group.radio_items[1],
               l10n_util::GetStringUTF16(IDS_BLOCKED_GEOLOCATION_NO_ACTION));
     EXPECT_EQ(bubble_content_3.radio_group.default_item, 1);
@@ -948,9 +948,8 @@ TEST_F(ContentSettingBubbleModelTest, Geolocation) {
     settings_map->SetDefaultContentSetting(ContentSettingsType::GEOLOCATION,
                                            CONTENT_SETTING_ALLOW);
     settings_map->SetContentSettingDefaultScope(
-        web_contents()->GetLastCommittedURL(),
-        web_contents()->GetLastCommittedURL(), ContentSettingsType::GEOLOCATION,
-        CONTENT_SETTING_BLOCK);
+        web_contents()->GetURL(), web_contents()->GetURL(),
+        ContentSettingsType::GEOLOCATION, CONTENT_SETTING_BLOCK);
     content_settings->OnContentBlocked(ContentSettingsType::GEOLOCATION);
     std::unique_ptr<ContentSettingBubbleModel> content_setting_bubble_model(
         std::make_unique<ContentSettingGeolocationBubbleModel>(nullptr,
@@ -966,7 +965,7 @@ TEST_F(ContentSettingBubbleModelTest, Geolocation) {
         bubble_content.radio_group.radio_items[0],
         l10n_util::GetStringFUTF16(IDS_BLOCKED_GEOLOCATION_UNBLOCK,
                                    url_formatter::FormatUrlForSecurityDisplay(
-                                       web_contents()->GetLastCommittedURL())));
+                                       web_contents()->GetURL())));
     EXPECT_EQ(bubble_content.radio_group.radio_items[1],
               l10n_util::GetStringUTF16(IDS_BLOCKED_GEOLOCATION_NO_ACTION));
     EXPECT_EQ(bubble_content.radio_group.default_item, 1);
@@ -1043,7 +1042,7 @@ TEST_F(ContentSettingBubbleModelTest, RegisterProtocolHandler) {
 }
 
 TEST_F(ContentSettingBubbleModelTest, RPHAllow) {
-  custom_handlers::ProtocolHandlerRegistry registry(
+  ProtocolHandlerRegistry registry(
       profile(), std::make_unique<TestProtocolHandlerRegistryDelegate>());
   registry.InitProtocolSettings();
 
@@ -1110,7 +1109,7 @@ TEST_F(ContentSettingBubbleModelTest, RPHAllow) {
 }
 
 TEST_F(ContentSettingBubbleModelTest, RPHDefaultDone) {
-  custom_handlers::ProtocolHandlerRegistry registry(
+  ProtocolHandlerRegistry registry(
       profile(), std::make_unique<TestProtocolHandlerRegistryDelegate>());
   registry.InitProtocolSettings();
 
@@ -1207,7 +1206,7 @@ TEST_F(GenericSensorContentSettingBubbleModelTest,
         bubble_content.radio_group.radio_items[1],
         l10n_util::GetStringFUTF16(IDS_ALLOWED_SENSORS_BLOCK,
                                    url_formatter::FormatUrlForSecurityDisplay(
-                                       web_contents()->GetLastCommittedURL())));
+                                       web_contents()->GetURL())));
     EXPECT_EQ(bubble_content.radio_group.default_item, 0);
 
     settings_map->SetDefaultContentSetting(ContentSettingsType::SENSORS,
@@ -1228,7 +1227,7 @@ TEST_F(GenericSensorContentSettingBubbleModelTest,
         bubble_content_2.radio_group.radio_items[0],
         l10n_util::GetStringFUTF16(IDS_BLOCKED_SENSORS_UNBLOCK,
                                    url_formatter::FormatUrlForSecurityDisplay(
-                                       web_contents()->GetLastCommittedURL())));
+                                       web_contents()->GetURL())));
     EXPECT_EQ(bubble_content_2.radio_group.radio_items[1],
               l10n_util::GetStringUTF16(IDS_BLOCKED_SENSORS_NO_ACTION));
     EXPECT_EQ(bubble_content_2.radio_group.default_item, 1);
@@ -1253,7 +1252,7 @@ TEST_F(GenericSensorContentSettingBubbleModelTest,
         bubble_content_3.radio_group.radio_items[1],
         l10n_util::GetStringFUTF16(IDS_ALLOWED_SENSORS_BLOCK,
                                    url_formatter::FormatUrlForSecurityDisplay(
-                                       web_contents()->GetLastCommittedURL())));
+                                       web_contents()->GetURL())));
     EXPECT_EQ(bubble_content_3.radio_group.default_item, 0);
   }
 
@@ -1281,7 +1280,7 @@ TEST_F(GenericSensorContentSettingBubbleModelTest,
         bubble_content.radio_group.radio_items[0],
         l10n_util::GetStringFUTF16(IDS_BLOCKED_SENSORS_UNBLOCK,
                                    url_formatter::FormatUrlForSecurityDisplay(
-                                       web_contents()->GetLastCommittedURL())));
+                                       web_contents()->GetURL())));
     EXPECT_EQ(bubble_content.radio_group.radio_items[1],
               l10n_util::GetStringUTF16(IDS_BLOCKED_SENSORS_NO_ACTION));
     EXPECT_EQ(bubble_content.radio_group.default_item, 1);
@@ -1306,7 +1305,7 @@ TEST_F(GenericSensorContentSettingBubbleModelTest,
         bubble_content_2.radio_group.radio_items[1],
         l10n_util::GetStringFUTF16(IDS_ALLOWED_SENSORS_BLOCK,
                                    url_formatter::FormatUrlForSecurityDisplay(
-                                       web_contents()->GetLastCommittedURL())));
+                                       web_contents()->GetURL())));
     EXPECT_EQ(bubble_content_2.radio_group.default_item, 0);
 
     settings_map->SetDefaultContentSetting(ContentSettingsType::SENSORS,
@@ -1327,7 +1326,7 @@ TEST_F(GenericSensorContentSettingBubbleModelTest,
         bubble_content_3.radio_group.radio_items[0],
         l10n_util::GetStringFUTF16(IDS_BLOCKED_SENSORS_UNBLOCK,
                                    url_formatter::FormatUrlForSecurityDisplay(
-                                       web_contents()->GetLastCommittedURL())));
+                                       web_contents()->GetURL())));
     EXPECT_EQ(bubble_content_3.radio_group.radio_items[1],
               l10n_util::GetStringUTF16(IDS_BLOCKED_SENSORS_NO_ACTION));
     EXPECT_EQ(bubble_content_3.radio_group.default_item, 1);
@@ -1343,9 +1342,8 @@ TEST_F(GenericSensorContentSettingBubbleModelTest,
     settings_map->SetDefaultContentSetting(ContentSettingsType::SENSORS,
                                            CONTENT_SETTING_BLOCK);
     settings_map->SetContentSettingDefaultScope(
-        web_contents()->GetLastCommittedURL(),
-        web_contents()->GetLastCommittedURL(), ContentSettingsType::SENSORS,
-        CONTENT_SETTING_ALLOW);
+        web_contents()->GetURL(), web_contents()->GetURL(),
+        ContentSettingsType::SENSORS, CONTENT_SETTING_ALLOW);
     content_settings->OnContentAllowed(ContentSettingsType::SENSORS);
     std::unique_ptr<ContentSettingBubbleModel> content_setting_bubble_model(
         ContentSettingBubbleModel::CreateContentSettingBubbleModel(
@@ -1363,7 +1361,7 @@ TEST_F(GenericSensorContentSettingBubbleModelTest,
         bubble_content.radio_group.radio_items[1],
         l10n_util::GetStringFUTF16(IDS_ALLOWED_SENSORS_BLOCK,
                                    url_formatter::FormatUrlForSecurityDisplay(
-                                       web_contents()->GetLastCommittedURL())));
+                                       web_contents()->GetURL())));
     EXPECT_EQ(bubble_content.radio_group.default_item, 0);
   }
 
@@ -1379,9 +1377,8 @@ TEST_F(GenericSensorContentSettingBubbleModelTest,
     settings_map->SetDefaultContentSetting(ContentSettingsType::SENSORS,
                                            CONTENT_SETTING_ALLOW);
     settings_map->SetContentSettingDefaultScope(
-        web_contents()->GetLastCommittedURL(),
-        web_contents()->GetLastCommittedURL(), ContentSettingsType::SENSORS,
-        CONTENT_SETTING_BLOCK);
+        web_contents()->GetURL(), web_contents()->GetURL(),
+        ContentSettingsType::SENSORS, CONTENT_SETTING_BLOCK);
     content_settings->OnContentBlocked(ContentSettingsType::SENSORS);
     std::unique_ptr<ContentSettingBubbleModel> content_setting_bubble_model(
         ContentSettingBubbleModel::CreateContentSettingBubbleModel(
@@ -1397,7 +1394,7 @@ TEST_F(GenericSensorContentSettingBubbleModelTest,
         bubble_content.radio_group.radio_items[0],
         l10n_util::GetStringFUTF16(IDS_BLOCKED_SENSORS_UNBLOCK,
                                    url_formatter::FormatUrlForSecurityDisplay(
-                                       web_contents()->GetLastCommittedURL())));
+                                       web_contents()->GetURL())));
     EXPECT_EQ(bubble_content.radio_group.radio_items[1],
               l10n_util::GetStringUTF16(IDS_BLOCKED_SENSORS_NO_ACTION));
     EXPECT_EQ(bubble_content.radio_group.default_item, 1);

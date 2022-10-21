@@ -157,10 +157,10 @@ void CredentialManagerImpl::Get(CredentialMediationRequirement mediation,
   // This will result in a callback to
   // PendingRequestTask::OnGetPasswordStoreResults().
   GetProfilePasswordStore()->GetLogins(GetSynthesizedFormForOrigin(),
-                                       pending_request_->GetWeakPtr());
+                                       pending_request_.get());
   if (GetAccountPasswordStore()) {
     GetAccountPasswordStore()->GetLogins(GetSynthesizedFormForOrigin(),
-                                         pending_request_->GetWeakPtr());
+                                         pending_request_.get());
   }
 }
 

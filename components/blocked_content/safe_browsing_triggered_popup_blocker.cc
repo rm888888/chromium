@@ -106,9 +106,7 @@ bool SafeBrowsingTriggeredPopupBlocker::ShouldApplyAbusivePopupBlocker(
 SafeBrowsingTriggeredPopupBlocker::SafeBrowsingTriggeredPopupBlocker(
     content::WebContents* web_contents,
     subresource_filter::SubresourceFilterObserverManager* observer_manager)
-    : content::WebContentsObserver(web_contents),
-      content::WebContentsUserData<SafeBrowsingTriggeredPopupBlocker>(
-          *web_contents) {
+    : content::WebContentsObserver(web_contents) {
   DCHECK(observer_manager);
   scoped_observation_.Observe(observer_manager);
 }

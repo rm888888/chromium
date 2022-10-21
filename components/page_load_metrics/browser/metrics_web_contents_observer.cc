@@ -9,6 +9,7 @@
 #include <string>
 #include <utility>
 
+#include "base/containers/contains.h"
 #include "base/location.h"
 #include "base/memory/ptr_util.h"
 #include "base/metrics/histogram_macros.h"
@@ -233,7 +234,6 @@ MetricsWebContentsObserver::MetricsWebContentsObserver(
     content::WebContents* web_contents,
     std::unique_ptr<PageLoadMetricsEmbedderInterface> embedder_interface)
     : content::WebContentsObserver(web_contents),
-      content::WebContentsUserData<MetricsWebContentsObserver>(*web_contents),
       in_foreground_(web_contents->GetVisibility() !=
                      content::Visibility::HIDDEN),
       embedder_interface_(std::move(embedder_interface)),
@@ -254,6 +254,18 @@ void MetricsWebContentsObserver::WillStartNavigationRequestImpl(
   std::unique_ptr<PageLoadTracker> last_aborted =
       NotifyAbortedProvisionalLoadsNewNavigation(navigation_handle,
                                                  user_initiated_info);
+
+  int chain_size_same_url = 0;
+  int chain_size = 0;
+  if (last_aborted) {
+    if (last_aborted->MatchesOriginalNavigation(navigation_handle)) {
+      chain_size_same_url = last_aborted->aborted_chain_size_same_url() + 1;
+    } else if (last_aborted->aborted_chain_size_same_url() > 0) {
+      LogAbortChainSameURLHistogram(
+          last_aborted->aborted_chain_size_same_url());
+    }
+    chain_size = last_aborted->aborted_chain_size() + 1;
+  }
 
   if (!ShouldTrackMainFrameNavigation(navigation_handle))
     return;
@@ -282,7 +294,8 @@ void MetricsWebContentsObserver::WillStartNavigationRequestImpl(
       navigation_handle,
       std::make_unique<PageLoadTracker>(
           in_foreground, embedder_interface_.get(), currently_committed_url,
-          !has_navigated_, navigation_handle, user_initiated_info)));
+          !has_navigated_, navigation_handle, user_initiated_info, chain_size,
+          chain_size_same_url)));
   DCHECK(insertion_result.second)
       << "provisional_loads_ already contains NavigationHandle.";
   for (auto& observer : testing_observers_)
@@ -733,6 +746,14 @@ void MetricsWebContentsObserver::FinalizeCurrentlyCommittedLoad(
       /*is_certainly_browser_timestamp=*/false);
 
   if (committed_load_) {
+    bool is_non_user_initiated_client_redirect =
+        !IsNavigationUserInitiated(newly_committed_navigation) &&
+        (newly_committed_navigation->GetPageTransition() &
+         ui::PAGE_TRANSITION_CLIENT_REDIRECT) != 0;
+    if (is_non_user_initiated_client_redirect) {
+      committed_load_->NotifyClientRedirectTo(newly_committed_navigation);
+    }
+
     // Ensure that any pending update gets dispatched.
     committed_load_->metrics_update_dispatcher()->FlushPendingTimingUpdates();
   }

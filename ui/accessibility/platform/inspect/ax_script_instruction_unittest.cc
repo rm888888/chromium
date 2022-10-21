@@ -4,6 +4,7 @@
 
 #include "ui/accessibility/platform/inspect/ax_script_instruction.h"
 
+#include "base/macros.h"
 #include "testing/gtest/include/gtest/gtest.h"
 #include "ui/accessibility/platform/inspect/ax_property_node.h"
 

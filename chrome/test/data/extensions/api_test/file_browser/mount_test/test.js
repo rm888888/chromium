@@ -20,8 +20,7 @@ var expectedVolume1 = {
   profile: {profileId: '', displayName: '', isCurrentProfile: true},
   diskFileSystemType: 'exfat',
   iconSet: {},
-  driveLabel: 'drive_label1',
-  hidden: false
+  driveLabel: 'drive_label1'
 };
 
 var expectedVolume2 = {
@@ -43,8 +42,7 @@ var expectedVolume2 = {
   profile: {profileId: '', displayName: '', isCurrentProfile: true},
   diskFileSystemType: 'exfat',
   iconSet: {},
-  driveLabel: 'drive_label2',
-  hidden: false
+  driveLabel: 'drive_label2'
 };
 
 var expectedVolume3 = {
@@ -64,8 +62,7 @@ var expectedVolume3 = {
   profile: {profileId: '', displayName: '', isCurrentProfile: true},
   diskFileSystemType: 'exfat',
   iconSet: {},
-  driveLabel: 'drive_label3',
-  hidden: false
+  driveLabel: 'drive_label3'
 };
 
 var expectedDownloadsVolume = {
@@ -81,8 +78,7 @@ var expectedDownloadsVolume = {
   profile: {profileId: '', displayName: '', isCurrentProfile: true},
   diskFileSystemType: '',
   iconSet: {},
-  driveLabel: '',
-  hidden: false
+  driveLabel: ''
 };
 
 var expectedArchiveVolume = {
@@ -99,8 +95,7 @@ var expectedArchiveVolume = {
   profile: {profileId: '', displayName: '', isCurrentProfile: true},
   diskFileSystemType: '',
   iconSet: {},
-  driveLabel: '',
-  hidden: false
+  driveLabel: ''
 };
 
 var expectedProvidedVolume = {
@@ -122,25 +117,7 @@ var expectedProvidedVolume = {
     icon16x16Url: 'chrome://resources/testing-provider-id-16.jpg',
     icon32x32Url: 'chrome://resources/testing-provider-id-32.jpg'
   },
-  driveLabel: '',
-  hidden: false
-};
-
-var expectedShareCacheVolume = {
-  volumeId: 'system_internal:ShareCache',
-  volumeLabel: '',
-  volumeType: 'system_internal',
-  isReadOnly: true,
-  isReadOnlyRemovableDevice: false,
-  hasMedia: false,
-  configurable: false,
-  watchable: false,
-  source: 'system',
-  profile: {profileId: '', displayName: '', isCurrentProfile: true},
-  diskFileSystemType: '',
-  iconSet: {},
-  driveLabel: '',
-  hidden: true
+  driveLabel: ''
 };
 
 // List of expected mount points.
@@ -152,8 +129,7 @@ var expectedVolumeList = [
   expectedProvidedVolume,
   expectedVolume1,
   expectedVolume2,
-  expectedVolume3,
-  expectedShareCacheVolume
+  expectedVolume3
 ];
 
 function validateObject(received, expected, name) {

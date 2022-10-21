@@ -30,9 +30,12 @@ class TpmErrorView {
   // Unbinds the screen from the view.
   virtual void Unbind() = 0;
 
-  // Sets corresponding error message when taking tpm ownership return an error.
-  virtual void SetTPMOwnedErrorStep() = 0;
-  virtual void SetTPMDbusErrorStep() = 0;
+  // Sets corresponding error message when tpm is owned.
+  virtual void SetTPMOwnedErrorStep(bool show_tpm_owned_step) = 0;
+
+  // Sets if build is branded or not to show correct error message when TPM is
+  // owned by other OS.
+  virtual void SetIsBrandedBuild(bool is_branded) = 0;
 };
 
 class TpmErrorScreenHandler : public TpmErrorView, public BaseScreenHandler {
@@ -48,8 +51,8 @@ class TpmErrorScreenHandler : public TpmErrorView, public BaseScreenHandler {
   void Show() override;
   void Bind(ash::TpmErrorScreen* screen) override;
   void Unbind() override;
-  void SetTPMOwnedErrorStep() override;
-  void SetTPMDbusErrorStep() override;
+  void SetTPMOwnedErrorStep(bool show_tpm_owned_step) override;
+  void SetIsBrandedBuild(bool is_branded) override;
 
   // BaseScreenHandler:
   void DeclareLocalizedValues(

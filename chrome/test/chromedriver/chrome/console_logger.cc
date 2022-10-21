@@ -9,6 +9,7 @@
 #include <string>
 
 #include "base/json/json_writer.h"
+#include "base/macros.h"
 #include "base/strings/stringprintf.h"
 #include "base/values.h"
 #include "chrome/test/chromedriver/chrome/devtools_client.h"
@@ -79,8 +80,8 @@ Status ConsoleLogger::OnLogEntryAdded(const base::DictionaryValue& params) {
     origin = source;
 
   std::string line_number;
-  int line = entry->FindIntKey("lineNumber").value_or(-1);
-  if (line >= 0) {
+  int line = -1;
+  if (entry->GetInteger("lineNumber", &line)) {
     line_number = base::StringPrintf("%d", line);
   } else {
     // No line number, but print anyway, just to maintain the number of fields
@@ -115,20 +116,18 @@ Status ConsoleLogger::OnRuntimeConsoleApiCalled(
     const base::ListValue* call_frames = nullptr;
     if (!stack_trace->GetList("callFrames", &call_frames))
       return Status(kUnknownError, "missing or invalid callFrames");
-    const base::Value& call_frame_value = call_frames->GetList()[0];
-    if (call_frame_value.is_dict()) {
-      const base::DictionaryValue& call_frame =
-          base::Value::AsDictionaryValue(call_frame_value);
+    const base::DictionaryValue* call_frame = nullptr;
+    if (call_frames->GetDictionary(0, &call_frame)) {
       std::string url;
-      if (!call_frame.GetString("url", &url))
+      if (!call_frame->GetString("url", &url))
         return Status(kUnknownError, "missing or invalid url");
       if (!url.empty())
         origin = url;
-      int line = call_frame.FindIntKey("lineNumber").value_or(-1);
-      if (line < 0)
+      int line = -1;
+      if (!call_frame->GetInteger("lineNumber", &line))
         return Status(kUnknownError, "missing or invalid lineNumber");
-      int column = call_frame.FindIntKey("columnNumber").value_or(-1);
-      if (column < 0)
+      int column = -1;
+      if (!call_frame->GetInteger("columnNumber", &column))
         return Status(kUnknownError, "missing or invalid columnNumber");
       line_column = base::StringPrintf("%d:%d", line, column);
     }
@@ -142,21 +141,19 @@ Status ConsoleLogger::OnRuntimeConsoleApiCalled(
   }
 
   int arg_count = args->GetList().size();
+  const base::DictionaryValue* current_arg = nullptr;
   for (int i = 0; i < arg_count; i++) {
-    const base::Value& current_arg_value = args->GetList()[i];
-    if (!current_arg_value.is_dict()) {
+    if (!args->GetDictionary(i, &current_arg)) {
       std::string error_message = base::StringPrintf("Argument %d is missing or invalid", i);
       return Status(kUnknownError, error_message );
     }
-    const base::DictionaryValue& current_arg =
-        base::Value::AsDictionaryValue(current_arg_value);
     std::string temp_text;
     std::string arg_type;
-    if (current_arg.GetString("type", &arg_type) && arg_type == "undefined") {
+    if (current_arg->GetString("type", &arg_type) && arg_type == "undefined") {
       temp_text = "undefined";
-    } else if (!current_arg.GetString("description", &temp_text)) {
-      const base::Value* value = current_arg.FindKey("value");
-      if (value == nullptr) {
+    } else if (!current_arg->GetString("description", &temp_text)) {
+      const base::Value* value = nullptr;
+      if (!current_arg->Get("value", &value)) {
         return Status(kUnknownError, "missing or invalid arg value");
       }
       if (!base::JSONWriter::Write(*value, &temp_text)) {
@@ -187,11 +184,11 @@ Status ConsoleLogger::OnRuntimeExceptionThrown(
   if (!exception_details->GetString("url", &origin))
     origin = "javascript";
 
-  int line = exception_details->FindIntKey("lineNumber").value_or(-1);
-  if (line < 0)
+  int line = -1;
+  if (!exception_details->GetInteger("lineNumber", &line))
     return Status(kUnknownError, "missing or invalid lineNumber");
-  int column = exception_details->FindIntKey("columnNumber").value_or(-1);
-  if (column < 0)
+  int column = -1;
+  if (!exception_details->GetInteger("columnNumber", &column))
     return Status(kUnknownError, "missing or invalid columnNumber");
   std::string line_column = base::StringPrintf("%d:%d", line, column);
 
@@ -204,13 +201,12 @@ Status ConsoleLogger::OnRuntimeExceptionThrown(
       preview->GetList("properties", &properties)) {
     // If the event contains an object which is an instance of the JS Error
     // class, attempt to get the message property for the exception.
-    for (const base::Value& property_value : properties->GetList()) {
-      if (property_value.is_dict()) {
-        const base::DictionaryValue& property =
-            base::Value::AsDictionaryValue(property_value);
+    for (size_t i = 0; i < properties->GetList().size(); i++) {
+      const base::DictionaryValue* property = nullptr;
+      if (properties->GetDictionary(i, &property)) {
         std::string name;
-        if (property.GetString("name", &name) && name == "message") {
-          if (property.GetString("value", &text)) {
+        if (property->GetString("name", &name) && name == "message") {
+          if (property->GetString("value", &text)) {
             std::string class_name;
             if (exception->GetString("className", &class_name))
               text = "Uncaught " + class_name + ": " + text;

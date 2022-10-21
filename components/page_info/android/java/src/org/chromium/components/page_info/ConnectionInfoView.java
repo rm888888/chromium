@@ -19,7 +19,6 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 
 import androidx.appcompat.content.res.AppCompatResources;
-import androidx.appcompat.widget.AppCompatTextView;
 
 import org.chromium.base.ApiCompatibilityUtils;
 import org.chromium.base.Log;
@@ -140,10 +139,10 @@ public class ConnectionInfoView implements OnClickListener {
 
     private void setCertificateViewer(String label) {
         assert mCertificateViewerTextView == null;
-        mCertificateViewerTextView = new AppCompatTextView(mContext);
+        mCertificateViewerTextView = new TextView(mContext);
         mCertificateViewerTextView.setText(label);
         ApiCompatibilityUtils.setTextAppearance(
-                mCertificateViewerTextView, R.style.TextAppearance_TextSmall_Link);
+                mCertificateViewerTextView, R.style.TextAppearance_TextSmall_Blue);
         mCertificateViewerTextView.setOnClickListener(this);
         mCertificateViewerTextView.setPadding(0, mPaddingVertical, 0, 0);
         mCertificateLayout.addView(mCertificateViewerTextView);
@@ -166,11 +165,11 @@ public class ConnectionInfoView implements OnClickListener {
 
     @CalledByNative
     private void addMoreInfoLink(String linkText) {
-        mMoreInfoLink = new AppCompatTextView(mContext);
+        mMoreInfoLink = new TextView(mContext);
         mLinkUrl = HELP_URL;
         mMoreInfoLink.setText(linkText);
         ApiCompatibilityUtils.setTextAppearance(
-                mMoreInfoLink, R.style.TextAppearance_TextSmall_Link);
+                mMoreInfoLink, R.style.TextAppearance_TextSmall_Blue);
         mMoreInfoLink.setPadding(0, mPaddingVertical, 0, 0);
         mMoreInfoLink.setOnClickListener(this);
         mDescriptionLayout.addView(mMoreInfoLink);

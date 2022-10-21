@@ -119,9 +119,7 @@ bool DisplayResourceProvider::IsBackedBySurfaceTexture(ResourceId id) {
   ChildResource* resource = GetResource(id);
   return resource->transferable.is_backed_by_surface_texture;
 }
-#endif
 
-#if defined(OS_ANDROID) || defined(OS_WIN)
 bool DisplayResourceProvider::DoesResourceWantPromotionHint(ResourceId id) {
   ChildResource* resource = TryGetResource(id);
   // TODO(ericrk): We should never fail TryGetResource, but we appear to
@@ -201,9 +199,13 @@ void DisplayResourceProvider::ReceiveFromChild(
     const std::vector<TransferableResource>& resources) {
   DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
 
+  // TODO(crbug.com/855785): Fishing for misuse of DisplayResourceProvider
+  // causing crashes.
+  CHECK(child_id);
   auto child_it = children_.find(child_id);
-  DCHECK(child_it != children_.end());
-
+  // TODO(crbug.com/855785): Fishing for misuse of DisplayResourceProvider
+  // causing crashes.
+  CHECK(child_it != children_.end());
   Child& child_info = child_it->second;
   DCHECK(!child_info.marked_for_deletion);
   for (const TransferableResource& transferable_resource : resources) {
@@ -240,9 +242,13 @@ void DisplayResourceProvider::DeclareUsedResourcesFromChild(
     const ResourceIdSet& resources_from_child) {
   DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
 
+  // TODO(crbug.com/855785): Fishing for misuse of DisplayResourceProvider
+  // causing crashes.
+  CHECK(child);
   auto child_it = children_.find(child);
-  DCHECK(child_it != children_.end());
-
+  // TODO(crbug.com/855785): Fishing for misuse of DisplayResourceProvider
+  // causing crashes.
+  CHECK(child_it != children_.end());
   Child& child_info = child_it->second;
   DCHECK(!child_info.marked_for_deletion);
 

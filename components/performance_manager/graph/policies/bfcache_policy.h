@@ -7,7 +7,6 @@
 
 #include <map>
 
-#include "base/memory/raw_ptr.h"
 #include "base/time/time.h"
 #include "base/timer/timer.h"
 #include "components/performance_manager/public/graph/graph.h"
@@ -46,8 +45,7 @@ class BFCachePolicy : public GraphOwned,
 
   // PageNodeObserver:
   void OnIsVisibleChanged(const PageNode* page_node) override;
-  void OnLoadingStateChanged(const PageNode* page_node,
-                             PageNode::LoadingState previous_state) override;
+  void OnLoadingStateChanged(const PageNode* page_node) override;
   void OnBeforePageNodeRemoved(const PageNode* page_node) override;
 
   // SystemNodeObserver:
@@ -61,7 +59,7 @@ class BFCachePolicy : public GraphOwned,
   // logic.
   std::map<const PageNode*, base::OneShotTimer> page_to_flush_timer_;
 
-  raw_ptr<Graph> graph_;
+  Graph* graph_;
 };
 
 }  // namespace policies

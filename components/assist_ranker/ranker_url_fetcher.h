@@ -8,6 +8,7 @@
 #include <memory>
 
 #include "base/callback.h"
+#include "base/macros.h"
 #include "url/gurl.h"
 
 namespace network {

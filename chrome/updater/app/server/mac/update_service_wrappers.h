@@ -7,14 +7,12 @@
 
 #import <Foundation/Foundation.h>
 
-#include <vector>
-
 #include "base/task/sequenced_task_runner.h"
 #import "chrome/updater/app/server/mac/service_protocol.h"
 #include "chrome/updater/update_service.h"
 
 using StateChangeCallback =
-    base::RepeatingCallback<void(const updater::UpdateService::UpdateState&)>;
+    base::RepeatingCallback<void(updater::UpdateService::UpdateState)>;
 
 @interface CRUUpdateStateObserver : NSObject <CRUUpdateStateObserving>
 
@@ -42,16 +40,6 @@ using StateChangeCallback =
 @property(readonly, nonatomic) updater::UpdateService::Priority priority;
 
 - (instancetype)initWithPriority:(updater::UpdateService::Priority)priority;
-
-@end
-
-@interface CRUPolicySameVersionUpdateWrapper : NSObject <NSSecureCoding>
-
-@property(readonly, nonatomic)
-    updater::UpdateService::PolicySameVersionUpdate policySameVersionUpdate;
-
-- (instancetype)initWithPolicySameVersionUpdate:
-    (updater::UpdateService::PolicySameVersionUpdate)policySameVersionUpdate;
 
 @end
 
@@ -88,26 +76,6 @@ using StateChangeCallback =
                 errorCategory:(CRUErrorCategoryWrapper*)errorCategory
                     errorCode:(int)errorCode
                     extraCode:(int)extraCode;
-
-@end
-
-@interface CRUAppStateWrapper : NSObject <NSSecureCoding>
-
-@property(readonly, nonatomic) updater::UpdateService::AppState state;
-- (instancetype)initWithAppState:
-    (const updater::UpdateService::AppState&)appState;
-@end
-
-@interface CRUAppStatesWrapper : NSObject <NSSecureCoding>
-
-@property(readonly, nonatomic, getter=states)
-    std::vector<updater::UpdateService::AppState>
-        states;
-
-- (instancetype)initWithAppStateWrappers:
-    (NSArray<CRUAppStateWrapper*>*)appStateWrappers;
-- (instancetype)initWithAppStates:
-    (const std::vector<updater::UpdateService::AppState>&)appStates;
 
 @end
 

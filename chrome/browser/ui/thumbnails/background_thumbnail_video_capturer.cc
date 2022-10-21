@@ -64,9 +64,10 @@ void BackgroundThumbnailVideoCapturer::Start(
                                             capture_info_.target_size, false);
   video_capturer_->SetAutoThrottlingEnabled(false);
   video_capturer_->SetMinSizeChangePeriod(base::TimeDelta());
-  video_capturer_->SetFormat(media::PIXEL_FORMAT_ARGB);
+  video_capturer_->SetFormat(media::PIXEL_FORMAT_ARGB,
+                             gfx::ColorSpace::CreateREC709());
   video_capturer_->SetMinCapturePeriod(base::Seconds(1) / kMaxFrameRate);
-  video_capturer_->Start(this, viz::mojom::BufferFormatPreference::kDefault);
+  video_capturer_->Start(this);
 }
 
 void BackgroundThumbnailVideoCapturer::Stop() {
@@ -87,7 +88,7 @@ void BackgroundThumbnailVideoCapturer::Stop() {
 }
 
 void BackgroundThumbnailVideoCapturer::OnFrameCaptured(
-    ::media::mojom::VideoBufferHandlePtr data,
+    base::ReadOnlySharedMemoryRegion data,
     ::media::mojom::VideoFrameInfoPtr info,
     const gfx::Rect& content_rect,
     mojo::PendingRemote<::viz::mojom::FrameSinkVideoConsumerFrameCallbacks>
@@ -100,19 +101,12 @@ void BackgroundThumbnailVideoCapturer::OnFrameCaptured(
   mojo::Remote<::viz::mojom::FrameSinkVideoConsumerFrameCallbacks>
       callbacks_remote(std::move(callbacks));
 
-  CHECK(data->is_read_only_shmem_region());
-  base::ReadOnlySharedMemoryRegion& shmem_region =
-      data->get_read_only_shmem_region();
-
-  // The |data| parameter is not nullable and mojo type mapping for
-  // `base::ReadOnlySharedMemoryRegion` defines that nullable version of it is
-  // the same type, with null check being equivalent to IsValid() check. Given
-  // the above, we should never be able to receive a read only shmem region that
-  // is not valid - mojo will enforce it for us.
-  DCHECK(shmem_region.IsValid());
-
   // Process captured image.
-  base::ReadOnlySharedMemoryMapping mapping = shmem_region.Map();
+  if (!data.IsValid()) {
+    callbacks_remote->Done();
+    return;
+  }
+  base::ReadOnlySharedMemoryMapping mapping = data.Map();
   if (!mapping.IsValid()) {
     DLOG(ERROR) << "Shared memory mapping failed.";
     return;

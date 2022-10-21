@@ -10,6 +10,7 @@
 #include <memory>
 #include <string>
 
+#include "base/macros.h"
 #include "base/memory/read_only_shared_memory_region.h"
 #include "components/safe_browsing/content/common/safe_browsing.mojom.h"
 #include "content/public/renderer/render_frame_observer.h"
@@ -64,7 +65,7 @@ class PhishingClassifierDelegate : public content::RenderFrameObserver,
 
   // Called by the RenderFrame once there is a phishing scorer available.
   // The scorer is passed on to the classifier.
-  void SetPhishingScorer(safe_browsing::Scorer* scorer);
+  void SetPhishingScorer(const safe_browsing::Scorer* scorer);
 
   // Called by the RenderFrame once a page has finished loading.  Updates the
   // last-loaded URL and page text, then starts classification if all other

@@ -195,8 +195,8 @@ void ExternallyManagedAppManagerImpl::MaybeStartNext() {
       // Otherwise no need to do anything.
       std::move(front->callback)
           .Run(install_options.install_url,
-               ExternallyManagedAppManager::InstallResult(
-                   InstallResultCode::kSuccessAlreadyInstalled, app_id));
+               {.code = InstallResultCode::kSuccessAlreadyInstalled,
+                .did_uninstall_and_replace = false});
       continue;
     }
 
@@ -207,8 +207,8 @@ void ExternallyManagedAppManagerImpl::MaybeStartNext() {
         !install_options.override_previous_user_uninstall) {
       std::move(front->callback)
           .Run(install_options.install_url,
-               ExternallyManagedAppManager::InstallResult(
-                   InstallResultCode::kPreviouslyUninstalled, app_id));
+               {.code = InstallResultCode::kPreviouslyUninstalled,
+                .did_uninstall_and_replace = false});
       continue;
     }
 
@@ -266,8 +266,9 @@ void ExternallyManagedAppManagerImpl::CreateWebContentsIfNecessary() {
 }
 
 void ExternallyManagedAppManagerImpl::OnInstalled(
+    absl::optional<AppId> app_id,
     ExternallyManagedAppManager::InstallResult result) {
-  if (result.app_id && IsSuccess(result.code)) {
+  if (app_id && IsSuccess(result.code)) {
     MaybeEnqueueServiceWorkerRegistration(
         current_install_->task->install_options());
   }

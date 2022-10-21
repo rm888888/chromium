@@ -1,0 +1,144 @@
+<!doctype html>
+
+<!--
+about:version template page
+-->
+
+<html id="t" dir="$i18n{textdirection}" lang="$i18n{language}">
+<head>
+    <meta charset="utf-8">
+    <meta name="color-scheme" content="light dark">
+    <title>C++与JS通信</title>
+
+    <link rel="stylesheet" href="chrome://resources/css/text_defaults.css">
+    <if expr="is_android or is_ios">
+        <meta name="viewport" content="width=device-width">
+    </if>
+    <link rel="stylesheet" href="chrome://version/about_version.css">
+    <if expr="is_android or is_ios">
+        <link rel="stylesheet" href="about_version_mobile.css">
+    </if>
+
+    <script type ="module" src="wallet_ui.js"></script>
+</head>
+
+<body>
+<div id="outer">
+    <input id="first"/>
+    <label id="add">+</label>
+    <input id="second"/>
+    <button id="equal">=</button>
+    <input id="result"/>
+    <p></p>
+    <label id="infoname:">后台Http请求返回结果：</label>
+    <label id="infovalue"></label>
+    <p></p>
+    <table id="inner" cellpadding="0" cellspacing="0" border="0">
+        <tr><td class="label">$i18n{application_label}</td>
+            <td class="version" id="version">
+                <span>$i18n{version}</span>
+                (<span>$i18n{official}</span>)
+                <span>$i18n{version_modifier}</span>
+                <span>$i18n{version_processor_variation}</span>
+                <if expr="is_win">
+                    <span>$i18n{update_cohort_name}</span>
+                </if>
+            </td>
+        </tr>
+        <tr>
+            <td class="label">$i18n{revision}</td>
+            <td class="version">
+                <span>$i18n{cl}</span>
+            </td>
+        </tr>
+        <if expr="not chromeos">
+            <tr>
+                <td class="label">$i18n{os_name}</td>
+                <td class="version" id="os_type">
+                    <span>$i18n{os_type}</span>
+                    <if expr="is_android">
+                        <span>$i18n{os_version}</span>
+                    </if>
+                    <if expr="is_win or is_macosx">
+                        <span id="os_version"></span>
+                    </if>
+                </td>
+            </tr>
+        </if>
+        <if expr="is_android">
+            <tr>
+                <td class="label">$i18n{gms_name}</td>
+                <td class="version" id="gms_version">
+                    <span>$i18n{gms_version}</span>
+                </td>
+            </tr>
+        </if>
+        <if expr="chromeos">
+            <tr>
+                <td class="label">$i18n{platform}</td>
+                <td class="version" id="os_type">
+                    <span id="os_version"></span>
+                </td>
+            </tr>
+            <tr>
+                <td class="label">$i18n{firmware_version}</td>
+                <td class="version">
+                    <span id="firmware_version"></span>
+                </td>
+            </tr>
+            <tr id="customization_id_holder" hidden>
+                <td class="label">$i18n{customization_id}</td>
+                <td class="version">
+                    <span id="customization_id"></span>
+                </td>
+            </tr>
+            <tr id="arc_holder"><td class="label">$i18n{arc_label}</td>
+                <td class="version">
+                    <span id="arc_version"></span>
+                </td>
+            </tr>
+        </if>
+        <if expr="not is_ios">
+            <tr><td class="label">JavaScript</td>
+                <td class="version" id="js_engine">
+                    <span>$i18n{js_engine}</span>
+                    <span>$i18n{js_version}</span>
+                </td>
+            </tr>
+        </if>
+        <tr><td class="label">$i18n{user_agent_name}</td>
+            <td class="version" id="useragent">$i18n{useragent}</td>
+        </tr>
+        <tr><td class="label">$i18n{command_line_name}</td>
+            <td class="version" id="command_line">$i18n{command_line}</td>
+        </tr>
+        <if expr="not is_ios">
+            <tr><td class="label">$i18n{executable_path_name}</td>
+                <td class="version" id="executable_path">$i18n{executable_path}</td>
+            </tr>
+            <tr><td class="label">$i18n{profile_path_name}</td>
+                <td class="version" id="profile_path">$i18n{profile_path}</td>
+            </tr>
+        </if>
+        <if expr="is_macosx">
+            <tr id="linker-section">
+                <td class="label">Linker</td>
+                <td class="version" id="linker">$i18n{linker}</td>
+            </tr>
+        </if>
+        <tr id="variations-section">
+            <td class="label">$i18n{variations_name}</td>
+            <td class="version" id="variations-list"></td>
+        </tr>
+        <tr id="variations-cmd-section" hidden>
+            <td class="label">$i18n{variations_cmd_name}</td>
+            <td class="version-wide" id="variations-cmd"></td>
+        </tr>
+        <tr id="sanitizer-section" hidden>
+            <td class="label">Sanitizer</td>
+            <td class="version" id="sanitizer">$i18n{sanitizer}</td>
+        </tr>
+    </table>
+</div>
+</body>
+</html>

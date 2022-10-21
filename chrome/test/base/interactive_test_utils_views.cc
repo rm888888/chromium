@@ -3,7 +3,6 @@
 // found in the LICENSE file.
 
 #include "base/bind.h"
-#include "base/memory/raw_ptr.h"
 #include "base/run_loop.h"
 #include "build/buildflag.h"
 #include "chrome/browser/ui/browser.h"
@@ -53,7 +52,7 @@ class ViewFocusWaiter : public views::ViewObserver {
 
  private:
   base::RunLoop run_loop_;
-  raw_ptr<views::View> view_;
+  views::View* view_;
   const bool target_focused_;
 };
 
@@ -72,17 +71,15 @@ bool IsViewFocused(const Browser* browser, ViewID vid) {
   return focus_manager->GetFocusedView()->GetID() == vid;
 }
 
-void ClickOnView(views::View* view) {
+void ClickOnView(const Browser* browser, ViewID vid) {
+  views::View* view =
+      BrowserView::GetBrowserViewForBrowser(browser)->GetViewByID(vid);
   DCHECK(view);
   base::RunLoop loop;
   MoveMouseToCenterAndPress(view, ui_controls::LEFT,
                             ui_controls::DOWN | ui_controls::UP,
                             loop.QuitClosure());
   loop.Run();
-}
-
-void ClickOnView(const Browser* browser, ViewID vid) {
-  ClickOnView(BrowserView::GetBrowserViewForBrowser(browser)->GetViewByID(vid));
 }
 
 void FocusView(const Browser* browser, ViewID vid) {

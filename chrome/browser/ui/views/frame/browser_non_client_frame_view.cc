@@ -177,8 +177,7 @@ SkColor BrowserNonClientFrameView::GetToolbarTopSeparatorColor() const {
   // The vertical tab separator might show through the stroke if the stroke
   // color is translucent.  To prevent this, always use an opaque stroke color.
   return color_utils::GetResultingPaintColor(
-      GetFrameThemeProvider()->GetColor(color_id),
-      GetFrameColor(BrowserFrameActiveState::kUseCurrent));
+      GetFrameThemeProvider()->GetColor(color_id), GetFrameColor());
 }
 
 absl::optional<int> BrowserNonClientFrameView::GetCustomBackgroundId(

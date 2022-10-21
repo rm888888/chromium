@@ -8,6 +8,7 @@
 #include <presentation-time-server-protocol.h>
 
 #include "base/check.h"
+#include "base/macros.h"
 #include "testing/gmock/include/gmock/gmock.h"
 #include "ui/ozone/platform/wayland/test/global_object.h"
 

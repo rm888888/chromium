@@ -9,6 +9,7 @@
 
 #include "base/callback.h"
 #include "base/files/file_path.h"
+#include "base/macros.h"
 #include "base/memory/ref_counted.h"
 #include "components/update_client/component_patcher.h"
 #include "components/update_client/component_unpacker.h"

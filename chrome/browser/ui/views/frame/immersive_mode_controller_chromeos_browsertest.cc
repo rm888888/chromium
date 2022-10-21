@@ -5,6 +5,7 @@
 #include "chrome/browser/ui/views/frame/immersive_mode_controller_chromeos.h"
 
 #include "ash/public/cpp/test/shell_test_api.h"
+#include "base/macros.h"
 #include "base/test/test_mock_time_task_runner.h"
 #include "chrome/browser/profiles/profile_io_data.h"
 #include "chrome/browser/ui/ash/tablet_mode_page_behavior.h"
@@ -56,7 +57,7 @@ class ImmersiveModeControllerChromeosWebAppBrowserTest
     ASSERT_TRUE(https_server_.Start());
 
     const GURL app_url = GetAppUrl();
-    auto web_app_info = std::make_unique<WebAppInstallInfo>();
+    auto web_app_info = std::make_unique<WebApplicationInfo>();
     web_app_info->start_url = app_url;
     web_app_info->scope = app_url.GetWithoutFilename();
     web_app_info->theme_color = SK_ColorBLUE;

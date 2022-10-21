@@ -13,7 +13,10 @@ import("//ui/base/ui_features.gni")
 
 buildflag_header("buildflags") {
   header = "buildflags.h"
-  flags = [ "ENABLE_COLOR_MANAGER=$enable_color_manager" ]
+  flags = [
+    "ENABLE_COLOR_MANAGER=$enable_color_manager",
+    "ENABLE_WESTON_TEST=$enable_weston_test",
+  ]
 }
 
 if (use_xkbcommon) {
@@ -26,8 +29,6 @@ static_library("exo") {
   sources = [
     "buffer.cc",
     "buffer.h",
-    "capabilities.cc",
-    "capabilities.h",
     "data_device.cc",
     "data_device.h",
     "data_device_delegate.h",
@@ -61,7 +62,6 @@ static_library("exo") {
     "pointer.h",
     "pointer_constraint_delegate.h",
     "pointer_delegate.h",
-    "protected_native_pixmap_query_delegate.h",
     "seat.cc",
     "seat.h",
     "seat_observer.h",
@@ -71,7 +71,6 @@ static_library("exo") {
     "shell_surface_util.h",
     "sub_surface.cc",
     "sub_surface.h",
-    "sub_surface_observer.h",
     "surface.cc",
     "surface.h",
     "surface_delegate.h",
@@ -105,7 +104,7 @@ static_library("exo") {
     "//third_party/blink/public/common",
     "//ui/accessibility:ax_base",
     "//ui/aura",
-    "//ui/aura/cursor",
+    "//ui/base/cursor",
     "//ui/base/dragdrop:types",
     "//ui/base/dragdrop/mojom",
     "//ui/base/ime",
@@ -126,14 +125,13 @@ static_library("exo") {
   ]
 
   assert_no_deps = [
-    "//ash/components/arc",
     "//components/arc",
     "//content/public/browser",
     "//content/public/common",
   ]
 
   public_deps = [
-    "//ui/base/cursor",
+    "//ui/base/cursor:cursor_base",
     "//ui/base/cursor/mojom:cursor_type",
     "//ui/base/dragdrop/mojom:mojom_headers",
   ]
@@ -259,7 +257,6 @@ source_set("test_support") {
       "//ash:test_support",
       "//ash/public/cpp",
       "//chromeos/ui/base",
-      "//components/exo/wayland:weston_test_stub",
     ]
   }
 }

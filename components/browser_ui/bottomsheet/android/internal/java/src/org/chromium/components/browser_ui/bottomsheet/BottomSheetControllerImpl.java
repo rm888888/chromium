@@ -335,12 +335,7 @@ class BottomSheetControllerImpl implements ManagedBottomSheetController {
         boolean hadTokens = mSuppressionTokens.hasTokens();
         int token = mSuppressionTokens.acquireToken();
         if (!hadTokens && mBottomSheet != null) {
-            // Make sure we don't save an invalid final state (particularly "scrolling").
-            mSheetStateBeforeSuppress = getTargetSheetState();
-            if (mSheetStateBeforeSuppress == SheetState.NONE) {
-                mSheetStateBeforeSuppress = getSheetState();
-            }
-
+            mSheetStateBeforeSuppress = getSheetState();
             mContentWhenSuppressed = getCurrentSheetContent();
             mBottomSheet.setSheetState(SheetState.HIDDEN, false, reason);
         }

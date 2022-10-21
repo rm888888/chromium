@@ -13,6 +13,7 @@
 #include "base/bind.h"
 #include "base/check.h"
 #include "base/command_line.h"
+#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "base/notreached.h"
 #include "base/threading/platform_thread.h"
@@ -22,12 +23,12 @@
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "ui/base/buildflags.h"
 #include "ui/base/cursor/cursor_factory.h"
+#include "ui/base/cursor/ozone/bitmap_cursor_factory_ozone.h"
 #include "ui/events/ozone/device/device_manager.h"
 #include "ui/events/ozone/evdev/event_factory_evdev.h"
 #include "ui/events/ozone/layout/keyboard_layout_engine_manager.h"
 #include "ui/gfx/linux/client_native_pixmap_dmabuf.h"
 #include "ui/gfx/native_widget_types.h"
-#include "ui/ozone/common/bitmap_cursor_factory.h"
 #include "ui/ozone/platform/drm/common/drm_util.h"
 #include "ui/ozone/platform/drm/gpu/drm_device_generator.h"
 #include "ui/ozone/platform/drm/gpu/drm_device_manager.h"
@@ -44,8 +45,8 @@
 #include "ui/ozone/platform/drm/host/drm_window_host.h"
 #include "ui/ozone/platform/drm/host/drm_window_host_manager.h"
 #include "ui/ozone/platform/drm/host/host_drm_device.h"
-#include "ui/ozone/platform/drm/mojom/drm_device.mojom.h"
 #include "ui/ozone/public/gpu_platform_support_host.h"
+#include "ui/ozone/public/mojom/drm_device.mojom.h"
 #include "ui/ozone/public/ozone_platform.h"
 #include "ui/ozone/public/ozone_switches.h"
 #include "ui/ozone/public/platform_screen.h"
@@ -225,7 +226,7 @@ class OzonePlatformDrm : public OzonePlatform {
     display_manager_ = std::make_unique<DrmDisplayHostManager>(
         adapter, device_manager_.get(), &host_properties_,
         event_factory_ozone_->input_controller());
-    cursor_factory_ = std::make_unique<BitmapCursorFactory>();
+    cursor_factory_ = std::make_unique<BitmapCursorFactoryOzone>();
 
     host_drm_device_->SetDisplayManager(display_manager_.get());
   }

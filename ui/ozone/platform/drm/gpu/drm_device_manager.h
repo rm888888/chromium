@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "base/files/file.h"
+#include "base/macros.h"
 #include "base/memory/ref_counted.h"
 #include "ui/gfx/native_widget_types.h"
 

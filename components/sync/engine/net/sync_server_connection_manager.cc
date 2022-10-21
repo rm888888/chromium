@@ -10,10 +10,9 @@
 
 #include "base/bind.h"
 #include "base/callback_helpers.h"
-#include "base/memory/raw_ptr.h"
 #include "components/sync/engine/cancelation_signal.h"
-#include "components/sync/engine/net/http_post_provider.h"
 #include "components/sync/engine/net/http_post_provider_factory.h"
+#include "components/sync/engine/net/http_post_provider_interface.h"
 #include "net/base/net_errors.h"
 #include "net/http/http_status_code.h"
 
@@ -37,6 +36,7 @@ class Connection : public CancelationSignal::Observer {
                     const std::string& access_token,
                     const std::string& payload);
   bool ReadBufferResponse(std::string* buffer_out, HttpResponse* response);
+  bool ReadDownloadResponse(HttpResponse* response, std::string* buffer_out);
 
   // CancelationSignal::Observer overrides.
   void OnCancelationSignalReceived() override;
@@ -46,13 +46,13 @@ class Connection : public CancelationSignal::Observer {
 
   // Pointer to the factory we use for creating HttpPostProviders. We do not
   // own |factory_|.
-  const raw_ptr<HttpPostProviderFactory> factory_;
+  HttpPostProviderFactory* const factory_;
 
   // Cancelation signal is signalled when engine shuts down. Current blocking
   // operation should be aborted.
-  const raw_ptr<CancelationSignal> cancelation_signal_;
+  CancelationSignal* const cancelation_signal_;
 
-  scoped_refptr<HttpPostProvider> const post_provider_;
+  scoped_refptr<HttpPostProviderInterface> const post_provider_;
 
   std::string buffer_;
 };
@@ -128,6 +128,20 @@ bool Connection::ReadBufferResponse(std::string* buffer_out,
   const int64_t bytes_read =
       ReadResponse(buffer_out, static_cast<int>(response->content_length));
   if (bytes_read != response->content_length) {
+    response->server_status = HttpResponse::IO_ERROR;
+    return false;
+  }
+  return true;
+}
+
+bool Connection::ReadDownloadResponse(HttpResponse* response,
+                                      std::string* buffer_out) {
+  const int64_t bytes_read =
+      ReadResponse(buffer_out, static_cast<int>(response->content_length));
+
+  if (bytes_read != response->content_length) {
+    LOG(ERROR) << "Mismatched content lengths, server claimed "
+               << response->content_length << ", but sent " << bytes_read;
     response->server_status = HttpResponse::IO_ERROR;
     return false;
   }

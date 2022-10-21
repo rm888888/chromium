@@ -10,7 +10,7 @@
 
 #include "base/files/file_path.h"
 #include "base/gtest_prod_util.h"
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/memory/ref_counted.h"
 #include "base/memory/weak_ptr.h"
 #include "chrome/browser/profiles/profile.h"
@@ -63,7 +63,15 @@ class InlineLoginHandlerImpl : public InlineLoginHandler {
  private:
   // InlineLoginHandler overrides:
   void SetExtraInitParams(base::DictionaryValue& params) override;
-  void CompleteLogin(const CompleteLoginParams& params) override;
+  void CompleteLogin(const std::string& email,
+                     const std::string& password,
+                     const std::string& gaia_id,
+                     const std::string& auth_code,
+                     bool skip_for_now,
+                     bool trusted,
+                     bool trusted_found,
+                     bool choose_what_to_sync,
+                     base::Value edu_login_params) override;
 
   // This struct exists to pass parameters to the FinishCompleteLogin() method,
   // since the base::BindRepeating() call does not support this many template
@@ -85,9 +93,9 @@ class InlineLoginHandlerImpl : public InlineLoginHandler {
     ~FinishCompleteLoginParams();
 
     // Pointer to WebUI handler.  May be nullptr.
-    raw_ptr<InlineLoginHandlerImpl> handler;
+    InlineLoginHandlerImpl* handler;
     // The isolate storage partition containing sign in cookies.
-    raw_ptr<content::StoragePartition> partition;
+    content::StoragePartition* partition;
     // URL of sign in containing parameters such as email, source, etc.
     GURL url;
     // Path to profile being signed in. Non empty only when unlocking a profile
@@ -160,7 +168,8 @@ class InlineSigninHelper : public GaiaAuthConsumer {
       override;
 
   void OnClientOAuthSuccessAndBrowserOpened(const ClientOAuthResult& result,
-                                            Profile* profile);
+                                            Profile* profile,
+                                            Profile::CreateStatus status);
 
   // Callback invoked once the user has responded to the signin confirmation UI.
   // If confirmed is false, the signin is aborted.
@@ -173,7 +182,7 @@ class InlineSigninHelper : public GaiaAuthConsumer {
 
   GaiaAuthFetcher gaia_auth_fetcher_;
   base::WeakPtr<InlineLoginHandlerImpl> handler_;
-  raw_ptr<Profile> profile_;
+  Profile* profile_;
   Profile::CreateStatus create_status_;
   GURL current_url_;
   std::string email_;

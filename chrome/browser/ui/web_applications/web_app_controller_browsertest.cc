@@ -5,7 +5,6 @@
 #include "chrome/browser/ui/web_applications/web_app_controller_browsertest.h"
 
 #include "base/strings/utf_string_conversions.h"
-#include "build/chromeos_buildflags.h"
 #include "chrome/browser/apps/app_service/app_launch_params.h"
 #include "chrome/browser/apps/app_service/app_service_proxy.h"
 #include "chrome/browser/apps/app_service/app_service_proxy_factory.h"
@@ -30,22 +29,12 @@
 #include "content/public/test/browser_test_utils.h"
 #include "net/dns/mock_host_resolver.h"
 
-#if BUILDFLAG(IS_CHROMEOS_ASH)
-#include "ash/constants/ash_features.h"
-#include "chrome/common/chrome_features.h"
-#endif
-
 namespace web_app {
 
 WebAppControllerBrowserTest::WebAppControllerBrowserTest()
     : https_server_(net::EmbeddedTestServer::TYPE_HTTPS) {
-  os_hooks_suppress_.emplace();
-  scoped_feature_list_.InitWithFeatures({}, {
-#if BUILDFLAG(IS_CHROMEOS_ASH)
-    features::kWebAppsCrosapi, chromeos::features::kLacrosPrimary,
-#endif
-        predictors::kSpeculativePreconnectFeature
-  });
+  scoped_feature_list_.InitAndDisableFeature(
+      predictors::kSpeculativePreconnectFeature);
 }
 
 WebAppControllerBrowserTest::~WebAppControllerBrowserTest() = default;
@@ -61,7 +50,7 @@ Profile* WebAppControllerBrowserTest::profile() {
 }
 
 AppId WebAppControllerBrowserTest::InstallPWA(const GURL& start_url) {
-  auto web_app_info = std::make_unique<WebAppInstallInfo>();
+  auto web_app_info = std::make_unique<WebApplicationInfo>();
   web_app_info->start_url = start_url;
   web_app_info->scope = start_url.GetWithoutFilename();
   web_app_info->user_display_mode = DisplayMode::kStandalone;
@@ -70,7 +59,7 @@ AppId WebAppControllerBrowserTest::InstallPWA(const GURL& start_url) {
 }
 
 AppId WebAppControllerBrowserTest::InstallWebApp(
-    std::unique_ptr<WebAppInstallInfo> web_app_info) {
+    std::unique_ptr<WebApplicationInfo> web_app_info) {
   return web_app::test::InstallWebApp(profile(), std::move(web_app_info));
 }
 
@@ -209,6 +198,8 @@ void WebAppControllerBrowserTest::SetUpOnMainThread() {
 
   // By default, all SSL cert checks are valid. Can be overridden in tests.
   cert_verifier_.mock_cert_verifier()->set_default_result(net::OK);
+
+  os_hooks_suppress_ = OsIntegrationManager::ScopedSuppressOsHooksForTesting();
 
   web_app::test::WaitUntilReady(
       web_app::WebAppProvider::GetForTest(browser()->profile()));

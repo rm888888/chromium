@@ -20,7 +20,7 @@ class MockFieldInfoStore : public FieldInfoStore {
   MOCK_METHOD(void, AddFieldInfo, (const FieldInfo& field_info), (override));
   MOCK_METHOD(void,
               GetAllFieldInfo,
-              (base::WeakPtr<PasswordStoreConsumer> consumer),
+              (PasswordStoreConsumer * consumer),
               (override));
   MOCK_METHOD(void,
               RemoveFieldInfoByTime,

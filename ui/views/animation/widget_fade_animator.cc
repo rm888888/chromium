@@ -32,8 +32,10 @@ void WidgetFadeAnimator::FadeIn() {
 }
 
 void WidgetFadeAnimator::FadeOut() {
-  if (IsFadingOut() || !widget_)
+  if (IsFadingOut())
     return;
+
+  DCHECK(widget_);
 
   // If the widget is already hidden, then there is no current animation and
   // nothing to do. If the animation is close-on-hide, however, we should still

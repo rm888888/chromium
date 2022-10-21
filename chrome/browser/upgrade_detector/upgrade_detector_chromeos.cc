@@ -8,7 +8,6 @@
 
 #include <algorithm>
 
-#include "ash/components/settings/timezone_settings.h"
 #include "ash/constants/ash_features.h"
 #include "base/location.h"
 #include "base/logging.h"
@@ -22,6 +21,7 @@
 #include "chrome/common/pref_names.h"
 #include "chromeos/dbus/dbus_thread_manager.h"
 #include "chromeos/dbus/update_engine/update_engine_client.h"
+#include "chromeos/settings/timezone_settings.h"
 #include "components/prefs/pref_registry_simple.h"
 #include "components/prefs/pref_service.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"

@@ -119,6 +119,7 @@ const ContentSettingsTypeNameEntry kContentSettingsTypeGroupNames[] = {
      kBluetoothChooserDataGroupType},
     {ContentSettingsType::WINDOW_PLACEMENT, "window-placement"},
     {ContentSettingsType::FONT_ACCESS, "font-access"},
+    {ContentSettingsType::FILE_HANDLING, "file-handling"},
     {ContentSettingsType::FILE_SYSTEM_ACCESS_CHOOSER_DATA,
      "file-system-access-handles-data"},
 
@@ -423,6 +424,7 @@ const std::vector<ContentSettingsType>& GetVisiblePermissionCategories() {
       ContentSettingsType::AUTOMATIC_DOWNLOADS,
       ContentSettingsType::BACKGROUND_SYNC,
       ContentSettingsType::CLIPBOARD_READ_WRITE,
+      ContentSettingsType::FILE_HANDLING,
       ContentSettingsType::FILE_SYSTEM_WRITE_GUARD,
       ContentSettingsType::FONT_ACCESS,
       ContentSettingsType::GEOLOCATION,
@@ -472,6 +474,29 @@ const std::vector<ContentSettingsType>& GetVisiblePermissionCategories() {
   }
 
   return *base_types;
+}
+
+std::vector<ContentSettingsType> GetVisiblePermissionCategoriesForOrigin(
+    Profile* profile,
+    const GURL& origin) {
+  const std::vector<ContentSettingsType>& base_types =
+      GetVisiblePermissionCategories();
+  std::vector<ContentSettingsType> types_for_origin;
+  std::copy_if(
+      base_types.begin(), base_types.end(),
+      std::back_inserter(types_for_origin),
+      [&profile, &origin](ContentSettingsType type) {
+        // File Handling is only relevant for installed PWAs that ask for
+        // certain file types; if this is not the case, the control will do
+        // nothing and thus is hidden.
+        if (type == ContentSettingsType::FILE_HANDLING &&
+            web_app::GetFileHandlersForAllWebAppsWithOrigin(profile, origin)
+                .empty()) {
+          return false;
+        }
+        return true;
+      });
+  return types_for_origin;
 }
 
 std::string SiteSettingSourceToString(const SiteSettingSource source) {
@@ -535,6 +560,9 @@ std::unique_ptr<base::DictionaryValue> GetExceptionForPage(
   DCHECK(!setting_string.empty());
   exception->SetString(kSetting, setting_string);
 
+  exception->SetString(site_settings::kSettingDetail,
+                       content_settings::GetPermissionDetailString(
+                           profile, content_type, GURL(pattern.ToString())));
   exception->SetString(kSource, provider_name);
   exception->SetBoolean(kIncognito, incognito);
   exception->SetBoolean(kIsEmbargoed, is_embargoed);
@@ -813,7 +841,7 @@ void GetPolicyAllowedUrls(
 
   Profile* profile = Profile::FromWebUI(web_ui);
   PrefService* prefs = profile->GetPrefs();
-  const base::Value* policy_urls =
+  const base::ListValue* policy_urls =
       prefs->GetList(type == ContentSettingsType::MEDIASTREAM_MIC
                          ? prefs::kAudioCaptureAllowedUrls
                          : prefs::kVideoCaptureAllowedUrls);

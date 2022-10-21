@@ -7,6 +7,7 @@
 #include <memory>
 #include <vector>
 
+#include "base/macros.h"
 #include "base/memory/ref_counted.h"
 #include "cc/base/region.h"
 #include "testing/gtest/include/gtest/gtest.h"

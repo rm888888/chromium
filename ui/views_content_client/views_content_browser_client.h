@@ -7,7 +7,7 @@
 
 #include <memory>
 
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "content/public/browser/content_browser_client.h"
 
 namespace ui {
@@ -27,10 +27,10 @@ class ViewsContentBrowserClient : public content::ContentBrowserClient {
 
   // content::ContentBrowserClient:
   std::unique_ptr<content::BrowserMainParts> CreateBrowserMainParts(
-      content::MainFunctionParams parameters) override;
+      const content::MainFunctionParams& parameters) override;
 
  private:
-  raw_ptr<ViewsContentClient> views_content_client_;
+  ViewsContentClient* views_content_client_;
 };
 
 }  // namespace ui

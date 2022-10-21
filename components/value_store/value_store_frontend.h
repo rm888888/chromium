@@ -9,6 +9,7 @@
 #include <string>
 
 #include "base/callback.h"
+#include "base/macros.h"
 #include "base/memory/ref_counted.h"
 #include "base/values.h"
 
@@ -29,8 +30,7 @@ class ValueStoreFrontend {
       const scoped_refptr<ValueStoreFactory>& store_factory,
       const base::FilePath& directory,
       const std::string& uma_client_name,
-      const scoped_refptr<base::SequencedTaskRunner>& origin_task_runner,
-      const scoped_refptr<base::SequencedTaskRunner>& file_task_runner);
+      const scoped_refptr<base::SequencedTaskRunner>& task_runner);
   ~ValueStoreFrontend();
   ValueStoreFrontend(const ValueStoreFrontend&) = delete;
   ValueStoreFrontend& operator=(const ValueStoreFrontend&) = delete;
@@ -52,10 +52,7 @@ class ValueStoreFrontend {
   // on the FILE thread.
   scoped_refptr<Backend> backend_;
 
-  // The task runner on which to fire callbacks.
-  scoped_refptr<base::SequencedTaskRunner> origin_task_runner_;
-
-  scoped_refptr<base::SequencedTaskRunner> file_task_runner_;
+  scoped_refptr<base::SequencedTaskRunner> task_runner_;
 };
 
 }  // namespace value_store

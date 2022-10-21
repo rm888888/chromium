@@ -11,6 +11,7 @@
 #include <string>
 
 #include "base/component_export.h"
+#include "base/macros.h"
 
 // Utility for dynamically loading libsecret.
 class LibsecretLoader {

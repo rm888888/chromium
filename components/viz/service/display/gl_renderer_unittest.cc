@@ -2572,14 +2572,14 @@ class TestOverlayProcessor : public OverlayProcessorWin {
 #elif defined(OS_APPLE)
 class MockCALayerOverlayProcessor : public CALayerOverlayProcessor {
  public:
-  MockCALayerOverlayProcessor() : CALayerOverlayProcessor(true) {}
+  MockCALayerOverlayProcessor() = default;
   ~MockCALayerOverlayProcessor() override = default;
 
-  MOCK_METHOD6(
+  MOCK_CONST_METHOD6(
       ProcessForCALayerOverlays,
-      bool(AggregatedRenderPass* render_pass,
-           DisplayResourceProvider* resource_provider,
+      bool(DisplayResourceProvider* resource_provider,
            const gfx::RectF& display_rect,
+           const QuadList& quad_list,
            const base::flat_map<AggregatedRenderPassId, cc::FilterOperations*>&
                render_pass_filters,
            const base::flat_map<AggregatedRenderPassId, cc::FilterOperations*>&
@@ -2593,8 +2593,9 @@ class TestOverlayProcessor : public OverlayProcessorMac {
       : OverlayProcessorMac(std::make_unique<MockCALayerOverlayProcessor>()) {}
   ~TestOverlayProcessor() override = default;
 
-  MockCALayerOverlayProcessor* GetTestProcessor() {
-    return static_cast<MockCALayerOverlayProcessor*>(GetOverlayProcessor());
+  const MockCALayerOverlayProcessor* GetTestProcessor() const {
+    return static_cast<const MockCALayerOverlayProcessor*>(
+        GetOverlayProcessor());
   }
 };
 
@@ -2644,11 +2645,7 @@ class TestOverlayProcessor : public OverlayProcessorUsingStrategy {
                       const PrimaryPlane* primary_plane,
                       OverlayCandidateList* candidates,
                       std::vector<gfx::Rect>* content_bounds,
-                      const OverlayProposedCandidate& proposed_candidate));
-
-    MOCK_METHOD2(CommitCandidate,
-                 void(const OverlayProposedCandidate& proposed_candidate,
-                      AggregatedRenderPass* render_pass));
+                      OverlayProposedCandidate* proposed_candidate));
   };
 
   bool IsOverlaySupported() const override { return true; }
@@ -2659,7 +2656,7 @@ class TestOverlayProcessor : public OverlayProcessorUsingStrategy {
   // to be traditionally composited. Candidates with |overlay_handled| set to
   // true must also have their |display_rect| converted to integer
   // coordinates if necessary.
-  void CheckOverlaySupportImpl(
+  void CheckOverlaySupport(
       const OverlayProcessorInterface::OutputSurfaceOverlayPlane* primary_plane,
       OverlayCandidateList* surfaces) override {}
 
@@ -2745,7 +2742,7 @@ TEST_F(GLRendererTest, DontOverlayWithCopyRequests) {
   renderer.SetVisible(true);
 
 #if defined(OS_APPLE)
-  MockCALayerOverlayProcessor* mock_ca_processor =
+  const MockCALayerOverlayProcessor* mock_ca_processor =
       processor->GetTestProcessor();
 #elif defined(OS_WIN)
   MockDCLayerOverlayProcessor* dc_processor = processor->GetTestProcessor();
@@ -2789,7 +2786,7 @@ TEST_F(GLRendererTest, DontOverlayWithCopyRequests) {
   }
 #elif defined(OS_APPLE)
   EXPECT_CALL(*mock_ca_processor, ProcessForCALayerOverlays(_, _, _, _, _, _))
-      .WillOnce(Return(false));
+      .Times(0);
 #elif defined(OS_WIN)
   EXPECT_CALL(*dc_processor, Process(_, _, _, _, _, _, _, _)).Times(0);
 #endif
@@ -2828,7 +2825,7 @@ TEST_F(GLRendererTest, DontOverlayWithCopyRequests) {
   }
 #elif defined(OS_APPLE)
   EXPECT_CALL(*mock_ca_processor, ProcessForCALayerOverlays(_, _, _, _, _, _))
-      .WillOnce(Return(true));
+      .Times(1);
 #elif defined(OS_WIN)
   EXPECT_CALL(*dc_processor, Process(_, _, _, _, _, _, _, _)).Times(1);
 #endif
@@ -2856,7 +2853,7 @@ class SingleOverlayOnTopProcessor : public OverlayProcessorUsingStrategy {
   bool NeedsSurfaceDamageRectList() const override { return true; }
   bool IsOverlaySupported() const override { return true; }
 
-  void CheckOverlaySupportImpl(
+  void CheckOverlaySupport(
       const OverlayProcessorInterface::OutputSurfaceOverlayPlane* primary_plane,
       OverlayCandidateList* surfaces) override {
     if (!multiple_candidates_)
@@ -3881,14 +3878,11 @@ class ContentBoundsOverlayProcessor : public OverlayProcessorUsingStrategy {
         const PrimaryPlane* primary_plane,
         OverlayCandidateList* candidates,
         std::vector<gfx::Rect>* content_bounds,
-        const OverlayProposedCandidate& proposed_candidate) override {
+        OverlayProposedCandidate* proposed_candidate) override {
       content_bounds->insert(content_bounds->end(), content_bounds_.begin(),
                              content_bounds_.end());
       return true;
     }
-
-    void CommitCandidate(const OverlayProposedCandidate& proposed_candidate,
-                         AggregatedRenderPass* render_pass) override {}
 
    private:
     const std::vector<gfx::Rect> content_bounds_;
@@ -3915,7 +3909,7 @@ class ContentBoundsOverlayProcessor : public OverlayProcessorUsingStrategy {
   // to be traditionally composited. Candidates with |overlay_handled| set to
   // true must also have their |display_rect| converted to integer
   // coordinates if necessary.
-  void CheckOverlaySupportImpl(
+  void CheckOverlaySupport(
       const OverlayProcessorInterface::OutputSurfaceOverlayPlane* primary_plane,
       OverlayCandidateList* surfaces) override {}
 

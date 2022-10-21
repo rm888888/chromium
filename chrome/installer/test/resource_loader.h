@@ -14,6 +14,8 @@
 #include <string>
 #include <utility>
 
+#include "base/macros.h"
+
 namespace base {
 class FilePath;
 }

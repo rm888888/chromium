@@ -12,6 +12,7 @@
 #include <string>
 #include <vector>
 
+#include "base/macros.h"
 #include "components/password_manager/core/browser/hash_password_manager.h"
 #include "components/password_manager/core/browser/password_form.h"
 #include "components/password_manager/core/browser/password_store_change.h"
@@ -56,8 +57,6 @@ class PasswordReuseDetector {
 
   void OnLoginsChanged(
       const password_manager::PasswordStoreChangeList& changes);
-
-  void OnLoginsRetained(const std::vector<PasswordForm>& retained_passwords);
 
   // Clears all the cached passwords which are stored on the account store.
   void ClearCachedAccountStorePasswords();

@@ -7,6 +7,7 @@
 
 #include <string>
 
+#include "base/macros.h"
 #include "ui/base/ui_base_types.h"
 #include "url/gurl.h"
 

@@ -1,0 +1,17 @@
+body{
+width: 100%;
+margin: 0;
+background:#674889 ;
+}
+.main-content{
+  text-align: center;
+}
+.input{
+  text-align: center;
+  border-style: solid;
+  border-top-left-radius: 16px;
+  border-bottom-left-radius: 16px;
+  border-color: #FF0000;
+  height: 60px;
+  width: 30%;
+}

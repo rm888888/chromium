@@ -45,7 +45,6 @@
 #include "ui/views/controls/textfield/textfield.h"
 #include "ui/views/controls/tree/tree_view_controller.h"
 #include "ui/views/style/platform_style.h"
-#include "ui/views/widget/widget.h"
 
 using ui::TreeModel;
 using ui::TreeModelNode;
@@ -61,8 +60,6 @@ static constexpr int kArrowRegionSize = 12;
 // Padding around the text (on each side).
 static constexpr int kTextVerticalPadding = 3;
 static constexpr int kTextHorizontalPadding = 2;
-// Padding between the auxiliary text and the end of the line, handles RTL.
-static constexpr int kAuxiliaryTextLineEndPadding = 5;
 // How much children are indented from their parent.
 static constexpr int kIndent = 20;
 
@@ -198,7 +195,7 @@ void TreeView::StartEditing(TreeModelNode* node) {
     editor_ = new Textfield;
     // Add the editor immediately as GetPreferredSize returns the wrong thing if
     // not parented.
-    AddChildView(editor_.get());
+    AddChildView(editor_);
     editor_->SetFontList(font_list_);
     empty_editor_size_ = editor_->GetPreferredSize();
     editor_->set_controller(this);
@@ -817,11 +814,6 @@ void TreeView::UpdateSelection(TreeModelNode* model_node,
     // GetForegroundBoundsForNode() returns RTL-flipped coordinates for paint.
     // Un-flip before passing to ScrollRectToVisible(), which uses layout
     // coordinates.
-    // TODO(crbug.com/1267807): We should not be doing synchronous layout here
-    // but instead we should call into this asynchronously after the Views
-    // tree has processed a layout pass which happens asynchronously.
-    if (auto* widget = GetWidget())
-      widget->LayoutRootViewIfNecessary();
     ScrollRectToVisible(GetMirroredRect(GetForegroundBoundsForNode(node)));
   }
 
@@ -1129,8 +1121,7 @@ void TreeView::PaintRow(gfx::Canvas* canvas,
                                       : gfx::Canvas::TEXT_ALIGN_RIGHT;
       canvas->DrawStringRectWithFlags(
           aux_text, font_list_,
-          drawing_provider()->GetAuxiliaryTextColorForNode(this,
-                                                           node->model_node()),
+          drawing_provider()->GetTextColorForNode(this, node->model_node()),
           aux_text_bounds, align);
     }
   }
@@ -1260,16 +1251,14 @@ gfx::Rect TreeView::GetTextBoundsForNode(InternalNode* node) {
 // leading aligned.
 gfx::Rect TreeView::GetAuxiliaryTextBoundsForNode(InternalNode* node) {
   gfx::Rect text_bounds = GetTextBoundsForNode(node);
-  int width = base::i18n::IsRTL()
-                  ? text_bounds.x() - kTextHorizontalPadding -
-                        kAuxiliaryTextLineEndPadding
-                  : bounds().width() - text_bounds.right() -
-                        kTextHorizontalPadding - kAuxiliaryTextLineEndPadding;
+  int width = base::i18n::IsRTL() ? text_bounds.x() - kTextHorizontalPadding * 2
+                                  : bounds().width() - text_bounds.right() -
+                                        2 * kTextHorizontalPadding;
   if (width < 0)
     return gfx::Rect();
   int x = base::i18n::IsRTL()
-              ? kAuxiliaryTextLineEndPadding
-              : bounds().right() - width - kAuxiliaryTextLineEndPadding;
+              ? kTextHorizontalPadding
+              : bounds().right() - width - kTextHorizontalPadding;
   return gfx::Rect(x, text_bounds.y(), width, text_bounds.height());
 }
 

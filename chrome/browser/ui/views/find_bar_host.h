@@ -5,7 +5,8 @@
 #ifndef CHROME_BROWSER_UI_VIEWS_FIND_BAR_HOST_H_
 #define CHROME_BROWSER_UI_VIEWS_FIND_BAR_HOST_H_
 
-#include "base/memory/raw_ptr.h"
+#include "base/compiler_specific.h"
+#include "base/macros.h"
 #include "chrome/browser/ui/find_bar/find_bar.h"
 #include "chrome/browser/ui/views/dropdown_bar_host.h"
 #include "chrome/browser/ui/views/find_bar_view.h"
@@ -160,7 +161,7 @@ class FindBarHost : public DropdownBarHost,
   void RestoreFocusTracker();
 
   // A pointer back to the owning controller.
-  raw_ptr<FindBarController> find_bar_controller_ = nullptr;
+  FindBarController* find_bar_controller_ = nullptr;
 
   // The number of audible alerts issued.
   size_t audible_alerts_ = 0;

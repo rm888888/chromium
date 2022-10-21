@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 
+#include "base/macros.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/gfx/image/image.h"
 #include "ui/message_center/public/cpp/message_center_public_export.h"

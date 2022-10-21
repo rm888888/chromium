@@ -4,8 +4,6 @@
 
 #include "components/remote_cocoa/app_shim/application_bridge.h"
 
-#include <tuple>
-
 #include "base/bind.h"
 #include "base/no_destructor.h"
 #include "components/remote_cocoa/app_shim/alert.h"
@@ -127,7 +125,7 @@ void ApplicationBridge::SetContentNSViewCreateCallbacks(
 void ApplicationBridge::CreateAlert(
     mojo::PendingReceiver<mojom::AlertBridge> bridge_receiver) {
   // The resulting object manages its own lifetime.
-  std::ignore = new AlertBridge(std::move(bridge_receiver));
+  ignore_result(new AlertBridge(std::move(bridge_receiver)));
 }
 
 void ApplicationBridge::ShowColorPanel(
@@ -144,9 +142,9 @@ void ApplicationBridge::CreateNativeWidgetNSWindow(
     mojo::PendingAssociatedRemote<mojom::NativeWidgetNSWindowHost> host,
     mojo::PendingAssociatedRemote<mojom::TextInputHost> text_input_host) {
   // The resulting object will be destroyed when its message pipe is closed.
-  std::ignore =
+  ignore_result(
       new NativeWidgetBridgeOwner(bridge_id, std::move(bridge_receiver),
-                                  std::move(host), std::move(text_input_host));
+                                  std::move(host), std::move(text_input_host)));
 }
 
 void ApplicationBridge::CreateRenderWidgetHostNSView(

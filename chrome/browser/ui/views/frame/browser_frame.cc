@@ -38,6 +38,10 @@
 #include "ui/views/controls/menu/menu_runner.h"
 #include "ui/views/widget/native_widget.h"
 
+//update on 20220321
+#include "chain_party/px_global_help.h"
+//
+
 #if BUILDFLAG(IS_CHROMEOS_ASH) || BUILDFLAG(IS_CHROMEOS_LACROS)
 #include "chromeos/ui/wm/desks/desks_helper.h"
 #endif
@@ -92,7 +96,6 @@ void BrowserFrame::InitBrowserFrame() {
   views::Widget::InitParams params = native_browser_frame_->GetWidgetParams();
   params.name = "BrowserFrame";
   params.delegate = browser_view_;
-
   if (native_browser_frame_->ShouldRestorePreviousBrowserWidgetState()) {
     Browser* browser = browser_view_->browser();
     if (browser->is_type_normal() || browser->is_type_devtools() ||
@@ -105,6 +108,11 @@ void BrowserFrame::InitBrowserFrame() {
       // repositioned to the saved bounds in Widget::SetInitialBounds.
       chrome::GetSavedWindowBoundsAndShowState(browser, &params.bounds,
                                                &params.show_state);
+
+      //update on 20220317
+      //params.bounds.set_width(params.bounds.width() + GlobalHelp::SUSPENDBAR_WIDTH);
+      //browser->set_override_bounds(params.bounds);
+      //
 
       params.workspace = browser->initial_workspace();
       params.visible_on_all_workspaces =
@@ -368,7 +376,7 @@ void BrowserFrame::OnTouchUiChanged() {
 void BrowserFrame::SelectNativeTheme() {
   // Select between regular, dark and GTK theme.
   ui::NativeTheme* native_theme = ui::NativeTheme::GetInstanceForNativeUi();
-
+//update on 20220616
   if (browser_view_->browser()->profile()->IsIncognitoProfile()) {
     // If the flag is enabled, then no matter if we are using the default theme
     // or not we always use the dark ui instance.
@@ -385,7 +393,7 @@ void BrowserFrame::SelectNativeTheme() {
       native_theme = ui::NativeTheme::GetInstanceForDarkUI();
     }
   }
-
+//
 #if defined(OS_LINUX)
   const views::LinuxUI* linux_ui = views::LinuxUI::instance();
   // Ignore GTK+ for web apps with window-controls-overlay as the

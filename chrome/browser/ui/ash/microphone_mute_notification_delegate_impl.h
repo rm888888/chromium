@@ -5,8 +5,6 @@
 #ifndef CHROME_BROWSER_UI_ASH_MICROPHONE_MUTE_NOTIFICATION_DELEGATE_IMPL_H_
 #define CHROME_BROWSER_UI_ASH_MICROPHONE_MUTE_NOTIFICATION_DELEGATE_IMPL_H_
 
-#include <list>
-#include <map>
 #include <string>
 
 #include "ash/public/cpp/microphone_mute_notification_delegate.h"

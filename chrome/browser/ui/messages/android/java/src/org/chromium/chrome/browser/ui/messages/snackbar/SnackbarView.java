@@ -252,9 +252,8 @@ public class SnackbarView {
     private static int getBackgroundColor(View view, Snackbar snackbar) {
         // Themes are used first.
         if (snackbar.getTheme() == Snackbar.Theme.GOOGLE) {
-            // TODO(crbug.com/1260203): Revisit once we know whether to make this dynamic.
             return ApiCompatibilityUtils.getColor(
-                    view.getResources(), R.color.default_control_color_active_baseline);
+                    view.getResources(), R.color.default_control_color_active);
         }
 
         assert snackbar.getTheme() == Snackbar.Theme.BASIC;
@@ -268,7 +267,7 @@ public class SnackbarView {
 
     private static int getTextAppearance(Snackbar snackbar) {
         if (snackbar.getTheme() == Snackbar.Theme.GOOGLE) {
-            return R.style.TextAppearance_TextMedium_Primary_OnAccent1;
+            return R.style.TextAppearance_TextMedium_Primary_Baseline_Inverse;
         }
 
         assert snackbar.getTheme() == Snackbar.Theme.BASIC;

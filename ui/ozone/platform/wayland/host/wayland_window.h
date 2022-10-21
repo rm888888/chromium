@@ -25,7 +25,7 @@
 #include "ui/gfx/native_widget_types.h"
 #include "ui/ozone/platform/wayland/common/wayland_object.h"
 #include "ui/ozone/platform/wayland/host/wayland_surface.h"
-#include "ui/ozone/platform/wayland/mojom/wayland_overlay_config.mojom-forward.h"
+#include "ui/ozone/public/mojom/wayland/wayland_overlay_config.mojom-forward.h"
 #include "ui/platform_window/platform_window.h"
 #include "ui/platform_window/platform_window_delegate.h"
 #include "ui/platform_window/platform_window_init_properties.h"
@@ -33,12 +33,11 @@
 
 namespace ui {
 
-class BitmapCursor;
+class BitmapCursorOzone;
 class OSExchangeData;
 class WaylandConnection;
 class WaylandSubsurface;
 class WaylandWindowDragController;
-class WaylandFrameManager;
 class WaylandPopup;
 
 using WidgetSubsurfaceSet = base::flat_set<std::unique_ptr<WaylandSubsurface>>;
@@ -136,8 +135,6 @@ class WaylandWindow : public PlatformWindow,
     return frame_insets_px_;
   }
   void set_frame_insets_px(gfx::Insets insets) { frame_insets_px_ = insets; }
-
-  bool can_submit_frames() const { return can_submit_frames_; }
 
   // These are never intended to be used except in unit tests.
   void set_update_visual_size_immediately(bool update_immediately) {
@@ -244,10 +241,6 @@ class WaylandWindow : public PlatformWindow,
   // Tells if the surface has already been configured.
   virtual bool IsSurfaceConfigured() = 0;
 
-  // Called by shell surfaces to indicate that this window can start submitting
-  // frames.
-  void OnSurfaceConfigureEvent();
-
   // Sets the window geometry.
   virtual void SetWindowGeometry(gfx::Rect bounds);
 
@@ -294,9 +287,6 @@ class WaylandWindow : public PlatformWindow,
   base::WeakPtr<WaylandWindow> AsWeakPtr() {
     return weak_ptr_factory_.GetWeakPtr();
   }
-
-  // Clears the state of the |frame_manager_| when the GPU channel is destroyed.
-  void OnChannelDestroyed();
 
  protected:
   WaylandWindow(PlatformWindowDelegate* delegate,
@@ -371,16 +361,15 @@ class WaylandWindow : public PlatformWindow,
   friend WaylandWindowDragController;
   std::unique_ptr<WaylandSurface> TakeWaylandSurface();
 
-  void UpdateCursorShape(scoped_refptr<BitmapCursor> cursor);
+  void UpdateCursorShape(scoped_refptr<BitmapCursorOzone> cursor);
 
   PlatformWindowDelegate* delegate_;
   WaylandConnection* connection_;
   WaylandWindow* parent_window_ = nullptr;
   WaylandWindow* child_window_ = nullptr;
 
-  std::unique_ptr<WaylandFrameManager> frame_manager_;
-  bool can_submit_frames_ = false;
-
+  bool should_attach_background_buffer_ = false;
+  uint32_t background_buffer_id_ = 0u;
   // |root_surface_| is a surface for the opaque background. Its z-order is
   // INT32_MIN.
   std::unique_ptr<WaylandSurface> root_surface_;
@@ -398,7 +387,7 @@ class WaylandWindow : public PlatformWindow,
   std::list<WaylandSubsurface*> subsurface_stack_below_;
 
   // The current cursor bitmap (immutable).
-  scoped_refptr<BitmapCursor> cursor_;
+  scoped_refptr<BitmapCursorOzone> cursor_;
 
   // Current bounds of the platform window. This is either initialized, or the
   // requested size by the Wayland compositor. When this is set in SetBounds(),

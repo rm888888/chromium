@@ -7,7 +7,7 @@
 
 #include <stdint.h>
 
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "ui/aura/aura_export.h"
 
 namespace gfx {
@@ -45,7 +45,7 @@ class AURA_EXPORT EnvInputStateController {
  private:
   friend class test::EnvTestHelper;
 
-  raw_ptr<Env> env_;
+  Env* env_;
   // Touch ids that are currently down.
   uint32_t touch_ids_down_ = 0;
 };

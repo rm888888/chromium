@@ -11,6 +11,7 @@
 
 #include <string>
 
+#include "base/macros.h"
 #include "components/metrics/metrics_log_store.h"
 #include "components/metrics/reporting_service.h"
 

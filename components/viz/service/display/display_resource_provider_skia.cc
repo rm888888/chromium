@@ -146,13 +146,8 @@ DisplayResourceProviderSkia::LockSetForExternalUse::LockResource(
         // HDR video color conversion is handled externally in SkiaRenderer
         // using a special color filter and |color_space| is set to destination
         // color space so that Skia doesn't perform implicit color conversion.
-
-        // TODO(https://crbug.com/1271212): Skia doesn't support limited range
-        // color spaces, so we treat it as fullrange, resulting color difference
-        // is very subtle.
         image_color_space =
-            override_color_space
-                .value_or(resource.transferable.color_space.GetAsFullRangeRGB())
+            override_color_space.value_or(resource.transferable.color_space)
                 .ToSkColorSpace();
       }
       resource.image_context =

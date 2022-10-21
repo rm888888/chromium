@@ -27,7 +27,6 @@
       'refreshTPMFirmwareUpdateStatus',
       'requestUpdate',
       'setChannel',
-      'openFirmwareUpdatesPage',
     ]);
 
     /** @private {!UpdateStatus} */
@@ -217,10 +216,5 @@
   /** @override */
   launchReleaseNotes() {
     this.methodCalled('launchReleaseNotes');
-  }
-
-  /** @override */
-  openFirmwareUpdatesPage() {
-    this.methodCalled('openFirmwareUpdatesPage');
   }
 }

@@ -64,13 +64,15 @@ ChromeKeyboardBoundsObserver::~ChromeKeyboardBoundsObserver() {
 
 void ChromeKeyboardBoundsObserver::OnKeyboardVisibleBoundsChanged(
     const gfx::Rect& screen_bounds) {
-  std::unique_ptr<content::RenderWidgetHostIterator> hosts(
-      content::RenderWidgetHost::GetRenderWidgetHosts());
+  if (base::FeatureList::IsEnabled(chromeos::features::kVirtualKeyboardApi)) {
+    std::unique_ptr<content::RenderWidgetHostIterator> hosts(
+        content::RenderWidgetHost::GetRenderWidgetHosts());
 
-  while (content::RenderWidgetHost* host = hosts->GetNextHost()) {
-    content::RenderWidgetHostView* view = host->GetView();
-    if (view)
-      view->NotifyVirtualKeyboardOverlayRect(screen_bounds);
+    while (content::RenderWidgetHost* host = hosts->GetNextHost()) {
+      content::RenderWidgetHostView* view = host->GetView();
+      if (view)
+        view->NotifyVirtualKeyboardOverlayRect(screen_bounds);
+    }
   }
 }
 

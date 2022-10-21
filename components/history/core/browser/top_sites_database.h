@@ -8,6 +8,7 @@
 #include <map>
 
 #include "base/gtest_prod_util.h"
+#include "base/macros.h"
 #include "components/history/core/browser/history_types.h"
 #include "sql/meta_table.h"
 #include "sql/transaction.h"

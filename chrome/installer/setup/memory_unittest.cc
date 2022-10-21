@@ -8,7 +8,6 @@
 
 #include "base/allocator/buildflags.h"
 #include "base/process/memory.h"
-#include "build/build_config.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
 #if defined(OS_MAC)

@@ -4,20 +4,12 @@
 
 #include "chrome/updater/util.h"
 
-#include <algorithm>
-#include <cctype>
-#include <string>
-
 #include "base/base_paths.h"
 #include "base/command_line.h"
-#include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/logging.h"
-#include "base/notreached.h"
 #include "base/path_service.h"
-#include "base/strings/strcat.h"
 #include "base/strings/string_util.h"
-#include "base/strings/utf_string_conversions.h"
 #include "base/version.h"
 #include "build/build_config.h"
 #include "chrome/updater/constants.h"
@@ -181,7 +173,7 @@ base::CommandLine MakeElevated(base::CommandLine command_line) {
   return command_line;
 }
 
-// The log file is created in DIR_LOCAL_APP_DATA or DIR_ROAMING_APP_DATA.
+// The log file is created in DIR_LOCAL_APP_DATA or DIR_APP_DATA.
 void InitLogging(UpdaterScope updater_scope,
                  const base::FilePath::StringType& filename) {
   logging::LoggingSettings settings;
@@ -218,42 +210,5 @@ GURL AppendQueryParameter(const GURL& url,
   replacements.SetQueryStr(query);
   return url.ReplaceComponents(replacements);
 }
-
-#if defined(OS_LINUX)
-
-// TODO(crbug.com/1276188) - implement the functions below.
-absl::optional<base::FilePath> GetUpdaterFolderPath(UpdaterScope scope) {
-  NOTIMPLEMENTED();
-  return absl::nullopt;
-}
-
-base::FilePath GetExecutableRelativePath() {
-  NOTIMPLEMENTED();
-  return base::FilePath();
-}
-
-bool PathOwnedByUser(const base::FilePath& path) {
-  NOTIMPLEMENTED();
-  return false;
-}
-
-#endif  // OS_LINUX
-
-#if defined(OS_WIN)
-
-std::wstring GetTaskNamePrefix(UpdaterScope scope) {
-  std::wstring task_name = GetTaskDisplayName(scope);
-  task_name.erase(std::remove_if(task_name.begin(), task_name.end(), isspace),
-                  task_name.end());
-  return task_name;
-}
-
-std::wstring GetTaskDisplayName(UpdaterScope scope) {
-  return base::StrCat({base::ASCIIToWide(PRODUCT_FULLNAME_STRING), L" Task ",
-                       scope == UpdaterScope::kSystem ? L"System " : L"User ",
-                       kUpdaterVersionUtf16});
-}
-
-#endif  // OS_WIN
 
 }  // namespace updater

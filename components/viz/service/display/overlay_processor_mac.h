@@ -8,6 +8,7 @@
 #include <memory>
 #include <vector>
 
+#include "base/macros.h"
 #include "build/build_config.h"
 #include "components/viz/common/quads/aggregated_render_pass.h"
 #include "components/viz/service/display/ca_layer_overlay.h"
@@ -25,7 +26,7 @@ class VIZ_SERVICE_EXPORT OverlayProcessorMac
  public:
   using CandidateList = CALayerOverlayList;
 
-  OverlayProcessorMac();
+  explicit OverlayProcessorMac(bool enable_ca_overlay);
   // For testing.
   explicit OverlayProcessorMac(
       std::unique_ptr<CALayerOverlayProcessor> ca_layer_overlay_processor);
@@ -69,6 +70,8 @@ class VIZ_SERVICE_EXPORT OverlayProcessorMac
       absl::optional<OutputSurfaceOverlayPlane>* output_surface_plane) override;
 
  private:
+  const bool enable_ca_overlay_;
+
   // The damage that should be added the next frame for drawing to the output
   // surface.
   gfx::Rect ca_overlay_damage_rect_;
@@ -79,7 +82,7 @@ class VIZ_SERVICE_EXPORT OverlayProcessorMac
   // TODO(weiliangc): Eventually fold the CaLayerOverlayProcessor into this
   // class.
   std::unique_ptr<CALayerOverlayProcessor> ca_layer_overlay_processor_;
-  CALayerOverlayProcessor* GetOverlayProcessor() const {
+  const CALayerOverlayProcessor* GetOverlayProcessor() const {
     return ca_layer_overlay_processor_.get();
   }
 

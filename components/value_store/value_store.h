@@ -12,6 +12,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/macros.h"
 #include "base/values.h"
 #include "components/value_store/value_store_change.h"
 

@@ -8,8 +8,8 @@
 
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
+#include "base/macros.h"
 #include "base/memory/scoped_refptr.h"
-#include "base/metrics/field_trial.h"
 #include "base/metrics/persistent_histogram_allocator.h"
 #include "base/path_service.h"
 #include "base/run_loop.h"
@@ -21,7 +21,6 @@
 #include "components/metrics/metrics_switches.h"
 #include "components/metrics/persistent_histograms.h"
 #include "components/prefs/testing_pref_service.h"
-#include "components/variations/service/variations_safe_mode_constants.h"
 #include "content/public/test/browser_task_environment.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
@@ -44,6 +43,10 @@ class TestClient : public AndroidMetricsServiceClient {
   TestClient& operator=(const TestClient&) = delete;
 
   ~TestClient() override = default;
+
+  void Initialize(PrefService* pref_service) {
+    AndroidMetricsServiceClient::Initialize(base::FilePath(), pref_service);
+  }
 
   bool IsRecordingActive() {
     auto* service = GetMetricsService();
@@ -152,17 +155,6 @@ class AndroidMetricsServiceClientTest : public testing::Test {
   content::BrowserTaskEnvironment task_environment_;
   scoped_refptr<base::TestSimpleTaskRunner> task_runner_;
 };
-
-// Verify that the Extended Variations Safe Mode experiment is disabled on
-// Android embedders.
-TEST_F(AndroidMetricsServiceClientTest,
-       ExtendedVariationsSafeModeExperimentDisabled) {
-  auto prefs = CreateTestPrefs();
-  auto client = std::make_unique<TestClient>();
-  client->Initialize(prefs.get());
-  EXPECT_FALSE(
-      base::FieldTrialList::IsTrialActive(variations::kExtendedSafeModeTrial));
-}
 
 TEST_F(AndroidMetricsServiceClientTest, TestSetConsentTrueBeforeInit) {
   auto prefs = CreateTestPrefs();

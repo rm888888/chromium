@@ -109,8 +109,7 @@ class HttpServiceRequest {
 
     result = base::JSONReader::Read(
         base::StringPiece(response_.data(), response_.size()),
-        base::JSON_PARSE_CHROMIUM_EXTENSIONS |
-            base::JSON_ALLOW_TRAILING_COMMAS);
+        base::JSON_ALLOW_TRAILING_COMMAS);
     if (!result || !result->is_dict()) {
       LOGFN(ERROR) << "Failed to read json result from server response";
       result.reset();

@@ -7,7 +7,7 @@
 
 #include <memory>
 
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "ui/gfx/geometry/point.h"
 #include "ui/gfx/geometry/size.h"
 #include "ui/views/animation/ink_drop_ripple_observer.h"
@@ -121,7 +121,7 @@ class VIEWS_EXPORT InkDropRipple {
   // The target InkDropState.
   InkDropState target_ink_drop_state_ = InkDropState::HIDDEN;
 
-  raw_ptr<InkDropRippleObserver> observer_ = nullptr;
+  InkDropRippleObserver* observer_ = nullptr;
 
   std::unique_ptr<ui::CallbackLayerAnimationObserver> animation_observer_;
 };

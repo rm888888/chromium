@@ -19,7 +19,6 @@ import org.chromium.components.browser_ui.bottomsheet.BottomSheetContent;
 public class AccountSelectionBottomSheetContent implements BottomSheetContent {
     private final View mContentView;
     private final Supplier<Integer> mScrollOffsetSupplier;
-    private @Nullable Supplier<Boolean> mBackPressHandler;
 
     /**
      * Constructs the AccountSelection bottom sheet view.
@@ -27,10 +26,6 @@ public class AccountSelectionBottomSheetContent implements BottomSheetContent {
     AccountSelectionBottomSheetContent(View contentView, Supplier<Integer> scrollOffsetSupplier) {
         mContentView = contentView;
         mScrollOffsetSupplier = scrollOffsetSupplier;
-    }
-
-    public void setBackPressHandler(Supplier<Boolean> backPressHandler) {
-        mBackPressHandler = backPressHandler;
     }
 
     @Override
@@ -86,11 +81,6 @@ public class AccountSelectionBottomSheetContent implements BottomSheetContent {
     @Override
     public boolean hideOnScroll() {
         return false;
-    }
-
-    @Override
-    public boolean handleBackPress() {
-        return mBackPressHandler != null && mBackPressHandler.get();
     }
 
     @Override

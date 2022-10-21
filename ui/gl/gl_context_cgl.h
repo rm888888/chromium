@@ -9,6 +9,7 @@
 
 #include <memory>
 
+#include "base/macros.h"
 #include "ui/gfx/color_space.h"
 #include "ui/gl/gl_context.h"
 #include "ui/gl/gl_export.h"

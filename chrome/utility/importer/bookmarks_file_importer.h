@@ -7,6 +7,8 @@
 
 #include <stdint.h>
 
+#include "base/compiler_specific.h"
+#include "base/macros.h"
 #include "chrome/utility/importer/importer.h"
 
 // Importer for bookmarks files.

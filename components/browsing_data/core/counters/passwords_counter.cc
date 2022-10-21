@@ -66,8 +66,6 @@ class PasswordStoreFetcher
   const std::vector<std::string>& domain_examples() { return domain_examples_; }
 
  private:
-  void CancelAllRequests();
-
   scoped_refptr<password_manager::PasswordStoreInterface> store_;
   base::RepeatingClosure logins_changed_closure_;
   base::OnceClosure fetch_complete_;
@@ -76,8 +74,6 @@ class PasswordStoreFetcher
 
   int num_passwords_ = 0;
   std::vector<std::string> domain_examples_;
-
-  base::WeakPtrFactory<PasswordStoreFetcher> weak_ptr_factory_{this};
 };
 
 PasswordStoreFetcher::PasswordStoreFetcher(
@@ -114,7 +110,7 @@ void PasswordStoreFetcher::Fetch(base::Time start,
   fetch_complete_ = std::move(fetch_complete);
 
   if (store_) {
-    store_->GetAutofillableLogins(weak_ptr_factory_.GetWeakPtr());
+    store_->GetAutofillableLogins(this);
   } else {
     std::move(fetch_complete_).Run();
   }
@@ -160,11 +156,6 @@ void PasswordStoreFetcher::OnGetPasswordStoreResults(
     domain_examples_.emplace_back(sorted_domains[1]);
 
   std::move(fetch_complete_).Run();
-}
-
-void PasswordStoreFetcher::CancelAllRequests() {
-  cancelable_task_tracker()->TryCancelAll();
-  weak_ptr_factory_.InvalidateWeakPtrs();
 }
 
 }  // namespace

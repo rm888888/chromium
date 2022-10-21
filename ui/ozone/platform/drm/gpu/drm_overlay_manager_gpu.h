@@ -7,6 +7,7 @@
 
 #include <vector>
 
+#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "ui/ozone/platform/drm/gpu/drm_overlay_manager.h"
 

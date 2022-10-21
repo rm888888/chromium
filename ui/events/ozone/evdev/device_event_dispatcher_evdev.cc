@@ -153,4 +153,4 @@ TouchEventParams::TouchEventParams(const TouchEventParams& other) = default;
 TouchEventParams::~TouchEventParams() {
 }
 
-}  // namespace ui
+}  // namspace ui

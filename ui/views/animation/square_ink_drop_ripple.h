@@ -9,6 +9,7 @@
 #include <string>
 
 #include "base/callback_list.h"
+#include "base/macros.h"
 #include "base/time/time.h"
 #include "third_party/skia/include/core/SkColor.h"
 #include "ui/compositor/layer.h"

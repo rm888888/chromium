@@ -5,7 +5,7 @@
 #ifndef UI_VIEWS_WIDGET_ROOT_VIEW_TARGETER_H_
 #define UI_VIEWS_WIDGET_ROOT_VIEW_TARGETER_H_
 
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "ui/views/view_targeter.h"
 #include "ui/views/views_export.h"
 
@@ -41,7 +41,7 @@ class VIEWS_EXPORT RootViewTargeter : public ViewTargeter {
       const ui::GestureEvent& gesture) override;
 
   // A pointer to the RootView on which |this| is installed.
-  raw_ptr<internal::RootView> root_view_;
+  internal::RootView* root_view_;
 };
 
 }  // namespace views

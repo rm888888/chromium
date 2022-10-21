@@ -5,7 +5,7 @@
 #ifndef COMPONENTS_PERMISSIONS_PERMISSION_ACTIONS_HISTORY_H_
 #define COMPONENTS_PERMISSIONS_PERMISSION_ACTIONS_HISTORY_H_
 
-#include "base/memory/raw_ptr.h"
+#include "base/memory/singleton.h"
 #include "base/notreached.h"
 #include "base/time/time.h"
 #include "components/keyed_service/core/keyed_service.h"
@@ -46,10 +46,6 @@ class PermissionActionsHistory : public KeyedService {
   };
 
   explicit PermissionActionsHistory(PrefService* pref_service);
-
-  PermissionActionsHistory(const PermissionActionsHistory&) = delete;
-  PermissionActionsHistory& operator=(const PermissionActionsHistory&) = delete;
-
   ~PermissionActionsHistory() override = default;
 
   // Get the history of recorded actions that happened after a particular time.
@@ -86,7 +82,9 @@ class PermissionActionsHistory : public KeyedService {
                                         const std::string& key,
                                         EntryFilter entry_filter);
 
-  raw_ptr<PrefService> pref_service_;
+  PrefService* pref_service_;
+
+  DISALLOW_COPY_AND_ASSIGN(PermissionActionsHistory);
 };
 
 }  // namespace permissions

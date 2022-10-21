@@ -14,12 +14,6 @@
 #include <utility>
 #include <vector>
 
-#include "ash/components/arc/arc_prefs.h"
-#include "ash/components/arc/metrics/arc_metrics_constants.h"
-#include "ash/components/arc/mojom/app.mojom.h"
-#include "ash/components/arc/mojom/compatibility_mode.mojom.h"
-#include "ash/components/arc/test/arc_util_test_support.h"
-#include "ash/components/arc/test/fake_app_instance.h"
 #include "ash/constants/ash_features.h"
 #include "ash/constants/ash_switches.h"
 #include "ash/display/display_configuration_controller.h"
@@ -56,7 +50,6 @@
 #include "chrome/browser/ash/crosapi/browser_util.h"
 #include "chrome/browser/ash/crostini/crostini_test_helper.h"
 #include "chrome/browser/ash/crostini/crostini_util.h"
-#include "chrome/browser/ash/eche_app/app_id.h"
 #include "chrome/browser/ash/file_manager/app_id.h"
 #include "chrome/browser/ash/login/demo_mode/demo_mode_test_helper.h"
 #include "chrome/browser/ash/login/users/fake_chrome_user_manager.h"
@@ -90,7 +83,6 @@
 #include "chrome/browser/ui/ash/shelf/shelf_controller_helper.h"
 #include "chrome/browser/ui/ash/shelf/shelf_spinner_controller.h"
 #include "chrome/browser/ui/ash/shelf/shelf_spinner_item_controller.h"
-#include "chrome/browser/ui/ash/shelf/standalone_browser_extension_app_shelf_item_controller.h"
 #include "chrome/browser/ui/browser.h"
 #include "chrome/browser/ui/browser_commands.h"
 #include "chrome/browser/ui/browser_finder.h"
@@ -117,6 +109,12 @@
 #include "chromeos/dbus/concierge/concierge_client.h"
 #include "chromeos/dbus/dbus_thread_manager.h"
 #include "components/account_id/account_id.h"
+#include "components/arc/arc_prefs.h"
+#include "components/arc/metrics/arc_metrics_constants.h"
+#include "components/arc/mojom/app.mojom.h"
+#include "components/arc/mojom/compatibility_mode.mojom.h"
+#include "components/arc/test/arc_util_test_support.h"
+#include "components/arc/test/fake_app_instance.h"
 #include "components/exo/shell_surface_util.h"
 #include "components/keep_alive_registry/scoped_keep_alive.h"
 #include "components/prefs/pref_notifier_impl.h"
@@ -179,7 +177,6 @@ constexpr char kCrxAppPrefix[] = "_crx_";
 // Dummy app id is used to put at least one pin record to prevent initializing
 // pin model with preinstalled apps that can affect some tests.
 constexpr char kDummyAppId[] = "dummyappid_dummyappid_dummyappid";
-constexpr int kSizeInDip = extension_misc::EXTENSION_ICON_MEDIUM;
 
 std::unique_ptr<KeyedService> BuildTestSyncService(
     content::BrowserContext* context) {
@@ -195,28 +192,6 @@ std::vector<arc::mojom::AppInfoPtr> GetArcSettingsAppInfo() {
   app->sticky = true;
   apps.push_back(std::move(app));
   return apps;
-}
-
-bool ValidateImageIsFullyLoaded(const gfx::ImageSkia& image) {
-  if (kSizeInDip != image.width() || kSizeInDip != image.height())
-    return false;
-
-  const std::vector<ui::ResourceScaleFactor>& scale_factors =
-      ui::GetSupportedResourceScaleFactors();
-  for (auto& scale_factor : scale_factors) {
-    const float scale = ui::GetScaleForResourceScaleFactor(scale_factor);
-    if (!image.HasRepresentation(scale))
-      return false;
-
-    const gfx::ImageSkiaRep& representation = image.GetRepresentation(scale);
-    if (representation.is_null() ||
-        representation.pixel_width() != base::ClampCeil(kSizeInDip * scale) ||
-        representation.pixel_height() != base::ClampCeil(kSizeInDip * scale)) {
-      return false;
-    }
-  }
-
-  return true;
 }
 
 // Test implementation of AppIconLoader.
@@ -351,7 +326,7 @@ void UpdateAppRegistryCache(Profile* profile,
                             apps::mojom::OptionalBool show_in_shelf) {
   std::vector<apps::mojom::AppPtr> apps;
   apps::mojom::AppPtr app = apps::mojom::App::New();
-  app->app_type = apps::mojom::AppType::kChromeApp;
+  app->app_type = apps::mojom::AppType::kExtension;
   app->app_id = app_id;
 
   if (block)
@@ -371,7 +346,7 @@ void UpdateAppRegistryCache(Profile* profile,
 
   apps::AppServiceProxyFactory::GetForProfile(profile)
       ->AppRegistryCache()
-      .OnApps(std::move(apps), apps::mojom::AppType::kChromeApp,
+      .OnApps(std::move(apps), apps::mojom::AppType::kExtension,
               false /* should_notify_initialized */);
 }
 
@@ -451,6 +426,13 @@ class ChromeShelfControllerTestBase : public BrowserWithTestWindowTest {
     base::RunLoop run_loop;
     extension_system->ready().Post(FROM_HERE, run_loop.QuitClosure());
     run_loop.Run();
+
+    // Many pinned app tests assume OS sync is enabled.
+    if (chromeos::features::IsSyncSettingsCategorizationEnabled()) {
+      syncer::SyncService* sync_service =
+          SyncServiceFactory::GetForProfile(profile());
+      sync_service->GetUserSettings()->SetOsSyncFeatureEnabled(true);
+    }
 
     app_list_syncable_service_ =
         app_list::AppListSyncableServiceFactory::GetForProfile(profile());
@@ -591,7 +573,6 @@ class ChromeShelfControllerTestBase : public BrowserWithTestWindowTest {
   ChromeShelfController* CreateShelfController() {
     shelf_item_factory_ =
         std::make_unique<FakeChromeShelfItemFactory>(profile());
-    model_->SetShelfItemFactory(shelf_item_factory_.get());
     shelf_controller_ = std::make_unique<ChromeShelfController>(
         profile(), model_.get(), shelf_item_factory_.get());
     shelf_controller_->SetProfileForTest(profile());
@@ -1069,7 +1050,7 @@ class ChromeShelfControllerTestBase : public BrowserWithTestWindowTest {
   }
 
   void AddWebApp(const char* web_app_id) {
-    auto web_app_info = std::make_unique<WebAppInstallInfo>();
+    auto web_app_info = std::make_unique<WebApplicationInfo>();
     if (web_app_id == web_app::kGmailAppId) {
       web_app_info->start_url =
           GURL("https://mail.google.com/mail/?usp=installed_webapp");
@@ -1167,16 +1148,39 @@ class ChromeShelfControllerTest : public ChromeShelfControllerTestBase,
  public:
   ChromeShelfControllerTest() {
     if (ShouldEnableSyncSettingsCategorization()) {
-      feature_list_.InitAndEnableFeature(
-          chromeos::features::kSyncSettingsCategorization);
+      feature_list_.InitWithFeatures(
+          /*enabled_features=*/{chromeos::features::
+                                    kSyncSettingsCategorization},
+          /*disabled_features=*/{chromeos::features::kSyncConsentOptional});
     } else {
-      feature_list_.InitAndDisableFeature(
-          chromeos::features::kSyncSettingsCategorization);
+      feature_list_.InitWithFeatures(
+          /*enabled_features=*/{},
+          /*disabled_features=*/{
+              chromeos::features::kSyncSettingsCategorization,
+              chromeos::features::kSyncConsentOptional});
     }
   }
   ~ChromeShelfControllerTest() override = default;
 
   bool ShouldEnableSyncSettingsCategorization() const { return GetParam(); }
+
+ private:
+  base::test::ScopedFeatureList feature_list_;
+};
+
+// Tests for feature SyncConsentOptional. Exists as a separate class
+// because the feature must be initialized before
+// ChromeShelfControllerTestBase::SetUp().
+class ChromeShelfControllerSyncConsentOptionalTest
+    : public ChromeShelfControllerTestBase {
+ public:
+  ChromeShelfControllerSyncConsentOptionalTest() {
+    feature_list_.InitWithFeatures(
+        /*enabled_features=*/{chromeos::features::kSyncSettingsCategorization,
+                              chromeos::features::kSyncConsentOptional},
+        /*disabled_features=*/{});
+  }
+  ~ChromeShelfControllerSyncConsentOptionalTest() override = default;
 
  private:
   base::test::ScopedFeatureList feature_list_;
@@ -1219,61 +1223,6 @@ class ChromeShelfControllerLacrosTest : public ChromeShelfControllerTestBase {
  private:
   base::test::ScopedFeatureList feature_list_;
   std::unique_ptr<user_manager::ScopedUserManager> scoped_user_manager_;
-};
-
-class ChromeShelfControllerLacrosPrimaryTest
-    : public ChromeShelfControllerLacrosTest {
- public:
-  ChromeShelfControllerLacrosPrimaryTest() = default;
-  ChromeShelfControllerLacrosPrimaryTest(
-      const ChromeShelfControllerLacrosPrimaryTest&) = delete;
-  ChromeShelfControllerLacrosPrimaryTest& operator=(
-      const ChromeShelfControllerLacrosPrimaryTest&) = delete;
-  ~ChromeShelfControllerLacrosPrimaryTest() override = default;
-
-  void SetUp() override {
-    crosapi::browser_util::SetLacrosPrimaryBrowserForTest(true);
-    ChromeShelfControllerLacrosTest::SetUp();
-
-    proxy_ = apps::AppServiceProxyFactory::GetForProfile(profile());
-    ASSERT_TRUE(proxy_);
-  }
-
-  void AddChromeAppItem(const std::string& app_id, aura::Window* window) {
-    ash::ShelfItem item;
-    item.id = ash::ShelfID(app_id);
-    item.type = ash::TYPE_APP;
-    auto delegate =
-        std::make_unique<StandaloneBrowserExtensionAppShelfItemController>(
-            ash::ShelfID(kDummyAppId), window);
-    chrome_app_shelf_item_ = delegate.get();
-    ash::ShelfModel::Get()->Add(item, std::move(delegate));
-  }
-
-  // Verify instance for `window`. If `state` is not destroyed, verify `app_id`
-  // and `state`. Otherwise, verify there is no instance for `app_id` and
-  // `window`.
-  void VerifyInstance(const std::string& app_id,
-                      aura::Window* window,
-                      apps::InstanceState state) {
-    if (state != apps::InstanceState::kDestroyed) {
-      EXPECT_EQ(app_id, proxy_->InstanceRegistry().GetShelfId(window).app_id);
-      EXPECT_EQ(state, proxy_->InstanceRegistry().GetState(window));
-    } else {
-      EXPECT_FALSE(proxy_->InstanceRegistry().Exists(window));
-    }
-  }
-
-  StandaloneBrowserExtensionAppShelfItemController* chrome_app_shelf_item() {
-    return chrome_app_shelf_item_;
-  }
-
-  apps::AppServiceProxy* proxy() { return proxy_; }
-
- private:
-  StandaloneBrowserExtensionAppShelfItemController* chrome_app_shelf_item_ =
-      nullptr;
-  apps::AppServiceProxy* proxy_ = nullptr;
 };
 
 // A V1 windowed application.
@@ -1509,146 +1458,58 @@ TEST_P(ChromeShelfControllerTest, PreinstalledApps) {
   StartPrefSyncService(syncer::SyncDataList());
   EXPECT_EQ("Chrome, Youtube, App1", GetPinnedAppStatus());
 
+  if (base::FeatureList::IsEnabled(features::kDefaultPinnedAppsUpdate2021Q2)) {
+    AddWebApp(web_app::kMessagesAppId);
+    EXPECT_EQ("Chrome, Messages, Youtube, App1", GetPinnedAppStatus());
+
+    AddExtension(extension_files_app_.get());
+    EXPECT_EQ("Chrome, Files, Messages, Youtube, App1", GetPinnedAppStatus());
+
+    AddWebApp(web_app::kGoogleCalendarAppId);
+    EXPECT_EQ("Chrome, Calendar, Files, Messages, Youtube, App1",
+              GetPinnedAppStatus());
+
+    AddWebApp(web_app::kGmailAppId);
+    EXPECT_EQ("Chrome, Gmail, Calendar, Files, Messages, Youtube, App1",
+              GetPinnedAppStatus());
+  } else {
+    AddWebApp(web_app::kGoogleDocsAppId);
+    EXPECT_EQ("Chrome, Doc, Youtube, App1", GetPinnedAppStatus());
+
+    AddWebApp(web_app::kGmailAppId);
+    EXPECT_EQ("Chrome, Gmail, Doc, Youtube, App1", GetPinnedAppStatus());
+
+    AddExtension(extension_files_app_.get());
+    EXPECT_EQ("Chrome, Files, Gmail, Doc, Youtube, App1", GetPinnedAppStatus());
+  }
+}
+
+TEST_F(ChromeShelfControllerSyncConsentOptionalTest, PreinstalledApps) {
+  // Simulate a user who opted out of sync.
+  syncer::SyncService* sync_service =
+      SyncServiceFactory::GetForProfile(profile());
+  sync_service->GetUserSettings()->SetOsSyncFeatureEnabled(false);
+
+  InitShelfController();
+  EXPECT_EQ("Chrome", GetPinnedAppStatus());
+
+  // Simulate the preinstalled app loader installing some apps. Don't start the
+  // pref sync service, because this user opted out of sync.
+  AddWebApp(web_app::kYoutubeAppId);
   AddWebApp(web_app::kMessagesAppId);
-  EXPECT_EQ("Chrome, Messages, Youtube, App1", GetPinnedAppStatus());
-
-  AddExtension(extension_files_app_.get());
-  EXPECT_EQ("Chrome, Files, Messages, Youtube, App1", GetPinnedAppStatus());
-
-  AddWebApp(web_app::kGoogleCalendarAppId);
-  EXPECT_EQ("Chrome, Calendar, Files, Messages, Youtube, App1",
-            GetPinnedAppStatus());
-
   AddWebApp(web_app::kGmailAppId);
-  EXPECT_EQ("Chrome, Gmail, Calendar, Files, Messages, Youtube, App1",
-            GetPinnedAppStatus());
+  AddWebApp(web_app::kGoogleDocsAppId);
+
+  // Default apps are pinned.
+  if (base::FeatureList::IsEnabled(features::kDefaultPinnedAppsUpdate2021Q2))
+    EXPECT_EQ("Chrome, Gmail, Messages, Youtube", GetPinnedAppStatus());
+  else
+    EXPECT_EQ("Chrome, Gmail, Doc, Youtube", GetPinnedAppStatus());
 }
 
 TEST_F(ChromeShelfControllerLacrosTest, LacrosPinnedByDefault) {
   InitShelfController();
   EXPECT_EQ("Chrome, Lacros", GetPinnedAppStatus());
-}
-
-// Checks that AppService instance is updated appropriately for one Chrome app
-// window.
-TEST_F(ChromeShelfControllerLacrosPrimaryTest, ChromeAppWindow) {
-  InitShelfController();
-
-  auto window = std::make_unique<aura::Window>(nullptr);
-  window->Init(ui::LAYER_NOT_DRAWN);
-  AddChromeAppItem(kDummyAppId, window.get());
-  VerifyInstance(
-      kDummyAppId, window.get(),
-      static_cast<apps::InstanceState>(apps::InstanceState::kStarted |
-                                       apps::InstanceState::kRunning));
-
-  // Set window visibility as true.
-  window->Show();
-  VerifyInstance(
-      kDummyAppId, window.get(),
-      static_cast<apps::InstanceState>(apps::InstanceState::kStarted |
-                                       apps::InstanceState::kRunning |
-                                       apps::InstanceState::kVisible));
-
-  // Set window as activated.
-  chrome_app_shelf_item()->OnWindowActivated(
-      wm::ActivationChangeObserver::ActivationReason::ACTIVATION_CLIENT,
-      window.get(), nullptr);
-  VerifyInstance(
-      kDummyAppId, window.get(),
-      static_cast<apps::InstanceState>(
-          apps::InstanceState::kStarted | apps::InstanceState::kRunning |
-          apps::InstanceState::kVisible | apps::InstanceState::kActive));
-
-  // Set window as inactivated.
-  chrome_app_shelf_item()->OnWindowActivated(
-      wm::ActivationChangeObserver::ActivationReason::ACTIVATION_CLIENT,
-      nullptr, window.get());
-  VerifyInstance(
-      kDummyAppId, window.get(),
-      static_cast<apps::InstanceState>(apps::InstanceState::kStarted |
-                                       apps::InstanceState::kRunning |
-                                       apps::InstanceState::kVisible));
-
-  // Set window visibility as false.
-  window->Hide();
-  VerifyInstance(
-      kDummyAppId, window.get(),
-      static_cast<apps::InstanceState>(apps::InstanceState::kStarted |
-                                       apps::InstanceState::kRunning));
-
-  // Remove window.
-  window.reset();
-  VerifyInstance(kDummyAppId, window.get(), apps::InstanceState::kDestroyed);
-}
-
-// Checks that AppService instance is updated appropriately for multiple Chrome
-// app windows.
-TEST_F(ChromeShelfControllerLacrosPrimaryTest, ChromeAppWindows) {
-  InitShelfController();
-
-  auto window1 = std::make_unique<aura::Window>(nullptr);
-  window1->Init(ui::LAYER_NOT_DRAWN);
-  auto window2 = std::make_unique<aura::Window>(nullptr);
-  window2->Init(ui::LAYER_NOT_DRAWN);
-  AddChromeAppItem(kDummyAppId, window1.get());
-  VerifyInstance(
-      kDummyAppId, window1.get(),
-      static_cast<apps::InstanceState>(apps::InstanceState::kStarted |
-                                       apps::InstanceState::kRunning));
-
-  // Add `window2`.
-  window2->Show();
-  chrome_app_shelf_item()->StartTrackingInstance(window2.get());
-  VerifyInstance(
-      kDummyAppId, window2.get(),
-      static_cast<apps::InstanceState>(apps::InstanceState::kStarted |
-                                       apps::InstanceState::kRunning |
-                                       apps::InstanceState::kVisible));
-
-  // Set `window2` as activated.
-  chrome_app_shelf_item()->OnWindowActivated(
-      wm::ActivationChangeObserver::ActivationReason::ACTIVATION_CLIENT,
-      window2.get(), window1.get());
-  VerifyInstance(
-      kDummyAppId, window2.get(),
-      static_cast<apps::InstanceState>(
-          apps::InstanceState::kStarted | apps::InstanceState::kRunning |
-          apps::InstanceState::kVisible | apps::InstanceState::kActive));
-  VerifyInstance(
-      kDummyAppId, window1.get(),
-      static_cast<apps::InstanceState>(apps::InstanceState::kStarted |
-                                       apps::InstanceState::kRunning));
-
-  // Set `window1` as visible and activated.
-  window2->Hide();
-  window1->Show();
-  chrome_app_shelf_item()->OnWindowActivated(
-      wm::ActivationChangeObserver::ActivationReason::ACTIVATION_CLIENT,
-      window1.get(), window2.get());
-  VerifyInstance(
-      kDummyAppId, window1.get(),
-      static_cast<apps::InstanceState>(
-          apps::InstanceState::kStarted | apps::InstanceState::kRunning |
-          apps::InstanceState::kVisible | apps::InstanceState::kActive));
-  VerifyInstance(
-      kDummyAppId, window2.get(),
-      static_cast<apps::InstanceState>(apps::InstanceState::kStarted |
-                                       apps::InstanceState::kRunning));
-
-  // Remove `window1`.
-  window1.reset();
-  VerifyInstance(kDummyAppId, window1.get(), apps::InstanceState::kDestroyed);
-  VerifyInstance(
-      kDummyAppId, window2.get(),
-      static_cast<apps::InstanceState>(apps::InstanceState::kStarted |
-                                       apps::InstanceState::kRunning));
-  EXPECT_TRUE(proxy()->InstanceRegistry().ContainsAppId(kDummyAppId));
-
-  // Remove `window2`.
-  window2.reset();
-  VerifyInstance(kDummyAppId, window2.get(), apps::InstanceState::kDestroyed);
-  EXPECT_FALSE(proxy()->InstanceRegistry().ContainsAppId(kDummyAppId));
 }
 
 TEST_F(ChromeShelfControllerWithArcTest, ArcAppsHiddenFromLaunchCanBePinned) {
@@ -2280,22 +2141,17 @@ TEST_F(ChromeShelfControllerWithArcTest, ArcDeferredLaunch) {
   EXPECT_FALSE(shelf_controller_->GetItem(shelf_id_app_3));
   EXPECT_FALSE(shelf_controller_->GetItem(shelf_id_shortcut));
 
-  EXPECT_EQ(0U, arc_test_.app_instance()->launch_requests().size());
-  ASSERT_EQ(3U, arc_test_.app_instance()->launch_intents().size());
+  ASSERT_EQ(2U, arc_test_.app_instance()->launch_requests().size());
+  ASSERT_EQ(1U, arc_test_.app_instance()->launch_intents().size());
 
-  EXPECT_GE(arc_test_.app_instance()->launch_intents()[0].find(
-                "component=fake.app.1/.activity;"),
-            0);
-  EXPECT_GE(arc_test_.app_instance()->launch_intents()[0].find(
-                "S.org.chromium.arc.request.deferred.start="),
-            0);
-  EXPECT_GE(arc_test_.app_instance()->launch_intents()[1].find(
-                "component=fake.app.2/.activity;"),
-            0);
-  EXPECT_GE(arc_test_.app_instance()->launch_intents()[1].find(
-                "S.org.chromium.arc.request.deferred.start="),
-            0);
-  EXPECT_EQ(arc_test_.app_instance()->launch_intents()[2].c_str(),
+  const arc::FakeAppInstance::Request* request1 =
+      arc_test_.app_instance()->launch_requests()[0].get();
+  const arc::FakeAppInstance::Request* request2 =
+      arc_test_.app_instance()->launch_requests()[1].get();
+
+  EXPECT_TRUE((request1->IsForApp(app2) && request2->IsForApp(gmail)) ||
+              (request1->IsForApp(gmail) && request2->IsForApp(app2)));
+  EXPECT_EQ(arc_test_.app_instance()->launch_intents()[0].c_str(),
             shortcut.intent_uri);
 }
 
@@ -3073,7 +2929,7 @@ TEST_F(MultiProfileMultiBrowserShelfLayoutChromeShelfControllerTest,
   // *   the primary user has a test app pinned to shelf, and
   // *   secondary user has a tab with the URL associated with the app open (but
   //      does not have the app installed).
-  auto web_app_info = std::make_unique<WebAppInstallInfo>();
+  auto web_app_info = std::make_unique<WebApplicationInfo>();
   web_app_info->start_url = GURL(kWebAppUrl);
   web_app::AppId installed_app_id =
       web_app::test::InstallWebApp(profile(), std::move(web_app_info));
@@ -4508,6 +4364,10 @@ TEST_F(ChromeShelfControllerArcDefaultAppsTest, DefaultApps) {
   EXPECT_TRUE(shelf_controller_->GetShelfSpinnerController()->HasApp(app_id));
   // Initially, a default icon is set for the shelf item.
   EXPECT_FALSE(item_delegate->image_set_by_controller());
+  auto get_icon = [=]() {
+    return *shelf_controller_->GetItem(shelf_id)->image.bitmap();
+  };
+  const SkBitmap default_icon = get_icon();
 
   std::string window_app_id("org.chromium.arc.1");
   CreateArcWindow(window_app_id);
@@ -4519,18 +4379,11 @@ TEST_F(ChromeShelfControllerArcDefaultAppsTest, DefaultApps) {
   ASSERT_TRUE(item_delegate);
   EXPECT_FALSE(shelf_controller_->GetShelfSpinnerController()->HasApp(app_id));
   EXPECT_FALSE(item_delegate->image_set_by_controller());
+  EXPECT_TRUE(gfx::test::AreBitmapsEqual(default_icon, get_icon()));
 
   // Wait for the real app icon image to be decoded and set for the shelf item.
   base::RunLoop().RunUntilIdle();
-  const std::vector<ui::ResourceScaleFactor>& scale_factors =
-      ui::GetSupportedResourceScaleFactors();
-  for (auto& scale_factor : scale_factors) {
-    // Force the icon to be loaded.
-    shelf_controller_->GetItem(shelf_id)->image.GetRepresentation(
-        ui::GetScaleForResourceScaleFactor(scale_factor));
-  }
-  EXPECT_TRUE(
-      ValidateImageIsFullyLoaded(shelf_controller_->GetItem(shelf_id)->image));
+  EXPECT_FALSE(gfx::test::AreBitmapsEqual(default_icon, get_icon()));
 }
 
 TEST_F(ChromeShelfControllerArcDefaultAppsTest, PlayStoreDeferredLaunch) {
@@ -4612,47 +4465,6 @@ TEST_F(ChromeShelfControllerArcDefaultAppsTest, PlayStoreLaunchMetric) {
   // UMA is reported for app-ready launch. Note, previous call of SnapshotDelta
   // resets samples, so we expect here only one recorded.
   EXPECT_EQ(1, histogram->SnapshotDelta()->TotalCount());
-  play_store_window->Close();
-}
-
-TEST_F(ChromeShelfControllerArcDefaultAppsTest, DeferredLaunchMetric) {
-  extension_service_->AddExtension(arc_support_host_.get());
-  arc_test_.SetUp(profile());
-
-  InitShelfController();
-  EnablePlayStore(true);
-
-  constexpr char kHistogramName[] =
-      "Arc.FirstAppLaunchDelay.TimeDeltaUntilAppLaunch";
-
-  // Launch Play Store in deferred mode.
-  arc::LaunchApp(profile(), arc::kPlayStoreAppId, ui::EF_LEFT_MOUSE_BUTTON,
-                 arc::UserInteractionType::NOT_USER_INITIATED);
-
-  arc::mojom::AppInfo app;
-  app.activity = arc::kPlayStoreActivity;
-  app.package_name = arc::kPlayStorePackage;
-
-  EXPECT_FALSE(base::StatisticsRecorder::FindHistogram(kHistogramName));
-
-  arc_test_.app_instance()->SendRefreshAppList({app});
-
-  // No window attached at this time.
-  EXPECT_FALSE(base::StatisticsRecorder::FindHistogram(kHistogramName));
-
-  std::string play_store_window_id("org.chromium.arc.1");
-  views::Widget* const play_store_window =
-      CreateArcWindow(play_store_window_id);
-  ASSERT_EQ(1U, arc_test_.app_instance()->launch_intents().size());
-  arc_test_.app_instance()->SendTaskCreated(
-      1, app, arc_test_.app_instance()->launch_intents()[0]);
-
-  // UMA is reported since app becomes ready.
-  base::HistogramBase* const histogram =
-      base::StatisticsRecorder::FindHistogram(kHistogramName);
-  ASSERT_TRUE(histogram);
-  std::unique_ptr<base::HistogramSamples> samples = histogram->SnapshotDelta();
-  ASSERT_EQ(1, samples->TotalCount());
   play_store_window->Close();
 }
 
@@ -4875,7 +4687,7 @@ class ChromeShelfControllerDemoModeTest : public ChromeShelfControllerTestBase {
   }
 
   web_app::AppId InstallExternalWebApp(std::string start_url) {
-    auto web_app_info = std::make_unique<WebAppInstallInfo>();
+    auto web_app_info = std::make_unique<WebApplicationInfo>();
     web_app_info->start_url = GURL(start_url);
     web_app::AppId web_app_id =
         web_app::test::InstallWebApp(profile(), std::move(web_app_info));
@@ -5067,8 +4879,7 @@ TEST_P(ChromeShelfControllerTest, UnpinnableComponentApps) {
   InitShelfController();
 
   const char* kPinnableApp = file_manager::kFileManagerAppId;
-  const char* kNoPinApps[] = {extension_misc::kFeedbackExtensionId,
-                              ash::eche_app::kEcheAppId};
+  const char* kNoPinApps[] = {extension_misc::kFeedbackExtensionId};
 
   EXPECT_EQ(AppListControllerDelegate::PIN_EDITABLE,
             GetPinnableForAppID(kPinnableApp, profile()));
@@ -5090,13 +4901,13 @@ TEST_P(ChromeShelfControllerTest, DoNotShowInShelf) {
   // Set App1.show_in_shelf to false.
   std::vector<apps::mojom::AppPtr> apps;
   apps::mojom::AppPtr app = apps::mojom::App::New();
-  app->app_type = apps::mojom::AppType::kChromeApp;
+  app->app_type = apps::mojom::AppType::kExtension;
   app->app_id = extension1_->id();
   app->show_in_shelf = apps::mojom::OptionalBool::kFalse;
   apps.push_back(std::move(app));
   apps::AppServiceProxyFactory::GetForProfile(profile())
       ->AppRegistryCache()
-      .OnApps(std::move(apps), apps::mojom::AppType::kChromeApp,
+      .OnApps(std::move(apps), apps::mojom::AppType::kExtension,
               false /* should_notify_initialized */);
 
   InitShelfController();
@@ -5332,161 +5143,6 @@ TEST_P(ChromeShelfControllerTest, VerifyAppStatusForBlockedApp) {
       profile(), extension1_->id(), false /* block */, false /* pause */,
       apps::mojom::OptionalBool::kUnknown /* show_in_shelf */);
   EXPECT_EQ(ash::AppStatus::kReady, model_->items()[1].app_status);
-}
-
-TEST_P(ChromeShelfControllerTest, PinnedAppsRespectShownInShelfState) {
-  InitShelfController();
-  // Pin a test app.
-  AddExtension(extension1_.get());
-
-  PinAppWithIDToShelf(extension1_->id());
-  EXPECT_EQ(2, model_->item_count());
-  EXPECT_TRUE(shelf_controller_->IsAppPinned(extension1_->id()));
-  EXPECT_EQ(1, model_->ItemIndexByAppID(extension1_->id()));
-
-  // Update the app so it's considered not shown in shelf, and verify it's no
-  // longer pinned.
-  UpdateAppRegistryCache(profile(), extension1_->id(), /*block=*/false,
-                         /*pause=*/false,
-                         /*show_in_shelf=*/apps::mojom::OptionalBool::kFalse);
-  EXPECT_FALSE(shelf_controller_->IsAppPinned(extension1_->id()));
-
-  // Update the app so it's allowed in shelf again, verify it gets pinned.
-  UpdateAppRegistryCache(profile(), extension1_->id(), /*block=*/false,
-                         /*pause=*/false,
-                         /*show_in_shelf=*/apps::mojom::OptionalBool::kTrue);
-  EXPECT_TRUE(model_->IsAppPinned(extension1_->id()));
-  EXPECT_TRUE(model_->AllowedToSetAppPinState(extension1_->id(), false));
-  EXPECT_EQ(1, model_->ItemIndexByAppID(extension1_->id()));
-}
-
-TEST_P(ChromeShelfControllerTest, AppIndexAfterUnhidingFirstPinnedApp) {
-  InitShelfController();
-  // Pin a test app.
-  AddExtension(extension1_.get());
-
-  PinAppWithIDToShelf(extension1_->id());
-  EXPECT_EQ(2, model_->item_count());
-  EXPECT_TRUE(shelf_controller_->IsAppPinned(extension1_->id()));
-  EXPECT_EQ(1, model_->ItemIndexByAppID(extension1_->id()));
-  model_->Move(1, 0);
-  EXPECT_EQ(0, model_->ItemIndexByAppID(extension1_->id()));
-
-  // Update the app so it's considered not shown in shelf, and verify it's no
-  // longer pinned.
-  UpdateAppRegistryCache(profile(), extension1_->id(), /*block=*/false,
-                         /*pause=*/false,
-                         /*show_in_shelf=*/apps::mojom::OptionalBool::kFalse);
-  EXPECT_FALSE(shelf_controller_->IsAppPinned(extension1_->id()));
-
-  // Update the app so it's allowed in shelf again, verify it gets pinned.
-  UpdateAppRegistryCache(profile(), extension1_->id(), /*block=*/false,
-                         /*pause=*/false,
-                         /*show_in_shelf=*/apps::mojom::OptionalBool::kTrue);
-  EXPECT_TRUE(model_->IsAppPinned(extension1_->id()));
-  EXPECT_TRUE(model_->AllowedToSetAppPinState(extension1_->id(), false));
-  EXPECT_EQ(0, model_->ItemIndexByAppID(extension1_->id()));
-}
-
-TEST_P(ChromeShelfControllerTest,
-       AppIndexAfterUnhidingtPinnedAppWithOtherHiddenApps) {
-  InitShelfController();
-  // Pin test apps.
-  AddExtension(extension1_.get());
-  AddExtension(extension2_.get());
-  AddExtension(extension5_.get());
-  AddExtension(extension6_.get());
-
-  PinAppWithIDToShelf(extension1_->id());
-  PinAppWithIDToShelf(extension2_->id());
-  PinAppWithIDToShelf(extension5_->id());
-  PinAppWithIDToShelf(extension6_->id());
-  EXPECT_EQ(5, model_->item_count());
-  EXPECT_TRUE(shelf_controller_->IsAppPinned(extension2_->id()));
-  EXPECT_EQ(2, model_->ItemIndexByAppID(extension2_->id()));
-
-  // Update all test apps so they're considered not shown in shelf, and verify
-  // it's no longer pinned.
-  UpdateAppRegistryCache(profile(), extension1_->id(), /*block=*/false,
-                         /*pause=*/false,
-                         /*show_in_shelf=*/apps::mojom::OptionalBool::kFalse);
-  UpdateAppRegistryCache(profile(), extension2_->id(), /*block=*/false,
-                         /*pause=*/false,
-                         /*show_in_shelf=*/apps::mojom::OptionalBool::kFalse);
-  UpdateAppRegistryCache(profile(), extension5_->id(), /*block=*/false,
-                         /*pause=*/false,
-                         /*show_in_shelf=*/apps::mojom::OptionalBool::kFalse);
-  EXPECT_FALSE(shelf_controller_->IsAppPinned(extension2_->id()));
-
-  // Update app 2 so it's allowed in shelf again, verify it gets pinned.
-  UpdateAppRegistryCache(profile(), extension2_->id(), /*block=*/false,
-                         /*pause=*/false,
-                         /*show_in_shelf=*/apps::mojom::OptionalBool::kTrue);
-  EXPECT_TRUE(model_->IsAppPinned(extension2_->id()));
-  EXPECT_TRUE(model_->AllowedToSetAppPinState(extension2_->id(), false));
-  EXPECT_EQ(1, model_->ItemIndexByAppID(extension2_->id()));
-  EXPECT_EQ(2, model_->ItemIndexByAppID(extension6_->id()));
-}
-
-TEST_P(ChromeShelfControllerTest, AppsHiddenFromShelfDontGetPinnedByPolicy) {
-  AddExtension(extension1_.get());
-
-  // Pin a test app by policy.
-  base::ListValue policy_value;
-  AppendPrefValue(&policy_value, extension1_->id());
-  profile()->GetTestingPrefService()->SetManagedPref(
-      prefs::kPolicyPinnedLauncherApps,
-      base::Value::ToUniquePtrValue(policy_value.Clone()));
-
-  InitShelfController();
-  EXPECT_EQ(2, model_->item_count());
-  EXPECT_TRUE(model_->IsAppPinned(extension1_->id()));
-  EXPECT_EQ(1, model_->ItemIndexByAppID(extension1_->id()));
-
-  // Update the app so it's considered not shown in shelf, and verify it's no
-  // longer pinned.
-  UpdateAppRegistryCache(profile(), extension1_->id(), /*block=*/false,
-                         /*pause=*/false,
-                         /*show_in_shelf=*/apps::mojom::OptionalBool::kFalse);
-  EXPECT_FALSE(model_->IsAppPinned(extension1_->id()));
-
-  // Update the app so it's allowed in shelf again, verify it gets pinned.
-  UpdateAppRegistryCache(profile(), extension1_->id(), /*block=*/false,
-                         /*pause=*/false,
-                         /*show_in_shelf=*/apps::mojom::OptionalBool::kTrue);
-  EXPECT_TRUE(model_->IsAppPinned(extension1_->id()));
-  EXPECT_FALSE(model_->AllowedToSetAppPinState(extension1_->id(), false));
-  EXPECT_EQ(1, model_->ItemIndexByAppID(extension1_->id()));
-}
-
-TEST_P(ChromeShelfControllerTest, AppHiddenFromShelfNotPinnedOnInstall) {
-  AddExtension(extension1_.get());
-  InitShelfController();
-  PinAppWithIDToShelf(extension1_->id());
-  EXPECT_EQ(2, model_->item_count());
-  EXPECT_TRUE(model_->IsAppPinned(extension1_->id()));
-  EXPECT_EQ(1, model_->ItemIndexByAppID(extension1_->id()));
-
-  // Block the extension so it gets removed from shelf.
-  UpdateAppRegistryCache(profile(), extension1_->id(), /*block=*/true,
-                         /*pause=*/false,
-                         /*show_in_shelf=*/apps::mojom::OptionalBool::kFalse);
-  EXPECT_FALSE(model_->IsAppPinned(extension1_->id()));
-
-  // Unblock the extension, but mark it as not shown in shelf - verify it
-  // doesn't get pinned/added to shelf.
-  UpdateAppRegistryCache(profile(), extension1_->id(), /*block=*/false,
-                         /*pause=*/false,
-                         /*show_in_shelf=*/apps::mojom::OptionalBool::kFalse);
-  EXPECT_FALSE(model_->IsAppPinned(extension1_->id()));
-
-  // Allow the app to be shown in shelf, and verify it gets pinned again.
-  UpdateAppRegistryCache(profile(), extension1_->id(), /*block=*/false,
-                         /*pause=*/false,
-                         /*show_in_shelf=*/apps::mojom::OptionalBool::kTrue);
-  EXPECT_TRUE(model_->IsAppPinned(extension1_->id()));
-  EXPECT_TRUE(model_->AllowedToSetAppPinState(extension1_->id(), false));
-  EXPECT_EQ(1, model_->ItemIndexByAppID(extension1_->id()));
 }
 
 INSTANTIATE_TEST_SUITE_P(

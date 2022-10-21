@@ -12,7 +12,6 @@
 #include "base/strings/string_piece.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
-#include "build/build_config.h"
 #include "chrome/browser/profiles/profile.h"
 #include "chrome/browser/ui/views/chrome_layout_provider.h"
 #include "chrome/browser/ui/views/chrome_typography.h"
@@ -85,9 +84,8 @@ LaunchAppUserChoiceDialogView::~LaunchAppUserChoiceDialogView() = default;
 void LaunchAppUserChoiceDialogView::Init() {
   SetDefaultButton(ui::DIALOG_BUTTON_CANCEL);
   SetModalType(ui::MODAL_TYPE_NONE);
-#if !defined(OS_CHROMEOS)
-  SetTitle(l10n_util::GetStringUTF16(IDS_PRODUCT_NAME));
-#endif
+  std::u16string title = l10n_util::GetStringUTF16(IDS_PRODUCT_NAME);
+  SetTitle(title);
   SetShowCloseButton(true);
   SetCanResize(false);
   set_draggable(true);

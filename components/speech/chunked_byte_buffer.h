@@ -11,6 +11,7 @@
 #include <memory>
 #include <vector>
 
+#include "base/macros.h"
 #include "base/strings/string_piece.h"
 
 namespace speech {

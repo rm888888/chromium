@@ -8,6 +8,7 @@
 #include <list>
 
 #include "base/callback.h"
+#include "base/macros.h"
 #include "net/base/network_change_notifier.h"
 
 // Class used for delaying callbacks when the network connection is offline and

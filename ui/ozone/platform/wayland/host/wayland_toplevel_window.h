@@ -123,8 +123,7 @@ class WaylandToplevelWindow : public WaylandWindow,
   // WaylandExtension:
   void StartWindowDraggingSessionIfNeeded() override;
   void SetImmersiveFullscreenStatus(bool status) override;
-  void ShowSnapPreview(WaylandWindowSnapDirection snap,
-                       bool allow_haptic_feedback) override;
+  void ShowSnapPreview(WaylandWindowSnapDirection snap) override;
   void CommitSnap(WaylandWindowSnapDirection snap) override;
   void SetCanGoBack(bool value) override;
   void SetPip() override;
@@ -205,10 +204,10 @@ class WaylandToplevelWindow : public WaylandWindow,
   std::string window_unique_id_;
 #else
   // Id of the chromium app passed through
-  // PlatformWindowInitProperties::wm_class_name. This is used by Wayland
+  // PlatformWindowInitProperties::wm_class_class. This is used by Wayland
   // compositor to identify the app, unite it's windows into the same stack of
   // windows and find *.desktop file to set various preferences including icons.
-  std::string app_id_;
+  std::string wm_class_class_;
 #endif
 
   // Title of the ShellToplevel.

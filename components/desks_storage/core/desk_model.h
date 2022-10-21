@@ -18,10 +18,6 @@ namespace ash {
 class DeskTemplate;
 }
 
-namespace apps {
-class AppRegistryCache;
-}
-
 namespace desks_storage {
 
 class DeskModelObserver;
@@ -49,28 +45,16 @@ class DeskModel {
   };
 
   // Status codes for adding or updating a desk template.
-  // These values are persisted to logs. Entries should not be renumbered and
-  // numeric values should never be reused.
   enum class AddOrUpdateEntryStatus {
-    kOk = 0,
-    kFailure = 1,
-    kInvalidArgument = 2,
-    kHitMaximumLimit = 3,
-    kEntryTooLarge = 4,
-    kMaxValue = kEntryTooLarge,
+    kOk,
+    kFailure,
+    kInvalidArgument,
+    kHitMaximumLimit,
   };
 
   // Status codes for deleting desk templates.
   enum class DeleteEntryStatus {
     kOk,
-    kFailure,
-  };
-
-  // status codes for getting template Json representations.
-  enum class GetTemplateJsonStatus {
-    kOk,
-    kNotFound,
-    kInvalidUuid,
     kFailure,
   };
 
@@ -81,7 +65,7 @@ class DeskModel {
 
   using GetAllEntriesCallback =
       base::OnceCallback<void(GetAllEntriesStatus status,
-                              const std::vector<ash::DeskTemplate*>& entries)>;
+                              std::vector<ash::DeskTemplate*> entries)>;
   // Returns a vector of entries in the model.
   virtual void GetAllEntries(GetAllEntriesCallback callback) = 0;
 
@@ -111,15 +95,6 @@ class DeskModel {
   // to any backend error, |callback| will be called with |kFailure|.
   virtual void AddOrUpdateEntry(std::unique_ptr<ash::DeskTemplate> new_entry,
                                 AddOrUpdateEntryCallback callback) = 0;
-
-  using GetTemplateJsonCallback =
-      base::OnceCallback<void(GetTemplateJsonStatus status,
-                              const std::string& json_representation)>;
-  // Retrieves a template based on its |uuid|, if found returns a std::string
-  // containing the json representation of the template queried.
-  virtual void GetTemplateJson(const std::string& uuid,
-                               apps::AppRegistryCache* app_cache,
-                               GetTemplateJsonCallback callback);
 
   using DeleteEntryCallback =
       base::OnceCallback<void(DeleteEntryStatus status)>;
@@ -166,15 +141,6 @@ class DeskModel {
 
   // The preconfigured desk templates from policy (as opposed to user-defined)
   std::vector<std::unique_ptr<ash::DeskTemplate>> policy_entries_;
-
- private:
-  // Handles conversion of DeskTemplate to policy JSON after the queried
-  // DeskTemplate has been retrieved from the implemented class.
-  void HandleTemplateConversionToPolicyJson(
-      GetTemplateJsonCallback callback,
-      apps::AppRegistryCache* app_cache,
-      GetEntryByUuidStatus status,
-      std::unique_ptr<ash::DeskTemplate> entry);
 };
 
 }  // namespace desks_storage

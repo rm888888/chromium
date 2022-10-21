@@ -14,6 +14,7 @@
 #include <string>
 
 #include "base/callback.h"
+#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "base/time/tick_clock.h"
 #include "third_party/blink/public/web/web_document.h"

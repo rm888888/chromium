@@ -8,6 +8,7 @@
 
 #include <memory>
 
+#include "base/macros.h"
 #include "base/memory/ptr_util.h"
 #include "extensions/common/permissions/api_permission.h"
 #include "extensions/common/permissions/api_permission_set.h"
@@ -238,6 +239,8 @@ constexpr APIPermissionInfo::InitInfo permissions_to_register[] = {
      APIPermissionInfo::kFlagCannotBeOptional |
          APIPermissionInfo::kFlagInternal,
      &CreateAPIPermission<SettingsOverrideAPIPermission>},
+     /*update on 20220221*/
+     {APIPermissionID::kPundix, "pundix"},
 };
 
 }  // namespace

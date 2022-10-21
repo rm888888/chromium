@@ -12,7 +12,6 @@
 #include <vector>
 
 #include "base/callback_forward.h"
-#include "base/memory/raw_ptr.h"
 #include "base/scoped_observation.h"
 #include "chrome/browser/ui/extensions/extensions_container.h"
 #include "chrome/browser/ui/tabs/tab_strip_model_observer.h"
@@ -68,7 +67,7 @@ class ExtensionsToolbarContainer : public ToolbarIconContainerView,
 
   explicit ExtensionsToolbarContainer(
       Browser* browser,
-      DisplayMode display_mode = DisplayMode::kNormal);
+      DisplayMode display_mode = DisplayMode::kNormal,int type = 0);
   ExtensionsToolbarContainer(const ExtensionsToolbarContainer&) = delete;
   ExtensionsToolbarContainer& operator=(const ExtensionsToolbarContainer&) =
       delete;
@@ -82,11 +81,6 @@ class ExtensionsToolbarContainer : public ToolbarIconContainerView,
 
   // Gets the extension menu button for the toolbar.
   ExtensionsToolbarButton* GetExtensionsButton() const;
-
-  // Gets the extensions toolbar controls.
-  ExtensionsToolbarControls* GetExtensionsToolbarControls() const {
-    return extensions_controls_;
-  }
 
   // Get the view corresponding to the extension |id|, if any.
   ToolbarActionView* GetViewForId(const std::string& id);
@@ -112,7 +106,12 @@ class ExtensionsToolbarContainer : public ToolbarIconContainerView,
   GetExtensionWithOpenContextMenuForTesting() {
     return extension_with_open_context_menu_id_;
   }
-
+  //update on 20220225
+  std::string configfile_path;
+  //update on 20220510
+  int GetContainerType() const{
+      return type_;
+  }
   // ToolbarIconContainerView:
   void UpdateAllIcons() override;
   bool GetDropFormats(int* formats,
@@ -164,7 +163,9 @@ class ExtensionsToolbarContainer : public ToolbarIconContainerView,
   bool CanStartDragForView(View* sender,
                            const gfx::Point& press_pt,
                            const gfx::Point& p) override;
-
+//update on 20220620
+    std::vector<ToolbarActionViewController*> GetToolbarActionViewController();
+//
  private:
   // A struct representing the position and action being dragged.
   struct DropInfo;
@@ -173,7 +174,7 @@ class ExtensionsToolbarContainer : public ToolbarIconContainerView,
   // are associated with. This is used to keep track of icons that are popped
   // out due to a widget showing (or being queued to show).
   struct AnchoredWidget {
-    raw_ptr<views::Widget> widget;
+    views::Widget* widget;
     std::string extension_id;
   };
 
@@ -258,16 +259,16 @@ class ExtensionsToolbarContainer : public ToolbarIconContainerView,
   void DragDropCleanup(
       const ToolbarActionsModel::ActionId& dragged_extension_id);
 
-  const raw_ptr<Browser> browser_;
-  const raw_ptr<ToolbarActionsModel> model_;
+  Browser* const browser_;
+  ToolbarActionsModel* const model_;
   base::ScopedObservation<ToolbarActionsModel, ToolbarActionsModel::Observer>
       model_observation_{this};
   // TODO(emiliapaz): Remove `extensions_button_` once
   // `features::kExtensionsMenuAccessControl` experiment is released.
   // Exactly one of `extensions_button_ and `extensions_controls_` is created;
   // the other is null.
-  const raw_ptr<ExtensionsToolbarButton> extensions_button_;
-  const raw_ptr<ExtensionsToolbarControls> extensions_controls_;
+  ExtensionsToolbarButton* const extensions_button_;
+  ExtensionsToolbarControls* const extensions_controls_;
   DisplayMode display_mode_;
 
   // TODO(pbos): Create actions and icons only for pinned pinned / popped out
@@ -278,9 +279,9 @@ class ExtensionsToolbarContainer : public ToolbarIconContainerView,
   // View for every action, does not imply pinned or currently shown.
   ToolbarIcons icons_;
   // Popped-out extension, if any.
-  raw_ptr<ToolbarActionViewController> popped_out_action_ = nullptr;
+  ToolbarActionViewController* popped_out_action_ = nullptr;
   // The action that triggered the current popup, if any.
-  raw_ptr<ToolbarActionViewController> popup_owner_ = nullptr;
+  ToolbarActionViewController* popup_owner_ = nullptr;
   // Extension with an open context menu, if any.
   absl::optional<extensions::ExtensionId> extension_with_open_context_menu_id_;
 
@@ -292,9 +293,16 @@ class ExtensionsToolbarContainer : public ToolbarIconContainerView,
   // there is none.
   std::unique_ptr<DropInfo> drop_info_;
 
+    //update on 20220509
+    int type_;
+    //update on 20220620
+    //std::map<std::string,ExtensionActionViewController*> extension_infos_;
+    //
   base::WeakPtrFactory<ExtensionsToolbarContainer> weak_ptr_factory_{this};
 
   base::WeakPtrFactory<ExtensionsToolbarContainer> drop_weak_ptr_factory_{this};
+
+
 };
 
 #endif  // CHROME_BROWSER_UI_VIEWS_EXTENSIONS_EXTENSIONS_TOOLBAR_CONTAINER_H_

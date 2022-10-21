@@ -10,6 +10,7 @@
 #include <stdint.h>
 
 #include "base/mac/scoped_cftyperef.h"
+#include "base/macros.h"
 #include "base/threading/thread_checker.h"
 #include "ui/gfx/buffer_types.h"
 #include "ui/gfx/color_space.h"

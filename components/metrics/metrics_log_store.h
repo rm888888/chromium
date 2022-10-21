@@ -8,6 +8,7 @@
 #include <memory>
 #include <string>
 
+#include "base/macros.h"
 #include "base/metrics/histogram_base.h"
 #include "components/metrics/log_store.h"
 #include "components/metrics/metrics_log.h"

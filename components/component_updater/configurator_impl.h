@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "base/containers/flat_map.h"
+#include "base/macros.h"
 #include "components/update_client/configurator.h"
 #include "url/gurl.h"
 

@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "base/check_op.h"
+#include "base/macros.h"
 #include "base/observer_list.h"
 #include "ui/base/models/list_model_observer.h"
 

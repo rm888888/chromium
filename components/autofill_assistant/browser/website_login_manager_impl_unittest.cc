@@ -137,8 +137,7 @@ class WebsiteLoginManagerImplTest : public testing::Test {
     }
     ON_CALL(*store(), GetLogins(_, _))
         .WillByDefault(WithArg<1>(
-            [this](base::WeakPtr<password_manager::PasswordStoreConsumer>
-                       consumer) {
+            [this](password_manager::PasswordStoreConsumer* consumer) {
               std::vector<std::unique_ptr<PasswordForm>> result;
               result.push_back(
                   std::make_unique<PasswordForm>(MakeSimplePasswordForm()));

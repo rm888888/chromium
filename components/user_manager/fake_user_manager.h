@@ -9,7 +9,7 @@
 #include <set>
 #include <string>
 
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "components/account_id/account_id.h"
 #include "components/user_manager/user.h"
 #include "components/user_manager/user_manager_base.h"
@@ -32,7 +32,6 @@ class USER_MANAGER_EXPORT FakeUserManager : public UserManagerBase {
   const User* AddUser(const AccountId& account_id);
   const User* AddChildUser(const AccountId& account_id);
   const User* AddGuestUser(const AccountId& account_id);
-  const User* AddKioskAppUser(const AccountId& account_id);
 
   // The same as AddUser() but allows to specify user affiliation with the
   // domain, that owns the device.
@@ -160,10 +159,10 @@ class USER_MANAGER_EXPORT FakeUserManager : public UserManagerBase {
   void OnUserRemoved(const AccountId& account_id) override {}
 
  protected:
-  raw_ptr<User> primary_user_;
+  User* primary_user_;
 
   // Can be set by set_local_state().
-  raw_ptr<PrefService> local_state_ = nullptr;
+  PrefService* local_state_ = nullptr;
 
   // If set this is the active user. If empty, the first created user is the
   // active user.

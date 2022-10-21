@@ -4,6 +4,7 @@
 
 #include "components/optimization_guide/core/optimization_filter.h"
 
+#include "base/macros.h"
 #include "components/optimization_guide/core/bloom_filter.h"
 #include "testing/gtest/include/gtest/gtest.h"
 #include "url/gurl.h"

@@ -10,6 +10,7 @@
 
 #include "base/files/file_path.h"
 #include "base/files/scoped_temp_dir.h"
+#include "base/macros.h"
 #include "components/optimization_guide/proto/hints.pb.h"
 
 namespace optimization_guide {

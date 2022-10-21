@@ -14,14 +14,13 @@
 #include "chrome/browser/ui/views/chrome_layout_provider.h"
 #include "chrome/browser/ui/views/chrome_typography.h"
 #include "chrome/browser/ui/views/page_info/chosen_object_view.h"
-#include "chrome/browser/ui/views/page_info/page_info_history_controller.h"
 #include "chrome/browser/ui/views/page_info/page_info_navigation_handler.h"
 #include "chrome/browser/ui/views/page_info/page_info_security_content_view.h"
 #include "chrome/browser/ui/views/page_info/page_info_view_factory.h"
 #include "chrome/browser/ui/views/page_info/permission_toggle_row_view.h"
 #include "chrome/browser/vr/vr_tab_helper.h"
 #include "chrome/common/url_constants.h"
-#include "components/page_info/core/features.h"
+#include "components/page_info/features.h"
 #include "components/permissions/permission_util.h"
 #include "components/strings/grit/components_chromium_strings.h"
 #include "components/strings/grit/components_strings.h"
@@ -53,7 +52,6 @@ PageInfoMainView::PageInfoMainView(
     PageInfo* presenter,
     ChromePageInfoUiDelegate* ui_delegate,
     PageInfoNavigationHandler* navigation_handler,
-    PageInfoHistoryController* history_controller,
     base::OnceClosure initialized_callback)
     : presenter_(presenter),
       ui_delegate_(ui_delegate),
@@ -101,10 +99,6 @@ PageInfoMainView::PageInfoMainView(
         std::u16string(), PageInfoViewFactory::GetLaunchIcon()));
   }
 
-  if (base::FeatureList::IsEnabled(page_info::kPageInfoHistoryDesktop)) {
-    history_controller->InitRow(AddChildView(CreateContainerView()));
-  }
-
   if (base::FeatureList::IsEnabled(page_info::kPageInfoAboutThisSite)) {
     about_this_site_section_ = AddChildView(CreateContainerView());
   }
@@ -138,7 +132,7 @@ void PageInfoMainView::EnsureCookieInfo() {
             PageInfoViewFactory::VIEW_ID_PAGE_INFO_LINK_OR_BUTTON_COOKIE_DIALOG,
             tooltip, std::u16string(), PageInfoViewFactory::GetLaunchIcon())
             .release();
-    site_settings_view_->AddChildView(cookie_button_.get());
+    site_settings_view_->AddChildView(cookie_button_);
   }
 }
 

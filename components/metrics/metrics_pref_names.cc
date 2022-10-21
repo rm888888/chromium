@@ -85,7 +85,8 @@ const char kMetricsSessionID[] = "user_experience_metrics.session_id";
 
 // The prefix of the last-seen timestamp for persistent histogram files.
 // Values are named for the files themselves.
-const char kMetricsLastSeenPrefix[] = "user_experience_metrics.last_seen.";
+const char kMetricsLastSeenPrefix[] =
+    "user_experience_metrics.last_seen.";
 
 // Array of the number of samples in the memory mapped file.
 const char kMetricsFileMetricsMetadata[] =
@@ -125,6 +126,7 @@ const char kStabilityCrashCount[] =
 const char kStabilityCrashCountDueToGmsCoreUpdate[] =
     "user_experience_metrics.stability.crash_count_due_to_gms_core_update";
 
+
 // True if the previous run of the program exited cleanly.
 const char kStabilityExitedCleanly[] =
     "user_experience_metrics.stability.exited_cleanly";
@@ -163,6 +165,10 @@ const char kStabilityGmsCoreVersion[] =
 const char kStabilityGpuCrashCount[] =
     "user_experience_metrics.stability.gpu_crash_count";
 
+// Number of times the session end did not complete.
+const char kStabilityIncompleteSessionEndCount[] =
+    "user_experience_metrics.stability.incomplete_session_end_count";
+
 // Number of times the application was launched since last report.
 const char kStabilityLaunchCount[] =
     "user_experience_metrics.stability.launch_count";
@@ -179,6 +185,11 @@ const char kStabilityRendererCrashCount[] =
 const char kStabilityRendererFailedLaunchCount[] =
     "user_experience_metrics.stability.renderer_failed_launch_count";
 
+// Number of times the renderer has become non-responsive since the last
+// report.
+const char kStabilityRendererHangCount[] =
+    "user_experience_metrics.stability.renderer_hang_count";
+
 // Number of times a renderer process successfully launched since the last
 // report.
 const char kStabilityRendererLaunchCount[] =
@@ -191,6 +202,11 @@ const char kStabilitySavedSystemProfile[] =
 // SHA-1 hash of the serialized UMA system profile proto (hex encoded).
 const char kStabilitySavedSystemProfileHash[] =
     "user_experience_metrics.stability.saved_system_profile_hash";
+
+// False if we received a session end and either we crashed during processing
+// the session end or ran out of time and windows terminated us.
+const char kStabilitySessionEndCompleted[] =
+    "user_experience_metrics.stability.session_end_completed";
 
 // Build time, in seconds since an epoch, which is used to assure that stability
 // metrics reported reflect stability of the same build.
@@ -219,11 +235,6 @@ const char kUmaCellDataUse[] = "user_experience_metrics.uma_cell_datause";
 // Dictionary for measuring cellular data used by user including chrome services
 // per day.
 const char kUserCellDataUse[] = "user_experience_metrics.user_call_datause";
-
-// String for holding user ID associated with the current ongoing UMA
-// log. This pref will be used to determine whether to send metrics in case
-// of a crash.
-const char kMetricsCurrentUserId[] = "metrics.current_user_id";
 
 }  // namespace prefs
 }  // namespace metrics

@@ -7,6 +7,8 @@
 
 #include <string>
 
+#include "base/macros.h"
+
 class NaClValidationDB {
  public:
   NaClValidationDB() {}

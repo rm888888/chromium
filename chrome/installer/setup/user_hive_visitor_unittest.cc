@@ -9,6 +9,7 @@
 
 #include "base/bind.h"
 #include "base/callback.h"
+#include "base/macros.h"
 #include "base/win/registry.h"
 #include "testing/gtest/include/gtest/gtest.h"
 

@@ -24,7 +24,6 @@
 
 #include "base/files/file_util.h"
 #include "base/files/scoped_temp_dir.h"
-#include "base/memory/raw_ptr.h"
 #include "base/pickle.h"
 #include "base/run_loop.h"
 #include "base/strings/string_util.h"
@@ -61,6 +60,11 @@
 #include "ui/base/clipboard/clipboard_util_win.h"
 #endif
 
+#if defined(USE_X11) || defined(USE_OZONE)
+#include "ui/base/ui_base_features.h"
+#include "ui/events/platform/platform_event_source.h"
+#endif
+
 using base::ASCIIToUTF16;
 using base::UTF16ToUTF8;
 
@@ -77,6 +81,10 @@ class ClipboardTest : public PlatformTest {
   // PlatformTest:
   void SetUp() override {
     PlatformTest::SetUp();
+#if defined(USE_X11)
+    if (!features::IsUsingOzonePlatform())
+      event_source_ = ClipboardTraits::GetEventSource();
+#endif
     clipboard_ = ClipboardTraits::Create();
   }
 
@@ -95,8 +103,11 @@ class ClipboardTest : public PlatformTest {
   }
 
  private:
+#if defined(USE_X11)
+  std::unique_ptr<PlatformEventSource> event_source_;
+#endif
   // Clipboard has a protected destructor, so scoped_ptr doesn't work here.
-  raw_ptr<Clipboard> clipboard_ = nullptr;
+  Clipboard* clipboard_ = nullptr;
 };
 
 // A mock delegate for testing.

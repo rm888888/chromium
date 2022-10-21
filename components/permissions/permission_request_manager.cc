@@ -168,12 +168,6 @@ void PermissionRequestManager::AddRequest(
     return;
   }
 
-  if (source_frame->IsNestedWithinFencedFrame()) {
-    request->Cancelled();
-    request->RequestFinished();
-    return;
-  }
-
   if (is_notification_prompt_cooldown_active_ &&
       request->GetContentSettingsType() == ContentSettingsType::NOTIFICATIONS) {
     // Short-circuit by canceling rather than denying to avoid creating a large
@@ -375,7 +369,8 @@ void PermissionRequestManager::DidFinishNavigation(
   CleanUpRequests();
 }
 
-void PermissionRequestManager::DocumentOnLoadCompletedInPrimaryMainFrame() {
+void PermissionRequestManager::DocumentOnLoadCompletedInMainFrame(
+    content::RenderFrameHost* render_frame_host) {
   // This is scheduled because while all calls to the browser have been
   // issued at DOMContentLoaded, they may be bouncing around in scheduled
   // callbacks finding the UI thread still. This makes sure we allow those
@@ -427,7 +422,7 @@ void PermissionRequestManager::OnVisibilityChanged(
     return;
   }
 
-  if (!web_contents()->IsDocumentOnLoadCompletedInPrimaryMainFrame())
+  if (!web_contents()->IsDocumentOnLoadCompletedInMainFrame())
     return;
 
   if (!IsRequestInProgress()) {
@@ -558,7 +553,6 @@ void PermissionRequestManager::SetDecisionTime() {
 PermissionRequestManager::PermissionRequestManager(
     content::WebContents* web_contents)
     : content::WebContentsObserver(web_contents),
-      content::WebContentsUserData<PermissionRequestManager>(*web_contents),
       view_factory_(base::BindRepeating(&PermissionPrompt::Create)),
       view_(nullptr),
       tab_is_hidden_(web_contents->GetVisibility() ==
@@ -583,7 +577,7 @@ void PermissionRequestManager::DequeueRequestIfNeeded() {
   // PermissionBubbleMediaAccessHandler and UserMediaClient. We probably don't
   // need two permission queues, so resolve the duplication.
 
-  if (!web_contents()->IsDocumentOnLoadCompletedInPrimaryMainFrame() || view_ ||
+  if (!web_contents()->IsDocumentOnLoadCompletedInMainFrame() || view_ ||
       IsRequestInProgress()) {
     return;
   }
@@ -664,7 +658,7 @@ void PermissionRequestManager::ShowBubble() {
   if (!IsRequestInProgress() || view_)
     return;
 
-  DCHECK(web_contents()->IsDocumentOnLoadCompletedInPrimaryMainFrame());
+  DCHECK(web_contents()->IsDocumentOnLoadCompletedInMainFrame());
   DCHECK(current_request_ui_to_use_);
 
   if (tab_is_hidden_)

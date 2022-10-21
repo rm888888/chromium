@@ -64,14 +64,14 @@ constexpr SourceOptions kSourceOptions[] = {
     // SOURCE_HISTOGRAMS_ATOMIC_FILE
     {
         // Ensure that no other process reads this at the same time.
-        STD_OPEN | base::File::FLAG_WIN_EXCLUSIVE_READ,
+        STD_OPEN | base::File::FLAG_EXCLUSIVE_READ,
         base::MemoryMappedFile::READ_ONLY,
         true,
     },
     // SOURCE_HISTOGRAMS_ATOMIC_DIR
     {
         // Ensure that no other process reads this at the same time.
-        STD_OPEN | base::File::FLAG_WIN_EXCLUSIVE_READ,
+        STD_OPEN | base::File::FLAG_EXCLUSIVE_READ,
         base::MemoryMappedFile::READ_ONLY,
         true,
     },
@@ -125,7 +125,7 @@ struct FileMetricsProvider::SourceInfo {
     switch (type) {
       case SOURCE_HISTOGRAMS_ACTIVE_FILE:
         DCHECK(prefs_key.empty());
-        [[fallthrough]];
+        FALLTHROUGH;
       case SOURCE_HISTOGRAMS_ATOMIC_FILE:
         path = params.path;
         break;
@@ -683,8 +683,8 @@ bool FileMetricsProvider::ProvideIndependentMetricsOnTaskRunner(
 }
 
 void FileMetricsProvider::AppendToSamplesCountPref(size_t samples_count) {
-  ListPrefUpdateDeprecated update(pref_service_,
-                                  metrics::prefs::kMetricsFileMetricsMetadata);
+  ListPrefUpdate update(pref_service_,
+                        metrics::prefs::kMetricsFileMetricsMetadata);
   update->Append(static_cast<int>(samples_count));
 }
 
@@ -924,8 +924,8 @@ bool FileMetricsProvider::SimulateIndependentMetrics() {
     return false;
   }
 
-  ListPrefUpdateDeprecated list_value(
-      pref_service_, metrics::prefs::kMetricsFileMetricsMetadata);
+  ListPrefUpdate list_value(pref_service_,
+                            metrics::prefs::kMetricsFileMetricsMetadata);
   if (list_value->GetList().empty())
     return false;
 

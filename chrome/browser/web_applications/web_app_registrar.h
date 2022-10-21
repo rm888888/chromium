@@ -12,7 +12,6 @@
 #include <vector>
 
 #include "base/check_op.h"
-#include "base/memory/raw_ptr.h"
 #include "chrome/browser/profiles/profile_manager_observer.h"
 #include "chrome/browser/web_applications/web_app_constants.h"
 #include "chrome/browser/web_applications/web_app_id.h"
@@ -31,6 +30,7 @@ namespace web_app {
 
 class AppRegistrarObserver;
 class WebApp;
+class OsIntegrationManager;
 
 using Registry = std::map<AppId, std::unique_ptr<WebApp>>;
 
@@ -50,6 +50,10 @@ class WebAppRegistrar : public ProfileManagerObserver {
   // manifest.
   const WebApp* GetAppByStartUrl(const GURL& start_url) const;
   std::vector<AppId> GetAppsFromSyncAndPendingInstallation();
+
+  // Returns true if the app was preinstalled and NOT installed via any other
+  // mechanism.
+  bool WasInstalledByDefaultOnly(const AppId& app_id) const;
 
   void Start();
   void Shutdown();
@@ -72,19 +76,12 @@ class WebAppRegistrar : public ProfileManagerObserver {
   // apps. On Chrome OS all apps are always locally installed.
   bool IsLocallyInstalled(const AppId& app_id) const;
 
-  // Returns true if the app was preinstalled and NOT installed via any other
-  // mechanism.
-  bool WasInstalledByDefaultOnly(const AppId& app_id) const;
-
   // Returns true if the app was installed by user, false if default installed.
   bool WasInstalledByUser(const AppId& app_id) const;
 
   // Returns true if the app was installed by the device OEM. Always false on
   // on non-Chrome OS.
   bool WasInstalledByOem(const AppId& app_id) const;
-
-  // Returns true if the app was installed by the SubApp API.
-  bool WasInstalledBySubApp(const AppId& app_id) const;
 
   // Returns the AppIds and URLs of apps externally installed from
   // |install_source|.
@@ -144,8 +141,6 @@ class WebAppRegistrar : public ProfileManagerObserver {
   const apps::ProtocolHandlers* GetAppProtocolHandlers(
       const AppId& app_id) const;
   bool IsAppFileHandlerPermissionBlocked(const web_app::AppId& app_id) const;
-  // Returns the state of the File Handling API for the given app.
-  ApiApprovalState GetAppFileHandlerApprovalState(const AppId& app_id) const;
 
   // Returns the start_url with launch_query_params appended to the end if any.
   GURL GetAppLaunchUrl(const AppId& app_id) const;
@@ -175,7 +170,7 @@ class WebAppRegistrar : public ProfileManagerObserver {
 
   // Returns the "shortcuts" field from the app manifest, use
   // |WebAppIconManager| to load shortcuts menu icons bitmaps data.
-  std::vector<WebAppShortcutsMenuItemInfo> GetAppShortcutsMenuItemInfos(
+  std::vector<WebApplicationShortcutsMenuItemInfo> GetAppShortcutsMenuItemInfos(
       const AppId& app_id) const;
 
   // Represents which icon sizes we successfully downloaded from the
@@ -188,11 +183,9 @@ class WebAppRegistrar : public ProfileManagerObserver {
 
   bool GetWindowControlsOverlayEnabled(const AppId& app_id) const;
 
-  // Gets the IDs for all apps in `GetApps()`.
   std::vector<AppId> GetAppIds() const;
 
-  // Gets the IDs for all sub-apps of parent app with id |parent_app_id|.
-  std::vector<AppId> GetAllSubAppIds(const AppId& parent_app_id) const;
+  void SetSubsystems(OsIntegrationManager* os_integration_manager);
 
   // Returns the "scope" field from the app manifest, or infers a scope from the
   // "start_url" field if unavailable. Returns an invalid GURL iff the |app_id|
@@ -237,8 +230,6 @@ class WebAppRegistrar : public ProfileManagerObserver {
   // complete installation via the ExternallyManagedAppManager.
   bool IsPlaceholderApp(const AppId& app_id) const;
 
-  bool IsSystemApp(const AppId& app_id) const;
-
   // Computes and returns the DisplayMode, accounting for user preference
   // to launch in a browser window and entries in the web app manifest.
   DisplayMode GetAppEffectiveDisplayMode(const AppId& app_id) const;
@@ -257,7 +248,6 @@ class WebAppRegistrar : public ProfileManagerObserver {
   void NotifyWebAppManifestUpdated(const AppId& app_id,
                                    base::StringPiece old_name);
   void NotifyWebAppProtocolSettingsChanged();
-  void NotifyWebAppFileHandlerApprovalStateChanged(const AppId& app_id);
   void NotifyWebAppsWillBeUpdatedFromSync(
       const std::vector<const WebApp*>& new_apps_state);
   void NotifyWebAppUninstalled(const AppId& app_id);
@@ -346,7 +336,7 @@ class WebAppRegistrar : public ProfileManagerObserver {
     const_iterator end() const;
 
    private:
-    const raw_ptr<const WebAppRegistrar> registrar_;
+    const WebAppRegistrar* const registrar_;
     const Filter filter_;
     const bool empty_;
 #if DCHECK_IS_ON()
@@ -363,6 +353,9 @@ class WebAppRegistrar : public ProfileManagerObserver {
 
  protected:
   Profile* profile() const { return profile_; }
+  OsIntegrationManager& os_integration_manager() {
+    return *os_integration_manager_;
+  }
 
   void NotifyWebAppProfileWillBeDeleted(const AppId& app_id);
   void NotifyAppRegistrarShutdown();
@@ -374,15 +367,13 @@ class WebAppRegistrar : public ProfileManagerObserver {
 
   void CountMutation();
 
-  // Gets the IDs for all apps in `app_set`.
-  std::vector<AppId> GetAppIdsForAppSet(const AppSet& app_set) const;
-
   bool registry_profile_being_deleted_ = false;
 
  private:
-  const raw_ptr<Profile> profile_;
+  Profile* const profile_;
 
   base::ObserverList<AppRegistrarObserver, /*check_empty=*/true> observers_;
+  OsIntegrationManager* os_integration_manager_ = nullptr;
 
   Registry registry_;
 #if DCHECK_IS_ON()

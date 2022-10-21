@@ -96,12 +96,10 @@ TEST_F(WebCryptoEcdsaTest, SignatureIsRandom) {
   // Import a public and private keypair from "ec_private_keys.json". It doesn't
   // really matter which one is used since they are all valid. In this case
   // using the first one.
-  base::Value private_keys;
-  ASSERT_TRUE(ReadJsonTestFileAsList("ec_private_keys.json", &private_keys));
-  const base::Value& key_value = private_keys.GetList()[0];
-  ASSERT_TRUE(key_value.is_dict());
-  const base::DictionaryValue* key_dict =
-      &base::Value::AsDictionaryValue(key_value);
+  base::ListValue private_keys;
+  ASSERT_TRUE(ReadJsonTestFileToList("ec_private_keys.json", &private_keys));
+  const base::DictionaryValue* key_dict;
+  ASSERT_TRUE(private_keys.GetDictionary(0, &key_dict));
   blink::WebCryptoNamedCurve curve = GetCurveNameFromDictionary(key_dict);
   const base::DictionaryValue* key_jwk;
   ASSERT_TRUE(key_dict->GetDictionary("jwk", &key_jwk));
@@ -153,17 +151,15 @@ TEST_F(WebCryptoEcdsaTest, SignatureIsRandom) {
 // Tests verify() for ECDSA using an assortment of keys, curves and hashes.
 // These tests also include expected failures for bad signatures and keys.
 TEST_F(WebCryptoEcdsaTest, VerifyKnownAnswer) {
-  base::Value tests;
-  ASSERT_TRUE(ReadJsonTestFileAsList("ecdsa.json", &tests));
+  base::ListValue tests;
+  ASSERT_TRUE(ReadJsonTestFileToList("ecdsa.json", &tests));
 
   for (size_t test_index = 0; test_index < tests.GetList().size();
        ++test_index) {
     SCOPED_TRACE(test_index);
 
-    const base::Value& test_value = tests.GetList()[test_index];
-    ASSERT_TRUE(test_value.is_dict());
-    const base::DictionaryValue* test =
-        &base::Value::AsDictionaryValue(test_value);
+    const base::DictionaryValue* test;
+    ASSERT_TRUE(tests.GetDictionary(test_index, &test));
 
     blink::WebCryptoNamedCurve curve = GetCurveNameFromDictionary(test);
     blink::WebCryptoKeyFormat key_format = GetKeyFormatFromJsonTestCase(test);
@@ -237,17 +233,15 @@ blink::WebCryptoKeyUsageMask GetExpectedUsagesForKeyImport(
 
 // Tests importing bad public/private keys in a variety of formats.
 TEST_F(WebCryptoEcdsaTest, ImportBadKeys) {
-  base::Value tests;
-  ASSERT_TRUE(ReadJsonTestFileAsList("bad_ec_keys.json", &tests));
+  base::ListValue tests;
+  ASSERT_TRUE(ReadJsonTestFileToList("bad_ec_keys.json", &tests));
 
   for (size_t test_index = 0; test_index < tests.GetList().size();
        ++test_index) {
     SCOPED_TRACE(test_index);
 
-    const base::Value& test_value = tests.GetList()[test_index];
-    ASSERT_TRUE(test_value.is_dict());
-    const base::DictionaryValue* test =
-        &base::Value::AsDictionaryValue(test_value);
+    const base::DictionaryValue* test;
+    ASSERT_TRUE(tests.GetDictionary(test_index, &test));
 
     blink::WebCryptoNamedCurve curve = GetCurveNameFromDictionary(test);
     blink::WebCryptoKeyFormat key_format = GetKeyFormatFromJsonTestCase(test);
@@ -270,17 +264,15 @@ TEST_F(WebCryptoEcdsaTest, ImportBadKeys) {
 // The test imports a key first using JWK, and then exporting it to JWK and
 // PKCS8. It does the same thing using PKCS8 as the original source of truth.
 TEST_F(WebCryptoEcdsaTest, ImportExportPrivateKey) {
-  base::Value tests;
-  ASSERT_TRUE(ReadJsonTestFileAsList("ec_private_keys.json", &tests));
+  base::ListValue tests;
+  ASSERT_TRUE(ReadJsonTestFileToList("ec_private_keys.json", &tests));
 
   for (size_t test_index = 0; test_index < tests.GetList().size();
        ++test_index) {
     SCOPED_TRACE(test_index);
 
-    const base::Value& test_value = tests.GetList()[test_index];
-    ASSERT_TRUE(test_value.is_dict());
-    const base::DictionaryValue* test =
-        &base::Value::AsDictionaryValue(test_value);
+    const base::DictionaryValue* test;
+    ASSERT_TRUE(tests.GetDictionary(test_index, &test));
 
     blink::WebCryptoNamedCurve curve = GetCurveNameFromDictionary(test);
     const base::DictionaryValue* jwk_dict;

@@ -6,6 +6,7 @@
 
 #include <memory>
 
+#include "base/macros.h"
 #include "chrome/browser/ui/layout_constants.h"
 #include "chrome/test/views/chrome_views_test_base.h"
 #include "ui/views/background.h"

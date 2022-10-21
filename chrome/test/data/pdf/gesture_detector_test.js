@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import {GestureDetector, PinchEventDetail} from 'chrome-extension://mhjfbmdgcfjbbpaeojofohoefgiehjai/pdf_viewer_wrapper.js';
+import {NativeEventTarget as EventTarget} from 'chrome://resources/js/cr/event_target.m.js';
 import {createWheelEvent} from './test_util.js';
 
 chrome.test.runTests(function() {
@@ -37,18 +38,8 @@ chrome.test.runTests(function() {
     }
   }
 
-  /** @type {!Element} */
+  /** @type {!EventTarget} */
   let stubElement;
-
-  /**
-   * @return {!Element}
-   */
-  function createStubElement() {
-    const stubElement = document.createElement('div');
-    document.body.innerHTML = '';
-    document.body.appendChild(stubElement);
-    return stubElement;
-  }
 
   /**
    * @param {string} type
@@ -71,24 +62,8 @@ chrome.test.runTests(function() {
   }
 
   return [
-    function testTransformCenter() {
-      stubElement = createStubElement();
-      const gestureDetector = new GestureDetector(stubElement);
-      const pinchListener = new PinchListener(gestureDetector);
-
-      stubElement.style.position = 'absolute';
-      stubElement.style.left = '1px';
-      stubElement.style.top = '-1px';
-      stubElement.dispatchEvent(
-          createWheelEvent(1, {clientX: 2, clientY: 3}, true));
-      chrome.test.assertEq('pinchupdate', pinchListener.lastEvent.type);
-      chrome.test.assertEq({x: 1, y: 4}, pinchListener.lastEvent.detail.center);
-
-      chrome.test.succeed();
-    },
-
     function testPinchZoomIn() {
-      stubElement = createStubElement();
+      stubElement = new EventTarget();
       const gestureDetector = new GestureDetector(stubElement);
       const pinchListener = new PinchListener(gestureDetector);
 
@@ -138,7 +113,7 @@ chrome.test.runTests(function() {
     },
 
     function testPinchZoomInAndBackOut() {
-      stubElement = createStubElement();
+      stubElement = new EventTarget();
       const gestureDetector = new GestureDetector(stubElement);
       const pinchListener = new PinchListener(gestureDetector);
 
@@ -191,7 +166,7 @@ chrome.test.runTests(function() {
     },
 
     async function testZoomWithWheel() {
-      stubElement = createStubElement();
+      stubElement = new EventTarget();
       const gestureDetector = new GestureDetector(stubElement);
       const pinchListener = new PinchListener(gestureDetector);
 
@@ -234,7 +209,7 @@ chrome.test.runTests(function() {
     },
 
     function testIgnoreTouchScrolling() {
-      stubElement = createStubElement();
+      stubElement = new EventTarget();
       const gestureDetector = new GestureDetector(stubElement);
       const pinchListener = new PinchListener(gestureDetector);
 
@@ -257,7 +232,7 @@ chrome.test.runTests(function() {
     },
 
     function testIgnoreWheelScrolling() {
-      stubElement = createStubElement();
+      stubElement = new EventTarget();
       const gestureDetector = new GestureDetector(stubElement);
       const pinchListener = new PinchListener(gestureDetector);
 
@@ -279,7 +254,7 @@ chrome.test.runTests(function() {
     },
 
     function testPreventNativeZoomFromWheel() {
-      stubElement = createStubElement();
+      stubElement = new EventTarget();
       const gestureDetector = new GestureDetector(stubElement);
       const pinchListener = new PinchListener(gestureDetector);
 
@@ -299,7 +274,7 @@ chrome.test.runTests(function() {
     },
 
     function testWasTwoFingerTouch() {
-      stubElement = createStubElement();
+      stubElement = new EventTarget();
       const gestureDetector = new GestureDetector(stubElement);
 
 

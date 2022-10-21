@@ -4,7 +4,6 @@
 
 #include "chrome/browser/ui/webui/settings/chromeos/os_settings_sections.h"
 
-#include "ash/components/phonehub/phone_hub_manager.h"
 #include "build/branding_buildflags.h"
 #include "chrome/browser/profiles/profile.h"
 #include "chrome/browser/ui/webui/settings/chromeos/about_section.h"
@@ -26,6 +25,7 @@
 #include "chrome/browser/ui/webui/settings/chromeos/privacy_section.h"
 #include "chrome/browser/ui/webui/settings/chromeos/reset_section.h"
 #include "chrome/browser/ui/webui/settings/chromeos/search_section.h"
+#include "chromeos/components/phonehub/phone_hub_manager.h"
 
 namespace chromeos {
 namespace settings {
@@ -42,8 +42,7 @@ OsSettingsSections::OsSettingsSections(
     signin::IdentityManager* identity_manager,
     android_sms::AndroidSmsService* android_sms_service,
     CupsPrintersManager* printers_manager,
-    apps::AppServiceProxy* app_service_proxy,
-    ash::eche_app::EcheAppManager* eche_app_manager) {
+    apps::AppServiceProxy* app_service_proxy) {
   // Special case: Main section does not have an associated enum value.
   sections_.push_back(
       std::make_unique<MainSection>(profile, search_tag_registry));
@@ -60,7 +59,7 @@ OsSettingsSections::OsSettingsSections(
 
   auto multidevice_section = std::make_unique<MultiDeviceSection>(
       profile, search_tag_registry, multidevice_setup_client, phone_hub_manager,
-      android_sms_service, profile->GetPrefs(), eche_app_manager);
+      android_sms_service, profile->GetPrefs());
   sections_map_[mojom::Section::kMultiDevice] = multidevice_section.get();
   sections_.push_back(std::move(multidevice_section));
 

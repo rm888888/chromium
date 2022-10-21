@@ -9,7 +9,7 @@
 #include <memory>
 #include <vector>
 
-#include "base/compiler_specific.h"
+#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "base/timer/timer.h"
@@ -273,11 +273,7 @@ class DISPLAY_MANAGER_EXPORT DisplayConfigurator
 
   // Enable/disable the privacy screen on display with |display_id|.
   // For this to succeed, privacy screen must be supported by the display.
-  // After privacy screen is set, |callback| is called with the outcome
-  // (success/failure) of the operation.
-  void SetPrivacyScreen(int64_t display_id,
-                        bool enabled,
-                        ConfigurationCallback callback);
+  void SetPrivacyScreen(int64_t display_id, bool enabled);
 
   // Returns the requested power state if set or the default power state.
   chromeos::DisplayPowerState GetRequestedPowerState() const;

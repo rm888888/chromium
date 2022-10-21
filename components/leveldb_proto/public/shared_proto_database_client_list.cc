@@ -15,6 +15,7 @@
 
 namespace leveldb_proto {
 
+
 // static
 std::string SharedProtoDatabaseClientList::ProtoDbTypeToString(
     ProtoDbType db_type) {
@@ -106,8 +107,6 @@ std::string SharedProtoDatabaseClientList::ProtoDbTypeToString(
       return "VideoTutorialsV2Database";
     case ProtoDbType::COUPON_DATABASE:
       return "CouponDatabase";
-    case ProtoDbType::PAGE_ENTITY_METADATA_STORE:
-      return "PageEntityMetadataDatabase";
     case ProtoDbType::LAST:
       NOTREACHED();
       return std::string();

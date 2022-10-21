@@ -24,11 +24,10 @@ namespace history_clusters {
 
 namespace {
 
-history::ClusterVisit CreateVisit(
-    std::string url,
-    float score,
-    std::vector<std::string> related_searches = {}) {
-  history::ClusterVisit visit;
+Visit CreateVisit(std::string url,
+                  float score,
+                  std::vector<std::string> related_searches = {}) {
+  Visit visit;
   visit.annotated_visit = {
       {GURL{url}, 0}, {}, {}, {}, 0, 0, history::VisitSource::SOURCE_BROWSED};
   visit.annotated_visit.content_annotations.related_searches = related_searches;
@@ -55,7 +54,7 @@ TEST_F(HistoryClustersHandlerTest, QueryClustersResultToMojom_BelowTheFold) {
   QueryClustersResult result;
 
   // High scoring visits should always be above the fold.
-  history::Cluster cluster1;
+  Cluster cluster1;
   cluster1.cluster_id = 4;
   cluster1.visits.push_back(CreateVisit("https://high-score-1", 1));
   cluster1.visits.push_back(CreateVisit("https://high-score-2", .8));
@@ -65,7 +64,7 @@ TEST_F(HistoryClustersHandlerTest, QueryClustersResultToMojom_BelowTheFold) {
   cluster1.keywords.push_back(u"keyword");
 
   // Low scoring visits should be above the fold only if they're one of top 4.
-  history::Cluster cluster2;
+  Cluster cluster2;
   cluster2.cluster_id = 6;
   cluster2.visits.push_back(CreateVisit("https://low-score-1", .4));
   cluster2.visits.push_back(CreateVisit("https://low-score-2", .4));
@@ -75,7 +74,7 @@ TEST_F(HistoryClustersHandlerTest, QueryClustersResultToMojom_BelowTheFold) {
   cluster2.keywords.push_back(u"keyword");
 
   // 0 scoring visits should be above the fold only if they're 1st.
-  history::Cluster cluster3;
+  Cluster cluster3;
   cluster3.cluster_id = 8;
   cluster3.visits.push_back(CreateVisit("https://zero-score-1", 0));
   cluster3.visits.push_back(CreateVisit("https://zero-score-2", 0));
@@ -132,7 +131,7 @@ TEST_F(HistoryClustersHandlerTest, QueryClustersResultToMojom_BelowTheFold) {
 TEST_F(HistoryClustersHandlerTest, QueryClustersResultToMojom_RelatedSearches) {
   QueryClustersResult result;
 
-  history::Cluster cluster;
+  Cluster cluster;
   cluster.cluster_id = 4;
   // Should include the top visit's related searches.
   cluster.visits.push_back(

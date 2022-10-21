@@ -8,6 +8,7 @@
 #include <windows.h>
 #include <winhttp.h>
 
+#include "base/macros.h"
 #include "base/win/scoped_handle.h"
 #include "base/win/windows_types.h"
 

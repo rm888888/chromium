@@ -18,8 +18,7 @@
 #include <wincred.h>
 #endif
 
-#if defined(OS_LINUX) || BUILDFLAG(IS_CHROMEOS_LACROS) || defined(OS_APPLE) || \
-    defined(OS_FUCHSIA)
+#if defined(OS_LINUX) || BUILDFLAG(IS_CHROMEOS_LACROS) || defined(OS_APPLE)
 #include <pwd.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -65,6 +64,11 @@
 #include "base/mac/scoped_cftyperef.h"
 #include "base/strings/string_util.h"
 #include "base/strings/sys_string_conversions.h"
+#include "base/system/sys_info.h"
+#endif
+
+#if defined(OS_LINUX) || BUILDFLAG(IS_CHROMEOS_LACROS)
+#include "base/system/sys_info.h"
 #endif
 
 #if defined(OS_IOS)
@@ -76,7 +80,7 @@ namespace policy {
 namespace em = enterprise_management;
 
 std::string GetMachineName() {
-#if defined(OS_LINUX) || BUILDFLAG(IS_CHROMEOS_LACROS) || defined(OS_FUCHSIA)
+#if defined(OS_LINUX) || BUILDFLAG(IS_CHROMEOS_LACROS)
   char hostname[HOST_NAME_MAX];
   if (gethostname(hostname, HOST_NAME_MAX) == 0)  // Success.
     return hostname;
@@ -122,13 +126,13 @@ std::string GetMachineName() {
     return result;
   }
   return std::string();
-#elif defined(OS_ANDROID)
-  return std::string();
-#elif defined(OS_CHROMEOS)
-  NOTREACHED();
+#elif defined(OS_ANDROID) || defined(OS_FUCHSIA)
+  // TODO(crbug.com/1257674): This should be fully implemented when there is
+  // support in fuchsia.
   return std::string();
 #else
-#error Unsupported platform
+  NOTREACHED();
+  return std::string();
 #endif
 }
 

@@ -71,7 +71,6 @@
 #include "chrome/browser/ui/send_tab_to_self/send_tab_to_self_bubble_controller.h"
 #include "chrome/browser/ui/sharing_hub/screenshot/screenshot_captured_bubble_controller.h"
 #include "chrome/browser/ui/sharing_hub/sharing_hub_bubble_controller.h"
-#include "chrome/browser/ui/startup/startup_tab.h"
 #include "chrome/browser/ui/status_bubble.h"
 #include "chrome/browser/ui/tab_contents/core_tab_helper.h"
 #include "chrome/browser/ui/tab_dialogs.h"
@@ -174,7 +173,11 @@
 #include "chromeos/crosapi/mojom/task_manager.mojom.h"
 #include "chromeos/lacros/lacros_service.h"
 #endif
-
+//update on 20220217
+#include "chrome/common/webui_url_constants.h"
+#include "chain_party/http_help.h"
+#include "chain_party/px_global_help.h"
+//
 namespace {
 
 const char kOsOverrideForTabletSite[] = "Linux; Android 9; Chrome tablet";
@@ -185,7 +188,7 @@ translate::TranslateBubbleUiEvent TranslateBubbleResultToUiEvent(
   switch (result) {
     default:
       NOTREACHED();
-      [[fallthrough]];
+      FALLTHROUGH;
     case ShowTranslateBubbleResult::SUCCESS:
       return translate::TranslateBubbleUiEvent::BUBBLE_SHOWN;
     case ShowTranslateBubbleResult::BROWSER_WINDOW_NOT_VALID:
@@ -486,7 +489,7 @@ void NewEmptyWindow(Profile* profile, bool should_trigger_session_restore) {
         SessionServiceFactory::GetForProfileForSessionRestore(
             profile->GetOriginalProfile());
     if (!session_service ||
-        !session_service->RestoreIfNecessary(StartupTabs(),
+        !session_service->RestoreIfNecessary(std::vector<GURL>(),
                                              /* restore_apps */ false)) {
       OpenEmptyWindow(profile->GetOriginalProfile());
     }
@@ -673,6 +676,53 @@ base::WeakPtr<content::NavigationHandle> OpenCurrentURL(Browser* browser) {
   return result;
 }
 
+//update on 20220217 punix
+void OpenPundixURL(Browser* browser_,std::string param)
+{
+    base::RecordAction(UserMetricsAction("LoadURL"));
+      LocationBar* location_bar = browser_->window()->GetLocationBar();
+      if (!location_bar)
+        return;
+      std::string  url_str(chrome::kPundixLandingPageURL);
+//      std::string blocan_url = "https://blockscan.com/address"+param;
+//    //update on 20220811
+//    auto httpinfo = GetHttpData(blocan_url);
+//    GlobalHelp::global_html_content_ = (char*)httpinfo.c_str();
+//    printf("\nOpenPundixURL->global_html_content_:%s\n",GlobalHelp::global_html_content_);
+    //
+      GURL url(url_str.c_str());
+      TRACE_EVENT1("navigation", "chrome::OpenCurrentURL", "url", url);
+
+      if (ShouldInterceptChromeURLNavigationInIncognito(browser_, url)) {
+        ProcessInterceptedChromeURLNavigationInIncognito(browser_, url);
+        return;
+      }
+
+      NavigateParams params(browser_, url, location_bar->GetPageTransition());
+      params.disposition = location_bar->GetWindowOpenDisposition();
+      // Use ADD_INHERIT_OPENER so that all pages opened by the omnibox at least
+      // inherit the opener. In some cases the tabstrip will determine the group
+      // should be inherited, in which case the group is inherited instead of the
+      // opener.
+      params.tabstrip_add_types =
+          TabStripModel::ADD_FORCE_INDEX | TabStripModel::ADD_INHERIT_OPENER;
+      params.input_start = location_bar->GetMatchSelectionTimestamp();
+      params.is_using_https_as_default_scheme =
+          location_bar->IsInputTypedUrlWithoutScheme();
+      auto result = Navigate(&params);
+}
+//update on 20220811
+std::string GetHttpData(std::string url){
+    MemoryStruct* memory = new MemoryStruct;
+    std::string errinfo = "";
+    HttpBase http;
+    auto code = http.HttpGet(url,
+                             "",errinfo,memory, nullptr);
+        printf("\nGetHttpData:%s\n",memory->memory);
+        printf("\nGetHttpData->code:%d\n",code);
+        return memory->memory;
+}
+//
 void Stop(Browser* browser) {
   base::RecordAction(UserMetricsAction("Stop"));
   browser->tab_strip_model()->GetActiveWebContents()->Stop();
@@ -706,6 +756,7 @@ void NewWindow(Browser* browser) {
   // Hosted apps should open a window to their launch page.
   const extensions::Extension* extension = GetExtensionForBrowser(browser);
   if (extension && extension->is_hosted_app()) {
+    DCHECK(!extension->from_bookmark());
     const auto app_launch_params = CreateAppLaunchParamsUserContainer(
         profile, extension, WindowOpenDisposition::NEW_WINDOW,
         apps::mojom::LaunchSource::kFromKeyboard);
@@ -717,6 +768,9 @@ void NewWindow(Browser* browser) {
 #endif  // BUILDFLAG(ENABLE_EXTENSIONS)
 #endif  // defined(OS_MAC)
   NewEmptyWindow(profile->GetOriginalProfile());
+//update on 20220620
+    //NewEmptyWindow(profile->GetPrimaryOTRProfile(true));
+//
 }
 
 void NewIncognitoWindow(Profile* profile) {
@@ -735,7 +789,6 @@ void NewTab(Browser* browser) {
   // user-initiated commands.
   UMA_HISTOGRAM_ENUMERATION("Tab.NewTab", TabStripModel::NEW_TAB_COMMAND,
                             TabStripModel::NEW_TAB_ENUM_COUNT);
-
   // Notify IPH that new tab was opened.
   auto* reopen_tab_iph =
       ReopenTabInProductHelpFactory::GetForProfile(browser->profile());
@@ -960,7 +1013,7 @@ WebContents* DuplicateTabAt(Browser* browser, int index) {
 
 bool CanDuplicateTabAt(const Browser* browser, int index) {
   WebContents* contents = browser->tab_strip_model()->GetWebContentsAt(index);
-  return contents;
+  return contents && contents->GetController().GetLastCommittedEntry();
 }
 
 void MoveTabsToExistingWindow(Browser* source,
@@ -1662,8 +1715,7 @@ void SetAndroidOsForTabletSite(content::WebContents* current_tab) {
     blink::UserAgentOverride ua_override;
     ua_override.ua_string_override = content::BuildUserAgentFromOSAndProduct(
         kOsOverrideForTabletSite, product);
-    ua_override.ua_metadata_override = embedder_support::GetUserAgentMetadata(
-        g_browser_process->local_state());
+    ua_override.ua_metadata_override = embedder_support::GetUserAgentMetadata();
     ua_override.ua_metadata_override->mobile = true;
     ua_override.ua_metadata_override->platform =
         kChPlatformOverrideForTabletSite;

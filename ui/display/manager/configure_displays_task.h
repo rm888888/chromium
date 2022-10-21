@@ -12,6 +12,7 @@
 
 #include "base/callback.h"
 #include "base/containers/queue.h"
+#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "ui/display/manager/display_manager_export.h"
 #include "ui/display/types/native_display_observer.h"

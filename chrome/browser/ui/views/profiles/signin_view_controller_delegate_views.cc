@@ -6,7 +6,9 @@
 
 #include "base/bind.h"
 #include "base/callback.h"
+#include "base/macros.h"
 #include "build/build_config.h"
+#include "chrome/browser/extensions/chrome_extension_web_contents_observer.h"
 #include "chrome/browser/profiles/profile.h"
 #include "chrome/browser/profiles/profile_avatar_icon_util.h"
 #include "chrome/browser/signin/reauth_result.h"
@@ -61,15 +63,14 @@ SigninViewControllerDelegateViews::CreateSyncConfirmationWebView(
   return CreateDialogWebView(
       browser, GURL(chrome::kChromeUISyncConfirmationURL),
       GetSyncConfirmationDialogPreferredHeight(browser->profile()),
-      kSyncConfirmationDialogWidth, InitializeSigninWebDialogUI(true));
+      kSyncConfirmationDialogWidth);
 }
 
 // static
 std::unique_ptr<views::WebView>
 SigninViewControllerDelegateViews::CreateSigninErrorWebView(Browser* browser) {
   return CreateDialogWebView(browser, GURL(chrome::kChromeUISigninErrorURL),
-                             kSigninErrorDialogHeight, absl::nullopt,
-                             InitializeSigninWebDialogUI(true));
+                             kSigninErrorDialogHeight, absl::nullopt);
 }
 
 // static
@@ -79,8 +80,7 @@ SigninViewControllerDelegateViews::CreateReauthConfirmationWebView(
     signin_metrics::ReauthAccessPoint access_point) {
   return CreateDialogWebView(browser,
                              signin::GetReauthConfirmationURL(access_point),
-                             kReauthDialogHeight, kReauthDialogWidth,
-                             InitializeSigninWebDialogUI(false));
+                             kReauthDialogHeight, kReauthDialogWidth);
 }
 
 #if defined(OS_WIN) || defined(OS_MAC) || defined(OS_LINUX) || \
@@ -94,8 +94,7 @@ SigninViewControllerDelegateViews::CreateEnterpriseConfirmationWebView(
     base::OnceCallback<void(bool)> callback) {
   std::unique_ptr<views::WebView> web_view = CreateDialogWebView(
       browser, GURL(chrome::kChromeUIEnterpriseProfileWelcomeURL),
-      kSyncConfirmationDialogHeight, kSyncConfirmationDialogWidth,
-      InitializeSigninWebDialogUI(false));
+      kSyncConfirmationDialogHeight, kSyncConfirmationDialogWidth);
 
   EnterpriseProfileWelcomeUI* web_dialog_ui =
       web_view->GetWebContents()
@@ -247,17 +246,17 @@ SigninViewControllerDelegateViews::CreateDialogWebView(
     Browser* browser,
     const GURL& url,
     int dialog_height,
-    absl::optional<int> opt_width,
-    InitializeSigninWebDialogUI initialize_signin_web_dialog_ui) {
+    absl::optional<int> opt_width) {
   int dialog_width = opt_width.value_or(kModalDialogWidth);
   views::WebView* web_view = new views::WebView(browser->profile());
   web_view->LoadInitialURL(url);
+  // To record metrics using javascript, extensions are needed.
+  extensions::ChromeExtensionWebContentsObserver::CreateForWebContents(
+      web_view->GetWebContents());
 
-  if (initialize_signin_web_dialog_ui) {
-    SigninWebDialogUI* web_dialog_ui = static_cast<SigninWebDialogUI*>(
-        web_view->GetWebContents()->GetWebUI()->GetController());
-    web_dialog_ui->InitializeMessageHandlerWithBrowser(browser);
-  }
+  SigninWebDialogUI* web_dialog_ui = static_cast<SigninWebDialogUI*>(
+      web_view->GetWebContents()->GetWebUI()->GetController());
+  web_dialog_ui->InitializeMessageHandlerWithBrowser(browser);
 
   int max_height = browser->window()
                        ->GetWebContentsModalDialogHost()

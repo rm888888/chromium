@@ -115,25 +115,23 @@ std::string GetVariationDirectory() {
                                             "directory");
 }
 
-PopularSites::SitesVector ParseSiteList(
-    const base::Value::ConstListView& list) {
+PopularSites::SitesVector ParseSiteList(const base::ListValue& list) {
   PopularSites::SitesVector sites;
-  for (const base::Value& item_value : list) {
-    if (!item_value.is_dict())
+  for (size_t i = 0; i < list.GetList().size(); i++) {
+    const base::DictionaryValue* item;
+    if (!list.GetDictionary(i, &item))
       continue;
-    const base::DictionaryValue& item =
-        base::Value::AsDictionaryValue(item_value);
     std::u16string title;
     std::string url;
-    if (!item.GetString("title", &title) || !item.GetString("url", &url))
+    if (!item->GetString("title", &title) || !item->GetString("url", &url))
       continue;
     std::string favicon_url;
-    item.GetString("favicon_url", &favicon_url);
+    item->GetString("favicon_url", &favicon_url);
     std::string large_icon_url;
-    item.GetString("large_icon_url", &large_icon_url);
+    item->GetString("large_icon_url", &large_icon_url);
 
     TileTitleSource title_source = TileTitleSource::UNKNOWN;
-    absl::optional<int> title_source_int = item.FindIntKey("title_source");
+    absl::optional<int> title_source_int = item->FindIntKey("title_source");
     if (!title_source_int) {
       // Only v6 and later have "title_source". Earlier versions use title tags.
       title_source = TileTitleSource::TITLE_TAG;
@@ -145,34 +143,32 @@ PopularSites::SitesVector ParseSiteList(
     sites.emplace_back(title, GURL(url), GURL(favicon_url),
                        GURL(large_icon_url), title_source);
     absl::optional<int> default_icon_resource =
-        item.FindIntKey("default_icon_resource");
+        item->FindIntKey("default_icon_resource");
     if (default_icon_resource)
       sites.back().default_icon_resource = *default_icon_resource;
-    absl::optional<bool> baked_in = item.FindBoolKey("baked_in");
-    if (baked_in.has_value())
-      sites.back().baked_in = baked_in.value();
+    item->GetBoolean("baked_in", &sites.back().baked_in);
   }
   return sites;
 }
 
 std::map<SectionType, PopularSites::SitesVector> ParseVersion5(
-    const base::Value::ConstListView& list) {
+    const base::ListValue& list) {
   return {{SectionType::PERSONALIZED, ParseSiteList(list)}};
 }
 
 std::map<SectionType, PopularSites::SitesVector> ParseVersion6OrAbove(
-    const base::Value::ConstListView& list) {
+    const base::ListValue& list) {
   // Valid lists would have contained at least the PERSONALIZED section.
   std::map<SectionType, PopularSites::SitesVector> sections = {
       std::make_pair(SectionType::PERSONALIZED, PopularSites::SitesVector{})};
-  for (size_t i = 0; i < list.size(); i++) {
-    const base::Value& item_value = list[i];
-    if (!item_value.is_dict()) {
+  for (size_t i = 0; i < list.GetList().size(); i++) {
+    const base::DictionaryValue* item;
+    if (!list.GetDictionary(i, &item)) {
       LOG(WARNING) << "Parsed SitesExploration list contained an invalid "
                    << "section at position " << i << ".";
       continue;
     }
-    int section = item_value.FindIntKey("section").value_or(-1);
+    int section = item->FindIntKey("section").value_or(-1);
     if (section < 0 || section > static_cast<int>(SectionType::LAST)) {
       LOG(WARNING) << "Parsed SitesExploration list contained a section with "
                    << "invalid ID (" << section << ")";
@@ -183,16 +179,16 @@ std::map<SectionType, PopularSites::SitesVector> ParseVersion6OrAbove(
     SectionType section_type = static_cast<SectionType>(section);
     if (section_type != SectionType::PERSONALIZED)
       continue;
-    const base::Value* sites_list = item_value.FindListKey("sites");
-    if (!sites_list)
+    const base::ListValue* sites_list;
+    if (!item->GetList("sites", &sites_list))
       continue;
-    sections[section_type] = ParseSiteList(sites_list->GetList());
+    sections[section_type] = ParseSiteList(*sites_list);
   }
   return sections;
 }
 
 std::map<SectionType, PopularSites::SitesVector> ParseSites(
-    const base::Value::ConstListView& list,
+    const base::ListValue& list,
     int version) {
   if (version >= kSitesExplorationStartVersion)
     return ParseVersion6OrAbove(list);
@@ -270,7 +266,7 @@ PopularSitesImpl::PopularSitesImpl(
       url_loader_factory_(std::move(url_loader_factory)),
       is_fallback_(false),
       sections_(
-          ParseSites(prefs->GetList(prefs::kPopularSitesJsonPref)->GetList(),
+          ParseSites(*prefs->GetList(prefs::kPopularSitesJsonPref),
                      prefs_->GetInteger(prefs::kPopularSitesVersionPref))) {}
 
 PopularSitesImpl::~PopularSitesImpl() {}
@@ -395,8 +391,7 @@ std::string PopularSitesImpl::GetVersionToFetch() {
 }
 
 const base::ListValue* PopularSitesImpl::GetCachedJson() {
-  return &base::Value::AsListValue(
-      *prefs_->GetList(prefs::kPopularSitesJsonPref));
+  return prefs_->GetList(prefs::kPopularSitesJsonPref);
 }
 
 // static
@@ -476,19 +471,20 @@ void PopularSitesImpl::OnJsonParsed(
     return;
   }
 
-  base::Value list = std::move(*result.value);
-  if (!list.is_list()) {
+  std::unique_ptr<base::ListValue> list = base::ListValue::From(
+      base::Value::ToUniquePtrValue(std::move(*result.value)));
+  if (!list) {
     DLOG(WARNING) << "JSON is not a list";
     OnDownloadFailed();
     return;
   }
-  prefs_->Set(prefs::kPopularSitesJsonPref, list);
+  prefs_->Set(prefs::kPopularSitesJsonPref, *list);
   prefs_->SetInt64(prefs::kPopularSitesLastDownloadPref,
                    base::Time::Now().ToInternalValue());
   prefs_->SetInteger(prefs::kPopularSitesVersionPref, version_in_pending_url_);
   prefs_->SetString(prefs::kPopularSitesURLPref, pending_url_.spec());
 
-  sections_ = ParseSites(list.GetList(), version_in_pending_url_);
+  sections_ = ParseSites(*list, version_in_pending_url_);
   std::move(callback_).Run(true);
 }
 

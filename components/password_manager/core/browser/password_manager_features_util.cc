@@ -7,7 +7,6 @@
 #include <algorithm>
 
 #include "base/containers/flat_set.h"
-#include "base/memory/raw_ptr.h"
 #include "base/metrics/field_trial_params.h"
 #include "base/metrics/histogram_functions.h"
 #include "base/ranges/algorithm.h"
@@ -85,7 +84,7 @@ const char kMoveToAccountStoreOfferedCountKey[] =
 // Returns the total number of accounts for which an opt-in to the account
 // storage exists. Used for metrics.
 int GetNumberOfOptedInAccounts(const PrefService* pref_service) {
-  const base::Value* global_pref =
+  const base::DictionaryValue* global_pref =
       pref_service->GetDictionary(prefs::kAccountStoragePerAccountSettings);
   int count = 0;
   for (auto entry : global_pref->DictItems()) {
@@ -100,7 +99,7 @@ class AccountStorageSettingsReader {
  public:
   AccountStorageSettingsReader(const PrefService* prefs,
                                const GaiaIdHash& gaia_id_hash) {
-    const base::Value* global_pref =
+    const base::DictionaryValue* global_pref =
         prefs->GetDictionary(prefs::kAccountStoragePerAccountSettings);
     if (global_pref)
       account_settings_ = global_pref->FindDictKey(gaia_id_hash.ToBase64());
@@ -132,12 +131,12 @@ class AccountStorageSettingsReader {
 
  private:
   // May be null, if no settings for this account were saved yet.
-  raw_ptr<const base::Value> account_settings_ = nullptr;
+  const base::Value* account_settings_ = nullptr;
 };
 
 // Helper class for updating account storage settings for a given account. Like
-// with DictionaryPrefUpdateDeprecated, updates are only published once the
-// instance gets destroyed.
+// with DictionaryPrefUpdate, updates are only published once the instance gets
+// destroyed.
 class ScopedAccountStorageSettingsUpdate {
  public:
   ScopedAccountStorageSettingsUpdate(PrefService* prefs,
@@ -178,7 +177,7 @@ class ScopedAccountStorageSettingsUpdate {
   void ClearAllSettings() { update_->RemoveKey(account_hash_); }
 
  private:
-  DictionaryPrefUpdateDeprecated update_;
+  DictionaryPrefUpdate update_;
   const std::string account_hash_;
 };
 }  // namespace
@@ -410,8 +409,8 @@ void KeepAccountStorageSettingsOnlyForUsers(
   // Now remove any settings for account that are *not* in the set of hashes.
   // DictionaryValue doesn't allow removing elements while iterating, so first
   // collect all the keys to remove, then actually remove them in a second pass.
-  DictionaryPrefUpdateDeprecated update(
-      pref_service, prefs::kAccountStoragePerAccountSettings);
+  DictionaryPrefUpdate update(pref_service,
+                              prefs::kAccountStoragePerAccountSettings);
   std::vector<std::string> keys_to_remove;
   for (auto kv : update->DictItems()) {
     if (!hashes_to_keep.contains(kv.first))

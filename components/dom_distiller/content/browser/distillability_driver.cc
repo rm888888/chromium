@@ -47,7 +47,10 @@ class DistillabilityServiceImpl : public mojom::DistillabilityService {
 };
 
 DistillabilityDriver::DistillabilityDriver(content::WebContents* web_contents)
-    : content::WebContentsUserData<DistillabilityDriver>(*web_contents) {}
+    : latest_result_(absl::nullopt), web_contents_(web_contents) {
+  if (!web_contents)
+    return;
+}
 
 DistillabilityDriver::~DistillabilityDriver() = default;
 
@@ -67,7 +70,7 @@ void DistillabilityDriver::OnDistillability(
     const DistillabilityResult& result) {
 #if !defined(OS_ANDROID)
   if (result.is_distillable) {
-    if (!is_secure_check_ || !is_secure_check_.Run(&GetWebContents())) {
+    if (!is_secure_check_ || !is_secure_check_.Run(web_contents_)) {
       DistillabilityResult not_distillable;
       not_distillable.is_distillable = false;
       not_distillable.is_last = result.is_last;

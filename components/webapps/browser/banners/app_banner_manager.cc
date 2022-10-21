@@ -13,7 +13,6 @@
 #include "base/compiler_specific.h"
 #include "base/containers/cxx20_erase.h"
 #include "base/feature_list.h"
-#include "base/memory/raw_ptr.h"
 #include "base/metrics/histogram_macros.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/time/time.h"
@@ -85,7 +84,7 @@ class ConsoleStatusReporter : public AppBannerManager::StatusReporter {
   }
 
  private:
-  raw_ptr<content::WebContents> web_contents_;
+  content::WebContents* web_contents_;
 };
 
 // Tracks installable status codes via an UMA histogram.
@@ -664,7 +663,7 @@ void AppBannerManager::DidActivatePortal(
   // If this page was loaded in a portal, AppBannerManager may have been
   // instantiated after DidFinishLoad. Trigger the banner pipeline now (on
   // portal activation) if we missed the load event.
-  if (!load_finished_ && !web_contents()->ShouldShowLoadingUI()) {
+  if (!load_finished_ && !web_contents()->IsLoadingToDifferentDocument()) {
     DidFinishLoad(web_contents()->GetMainFrame(),
                   web_contents()->GetLastCommittedURL());
   }
@@ -686,7 +685,7 @@ void AppBannerManager::DidUpdateWebManifestURL(
     case State::SENDING_EVENT_GOT_EARLY_PROMPT:
     case State::PENDING_PROMPT:
       Terminate();
-      [[fallthrough]];
+      FALLTHROUGH;
     case State::COMPLETE:
       if (!manifest_url.is_empty()) {
         // This call resets has_sufficient_engagement_data_. In order to

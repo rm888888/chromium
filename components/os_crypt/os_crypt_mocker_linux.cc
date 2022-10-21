@@ -30,13 +30,15 @@ std::string* OSCryptMockerLinux::GetKeyPtr() {
 
 // static
 void OSCryptMockerLinux::SetUp() {
-  OSCrypt::UseMockKeyStorageForTesting(&CreateNewMock);
+  UseMockKeyStorageForTesting(
+      &CreateNewMock, nullptr /* get the key from the provider above */);
+  OSCrypt::SetConfig(std::make_unique<os_crypt::Config>());
 }
 
 // static
 void OSCryptMockerLinux::TearDown() {
-  OSCrypt::UseMockKeyStorageForTesting(nullptr);
-  OSCrypt::ClearCacheForTesting();
+  UseMockKeyStorageForTesting(nullptr, nullptr);
+  ClearCacheForTesting();
 }
 
 bool OSCryptMockerLinux::Init() {

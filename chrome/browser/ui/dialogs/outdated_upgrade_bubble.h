@@ -5,6 +5,7 @@
 #ifndef CHROME_BROWSER_UI_DIALOGS_OUTDATED_UPGRADE_BUBBLE_H_
 #define CHROME_BROWSER_UI_DIALOGS_OUTDATED_UPGRADE_BUBBLE_H_
 
+#include "base/macros.h"
 #include "ui/views/bubble/bubble_dialog_delegate_view.h"
 
 class Browser;

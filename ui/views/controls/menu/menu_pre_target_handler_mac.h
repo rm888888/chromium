@@ -5,21 +5,15 @@
 #ifndef UI_VIEWS_CONTROLS_MENU_MENU_PRE_TARGET_HANDLER_MAC_H_
 #define UI_VIEWS_CONTROLS_MENU_MENU_PRE_TARGET_HANDLER_MAC_H_
 
-#include <memory>
-
-#include "ui/views/cocoa/native_widget_mac_ns_window_host.h"
 #include "ui/views/controls/menu/menu_pre_target_handler.h"
 
-namespace ui {
-class Event;
-}  // namespace ui
+#include "ui/base/cocoa/weak_ptr_nsobject.h"
 
 namespace views {
 
 // Stops dispatch of key events when they are handled by MenuController.
 // While similar to EventMonitorMac, that class does not allow dispatch changes.
-class MenuPreTargetHandlerMac : public MenuPreTargetHandler,
-                                public NativeWidgetMacEventMonitor::Client {
+class MenuPreTargetHandlerMac : public MenuPreTargetHandler {
  public:
   MenuPreTargetHandlerMac(MenuController* controller, Widget* widget);
 
@@ -29,12 +23,9 @@ class MenuPreTargetHandlerMac : public MenuPreTargetHandler,
   ~MenuPreTargetHandlerMac() override;
 
  private:
-  // public:
-  void NativeWidgetMacEventMonitorOnEvent(ui::Event* event,
-                                          bool* was_handled) final;
-
-  std::unique_ptr<NativeWidgetMacEventMonitor> monitor_;
-  MenuController* const controller_;  // Weak. Owns |this|.
+  MenuController* controller_;  // Weak. Owns |this|.
+  id monitor_;
+  ui::WeakPtrNSObjectFactory<MenuPreTargetHandlerMac> factory_;
 };
 
 }  // namespace views

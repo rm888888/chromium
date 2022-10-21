@@ -940,7 +940,12 @@ absl::optional<bool> NativeWindowOcclusionTrackerWin::
   if (!virtual_desktop_manager_)
     return true;
 
-  return gfx::IsWindowOnCurrentVirtualDesktop(hwnd, virtual_desktop_manager_);
+  BOOL on_current_desktop;
+  if (SUCCEEDED(virtual_desktop_manager_->IsWindowOnCurrentVirtualDesktop(
+          hwnd, &on_current_desktop))) {
+    return on_current_desktop;
+  }
+  return absl::nullopt;
 }
 
 }  // namespace aura

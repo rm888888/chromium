@@ -4,7 +4,6 @@
 
 #include "ui/ozone/platform/wayland/host/wayland_keyboard.h"
 
-#include <keyboard-extension-unstable-v1-client-protocol.h>
 #include <sys/mman.h>
 
 #include <cstddef>

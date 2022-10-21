@@ -106,14 +106,4 @@ export function onboardingChooseDestinationPageTest() {
 
         assertEquals(component.onNextButtonClick(), resolver.promise);
       });
-
-  test('ChooseDestinationPageDisabledRadioGroup', async () => {
-    await initializeChooseDestinationPage();
-
-    const chooseDestinationGroup =
-        component.shadowRoot.querySelector('#chooseDestinationGroup');
-    assertFalse(chooseDestinationGroup.disabled);
-    component.allButtonsDisabled = true;
-    assertTrue(chooseDestinationGroup.disabled);
-  });
 }

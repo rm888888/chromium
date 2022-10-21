@@ -30,8 +30,6 @@ TotalDurationMetricReporter::TotalDurationMetricReporter(
           kBucketCount,
           base::Histogram::kUmaTargetedHistogramFlag)) {}
 
-TotalDurationMetricReporter::~TotalDurationMetricReporter() = default;
-
 void TotalDurationMetricReporter::RecordAdditionalDuration(
     base::TimeDelta duration) {
   if (reported_value_)

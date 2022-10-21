@@ -5,7 +5,6 @@
 package org.chromium.components.browser_ui.site_settings;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.VisibleForTesting;
 
 import org.chromium.components.content_settings.ContentSettingsType;
 import org.chromium.content_public.browser.ContentFeatureList;
@@ -15,8 +14,7 @@ import org.chromium.content_public.browser.ContentFeatureList;
  */
 public class SiteSettingsUtil {
     // Defining the order for content settings based on http://crbug.com/610358
-    @VisibleForTesting(otherwise = VisibleForTesting.PACKAGE_PRIVATE)
-    public static final int[] SETTINGS_ORDER = {
+    static final int[] SETTINGS_ORDER = {
             ContentSettingsType.COOKIES,
             ContentSettingsType.GEOLOCATION,
             ContentSettingsType.MEDIASTREAM_CAMERA,
@@ -37,8 +35,7 @@ public class SiteSettingsUtil {
             ContentSettingsType.AR,
             ContentSettingsType.IDLE_DETECTION,
             ContentSettingsType.SENSORS,
-            ContentSettingsType.AUTO_DARK_WEB_CONTENT,
-            ContentSettingsType.REQUEST_DESKTOP_SITE,
+            ContentSettingsType.REQUEST_DESKTOP_SITE
     };
 
     static final int[] CHOOSER_PERMISSIONS = {

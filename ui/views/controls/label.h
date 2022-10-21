@@ -10,6 +10,7 @@
 
 #include "base/compiler_specific.h"
 #include "base/gtest_prod_util.h"
+#include "base/macros.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/base/metadata/metadata_header_macros.h"
 #include "ui/base/models/simple_menu_model.h"
@@ -116,9 +117,6 @@ class VIEWS_EXPORT Label : public View,
   // Applies |style| to a specific |range|.  This is unimplemented for styles
   // that vary from the global text style by anything besides weight.
   void SetTextStyleRange(int style, const gfx::Range& range);
-
-  // Apply the baseline style range across the entire label.
-  void ApplyBaselineTextStyle();
 
   // Enables or disables auto-color-readability (enabled by default).  If this
   // is enabled, then calls to set any foreground or background color will

@@ -9,6 +9,7 @@
 #include "base/bind.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
+#include "base/macros.h"
 #include "base/path_service.h"
 #include "base/run_loop.h"
 #include "base/task/post_task.h"
@@ -285,7 +286,7 @@ IN_PROC_BROWSER_TEST_F(PresentationReceiverWindowControllerBrowserTest,
           controller_connection.MakeConnectionRequest(),
           media_router::MediaRoute("route",
                                    media_router::MediaSource(presentation_url),
-                                   "sink", "desc", true));
+                                   "sink", "desc", true, true));
 
   base::RunLoop connection_loop;
   EXPECT_CALL(controller_connection, OnMessage(_)).WillOnce([&](auto response) {

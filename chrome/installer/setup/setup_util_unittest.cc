@@ -17,6 +17,7 @@
 #include "base/files/file_util.h"
 #include "base/files/scoped_temp_dir.h"
 #include "base/logging.h"
+#include "base/macros.h"
 #include "base/process/kill.h"
 #include "base/process/launch.h"
 #include "base/process/process_handle.h"
@@ -32,7 +33,6 @@
 #include "base/win/scoped_handle.h"
 #include "build/branding_buildflags.h"
 #include "build/build_config.h"
-#include "chrome/browser/enterprise/connectors/device_trust/key_management/core/network/key_network_delegate.h"
 #include "chrome/browser/enterprise/connectors/device_trust/key_management/core/network/mock_key_network_delegate.h"
 #include "chrome/browser/enterprise/connectors/device_trust/key_management/core/persistence/key_persistence_delegate_factory.h"
 #include "chrome/browser/enterprise/connectors/device_trust/key_management/core/persistence/mock_key_persistence_delegate.h"
@@ -636,13 +636,20 @@ TEST(SetupUtilTest, RotateDTKeySuccess) {
   GURL dmserver_url("dmserver.com");
   std::string nonce = "nonce";
 
+  // Create a fake success response.
+  enterprise_management::DeviceManagementResponse response;
+  response.mutable_browser_public_key_upload_response()->set_response_code(
+      enterprise_management::BrowserPublicKeyUploadResponse::SUCCESS);
+  std::string response_str;
+  response.SerializeToString(&response_str);
+
   // Trigger the key rotation with a real persistence delegate (empty) but with
   // a mocked network delegate.
   auto mock_network_delegate =
       std::make_unique<enterprise_connectors::test::MockKeyNetworkDelegate>();
   EXPECT_CALL(*mock_network_delegate,
               SendPublicKeyToDmServerSync(dmserver_url, token, testing::_))
-      .WillOnce(testing::Return(/*http_code=*/200));
+      .WillOnce(testing::Return(response_str));
 
   auto key_rotation_manager =
       enterprise_connectors::KeyRotationManager::CreateForTesting(

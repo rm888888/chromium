@@ -13,6 +13,7 @@
 
 #include "base/callback_forward.h"
 #include "base/files/file_path.h"
+#include "base/macros.h"
 #include "base/memory/ref_counted.h"
 #include "base/threading/thread_checker.h"
 #include "base/values.h"
@@ -26,11 +27,10 @@ class SingleThreadTaskRunner;
 }  // namespace base
 
 namespace component_updater {
+using RegisterCallback =
+    base::OnceCallback<bool(const update_client::CrxComponent&)>;
 
-struct ComponentRegistration;
 class ComponentUpdateService;
-
-using RegisterCallback = base::OnceCallback<bool(const ComponentRegistration&)>;
 
 // Components should use a ComponentInstaller by defining a class that
 // implements the members of ComponentInstallerPolicy, and then registering a

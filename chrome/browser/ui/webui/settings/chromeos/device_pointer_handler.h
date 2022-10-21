@@ -7,6 +7,7 @@
 
 #include <memory>
 
+#include "base/macros.h"
 #include "chrome/browser/ash/system/pointer_device_observer.h"
 #include "chrome/browser/ui/webui/settings/settings_page_ui_handler.h"
 
@@ -37,7 +38,6 @@ class PointerHandler
  private:
   // PointerDeviceObserver implementation.
   void TouchpadExists(bool exists) override;
-  void HapticTouchpadExists(bool exists) override;
   void MouseExists(bool exists) override;
   void PointingStickExists(bool exists) override;
 

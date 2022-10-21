@@ -6,6 +6,7 @@
 
 #include <string>
 
+#include "base/macros.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/test/scoped_feature_list.h"
 #include "build/build_config.h"
@@ -466,9 +467,10 @@ TEST_F(PageSpecificContentSettingsTest,
   ContentSettingsPattern pattern =
       ContentSettingsPattern::FromURL(web_contents()->GetVisibleURL());
 
-  map->SetWebsiteSettingCustomScope(pattern, ContentSettingsPattern::Wildcard(),
-                                    ContentSettingsType::CLIPBOARD_READ_WRITE,
-                                    base::Value(CONTENT_SETTING_ALLOW));
+  map->SetWebsiteSettingCustomScope(
+      pattern, ContentSettingsPattern::Wildcard(),
+      ContentSettingsType::CLIPBOARD_READ_WRITE,
+      std::make_unique<base::Value>(CONTENT_SETTING_ALLOW));
 
   // Now the indicator is set to allowed.
   EXPECT_TRUE(content_settings->IsContentAllowed(
@@ -477,9 +479,10 @@ TEST_F(PageSpecificContentSettingsTest,
       ContentSettingsType::CLIPBOARD_READ_WRITE));
 
   // Simulate the user modifying the setting back to blocked.
-  map->SetWebsiteSettingCustomScope(pattern, ContentSettingsPattern::Wildcard(),
-                                    ContentSettingsType::CLIPBOARD_READ_WRITE,
-                                    base::Value(CONTENT_SETTING_BLOCK));
+  map->SetWebsiteSettingCustomScope(
+      pattern, ContentSettingsPattern::Wildcard(),
+      ContentSettingsType::CLIPBOARD_READ_WRITE,
+      std::make_unique<base::Value>(CONTENT_SETTING_BLOCK));
 
   // Now the indicator is set to allowed.
   EXPECT_TRUE(content_settings->IsContentBlocked(

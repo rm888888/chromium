@@ -9,7 +9,6 @@
 #include <string>
 
 #include "base/gtest_prod_util.h"
-#include "base/memory/raw_ptr.h"
 #include "build/build_config.h"
 #include "components/autofill/core/browser/autofill_client.h"
 #include "components/autofill/core/browser/autofill_driver.h"
@@ -260,7 +259,7 @@ class CreditCardFIDOAuthenticator
   webauthn::InternalAuthenticator* authenticator();
 
   // Card being unmasked.
-  raw_ptr<const CreditCard> card_;
+  const CreditCard* card_;
 
   // The current flow in progress.
   Flow current_flow_ = NONE_FLOW;
@@ -270,16 +269,16 @@ class CreditCardFIDOAuthenticator
   std::string card_authorization_token_;
 
   // The associated autofill driver. Weak reference.
-  const raw_ptr<AutofillDriver> autofill_driver_;
+  AutofillDriver* const autofill_driver_;
 
   // The associated autofill client. Weak reference.
-  const raw_ptr<AutofillClient> autofill_client_;
+  AutofillClient* const autofill_client_;
 
   // Payments client to make requests to Google Payments.
-  const raw_ptr<payments::PaymentsClient> payments_client_;
+  payments::PaymentsClient* const payments_client_;
 
   // Authenticator pointer to facilitate WebAuthn.
-  raw_ptr<webauthn::InternalAuthenticator> authenticator_ = nullptr;
+  webauthn::InternalAuthenticator* authenticator_ = nullptr;
 
   // Responsible for getting the full card details, including the PAN and the
   // CVC.

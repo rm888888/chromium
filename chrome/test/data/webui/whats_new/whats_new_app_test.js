@@ -30,8 +30,11 @@ class TestWhatsNewProxy extends TestBrowserProxy {
   }
 
   /** @override */
-  initialize() {
-    this.methodCalled('initialize');
+  initialize(isAuto) {
+    this.methodCalled('initialize', isAuto);
+    // Even in the case of failure, the preload URL will still be the What's New
+    // URL. It is then updated when the promise resolves.
+    webUIListenerCallback('preload-url', this.url_ ? this.url_ : whatsNewURL);
     return Promise.resolve(this.url_);
   }
 }
@@ -51,16 +54,21 @@ suite('WhatsNewAppTest', function() {
     window.history.replaceState({}, '', '?auto=true');
     const whatsNewApp = document.createElement('whats-new-app');
     document.body.appendChild(whatsNewApp);
-    await proxy.whenCalled('initialize');
+    const isAuto = await proxy.whenCalled('initialize');
+    assertEquals(!isChromeOS, isAuto);
     await flushTasks();
 
     const iframe = whatsNewApp.shadowRoot.querySelector('#content');
     assertTrue(!!iframe);
+    assertFalse(iframe.hidden);
     // iframe has latest=true URL query parameter except on CrOS
     assertEquals(
         whatsNewURL + (isChromeOS ? '?latest=false' : '?latest=true') +
             '&feedback=true',
         iframe.src);
+    const errorPage =
+        whatsNewApp.shadowRoot.querySelector('whats-new-error-page');
+    assertFalse(!!errorPage);
   });
 
   test('with version as query parameter', async () => {
@@ -70,11 +78,13 @@ suite('WhatsNewAppTest', function() {
     window.history.replaceState({}, '', '?auto=true');
     const whatsNewApp = document.createElement('whats-new-app');
     document.body.appendChild(whatsNewApp);
-    await proxy.whenCalled('initialize');
+    const isAuto = await proxy.whenCalled('initialize');
+    assertEquals(!isChromeOS, isAuto);
     await flushTasks();
 
     const iframe = whatsNewApp.shadowRoot.querySelector('#content');
     assertTrue(!!iframe);
+    assertFalse(iframe.hidden);
     // iframe has latest=true URL query parameter except on CrOS
     assertEquals(
         whatsNewURL + '?version=m98' +
@@ -89,12 +99,36 @@ suite('WhatsNewAppTest', function() {
     window.history.replaceState({}, '', '/');
     const whatsNewApp = document.createElement('whats-new-app');
     document.body.appendChild(whatsNewApp);
-    await proxy.whenCalled('initialize');
+    const isAuto = await proxy.whenCalled('initialize');
+    assertFalse(isAuto);
     await flushTasks();
 
     const iframe = whatsNewApp.shadowRoot.querySelector('#content');
     assertTrue(!!iframe);
+    assertFalse(iframe.hidden);
     assertEquals(whatsNewURL + '?latest=false&feedback=false', iframe.src);
+    const errorPage =
+        whatsNewApp.shadowRoot.querySelector('whats-new-error-page');
+    assertFalse(!!errorPage);
+  });
+
+  test('no query parameter failure', async () => {
+    // Simulate a failure to load the remote content.
+    const proxy = new TestWhatsNewProxy(null);
+    WhatsNewProxyImpl.setInstance(proxy);
+    window.history.replaceState({}, '', '/');
+    const whatsNewApp = document.createElement('whats-new-app');
+    document.body.appendChild(whatsNewApp);
+    const isAuto = await proxy.whenCalled('initialize');
+    assertFalse(isAuto);
+    await flushTasks();
+
+    // Shows the error page in place of the iframe.
+    const iframe = whatsNewApp.shadowRoot.querySelector('#content');
+    assertTrue(iframe.hidden);
+    const errorPage =
+        whatsNewApp.shadowRoot.querySelector('whats-new-error-page');
+    assertTrue(!!errorPage);
   });
 
   test('with command', async () => {

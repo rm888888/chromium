@@ -8,6 +8,7 @@
 
 #include <memory>
 
+#include "base/macros.h"
 #include "components/search_engines/search_terms_data.h"
 #include "components/search_engines/template_url.h"
 #include "components/search_engines/template_url_service.h"

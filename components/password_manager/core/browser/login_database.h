@@ -12,6 +12,7 @@
 #include "base/callback.h"
 #include "base/compiler_specific.h"
 #include "base/files/file_path.h"
+#include "base/macros.h"
 #include "base/pickle.h"
 #include "build/build_config.h"
 #include "components/password_manager/core/browser/field_info_table.h"

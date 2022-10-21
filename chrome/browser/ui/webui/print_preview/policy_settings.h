@@ -5,6 +5,8 @@
 #ifndef CHROME_BROWSER_UI_WEBUI_PRINT_PREVIEW_POLICY_SETTINGS_H_
 #define CHROME_BROWSER_UI_WEBUI_PRINT_PREVIEW_POLICY_SETTINGS_H_
 
+#include "base/macros.h"
+
 namespace user_prefs {
 class PrefRegistrySyncable;
 }

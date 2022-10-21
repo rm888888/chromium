@@ -56,9 +56,7 @@ suite('<app-management-managed-apps>', () => {
     function checkToggle(permissionType, policyAffected) {
       const permissionToggle =
           getPermissionToggleByType(appDetailView, permissionType);
-      expectTrue(
-          permissionToggle.shadowRoot.querySelector('cr-toggle').disabled ===
-          policyAffected);
+      expectTrue(permissionToggle.$$('cr-toggle').disabled === policyAffected);
       expectTrue(
           !!permissionToggle.root.querySelector('#policyIndicator') ===
           policyAffected);
@@ -73,7 +71,6 @@ suite('<app-management-managed-apps>', () => {
     const pinToShelfSetting = appDetailView.$$('#pin-to-shelf-setting')
                                   .$$('app-management-toggle-row');
     expectTrue(!!pinToShelfSetting.root.querySelector('#policyIndicator'));
-    expectTrue(
-        pinToShelfSetting.shadowRoot.querySelector('cr-toggle').disabled);
+    expectTrue(pinToShelfSetting.$$('cr-toggle').disabled);
   });
 });

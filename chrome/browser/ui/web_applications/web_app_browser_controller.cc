@@ -5,7 +5,6 @@
 #include "chrome/browser/ui/web_applications/web_app_browser_controller.h"
 
 #include "base/callback_helpers.h"
-#include "base/memory/raw_ptr.h"
 #include "base/strings/strcat.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
@@ -29,17 +28,16 @@
 #include "chrome/browser/web_applications/web_app_sync_bridge.h"
 #include "chrome/common/chrome_features.h"
 #include "components/services/app_service/public/cpp/app_registry_cache.h"
-#include "components/services/app_service/public/cpp/app_types.h"
-#include "components/services/app_service/public/mojom/types.mojom-forward.h"
 #include "components/webapps/browser/installable/installable_metrics.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/common/content_features.h"
 #include "ui/gfx/favicon_size.h"
 #include "ui/gfx/image/image.h"
-#include "ui/native_theme/native_theme.h"
 #include "url/gurl.h"
 
 #if BUILDFLAG(IS_CHROMEOS_ASH)
+#include "ash/constants/ash_features.h"
+#include "ash/public/cpp/style/color_provider.h"
 #include "chrome/browser/ash/apps/apk_web_app_service.h"
 
 namespace {
@@ -69,7 +67,7 @@ class SystemAppTabMenuModelFactory : public TabMenuModelFactory {
   }
 
  private:
-  raw_ptr<const web_app::SystemWebAppDelegate> system_app_;
+  const web_app::SystemWebAppDelegate* system_app_;
 };
 
 }  // namespace
@@ -227,37 +225,37 @@ absl::optional<SkColor> WebAppBrowserController::GetThemeColor() const {
   if (web_theme_color)
     return web_theme_color;
 
-  if (ui::NativeTheme::GetInstanceForNativeUi()->ShouldUseDarkColors()) {
+#if BUILDFLAG(IS_CHROMEOS_ASH)
+  // ash::ColorProvider::Get()->IsDarkModeEnabled() flips semantics depending on
+  // the status of ash::Features::IsDarkLightModeEnabled(), so we have to check
+  // both.
+  if (ash::features::IsDarkLightModeEnabled()) {
     absl::optional<SkColor> dark_mode_color =
         registrar().GetAppDarkModeThemeColor(app_id());
 
-    if (dark_mode_color) {
+    if (ash::ColorProvider::Get()->IsDarkModeEnabled() && dark_mode_color) {
       return dark_mode_color;
     }
   }
+#endif
 
   return registrar().GetAppThemeColor(app_id());
 }
 
 absl::optional<SkColor> WebAppBrowserController::GetBackgroundColor() const {
-  auto web_contents_color = AppBrowserController::GetBackgroundColor();
-  auto registrar_color = registrar().GetAppBackgroundColor(app_id());
+  if (auto color = AppBrowserController::GetBackgroundColor())
+    return color;
 
-  if (ui::NativeTheme::GetInstanceForNativeUi()->ShouldUseDarkColors()) {
+#if BUILDFLAG(IS_CHROMEOS_ASH)
+  if (ash::features::IsDarkLightModeEnabled()) {
     absl::optional<SkColor> dark_mode_color =
         registrar().GetAppDarkModeBackgroundColor(app_id());
-    if (dark_mode_color)
-      registrar_color = dark_mode_color;
+    if (ash::ColorProvider::Get()->IsDarkModeEnabled() && dark_mode_color) {
+      return dark_mode_color;
+    }
   }
-
-  // SWAs give preference to registrar colors over colors resolved from web
-  // contents to work around the asynchronous nature of web contents' background
-  // color updates on theme change which would otherwise result in out of sync
-  // transitions between the browser's non-client frame header and background.
-  if (system_app_)
-    return registrar_color ? registrar_color : web_contents_color;
-
-  return web_contents_color ? web_contents_color : registrar_color;
+#endif
+  return registrar().GetAppBackgroundColor(app_id());
 }
 
 GURL WebAppBrowserController::GetAppStartUrl() const {
@@ -265,9 +263,6 @@ GURL WebAppBrowserController::GetAppStartUrl() const {
 }
 
 bool WebAppBrowserController::IsUrlInAppScope(const GURL& url) const {
-  if (system_app() && system_app()->IsUrlInSystemAppScope(url))
-    return true;
-
   GURL app_scope = registrar().GetAppScope(app_id());
   if (!app_scope.is_valid())
     return false;
@@ -364,24 +359,15 @@ const WebAppRegistrar& WebAppBrowserController::registrar() const {
 void WebAppBrowserController::LoadAppIcon(bool allow_placeholder_icon) const {
   apps::AppServiceProxy* proxy =
       apps::AppServiceProxyFactory::GetForProfile(browser()->profile());
-  auto app_type = proxy->AppRegistryCache().GetAppType(app_id());
-  if (base::FeatureList::IsEnabled(features::kAppServiceLoadIconWithoutMojom)) {
-    proxy->LoadIcon(apps::ConvertMojomAppTypToAppType(app_type), app_id(),
-                    apps::IconType::kStandard, kWebAppIconSmall,
-                    allow_placeholder_icon,
-                    base::BindOnce(&WebAppBrowserController::OnLoadIcon,
-                                   weak_ptr_factory_.GetWeakPtr()));
-  } else {
-    proxy->LoadIcon(app_type, app_id(), apps::mojom::IconType::kStandard,
-                    kWebAppIconSmall, allow_placeholder_icon,
-                    apps::MojomIconValueToIconValueCallback(
-                        base::BindOnce(&WebAppBrowserController::OnLoadIcon,
-                                       weak_ptr_factory_.GetWeakPtr())));
-  }
+  proxy->LoadIcon(proxy->AppRegistryCache().GetAppType(app_id()), app_id(),
+                  apps::mojom::IconType::kStandard, kWebAppIconSmall,
+                  allow_placeholder_icon,
+                  base::BindOnce(&WebAppBrowserController::OnLoadIcon,
+                                 weak_ptr_factory_.GetWeakPtr()));
 }
 
-void WebAppBrowserController::OnLoadIcon(apps::IconValuePtr icon_value) {
-  if (!icon_value || icon_value->icon_type != apps::IconType::kStandard)
+void WebAppBrowserController::OnLoadIcon(apps::mojom::IconValuePtr icon_value) {
+  if (icon_value->icon_type != apps::mojom::IconType::kStandard)
     return;
 
   app_icon_ = ui::ImageModel::FromImageSkia(icon_value->uncompressed);

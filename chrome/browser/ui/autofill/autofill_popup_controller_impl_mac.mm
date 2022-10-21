@@ -83,15 +83,15 @@ void AutofillPopupControllerImplMac::UpdateDataListValues(
   // |UpdateDataListValues| should be the last line.
 }
 
-void AutofillPopupControllerImplMac::HideViewAndDie() {
+void AutofillPopupControllerImplMac::Hide(PopupHidingReason reason) {
   if (touch_bar_controller_) {
     [touch_bar_controller_ hideCreditCardAutofillTouchBar];
     touch_bar_controller_ = nil;
   }
 
-  AutofillPopupControllerImpl::HideViewAndDie();
+  AutofillPopupControllerImpl::Hide(reason);
   // No code below this line!
-  // |HideViewAndDie()| destroys |this|, so it should be the last line.
+  // |Hide()| destroys |this|, so it should be the last line.
 }
 
 }  // namespace autofill

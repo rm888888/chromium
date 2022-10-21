@@ -7,7 +7,6 @@
 #include "base/bind.h"
 #include "base/callback_helpers.h"
 #include "base/files/file_util.h"
-#include "base/memory/raw_ptr.h"
 #include "base/path_service.h"
 #include "base/run_loop.h"
 #include "base/scoped_observation.h"
@@ -41,7 +40,6 @@
 #include "extensions/browser/extension_system.h"
 #include "extensions/browser/mock_external_provider.h"
 #include "extensions/browser/sandboxed_unpacker.h"
-#include "extensions/common/api/extension_action/action_info.h"
 #include "extensions/common/extension_builder.h"
 #include "extensions/common/feature_switch.h"
 
@@ -88,7 +86,7 @@ class GlobalErrorWaiter : public GlobalErrorObserver {
  public:
   explicit GlobalErrorWaiter(Profile* profile)
       : service_(GlobalErrorServiceFactory::GetForProfile(profile)) {
-    scoped_observation_.Observe(service_.get());
+    scoped_observation_.Observe(service_);
   }
 
   GlobalErrorWaiter(const GlobalErrorWaiter&) = delete;
@@ -106,7 +104,7 @@ class GlobalErrorWaiter : public GlobalErrorObserver {
 
  private:
   base::RunLoop run_loop_;
-  raw_ptr<GlobalErrorService> service_;
+  GlobalErrorService* service_;
   base::ScopedObservation<GlobalErrorService, GlobalErrorObserver>
       scoped_observation_{this};
 };
@@ -134,7 +132,7 @@ void GlobalErrorBubbleTest::ShowUi(const std::string& name) {
       extensions::ExtensionRegistry::Get(profile);
 
   extensions::ExtensionBuilder builder("Browser Action");
-  builder.SetAction(extensions::ActionInfo::TYPE_BROWSER);
+  builder.SetAction(extensions::ExtensionBuilder::ActionType::BROWSER_ACTION);
   builder.SetLocation(extensions::mojom::ManifestLocation::kInternal);
   scoped_refptr<const extensions::Extension> test_extension = builder.Build();
   extension_service->AddExtension(test_extension.get());

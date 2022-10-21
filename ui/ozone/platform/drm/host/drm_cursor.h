@@ -19,7 +19,7 @@ class TimeDelta;
 }
 
 namespace ui {
-class BitmapCursor;
+class BitmapCursorOzone;
 class DrmWindowHostManager;
 
 // DrmCursor manages all cursor state but is dependent on an injected
@@ -59,7 +59,7 @@ class DrmCursor : public CursorDelegateEvdev {
 
   // Change the cursor over the specified window.
   void SetCursor(gfx::AcceleratedWidget window,
-                 scoped_refptr<BitmapCursor> platform_cursor);
+                 scoped_refptr<BitmapCursorOzone> platform_cursor);
 
   // Handle window lifecycle.
   void OnWindowAdded(gfx::AcceleratedWidget window,
@@ -106,7 +106,7 @@ class DrmCursor : public CursorDelegateEvdev {
   gfx::Point GetBitmapLocationLocked();
 
   // The current cursor bitmap (immutable).
-  scoped_refptr<BitmapCursor> cursor_;
+  scoped_refptr<BitmapCursorOzone> cursor_;
 
   // The window under the cursor.
   gfx::AcceleratedWidget window_;

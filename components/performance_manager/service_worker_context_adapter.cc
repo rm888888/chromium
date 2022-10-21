@@ -5,7 +5,6 @@
 #include "components/performance_manager/service_worker_context_adapter.h"
 
 #include "base/check_op.h"
-#include "base/memory/raw_ptr.h"
 #include "base/notreached.h"
 #include "base/scoped_observation.h"
 #include "content/public/browser/render_process_host.h"
@@ -38,7 +37,7 @@ class ServiceWorkerContextAdapter::RunningServiceWorker
 
   // The adapter that owns |this|. Notified when RenderProcessExited() is
   // called.
-  const raw_ptr<ServiceWorkerContextAdapter> adapter_;
+  ServiceWorkerContextAdapter* const adapter_;
 
   base::ScopedObservation<content::RenderProcessHost,
                           content::RenderProcessHostObserver>
@@ -138,14 +137,6 @@ size_t ServiceWorkerContextAdapter::CountExternalRequestsForTest(
     const blink::StorageKey& key) {
   NOTIMPLEMENTED();
   return 0u;
-}
-
-bool ServiceWorkerContextAdapter::ExecuteScriptForTest(
-    const std::string& script,
-    int64_t version_id,
-    content::ServiceWorkerScriptExecutionCallback callback) {
-  NOTIMPLEMENTED();
-  return false;
 }
 
 bool ServiceWorkerContextAdapter::MaybeHasRegistrationForStorageKey(

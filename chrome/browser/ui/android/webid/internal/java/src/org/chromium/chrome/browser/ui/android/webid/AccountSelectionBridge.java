@@ -4,11 +4,8 @@
 
 package org.chromium.chrome.browser.ui.android.webid;
 
-import android.content.res.Resources;
-
 import androidx.annotation.Nullable;
 
-import org.chromium.base.ContextUtils;
 import org.chromium.base.annotations.CalledByNative;
 import org.chromium.base.annotations.NativeMethods;
 import org.chromium.chrome.browser.ui.android.webid.data.Account;
@@ -38,19 +35,6 @@ class AccountSelectionBridge implements AccountSelectionComponent.Delegate {
     }
 
     @CalledByNative
-    private static int getBrandIconMinimumSize() {
-        // Icon needs to be big enough for the smallest screen density (1x).
-        Resources resources = ContextUtils.getApplicationContext().getResources();
-        return Math.round(getBrandIconIdealSize() / resources.getDisplayMetrics().density);
-    }
-
-    @CalledByNative
-    private static int getBrandIconIdealSize() {
-        Resources resources = ContextUtils.getApplicationContext().getResources();
-        return Math.round(resources.getDimension(R.dimen.account_selection_continue_icon_size));
-    }
-
-    @CalledByNative
     private static @Nullable AccountSelectionBridge create(
             long nativeView, WindowAndroid windowAndroid) {
         BottomSheetController bottomSheetController =
@@ -61,7 +45,6 @@ class AccountSelectionBridge implements AccountSelectionComponent.Delegate {
 
     @CalledByNative
     private void destroy() {
-        mAccountSelectionComponent.hideBottomSheet();
         mNativeView = 0;
     }
 

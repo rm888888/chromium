@@ -35,7 +35,6 @@
 #include "chrome/browser/ui/settings_window_manager_chromeos.h"
 #include "chrome/browser/ui/singleton_tabs.h"
 #include "chrome/browser/ui/web_applications/system_web_app_ui_utils.h"
-#include "chrome/browser/ui/webui/access_code_cast/access_code_cast_ui.h"
 #include "chrome/browser/ui/webui/chromeos/bluetooth_pairing_dialog.h"
 #include "chrome/browser/ui/webui/chromeos/internet_config_dialog.h"
 #include "chrome/browser/ui/webui/chromeos/internet_detail_dialog.h"
@@ -51,7 +50,7 @@
 #include "chromeos/network/network_state.h"
 #include "chromeos/network/network_state_handler.h"
 #include "chromeos/network/network_util.h"
-#include "chromeos/network/onc/network_onc_utils.h"
+#include "chromeos/network/onc/onc_utils.h"
 #include "chromeos/network/tether_constants.h"
 #include "components/session_manager/core/session_manager.h"
 #include "components/session_manager/core/session_manager_observer.h"
@@ -229,10 +228,6 @@ SystemTrayClientImpl::~SystemTrayClientImpl() {
   DCHECK_EQ(this, g_system_tray_client_instance);
   g_system_tray_client_instance = nullptr;
 
-  // This can happen when mocking this class in tests.
-  if (!system_tray_)
-    return;
-
   system_tray_->SetClient(nullptr);
 
   policy::BrowserPolicyConnectorAsh* connector =
@@ -323,23 +318,13 @@ void SystemTrayClientImpl::ShowDateSettings() {
 }
 
 void SystemTrayClientImpl::ShowSetTimeDialog() {
-  ash::SetTimeDialog::ShowDialog();
+  chromeos::SetTimeDialog::ShowDialog();
 }
 
 void SystemTrayClientImpl::ShowDisplaySettings() {
   base::RecordAction(base::UserMetricsAction("ShowDisplayOptions"));
   ShowSettingsSubPageForActiveUser(
       chromeos::settings::mojom::kDisplaySubpagePath);
-}
-
-void SystemTrayClientImpl::ShowDarkModeSettings() {
-  ShowSettingsSubPageForActiveUser(
-      chromeos::settings::mojom::kDarkModeSubpagePath);
-}
-
-void SystemTrayClientImpl::ShowStorageSettings() {
-  ShowSettingsSubPageForActiveUser(
-      chromeos::settings::mojom::kStorageSubpagePath);
 }
 
 void SystemTrayClientImpl::ShowPowerSettings() {
@@ -584,16 +569,6 @@ void SystemTrayClientImpl::SetLocaleAndExit(
   ProfileManager::GetActiveUserProfile()->ChangeAppLocale(
       locale_iso_code, Profile::APP_LOCALE_CHANGED_VIA_SYSTEM_TRAY);
   chrome::AttemptUserExit();
-}
-
-void SystemTrayClientImpl::ShowAccessCodeCastingDialog() {
-  AccessCodeCastDialog::Show();
-}
-
-SystemTrayClientImpl::SystemTrayClientImpl(SystemTrayClientImpl* mock_instance)
-    : system_tray_(nullptr) {
-  DCHECK(!g_system_tray_client_instance);
-  g_system_tray_client_instance = mock_instance;
 }
 
 void SystemTrayClientImpl::HandleUpdateAvailable(ash::UpdateType update_type) {

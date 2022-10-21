@@ -8,7 +8,7 @@
 #include <memory>
 
 #include "base/gtest_prod_util.h"
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "base/scoped_observation.h"
 #include "base/timer/timer.h"
@@ -143,7 +143,7 @@ class PeopleHandler : public SettingsPageUIHandler,
 
   // Returns a newly created dictionary with a number of properties that
   // correspond to the status of sync.
-  base::Value GetSyncStatusDictionary() const;
+  std::unique_ptr<base::DictionaryValue> GetSyncStatusDictionary() const;
 
   // Helper routine that gets the SyncService associated with the parent
   // profile.
@@ -153,28 +153,26 @@ class PeopleHandler : public SettingsPageUIHandler,
   LoginUIService* GetLoginUIService() const;
 
   // Callbacks from the page.
-  void HandleGetProfileInfo(base::Value::ConstListView args);
-  void OnDidClosePage(base::Value::ConstListView args);
-  void HandleSetDatatypes(base::Value::ConstListView args);
-  void HandleSetEncryptionPassphrase(base::Value::ConstListView args);
-  void HandleSetDecryptionPassphrase(base::Value::ConstListView args);
-  void HandleShowSyncSetupUI(base::Value::ConstListView args);
-  void HandleSyncPrefsDispatch(base::Value::ConstListView args);
-  void HandleTrustedVaultBannerStateDispatch(base::Value::ConstListView args);
-
+  void HandleGetProfileInfo(const base::ListValue* args);
+  void OnDidClosePage(const base::ListValue* args);
+  void HandleSetDatatypes(const base::ListValue* args);
+  void HandleSetEncryptionPassphrase(const base::ListValue* args);
+  void HandleSetDecryptionPassphrase(const base::ListValue* args);
+  void HandleShowSyncSetupUI(const base::ListValue* args);
+  void HandleSyncPrefsDispatch(const base::ListValue* args);
+  void HandleOfferTrustedVaultOptInDispatch(const base::ListValue* args);
 #if BUILDFLAG(IS_CHROMEOS_ASH)
-  void HandleAttemptUserExit(base::Value::ConstListView args);
-  void HandleTurnOnSync(base::Value::ConstListView args);
-  void HandleTurnOffSync(base::Value::ConstListView args);
-#else
-  void HandleStartSignin(base::Value::ConstListView args);
+  void HandleAttemptUserExit(const base::ListValue* args);
+  void HandleTurnOnSync(const base::ListValue* args);
+  void HandleTurnOffSync(const base::ListValue* args);
 #endif
-#if BUILDFLAG(ENABLE_DICE_SUPPORT)
-  void HandleSignout(base::Value::ConstListView args);
-  void HandlePauseSync(base::Value::ConstListView args);
+#if !BUILDFLAG(IS_CHROMEOS_ASH)
+  void HandleStartSignin(const base::ListValue* args);
+  void HandleSignout(const base::ListValue* args);
+  void HandlePauseSync(const base::ListValue* args);
 #endif
-  void HandleStartKeyRetrieval(base::Value::ConstListView args);
-  void HandleGetSyncStatus(base::Value::ConstListView args);
+  void HandleStartKeyRetrieval(const base::ListValue* args);
+  void HandleGetSyncStatus(const base::ListValue* args);
 
 #if !BUILDFLAG(IS_CHROMEOS_ASH)
   // Displays the GAIA login form.
@@ -186,14 +184,12 @@ class PeopleHandler : public SettingsPageUIHandler,
       signin_metrics::AccessPoint access_point);
 #endif
 
-  void HandleGetStoredAccounts(base::Value::ConstListView args);
-  void HandleStartSyncingWithEmail(base::Value::ConstListView args);
+  void HandleGetStoredAccounts(const base::ListValue* args);
+  void HandleStartSyncingWithEmail(const base::ListValue* args);
   base::Value GetStoredAccountsList();
 
   // Pushes the updated sync prefs to JavaScript.
   void PushSyncPrefs();
-
-  void PushTrustedVaultBannerState();
 
   // Sends the current sync status to the JavaScript WebUI code.
   void UpdateSyncStatus();
@@ -217,7 +213,7 @@ class PeopleHandler : public SettingsPageUIHandler,
   void InitializeSyncBlocker();
 
   // Weak pointer.
-  raw_ptr<Profile> profile_;
+  Profile* profile_;
 
   // Prevents Sync from running until configuration is complete.
   std::unique_ptr<syncer::SyncSetupInProgressHandle> sync_blocker_;

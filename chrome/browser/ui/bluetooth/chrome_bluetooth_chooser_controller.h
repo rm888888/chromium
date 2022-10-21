@@ -5,14 +5,7 @@
 #ifndef CHROME_BROWSER_UI_BLUETOOTH_CHROME_BLUETOOTH_CHOOSER_CONTROLLER_H_
 #define CHROME_BROWSER_UI_BLUETOOTH_CHROME_BLUETOOTH_CHOOSER_CONTROLLER_H_
 
-#include "base/memory/weak_ptr.h"
 #include "components/permissions/bluetooth_chooser_controller.h"
-#include "content/public/browser/bluetooth_chooser.h"
-
-namespace content {
-class RenderFrameHost;
-class WebContents;
-}  // namespace content
 
 // The concrete version of BluetoothChooserController for Chrome.
 class ChromeBluetoothChooserController
@@ -39,7 +32,7 @@ class ChromeBluetoothChooserController
   void OpenHelpCenterUrl() const override;
 
  private:
-  base::WeakPtr<content::WebContents> web_contents_;
+  int frame_tree_node_id_ = -1;
 };
 
 #endif  // CHROME_BROWSER_UI_BLUETOOTH_CHROME_BLUETOOTH_CHOOSER_CONTROLLER_H_

@@ -9,6 +9,7 @@
 #include <stdint.h>
 
 #include "base/compiler_specific.h"
+#include "base/macros.h"
 #include "base/memory/memory_pressure_listener.h"
 #include "components/web_cache/public/mojom/web_cache.mojom.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"

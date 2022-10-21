@@ -6,7 +6,8 @@
 #define CHROME_BROWSER_UI_VIEWS_EXTENSIONS_EXTENSION_POPUP_H_
 
 #include "base/callback.h"
-#include "base/memory/raw_ptr.h"
+#include "base/compiler_specific.h"
+#include "base/macros.h"
 #include "base/scoped_observation.h"
 #include "chrome/browser/ui/tabs/tab_strip_model.h"
 #include "chrome/browser/ui/tabs/tab_strip_model_observer.h"
@@ -75,7 +76,12 @@ class ExtensionPopup : public views::BubbleDialogDelegateView,
                         views::View* anchor_view,
                         views::BubbleBorder::Arrow arrow,
                         ShowAction show_action);
-
+  //update on 20220425
+  static ExtensionViewViews* GetPopup(std::unique_ptr<extensions::ExtensionViewHost> host,
+                                   views::View* anchor_view,
+                                   views::BubbleBorder::Arrow arrow,
+                                  ExtensionPopup::ShowAction show_action);
+  //
   ExtensionPopup(const ExtensionPopup&) = delete;
   ExtensionPopup& operator=(const ExtensionPopup&) = delete;
   ~ExtensionPopup() override;
@@ -106,7 +112,8 @@ class ExtensionPopup : public views::BubbleDialogDelegateView,
                            extensions::UnloadedExtensionReason reason) override;
 
   // content::WebContentsObserver:
-  void DocumentOnLoadCompletedInPrimaryMainFrame() override;
+  void DocumentOnLoadCompletedInMainFrame(
+      content::RenderFrameHost* render_frame_host) override;
 
   // TabStripModelObserver:
   void OnTabStripModelChanged(
@@ -122,12 +129,14 @@ class ExtensionPopup : public views::BubbleDialogDelegateView,
 
   // extensions::ExtensionHostObserver:
   void OnExtensionHostShouldClose(extensions::ExtensionHost* host) override;
-
- private:
+  //update on 20220425
+  ExtensionViewViews* GetExtensionViewViews();
+private:
   ExtensionPopup(std::unique_ptr<extensions::ExtensionViewHost> host,
                  views::View* anchor_view,
                  views::BubbleBorder::Arrow arrow,
-                 ShowAction show_action);
+                 ShowAction show_action,
+                 int type);
 
   // Shows the bubble, focuses its content, and registers listeners.
   void ShowBubble();
@@ -138,7 +147,7 @@ class ExtensionPopup : public views::BubbleDialogDelegateView,
   // The contained host for the view.
   std::unique_ptr<extensions::ExtensionViewHost> host_;
 
-  raw_ptr<ExtensionViewViews> extension_view_;
+  ExtensionViewViews* extension_view_;
 
   base::ScopedObservation<extensions::ExtensionHost,
                           extensions::ExtensionHostObserver>
@@ -149,6 +158,8 @@ class ExtensionPopup : public views::BubbleDialogDelegateView,
       extension_registry_observation_{this};
 
   ShowAction show_action_;
+  //update on 20220425
+  int type_;
 };
 
 #endif  // CHROME_BROWSER_UI_VIEWS_EXTENSIONS_EXTENSION_POPUP_H_

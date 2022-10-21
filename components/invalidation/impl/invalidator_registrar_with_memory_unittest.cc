@@ -6,6 +6,7 @@
 
 #include <memory>
 
+#include "base/macros.h"
 #include "components/invalidation/impl/fake_invalidation_handler.h"
 #include "components/invalidation/public/invalidation.h"
 #include "components/invalidation/public/invalidation_util.h"

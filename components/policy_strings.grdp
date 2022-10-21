@@ -271,7 +271,7 @@ Additional details:
 <ph name="DEBUG_INFO">$1<ex>ERROR: Field name 'SomeRandomField' is unknown. (at toplevel)</ex></ph>
     </message>
   </if>
-  <if expr="chromeos_ash or chromeos_lacros">
+  <if expr="chromeos or lacros">
     <message name="IDS_POLICY_SCOPE_ERROR" desc="Text displayed in the status column when a policy is set in an unsupported scope.">
       Policy scope is not supported.
     </message>
@@ -424,9 +424,6 @@ Additional details:
   <message name="IDS_POLICY_LABEL_INFO" desc="Label for the info row in the policy table.">
     Info
   </message>
-  <message name="IDS_POLICY_LABEL_PRECEDENCE" desc="Label for the precedence order row in the policy precedence table.">
-    Current precedence order
-  </message>
   <message name="IDS_POLICY_SHOW_UNSET" desc="Label for the checkbox that determines whether policies whose value has not been set are shown.">
     Show policies with no value set
   </message>
@@ -498,7 +495,7 @@ Additional details:
     Merged
   </message>
   <message name="IDS_POLICY_SOURCE_CLOUD_FROM_ASH" desc="Indicates that the policy originates from the cloud in Ash and piped to Lacros.">
-    Cloud (Ash)
+    Cloud (system-wide)
   </message>
   <message name="IDS_POLICY_SOURCE_RESTRICTED_MANAGED_GUEST_SESSION_OVERRIDE" desc="Indicates that the policy originates from the restricted managed guest session override.">
     Restricted managed guest session override
@@ -577,18 +574,6 @@ Additional details:
   </message>
   <message name="IDS_POLICY_IGNORED_CHROME_PROFILE" desc="Text explaining that the policy cannot be set at the Chrome profile level and is therefore ignored.">
     This policy cannot be set at the Chrome profile level and will be ignored.
-  </message>
-  <message name="IDS_POLICY_PRECEDENCE_PLATFORM_MACHINE" desc="Text describing the platform machine precedence value.">
-    Platform machine
-  </message>
-  <message name="IDS_POLICY_PRECEDENCE_PLATFORM_USER" desc="Text describing the platform user precedence value.">
-    Platform user
-  </message>
-  <message name="IDS_POLICY_PRECEDENCE_CLOUD_MACHINE" desc="Text describing the cloud machine precedence value.">
-    Cloud machine
-  </message>
-  <message name="IDS_POLICY_PRECEDENCE_CLOUD_USER" desc="Text describing the cloud user precedence value.">
-    Cloud user
   </message>
   <if expr="not is_macosx">
     <message name="IDS_POLICY_SPELLCHECK_UNKNOWN_LANGUAGE" desc="Warning message in the policy summary page for the spellcheck policies when a language is unrecognized or unsupported.">
@@ -672,31 +657,31 @@ Additional details:
     Printing this content is blocked by administrator policy
   </message>
   <message name="IDS_POLICY_DLP_PRINTING_WARN_TITLE" desc="The title for notification informing the user that printing is not recommended.">
-    Print confidential file?
+    Confidential file
   </message>
   <message name="IDS_POLICY_DLP_PRINTING_WARN_MESSAGE" desc="The message for notification informing the user that printing is not recommended.">
-    Administrator policy doesn’t recommend printing this content
+    This document is confidential and printing is not advised by your administrator.
   </message>
   <message name="IDS_POLICY_DLP_PRINTING_WARN_CONTINUE_BUTTON" desc="Continue dialog button label for warning before printing.">
-    Print anyway
+    Continue
   </message>
   <message name="IDS_POLICY_DLP_PRINTING_WARN_CANCEL_BUTTON" desc="Cancel dialog button label for warning before printing.">
     Cancel
   </message>
   <message name="IDS_POLICY_DLP_SCREEN_SHARE_BLOCKED_TITLE" desc="The title for notification informing the user that screen share is blocked.">
-    Can’t share confidential content
+    Capture confidential content
   </message>
   <message name="IDS_POLICY_DLP_SCREEN_SHARE_BLOCKED_MESSAGE" desc="The message for notification informing the user that screen share is blocked.">
     Administrator policy disables screen sharing with <ph name="APPLICATION_TITLE">$1<ex>example.com</ex></ph> when confidential content is visible
   </message>
   <message name="IDS_POLICY_DLP_SCREEN_SHARE_PAUSED_TITLE" desc="The title for notification informing the user that screen share is paused.">
-    Screen share paused
+    Screen capture paused
   </message>
   <message name="IDS_POLICY_DLP_SCREEN_SHARE_PAUSED_MESSAGE" desc="The message for notification informing the user that screen share is paused.">
     Administrator policy disables screen sharing with <ph name="APPLICATION_TITLE">$1<ex>example.com</ex></ph> when confidential content is visible
   </message>
   <message name="IDS_POLICY_DLP_SCREEN_SHARE_RESUMED_TITLE" desc="The title for notification informing the user that screen share is resumed.">
-    Screen share resumed
+    Screen capture resumed
   </message>
   <message name="IDS_POLICY_DLP_SCREEN_SHARE_RESUMED_MESSAGE" desc="The message for notification informing the user that screen share is resumed.">
     Screen sharing with <ph name="APPLICATION_TITLE">$1<ex>example.com</ex></ph> was resumed
@@ -714,22 +699,22 @@ Additional details:
     Administrator policy disables screen recording when confidential content is visible
   </message>
   <message name="IDS_POLICY_DLP_SCREEN_SHARE_WARN_TITLE" desc="The title for notification informing the user that screen sharing is not recommended.">
-    Share confidential content?
+    Capture confidential content
   </message>
   <message name="IDS_POLICY_DLP_SCREEN_SHARE_WARN_MESSAGE" desc="The message for notification informing the user that screen sharing is not recommended.">
    Administrator policy doesn’t recommend sharing your screen with <ph name="APPLICATION_TITLE">$1<ex>example.com</ex></ph> when confidential content is visible:
   </message>
   <message name="IDS_POLICY_DLP_SCREEN_SHARE_WARN_CONTINUE_BUTTON" desc="Continue dialog button label for warning before screen sharing.">
-    Share anyway
+    Capture anyway
   </message>
   <message name="IDS_POLICY_DLP_SCREEN_SHARE_WARN_CANCEL_BUTTON" desc="Cancel dialog button label for warning before screen sharing.">
     Cancel
   </message>
   <message name="IDS_POLICY_DLP_SCREEN_CAPTURE_WARN_TITLE" desc="The title for notification informing the user that screen capture is not recommended.">
-    Capture confidential content?
+    Capture confidential content on your screen
   </message>
   <message name="IDS_POLICY_DLP_SCREEN_CAPTURE_WARN_MESSAGE" desc="The message for notification informing the user that screen capture is not recommended.">
-    Administrator policy doesn’t recommend taking screenshots or recordings when confidential content is visible:
+    Administrator doesn't recommend taking screenshots or recordings due to confidential content on screen:
   </message>
   <message name="IDS_POLICY_DLP_SCREEN_CAPTURE_WARN_CONTINUE_BUTTON" desc="Continue dialog button label for warning before screen capture.">
     Capture anyway
@@ -738,10 +723,10 @@ Additional details:
     Cancel
   </message>
   <message name="IDS_POLICY_DLP_VIDEO_CAPTURE_WARN_TITLE" desc="The title for notification informing the user that there was confidential information revealed during screen recording.">
-    Capture confidential content?
+    Capture confidential content on your screen
   </message>
   <message name="IDS_POLICY_DLP_VIDEO_CAPTURE_WARN_MESSAGE" desc="The message for notification informing the user that there was confidential information revealed during screen recording.">
-    Administrator policy doesn’t recommend taking screenshots or recordings when confidential content is visible:
+    Administrator doesn't recommend taking screenshots or recordings due to confidential content captured:
   </message>
   <message name="IDS_POLICY_DLP_VIDEO_CAPTURE_WARN_CONTINUE_BUTTON" desc="Continue dialog button label for warning before saving a screen recording.">
     Save anyway

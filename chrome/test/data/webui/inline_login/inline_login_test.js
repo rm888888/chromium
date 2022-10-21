@@ -124,17 +124,7 @@ suite(inline_login_test.suiteName, () => {
     const completeLoginResult =
         await testBrowserProxy.whenCalled('completeLogin');
     assertTrue(inlineLoginComponent.$$('paper-spinner-lite').active);
-
-    if (isChromeOS &&
-        loadTimeData.getBoolean('isArcAccountRestrictionsEnabled')) {
-      const expectedCredentials = {
-        email: 'example@gmail.com',
-        isAvailableInArc: false
-      };
-      assertDeepEquals(expectedCredentials, completeLoginResult);
-    } else {
-      assertEquals(fakeCredentials, completeLoginResult);
-    }
+    assertEquals(fakeCredentials, completeLoginResult);
 
     testAuthenticator.dispatchEvent(new Event('showIncognito'));
     assertEquals(1, testBrowserProxy.getCallCount('showIncognito'));

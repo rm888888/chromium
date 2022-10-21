@@ -69,7 +69,7 @@ class FileHandlerLaunchDialogTest : public InProcessBrowserTest {
 
   void InstallTestWebApp() {
     const GURL example_url = GURL(kStartUrl);
-    auto web_app_info = std::make_unique<WebAppInstallInfo>();
+    auto web_app_info = std::make_unique<WebApplicationInfo>();
     web_app_info->title = u"Test app";
     web_app_info->start_url = example_url;
     web_app_info->scope = example_url;
@@ -149,6 +149,8 @@ class FileHandlerLaunchDialogTest : public InProcessBrowserTest {
 
   base::test::ScopedFeatureList feature_list_{
       blink::features::kFileHandlingAPI};
+  base::test::ScopedFeatureList feature_list_for_settings_{
+      features::kDesktopPWAsFileHandlingSettingsGated};
 };
 
 IN_PROC_BROWSER_TEST_F(FileHandlerLaunchDialogTest,

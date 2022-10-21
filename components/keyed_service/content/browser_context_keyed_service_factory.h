@@ -10,6 +10,7 @@
 #include "base/bind.h"
 #include "base/callback.h"
 #include "base/compiler_specific.h"
+#include "base/macros.h"
 #include "components/keyed_service/core/keyed_service_export.h"
 #include "components/keyed_service/core/keyed_service_factory.h"
 

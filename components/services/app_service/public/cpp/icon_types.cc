@@ -21,21 +21,13 @@ bool IconKey::operator==(const IconKey& other) const {
 }
 
 constexpr uint64_t IconKey::kDoesNotChangeOverTime = 0;
-const int32_t IconKey::kInvalidResourceId = 0;
+constexpr int32_t IconKey::kInvalidResourceId = 0;
 
 IconValue::IconValue() = default;
 IconValue::~IconValue() = default;
 
-apps::mojom::IconKeyPtr ConvertIconKeyToMojomIconKey(const IconKey& icon_key) {
-  auto mojom_icon_key = apps::mojom::IconKey::New();
-  mojom_icon_key->timeline = icon_key.timeline;
-  mojom_icon_key->resource_id = icon_key.resource_id;
-  mojom_icon_key->icon_effects = icon_key.icon_effects;
-  return mojom_icon_key;
-}
-
 std::unique_ptr<IconKey> ConvertMojomIconKeyToIconKey(
-    const apps::mojom::IconKeyPtr& mojom_icon_key) {
+    apps::mojom::IconKeyPtr mojom_icon_key) {
   DCHECK(mojom_icon_key);
   return std::make_unique<IconKey>(mojom_icon_key->timeline,
                                    mojom_icon_key->resource_id,
@@ -69,7 +61,7 @@ IconType ConvertMojomIconTypeToIconType(apps::mojom::IconType mojom_icon_type) {
 }
 
 apps::mojom::IconValuePtr ConvertIconValueToMojomIconValue(
-    IconValuePtr icon_value) {
+    std::unique_ptr<IconValue> icon_value) {
   apps::mojom::IconValuePtr iv = apps::mojom::IconValue::New();
   if (!icon_value || icon_value->icon_type == IconType::kUnknown) {
     return iv;
@@ -93,9 +85,9 @@ apps::mojom::IconValuePtr ConvertIconValueToMojomIconValue(
   return iv;
 }
 
-IconValuePtr ConvertMojomIconValueToIconValue(
+std::unique_ptr<IconValue> ConvertMojomIconValueToIconValue(
     apps::mojom::IconValuePtr mojom_icon_value) {
-  auto iv = std::make_unique<IconValue>();
+  std::unique_ptr<IconValue> iv = std::make_unique<IconValue>();
   if (!mojom_icon_value) {
     return iv;
   }
@@ -119,27 +111,15 @@ IconValuePtr ConvertMojomIconValueToIconValue(
   return iv;
 }
 
-base::OnceCallback<void(IconValuePtr)> IconValueToMojomIconValueCallback(
+base::OnceCallback<void(std::unique_ptr<IconValue>)>
+IconValueToMojomIconValueCallback(
     base::OnceCallback<void(apps::mojom::IconValuePtr)> callback) {
   return base::BindOnce(
       [](base::OnceCallback<void(apps::mojom::IconValuePtr)> inner_callback,
-         IconValuePtr icon_value) {
+         std::unique_ptr<IconValue> icon_value) {
         std::move(inner_callback)
             .Run(ConvertIconValueToMojomIconValue(std::move(icon_value)));
       },
       std::move(callback));
 }
-
-base::OnceCallback<void(apps::mojom::IconValuePtr)>
-MojomIconValueToIconValueCallback(
-    base::OnceCallback<void(IconValuePtr)> callback) {
-  return base::BindOnce(
-      [](base::OnceCallback<void(IconValuePtr)> inner_callback,
-         apps::mojom::IconValuePtr icon_value) {
-        std::move(inner_callback)
-            .Run(ConvertMojomIconValueToIconValue(std::move(icon_value)));
-      },
-      std::move(callback));
-}
-
 }  // namespace apps

@@ -49,8 +49,7 @@ void VisibilityTimerTabHelper::OnVisibilityChanged(
 
 VisibilityTimerTabHelper::VisibilityTimerTabHelper(
     content::WebContents* contents)
-    : content::WebContentsObserver(contents),
-      content::WebContentsUserData<VisibilityTimerTabHelper>(*contents) {}
+    : content::WebContentsObserver(contents) {}
 
 void VisibilityTimerTabHelper::RunTask(base::OnceClosure task) {
   DCHECK_EQ(web_contents()->GetVisibility(), content::Visibility::VISIBLE);

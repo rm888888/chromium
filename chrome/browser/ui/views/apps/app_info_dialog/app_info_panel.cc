@@ -24,7 +24,10 @@ const int kSpacingBetweenKeyAndStartOfValue = 3;
 }
 
 AppInfoPanel::AppInfoPanel(Profile* profile, const extensions::Extension* app)
-    : profile_(profile), app_(app) {}
+    : profile_(profile), app_(app) {
+  // Bookmark Apps have been replaced by Web Apps.
+  DCHECK(!app_->from_bookmark());
+}
 
 AppInfoPanel::~AppInfoPanel() {
 }

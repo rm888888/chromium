@@ -38,7 +38,7 @@ int ViewsContentClient::RunMain() {
   params.argv = argv_;
 #endif
 
-  return content::ContentMain(std::move(params));
+  return content::ContentMain(params);
 }
 
 void ViewsContentClient::OnPreMainMessageLoopRun(

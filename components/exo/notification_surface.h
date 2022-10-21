@@ -8,6 +8,7 @@
 #include <memory>
 #include <string>
 
+#include "base/macros.h"
 #include "components/exo/surface_observer.h"
 #include "components/exo/surface_tree_host.h"
 #include "ui/gfx/geometry/size.h"
@@ -31,7 +32,7 @@ class NotificationSurface : public SurfaceTreeHost,
   ~NotificationSurface() override;
 
   // Get the content size of the |root_surface()|.
-  gfx::Size GetContentSize() const;
+  const gfx::Size& GetContentSize() const;
 
   void SetApplicationId(const char* application_id);
 

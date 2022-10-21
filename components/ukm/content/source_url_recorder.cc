@@ -7,6 +7,7 @@
 #include <utility>
 
 #include "base/containers/flat_map.h"
+#include "base/macros.h"
 #include "base/memory/ptr_util.h"
 #include "base/metrics/field_trial_params.h"
 #include "content/public/browser/navigation_handle.h"
@@ -106,8 +107,6 @@ WEB_CONTENTS_USER_DATA_KEY_IMPL(SourceUrlRecorderWebContentsObserver);
 SourceUrlRecorderWebContentsObserver::SourceUrlRecorderWebContentsObserver(
     content::WebContents* web_contents)
     : content::WebContentsObserver(web_contents),
-      content::WebContentsUserData<SourceUrlRecorderWebContentsObserver>(
-          *web_contents),
       last_committed_full_navigation_source_id_(ukm::kInvalidSourceId),
       last_committed_full_navigation_or_same_document_source_id_(
           ukm::kInvalidSourceId),

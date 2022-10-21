@@ -7,16 +7,10 @@
 #include <memory>
 #include <string>
 
-#include "ash/constants/app_types.h"
 #include "ash/drag_drop/drag_drop_controller.h"
 #include "ash/drag_drop/toplevel_window_drag_delegate.h"
-#include "ash/public/cpp/tablet_mode.h"
-#include "ash/public/cpp/window_properties.h"
 #include "ash/shell.h"
-#include "ash/wm/toplevel_window_event_handler.h"
 #include "base/strings/utf_string_conversions.h"
-#include "base/test/bind.h"
-#include "base/test/gmock_callback_support.h"
 #include "components/exo/buffer.h"
 #include "components/exo/data_source.h"
 #include "components/exo/data_source_delegate.h"
@@ -26,10 +20,7 @@
 #include "components/exo/test/exo_test_base.h"
 #include "components/exo/test/exo_test_data_exchange_delegate.h"
 #include "components/exo/test/exo_test_helper.h"
-#include "components/exo/test/shell_surface_builder.h"
-#include "testing/gmock/include/gmock/gmock.h"
 #include "testing/gtest/include/gtest/gtest.h"
-#include "ui/aura/client/aura_constants.h"
 #include "ui/aura/client/drag_drop_client.h"
 #include "ui/aura/client/drag_drop_delegate.h"
 #include "ui/aura/window_tree_host.h"
@@ -42,11 +33,6 @@
 #include "ui/gfx/geometry/point.h"
 #include "ui/gfx/geometry/size.h"
 #include "ui/gfx/geometry/vector2d.h"
-
-using ::testing::_;
-using ::testing::DoAll;
-using ::testing::InvokeWithoutArgs;
-using ::testing::SaveArg;
 
 namespace exo {
 namespace {
@@ -144,8 +130,7 @@ class ExtendedDragSourceTest : public test::ExoTestBase {
 
     seat_ =
         std::make_unique<Seat>(std::make_unique<TestDataExchangeDelegate>());
-    data_source_delegate_ = new TestDataSourceDelegate;
-    data_source_ = std::make_unique<DataSource>(data_source_delegate_);
+    data_source_ = std::make_unique<DataSource>(new TestDataSourceDelegate);
     extended_drag_source_ = std::make_unique<ExtendedDragSource>(
         data_source_.get(), new TestExtendedDragSourceDelegate(
                                 /*allow_drop_no_target=*/true,
@@ -182,19 +167,7 @@ class ExtendedDragSourceTest : public test::ExoTestBase {
   std::unique_ptr<Seat> seat_;
   std::unique_ptr<DataSource> data_source_;
   std::unique_ptr<ExtendedDragSource> extended_drag_source_;
-
-  // DataSource deletes it upon destruction.
-  TestDataSourceDelegate* data_source_delegate_ = nullptr;
 };
-
-// Enables or disables tablet mode and waits for the transition to finish.
-void SetTabletModeEnabled(bool enabled) {
-  // This does not use ShellTestApi or TabletModeControllerTestApi because those
-  // are implemented in test-only files.
-  ash::TabletMode::Waiter waiter(enabled);
-  ash::Shell::Get()->tablet_mode_controller()->SetEnabledForTest(enabled);
-  waiter.Wait();
-}
 
 }  // namespace
 
@@ -239,57 +212,16 @@ TEST_F(ExtendedDragSourceTest, DragSurfaceAlreadyMapped) {
             *extended_drag_source_->GetDragOffsetForTesting());
 
   // Start the DND + extended-drag session.
-  // Creates a mouse-pressed event before starting the drag session.
-  ui::test::EventGenerator generator(GetContext(), gfx::Point(10, 10));
-  generator.PressLeftButton();
   StartExtendedDragSession(window, gfx::Point(0, 0),
                            ui::DragDropTypes::DRAG_MOVE,
                            ui::mojom::DragEventSource::kMouse);
 
   // Verify that dragging it by 190,190, with the current pointer location being
   // 10,10 will set the dragged window bounds as expected.
-  generator.MoveMouseBy(190, 190);
-  generator.ReleaseLeftButton();
+  ui::test::EventGenerator generator(GetContext(), gfx::Point(10, 10));
+  generator.DragMouseBy(190, 190);
   EXPECT_EQ(gfx::Point(200, 200), window->GetBoundsInScreen().origin());
 }
-
-// This class installs an observer to the window being dragged.
-// The goal is to ensure the drag 'n drop only effectively starts
-// off of the aura::WindowObserver::OnWindowVisibilityChanged() hook,
-// when it is guarantee the its state is properly set.
-class WindowObserverHookChecker : public aura::WindowObserver {
- public:
-  WindowObserverHookChecker(aura::Window* surface_window)
-      : surface_window_(surface_window) {
-    DCHECK(!surface_window_->GetRootWindow());
-    surface_window_->AddObserver(this);
-  }
-  ~WindowObserverHookChecker() {
-    DCHECK(dragged_window_);
-    dragged_window_->RemoveObserver(this);
-  }
-
-  void OnWindowAddedToRootWindow(aura::Window* window) override {
-    dragged_window_ = surface_window_->GetToplevelWindow();
-    dragged_window_->AddObserver(this);
-    surface_window_->RemoveObserver(this);
-
-    dragged_window_->SetProperty(aura::client::kAppType,
-                                 static_cast<int>(ash::AppType::LACROS));
-  }
-  MOCK_METHOD(void,
-              OnWindowVisibilityChanging,
-              (aura::Window*, bool),
-              (override));
-  MOCK_METHOD(void,
-              OnWindowVisibilityChanged,
-              (aura::Window*, bool),
-              (override));
-
- private:
-  aura::Window* surface_window_ = nullptr;
-  aura::Window* dragged_window_ = nullptr;
-};
 
 TEST_F(ExtendedDragSourceTest, DragSurfaceNotMappedYet) {
   // Create and Map the drag origin surface
@@ -298,10 +230,6 @@ TEST_F(ExtendedDragSourceTest, DragSurfaceNotMappedYet) {
   auto buffer = CreateBuffer({32, 32});
   surface->Attach(buffer.get());
   surface->Commit();
-
-  // Creates a mouse-pressed event before starting the drag session.
-  ui::test::EventGenerator generator(GetContext(), gfx::Point(10, 10));
-  generator.PressLeftButton();
 
   // Start the DND + extended-drag session.
   StartExtendedDragSession(shell_surface->GetWidget()->GetNativeWindow(),
@@ -323,28 +251,6 @@ TEST_F(ExtendedDragSourceTest, DragSurfaceNotMappedYet) {
   EXPECT_TRUE(extended_drag_source_->GetDragOffsetForTesting().has_value());
   EXPECT_EQ(gfx::Vector2d(10, 10),
             *extended_drag_source_->GetDragOffsetForTesting());
-
-  // Ensure drag 'n drop starts after
-  // ExtendedDragSource::OnDraggedWindowVisibilityChanged()
-  aura::Window* toplevel_window;
-  WindowObserverHookChecker checker(detached_surface->window());
-  EXPECT_CALL(checker, OnWindowVisibilityChanging(_, _))
-      .Times(1)
-      .WillOnce(DoAll(
-          SaveArg<0>(&toplevel_window), InvokeWithoutArgs([&]() {
-            auto* toplevel_handler =
-                ash::Shell::Get()->toplevel_window_event_handler();
-            EXPECT_FALSE(toplevel_handler->is_drag_in_progress());
-            EXPECT_TRUE(toplevel_window->GetProperty(ash::kIsDraggingTabsKey));
-          })));
-
-  EXPECT_CALL(checker, OnWindowVisibilityChanged(_, _))
-      .Times(1)
-      .WillOnce(InvokeWithoutArgs([]() {
-        auto* toplevel_handler =
-            ash::Shell::Get()->toplevel_window_event_handler();
-        EXPECT_TRUE(toplevel_handler->is_drag_in_progress());
-      }));
 
   // Map the |detached_surface|.
   auto detached_buffer = CreateBuffer({50, 50});
@@ -359,89 +265,13 @@ TEST_F(ExtendedDragSourceTest, DragSurfaceNotMappedYet) {
 
   // Verify that dragging it by 100,100, with drag offset 10,10 and current
   // pointer location 50,50 will set the dragged window bounds as expected.
+  ui::test::EventGenerator generator(GetContext());
   generator.set_current_screen_location(gfx::Point(100, 100));
   generator.DragMouseBy(50, 50);
-  generator.ReleaseLeftButton();
   EXPECT_EQ(gfx::Point(140, 140), window->GetBoundsInScreen().origin());
 }
 
-TEST_F(ExtendedDragSourceTest, DragSurfaceNotMappedYet_TabletMode) {
-  SetTabletModeEnabled(true);
-
-  // Create and Map the drag origin surface
-  auto surface = std::make_unique<Surface>();
-  auto shell_surface = std::make_unique<ShellSurface>(surface.get());
-  auto buffer = CreateBuffer({32, 32});
-  surface->Attach(buffer.get());
-  surface->Commit();
-
-  // Creates a mouse-pressed event before starting the drag session.
-  ui::test::EventGenerator generator(GetContext(), gfx::Point(10, 10));
-  generator.PressLeftButton();
-
-  // Start the DND + extended-drag session.
-  StartExtendedDragSession(shell_surface->GetWidget()->GetNativeWindow(),
-                           gfx::Point(0, 0), ui::DragDropTypes::DRAG_MOVE,
-                           ui::mojom::DragEventSource::kMouse);
-
-  // Create a new surface to emulate a "detachment" process.
-  auto detached_surface = std::make_unique<Surface>();
-  auto detached_shell_surface =
-      std::make_unique<ShellSurface>(detached_surface.get());
-
-  // Set |surface| as the dragged surface while it's still unmapped/invisible.
-  // This can be used to implement tab detaching in Chrome's tab drag use case,
-  // for example. Extended drag source will monitor surface mapping and it's
-  // expected to position it correctly using the provided drag offset here
-  // relative to the current pointer location.
-  extended_drag_source_->Drag(detached_surface.get(), gfx::Vector2d(10, 10));
-  EXPECT_FALSE(extended_drag_source_->GetDraggedWindowForTesting());
-  EXPECT_TRUE(extended_drag_source_->GetDragOffsetForTesting().has_value());
-  EXPECT_EQ(gfx::Vector2d(10, 10),
-            *extended_drag_source_->GetDragOffsetForTesting());
-
-  // Ensure drag 'n drop starts after
-  // ExtendedDragSource::OnDraggedWindowVisibilityChanged()
-  aura::Window* toplevel_window;
-  WindowObserverHookChecker checker(detached_surface->window());
-  EXPECT_CALL(checker, OnWindowVisibilityChanging(_, _))
-      .Times(1)
-      .WillOnce(DoAll(
-          SaveArg<0>(&toplevel_window), InvokeWithoutArgs([&]() {
-            auto* toplevel_handler =
-                ash::Shell::Get()->toplevel_window_event_handler();
-            EXPECT_FALSE(toplevel_handler->is_drag_in_progress());
-            EXPECT_TRUE(toplevel_window->GetProperty(ash::kIsDraggingTabsKey));
-          })));
-  EXPECT_CALL(checker, OnWindowVisibilityChanged(_, _))
-      .Times(1)
-      .WillOnce(DoAll(
-          SaveArg<0>(&toplevel_window), InvokeWithoutArgs([&]() {
-            auto* toplevel_handler =
-                ash::Shell::Get()->toplevel_window_event_handler();
-            EXPECT_TRUE(toplevel_handler->is_drag_in_progress());
-            gfx::Rect* override_bounds =
-                toplevel_window->GetProperty(ash::kRestoreBoundsOverrideKey);
-            EXPECT_TRUE(override_bounds && !override_bounds->IsEmpty());
-            EXPECT_EQ(*override_bounds, toplevel_window->bounds());
-          })));
-
-  // Map the |detached_surface|.
-  auto detached_buffer = CreateBuffer({50, 50});
-  detached_surface->Attach(detached_buffer.get());
-  detached_surface->Commit();
-
-  // Ensure the toplevel window for the dragged surface set above, is correctly
-  // detected, after it's mapped.
-  aura::Window* window = detached_shell_surface->GetWidget()->GetNativeWindow();
-  EXPECT_TRUE(extended_drag_source_->GetDraggedWindowForTesting());
-  EXPECT_EQ(window, extended_drag_source_->GetDraggedWindowForTesting());
-
-  generator.ReleaseLeftButton();
-  SetTabletModeEnabled(false);
-}
-
-TEST_F(ExtendedDragSourceTest, DragSurfaceNotMappedYet_Touch) {
+TEST_F(ExtendedDragSourceTest, DragSurfaceNotMappedYetWithTouch) {
   // Create and Map the drag origin surface
   auto surface = std::make_unique<Surface>();
   auto shell_surface = std::make_unique<ShellSurface>(surface.get());
@@ -519,39 +349,6 @@ TEST_F(ExtendedDragSourceTest, DestroyDraggedSurfaceWhileDragging) {
   ui::test::EventGenerator generator(GetContext());
   generator.DragMouseBy(190, 190);
   EXPECT_TRUE(surface->window()->GetBoundsInScreen().origin().IsOrigin());
-}
-
-TEST_F(ExtendedDragSourceTest, CancelDraggingOperation) {
-  // Create and map a toplevel shell surface.
-  auto shell_surface =
-      exo::test::ShellSurfaceBuilder({32, 32}).BuildShellSurface();
-  auto* surface = shell_surface->root_surface();
-
-  extended_drag_source_->Drag(surface, gfx::Vector2d());
-
-  // Start the DND + extended-drag session.
-  // Creates a mouse-pressed event before starting the drag session.
-  ui::test::EventGenerator generator(GetContext(), gfx::Point(10, 10));
-  generator.PressLeftButton();
-
-  // Start a DragDropOperation.
-  drag_drop_controller_->set_should_block_during_drag_drop(true);
-  seat_->StartDrag(data_source_.get(), surface, /*icon=*/nullptr,
-                   ui::mojom::DragEventSource::kMouse);
-
-  auto task_1 = base::BindLambdaForTesting([&]() {
-    generator.MoveMouseBy(190, 190);
-
-    auto* toplevel_handler = ash::Shell::Get()->toplevel_window_event_handler();
-    EXPECT_TRUE(toplevel_handler->is_drag_in_progress());
-    drag_drop_controller_->DragCancel();
-    EXPECT_FALSE(toplevel_handler->is_drag_in_progress());
-  });
-  base::ThreadTaskRunnerHandle::Get()->PostTask(
-      FROM_HERE, base::BindOnce(std::move(task_1)));
-
-  base::RunLoop().RunUntilIdle();
-  EXPECT_TRUE(data_source_delegate_->cancelled());
 }
 
 }  // namespace exo

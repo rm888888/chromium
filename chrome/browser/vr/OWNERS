@@ -2,4 +2,11 @@ mthiesse@chromium.org
 tiborg@chromium.org
 vollick@chromium.org
 
-file://components/webxr/OWNERS
+# WebXR or Browser Test-related
+alcooper@chromium.org
+
+# WebXR-related.
+klausw@chromium.org
+
+# Browser Test-related.
+bsheedy@chromium.org

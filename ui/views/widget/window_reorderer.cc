@@ -12,7 +12,7 @@
 #include <vector>
 
 #include "base/containers/adapters.h"
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "ui/aura/window.h"
 #include "ui/aura/window_occlusion_tracker.h"
 #include "ui/compositor/layer.h"
@@ -85,7 +85,7 @@ class WindowReorderer::AssociationObserver : public aura::WindowObserver {
   void OnWindowDestroying(aura::Window* window) override;
 
   // Not owned.
-  raw_ptr<WindowReorderer> reorderer_;
+  WindowReorderer* reorderer_;
 
   std::set<aura::Window*> windows_;
 };

@@ -136,6 +136,8 @@ static_library("common") {
     "search/ntp_logging_events.h",
     "secure_origin_allowlist.cc",
     "secure_origin_allowlist.h",
+    "ssl_insecure_content.cc",
+    "ssl_insecure_content.h",
     "url_constants.cc",
     "url_constants.h",
     "webui_url_constants.cc",
@@ -241,6 +243,7 @@ static_library("common") {
 
   deps = [
     "//build:chromeos_buildflags",
+    "//build:os_buildflags",
     "//components/google/core/common",
     "//components/live_caption:constants",
     "//components/metrics:call_stack_profile_builder",
@@ -261,8 +264,6 @@ static_library("common") {
     sources += [
       "extensions/api/commands/commands_handler.cc",
       "extensions/api/commands/commands_handler.h",
-      "extensions/api/file_browser_handlers/file_browser_handler.cc",
-      "extensions/api/file_browser_handlers/file_browser_handler.h",
       "extensions/api/notifications/notification_style.cc",
       "extensions/api/notifications/notification_style.h",
       "extensions/api/omnibox/omnibox_handler.cc",
@@ -349,6 +350,8 @@ static_library("common") {
   if (is_chromeos_ash) {
     assert(enable_extensions)
     sources += [
+      "extensions/api/file_browser_handlers/file_browser_handler.cc",
+      "extensions/api/file_browser_handlers/file_browser_handler.h",
       "extensions/api/file_system_provider_capabilities/file_system_provider_capabilities_handler.cc",
       "extensions/api/file_system_provider_capabilities/file_system_provider_capabilities_handler.h",
       "extensions/api/input_ime/input_components_handler.cc",
@@ -710,6 +713,7 @@ mojom("mojo_bindings") {
     "cache_stats_recorder.mojom",
     "chrome_render_frame.mojom",
     "draggable_regions.mojom",
+    "lite_video_service.mojom",
     "media/webrtc_logging.mojom",
     "metrics.mojom",
     "net/net_error_page_support.mojom",
@@ -718,6 +722,7 @@ mojom("mojo_bindings") {
     "network_easter_egg.mojom",
     "open_search_description_document_handler.mojom",
     "plugin.mojom",
+    "previews_resource_loading_hints.mojom",
     "renderer_configuration.mojom",
     "subresource_redirect_service.mojom",
     "sync_encryption_keys_extension.mojom",
@@ -734,10 +739,13 @@ mojom("mojo_bindings") {
   }
 
   if (is_win) {
-    sources += [
-      "conflicts/module_event_sink_win.mojom",
-      "font_prewarmer.mojom",
-    ]
+    sources += [ "conflicts/module_event_sink_win.mojom" ]
+  }
+
+  if (enable_offline_pages) {
+    sources += [ "mhtml_page_notifier.mojom" ]
+    deps += [ "//third_party/blink/public/mojom:mojom_mhtml_load_result" ]
+    enabled_features = [ "enable_offline_pages" ]
   }
 
   public_deps = [
@@ -767,18 +775,6 @@ mojom("mojo_bindings") {
   ]
 
   component_deps = [ "//content/public/common" ]
-
-  enabled_features = []
-
-  if (enable_offline_pages) {
-    sources += [ "mhtml_page_notifier.mojom" ]
-    deps += [ "//third_party/blink/public/mojom:mojom_mhtml_load_result" ]
-    enabled_features += [ "enable_offline_pages" ]
-  }
-
-  if (enable_plugins) {
-    enabled_features += [ "enable_plugins" ]
-  }
 }
 
 if (enable_print_preview && !is_chromeos_ash) {

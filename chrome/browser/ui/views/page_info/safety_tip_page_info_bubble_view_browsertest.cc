@@ -18,12 +18,10 @@
 #include "chrome/browser/history/history_test_utils.h"
 #include "chrome/browser/reputation/reputation_service.h"
 #include "chrome/browser/reputation/reputation_web_contents_observer.h"
-#include "chrome/browser/reputation/safety_tip_ui.h"
 #include "chrome/browser/reputation/safety_tip_ui_helper.h"
 #include "chrome/browser/ui/browser.h"
 #include "chrome/browser/ui/browser_commands.h"
 #include "chrome/browser/ui/browser_navigator.h"
-#include "chrome/browser/ui/test/test_browser_dialog.h"
 #include "chrome/browser/ui/views/frame/browser_view.h"
 #include "chrome/browser/ui/views/location_bar/location_icon_view.h"
 #include "chrome/browser/ui/views/page_info/page_info_bubble_view.h"
@@ -37,7 +35,7 @@
 #include "chrome/test/base/ui_test_utils.h"
 #include "components/lookalikes/core/features.h"
 #include "components/lookalikes/core/lookalike_url_util.h"
-#include "components/page_info/core/features.h"
+#include "components/page_info/features.h"
 #include "components/reputation/core/safety_tip_test_utils.h"
 #include "components/reputation/core/safety_tips.pb.h"
 #include "components/reputation/core/safety_tips_config.h"
@@ -340,7 +338,8 @@ class SafetyTipPageInfoBubbleViewBrowserTest
   void CheckNoButtons() {
     auto* bubble = static_cast<SafetyTipPageInfoBubbleView*>(
         PageInfoBubbleViewBase::GetPageInfoBubbleForTesting());
-    EXPECT_FALSE(bubble->info_link_);
+    EXPECT_FALSE(bubble->info_button_);
+    EXPECT_FALSE(bubble->ignore_button_);
     EXPECT_FALSE(bubble->leave_button_);
   }
 
@@ -417,7 +416,7 @@ class SafetyTipPageInfoBubbleViewBrowserTest
             PageInfoViewFactory::VIEW_ID_PAGE_INFO_SECURITY_DETAILS_LABEL))
         ->ClickLinkForTesting();
     EXPECT_EQ(chrome::kSafetyTipHelpCenterURL,
-              new_tab_observer.GetWebContents()->GetVisibleURL());
+              new_tab_observer.GetWebContents()->GetURL());
   }
 
   void CheckPageInfoDoesNotShowSafetyTipInfo(Browser* browser) {
@@ -438,7 +437,7 @@ class SafetyTipPageInfoBubbleViewBrowserTest
               PageInfoViewFactory::VIEW_ID_PAGE_INFO_SECURITY_DETAILS_LABEL))
           ->ClickLinkForTesting();
       EXPECT_EQ(chrome::kPageInfoHelpCenterURL,
-                new_tab_observer.GetWebContents()->GetVisibleURL());
+                new_tab_observer.GetWebContents()->GetURL());
     }
   }
 
@@ -665,10 +664,8 @@ IN_PROC_BROWSER_TEST_P(SafetyTipPageInfoBubbleViewBrowserTest,
 
   CloseWarningLeaveSite(browser());
   EXPECT_FALSE(IsUIShowing());
-  EXPECT_NE(kNavigatedUrl, browser()
-                               ->tab_strip_model()
-                               ->GetActiveWebContents()
-                               ->GetLastCommittedURL());
+  EXPECT_NE(kNavigatedUrl,
+            browser()->tab_strip_model()->GetActiveWebContents()->GetURL());
 
   ASSERT_NO_FATAL_FAILURE(CheckPageInfoDoesNotShowSafetyTipInfo(browser()));
 }
@@ -686,8 +683,7 @@ IN_PROC_BROWSER_TEST_P(SafetyTipPageInfoBubbleViewBrowserTest,
 
   content::WebContentsAddedObserver new_tab_observer;
   ClickLearnMoreLink();
-  EXPECT_NE(kNavigatedUrl,
-            new_tab_observer.GetWebContents()->GetLastCommittedURL());
+  EXPECT_NE(kNavigatedUrl, new_tab_observer.GetWebContents()->GetURL());
 }
 
 // Test that the Suspicious Site Safety Tip has no buttons and has the correct
@@ -728,10 +724,8 @@ IN_PROC_BROWSER_TEST_P(SafetyTipPageInfoBubbleViewBrowserTest,
   NavigateToURL(browser(), kNavigatedUrl, WindowOpenDisposition::CURRENT_TAB);
 
   EXPECT_TRUE(IsUIShowingOrSuspiciousSitesDisabled());
-  EXPECT_EQ(kNavigatedUrl, browser()
-                               ->tab_strip_model()
-                               ->GetActiveWebContents()
-                               ->GetLastCommittedURL());
+  EXPECT_EQ(kNavigatedUrl,
+            browser()->tab_strip_model()->GetActiveWebContents()->GetURL());
 
   ASSERT_NO_FATAL_FAILURE(CheckPageInfoShowsSafetyTipInfo(
       browser(), security_state::SafetyTipStatus::kBadReputation, GURL()));
@@ -749,10 +743,8 @@ IN_PROC_BROWSER_TEST_P(SafetyTipPageInfoBubbleViewBrowserTest,
 
   CloseWarningIgnore(views::Widget::ClosedReason::kCloseButtonClicked);
   EXPECT_FALSE(IsUIShowing());
-  EXPECT_EQ(kNavigatedUrl, browser()
-                               ->tab_strip_model()
-                               ->GetActiveWebContents()
-                               ->GetLastCommittedURL());
+  EXPECT_EQ(kNavigatedUrl,
+            browser()->tab_strip_model()->GetActiveWebContents()->GetURL());
 
   ASSERT_NO_FATAL_FAILURE(CheckPageInfoShowsSafetyTipInfo(
       browser(), security_state::SafetyTipStatus::kBadReputation, GURL()));
@@ -775,10 +767,8 @@ IN_PROC_BROWSER_TEST_P(SafetyTipPageInfoBubbleViewBrowserTest,
   NavigateToURL(browser(), kNavigatedUrl, WindowOpenDisposition::CURRENT_TAB);
 
   EXPECT_FALSE(IsUIShowing());
-  EXPECT_EQ(kNavigatedUrl, browser()
-                               ->tab_strip_model()
-                               ->GetActiveWebContents()
-                               ->GetLastCommittedURL());
+  EXPECT_EQ(kNavigatedUrl,
+            browser()->tab_strip_model()->GetActiveWebContents()->GetURL());
 
   ASSERT_NO_FATAL_FAILURE(CheckPageInfoShowsSafetyTipInfo(
       browser(), security_state::SafetyTipStatus::kBadReputationIgnored,
@@ -828,14 +818,8 @@ IN_PROC_BROWSER_TEST_P(SafetyTipPageInfoBubbleViewBrowserTest,
 
 // Background tabs shouldn't open a bubble initially, but should when they
 // become visible.
-// Fails on Mac for one parameter. https://crbug.com/1285242
-#if defined(OS_MAC)
-#define MAYBE_BubbleWaitsForVisible DISABLED_BubbleWaitsForVisible
-#else
-#define MAYBE_BubbleWaitsForVisible BubbleWaitsForVisible
-#endif
 IN_PROC_BROWSER_TEST_P(SafetyTipPageInfoBubbleViewBrowserTest,
-                       MAYBE_BubbleWaitsForVisible) {
+                       BubbleWaitsForVisible) {
   auto kFlaggedUrl = GetURL("site1.com");
 
   TriggerWarningFromBlocklist(browser(), kFlaggedUrl,
@@ -1759,36 +1743,4 @@ IN_PROC_BROWSER_TEST_F(SafetyTipPageInfoBubbleViewPrerenderBrowserTest,
   // prerendered page.
   EXPECT_TRUE(IsUIShowing());
   histograms.ExpectTotalCount(kHistogramName, 1);
-}
-
-class SafetyTipPageInfoBubbleViewDialogTest : public DialogBrowserTest {
- public:
-  SafetyTipPageInfoBubbleViewDialogTest() = default;
-  SafetyTipPageInfoBubbleViewDialogTest(
-      const SafetyTipPageInfoBubbleViewDialogTest&) = delete;
-  SafetyTipPageInfoBubbleViewDialogTest& operator=(
-      const SafetyTipPageInfoBubbleViewDialogTest&) = delete;
-  ~SafetyTipPageInfoBubbleViewDialogTest() override = default;
-
-  void ShowUi(const std::string& name) override {
-    auto status = security_state::SafetyTipStatus::kUnknown;
-    if (name == "BadReputation")
-      status = security_state::SafetyTipStatus::kBadReputation;
-    else if (name == "Lookalike")
-      status = security_state::SafetyTipStatus::kLookalike;
-
-    ShowSafetyTipDialog(browser()->tab_strip_model()->GetActiveWebContents(),
-                        status, GURL("https://www.google.tld"),
-                        base::DoNothing());
-  }
-};
-
-IN_PROC_BROWSER_TEST_F(SafetyTipPageInfoBubbleViewDialogTest,
-                       InvokeUi_BadReputation) {
-  ShowAndVerifyUi();
-}
-
-IN_PROC_BROWSER_TEST_F(SafetyTipPageInfoBubbleViewDialogTest,
-                       InvokeUi_Lookalike) {
-  ShowAndVerifyUi();
 }

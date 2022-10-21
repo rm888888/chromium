@@ -7,6 +7,8 @@
 
 #include <stdint.h>
 
+#include "base/macros.h"
+
 struct wl_client;
 
 namespace exo {

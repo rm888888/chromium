@@ -6,6 +6,7 @@
 
 #include <stddef.h>
 
+#include "base/macros.h"
 #include "base/ranges/algorithm.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"

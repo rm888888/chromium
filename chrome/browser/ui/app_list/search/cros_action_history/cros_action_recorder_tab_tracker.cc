@@ -12,9 +12,7 @@ namespace app_list {
 
 CrOSActionRecorderTabTracker::CrOSActionRecorderTabTracker(
     content::WebContents* web_contents)
-    : content::WebContentsObserver(web_contents),
-      content::WebContentsUserData<CrOSActionRecorderTabTracker>(
-          *web_contents) {}
+    : content::WebContentsObserver(web_contents) {}
 
 // A tab should be skipped if it is empty, blank or default page.
 bool CrOSActionRecorderTabTracker::ShouldSkip() {

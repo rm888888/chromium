@@ -103,7 +103,13 @@ class TabStyle {
       float scale,
       bool force_active = false,
       RenderUnits render_units = RenderUnits::kPixels) const = 0;
-
+  //update on 20220913
+  virtual SkPath GetPathNewStyle(
+          PathType path_type,
+          float scale,
+          bool force_active = false,
+          RenderUnits render_units = RenderUnits::kPixels) const = 0;
+  //
   // Returns the insets to use for laying out tab contents.
   virtual gfx::Insets GetContentsInsets() const = 0;
 

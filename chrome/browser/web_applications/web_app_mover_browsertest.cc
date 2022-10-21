@@ -30,6 +30,7 @@ namespace {
 class WebAppMoverBrowsertestBase : public InProcessBrowserTest {
  public:
   WebAppMoverBrowsertestBase() {
+    suppress_hooks_ = OsIntegrationManager::ScopedSuppressOsHooksForTesting();
     embedded_test_server()->AddDefaultHandlers(GetChromeTestDataDir());
     // Since the port is a part of the start_url, this needs to stay consistent
     // between the tests below.
@@ -106,7 +107,7 @@ class WebAppMoverBrowsertestBase : public InProcessBrowserTest {
   base::OnceClosure completed_callback_;
 
  private:
-  OsIntegrationManager::ScopedSuppressForTesting os_hooks_suppress_;
+  ScopedOsHooksSuppress suppress_hooks_;
 };
 
 class WebAppMoverPrefixBrowsertest : public WebAppMoverBrowsertestBase {

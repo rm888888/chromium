@@ -10,8 +10,6 @@
 
 #include "base/containers/cxx20_erase.h"
 #include "base/i18n/case_conversion.h"
-#include "base/memory/raw_ptr.h"
-#include "base/strings/string_piece.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/trace_event/trace_event.h"
@@ -29,7 +27,6 @@
 #include "net/base/escape.h"
 #include "third_party/metrics_proto/omnibox_input_type.pb.h"
 #include "ui/base/l10n/l10n_util.h"
-#include "url/url_constants.h"
 
 namespace {
 
@@ -64,7 +61,7 @@ class ScopedEndExtensionKeywordMode {
   void StayInKeywordMode();
 
  private:
-  raw_ptr<KeywordExtensionsDelegate> delegate_;
+  KeywordExtensionsDelegate* delegate_;
 };
 
 ScopedEndExtensionKeywordMode::ScopedEndExtensionKeywordMode(
@@ -213,10 +210,9 @@ std::u16string KeywordProvider::GetKeywordForText(
   }
 
   // Don't provide a keyword for inactive search engines (if the active search
-  // engine flag is enabled). Prepopulated engines and extensions controlled
-  // engines should always work regardless of is_active.
+  // engine flag is enabled). Prepopulated engines should always work regardless
+  // of is_active.
   if (OmniboxFieldTrial::IsActiveSearchEnginesEnabled() &&
-      template_url->type() != TemplateURL::OMNIBOX_API_EXTENSION &&
       template_url->prepopulate_id() == 0 &&
       template_url->is_active() != TemplateURLData::ActiveStatus::kTrue) {
     return std::u16string();
@@ -575,31 +571,33 @@ std::u16string KeywordProvider::CleanUserInputKeyword(
 
   // If keyword is not found, try removing a "http" or "https" scheme if any.
   url::Component scheme_component;
-  if (url::ExtractScheme(result.c_str(), static_cast<int>(result.length()),
-                         &scheme_component)) {
-    const base::StringPiece16 scheme = base::StringPiece16(result).substr(
-        scheme_component.begin, scheme_component.len);
-    if (scheme == url::kHttpScheme16 || scheme == url::kHttpsScheme16) {
-      // Remove the scheme and the trailing ':'.
-      result.erase(0, scheme_component.end() + 1);
-      if (template_url_service->GetTemplateURLForKeyword(result) != nullptr)
-        return result;
-      // Many schemes usually have "//" after them, so strip it too.
-      constexpr base::StringPiece16 kAfterScheme(u"//");
-      if (base::StartsWith(result, kAfterScheme))
-        result.erase(0, kAfterScheme.length());
-      if (template_url_service->GetTemplateURLForKeyword(result) != nullptr)
-        return result;
-    }
+  if (url::ExtractScheme(base::UTF16ToUTF8(result).c_str(),
+                         static_cast<int>(result.length()),
+                         &scheme_component) &&
+      (!result.compare(0, scheme_component.end(),
+                       base::ASCIIToUTF16(url::kHttpScheme)) ||
+       !result.compare(0, scheme_component.end(),
+                       base::ASCIIToUTF16(url::kHttpsScheme)))) {
+    // Remove the scheme and the trailing ':'.
+    result.erase(0, scheme_component.end() + 1);
+    if (template_url_service->GetTemplateURLForKeyword(result) != nullptr)
+      return result;
+    // Many schemes usually have "//" after them, so strip it too.
+    const std::u16string after_scheme(u"//");
+    if (result.compare(0, after_scheme.length(), after_scheme) == 0)
+      result.erase(0, after_scheme.length());
+    if (template_url_service->GetTemplateURLForKeyword(result) != nullptr)
+      return result;
   }
 
   // Remove leading "www.", if any, and again try to find a matching keyword.
   // The 'www.' stripping is done directly here instead of calling
   // url_formatter::StripWWW because we're not assuming that the keyword is a
   // hostname.
-  constexpr base::StringPiece16 kWww(u"www.");
+  const std::u16string kWww(u"www.");
+  constexpr size_t kWwwLength = 4;
   result = base::StartsWith(result, kWww, base::CompareCase::SENSITIVE)
-               ? result.substr(kWww.length())
+               ? result.substr(kWwwLength)
                : result;
   if (template_url_service->GetTemplateURLForKeyword(result) != nullptr)
     return result;

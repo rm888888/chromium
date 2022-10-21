@@ -7,7 +7,6 @@
 
 #include <memory>
 
-#include "base/compiler_specific.h"
 #include "base/component_export.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/base/ime/composition_text.h"
@@ -36,7 +35,6 @@ class COMPONENT_EXPORT(UI_BASE_IME_LINUX) InputMethodAuraLinux
   void OnCaretBoundsChanged(const TextInputClient* client) override;
   void CancelComposition(const TextInputClient* client) override;
   bool IsCandidatePopupOpen() const override;
-  VirtualKeyboardController* GetVirtualKeyboardController() override;
 
   // Overriden from ui::LinuxInputMethodContextDelegate
   void OnCommit(const std::u16string& text) override;

@@ -7,6 +7,7 @@
 
 #include <memory>
 
+#include "base/macros.h"
 #include "ui/display/types/display_configuration_params.h"
 #include "ui/display/types/display_constants.h"
 #include "ui/display/types/native_display_delegate.h"
@@ -43,8 +44,7 @@ class DrmDisplayHost : public GpuThreadObserver {
   void SetGammaCorrection(
       const std::vector<display::GammaRampRGBEntry>& degamma_lut,
       const std::vector<display::GammaRampRGBEntry>& gamma_lut);
-  void SetPrivacyScreen(bool enabled,
-                        display::SetPrivacyScreenCallback callback);
+  void SetPrivacyScreen(bool enabled);
 
   // Called when the IPC from the GPU process arrives to answer the above
   // commands.

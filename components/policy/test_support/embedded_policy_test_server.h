@@ -10,10 +10,8 @@
 #include <set>
 #include <string>
 
-#include "base/memory/raw_ptr.h"
 #include "components/policy/proto/device_management_backend.pb.h"
 #include "net/test/embedded_test_server/embedded_test_server.h"
-#include "net/test/embedded_test_server/http_response.h"
 #include "url/gurl.h"
 
 namespace net {
@@ -56,8 +54,8 @@ class EmbeddedPolicyTestServer {
     PolicyStorage* policy_storage() { return policy_storage_; }
 
    private:
-    raw_ptr<ClientStorage> client_storage_;
-    raw_ptr<PolicyStorage> policy_storage_;
+    ClientStorage* client_storage_;
+    PolicyStorage* policy_storage_;
   };
 
   EmbeddedPolicyTestServer();
@@ -78,11 +76,6 @@ class EmbeddedPolicyTestServer {
   // Public so it can be used by tests.
   void RegisterHandler(std::unique_ptr<EmbeddedPolicyTestServer::RequestHandler>
                            request_handler);
-
-  // Configures requests of a given |request_type| to always fail with
-  // |error_code|.
-  void ConfigureRequestError(const std::string& request_type,
-                             net::HttpStatusCode error_code);
 
  private:
   // Default request handler.

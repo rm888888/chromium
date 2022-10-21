@@ -9,6 +9,7 @@
 
 #include <string>
 
+#include "base/macros.h"
 #include "ui/base/glib/glib_signal.h"
 #include "ui/base/glib/scoped_gobject.h"
 #include "ui/gtk/settings_provider.h"

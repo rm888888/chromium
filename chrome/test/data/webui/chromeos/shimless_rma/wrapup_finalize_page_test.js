@@ -5,22 +5,14 @@
 import {PromiseResolver} from 'chrome://resources/js/promise_resolver.m.js';
 import {FakeShimlessRmaService} from 'chrome://shimless-rma/fake_shimless_rma_service.js';
 import {setShimlessRmaServiceForTesting} from 'chrome://shimless-rma/mojo_interface_provider.js';
-import {ShimlessRma} from 'chrome://shimless-rma/shimless_rma.js';
 import {FinalizationStatus} from 'chrome://shimless-rma/shimless_rma_types.js';
-import {WrapupFinalizePage} from 'chrome://shimless-rma/wrapup_finalize_page.js';
+import {WrapupFinalizePageElement} from 'chrome://shimless-rma/wrapup_finalize_page.js';
 
 import {assertDeepEquals, assertEquals, assertFalse, assertTrue} from '../../chai_assert.js';
 import {flushTasks} from '../../test_util.js';
 
 export function wrapupFinalizePageTest() {
-  /**
-   * ShimlessRma is needed to handle the 'transition-state' event used
-   * when handling calibration overall progress signals.
-   * @type {?ShimlessRma}
-   */
-  let shimless_rma_component = null;
-
-  /** @type {?WrapupFinalizePage} */
+  /** @type {?WrapupFinalizePageElement} */
   let component = null;
 
   /** @type {?FakeShimlessRmaService} */
@@ -36,8 +28,6 @@ export function wrapupFinalizePageTest() {
   });
 
   teardown(() => {
-    shimless_rma_component.remove();
-    shimless_rma_component = null;
     component.remove();
     component = null;
     service.reset();
@@ -49,12 +39,7 @@ export function wrapupFinalizePageTest() {
   function initializeFinalizePage() {
     assertFalse(!!component);
 
-    shimless_rma_component =
-        /** @type {!ShimlessRma} */ (document.createElement('shimless-rma'));
-    assertTrue(!!shimless_rma_component);
-    document.body.appendChild(shimless_rma_component);
-
-    component = /** @type {!WrapupFinalizePage} */ (
+    component = /** @type {!WrapupFinalizePageElement} */ (
         document.createElement('wrapup-finalize-page'));
     assertTrue(!!component);
     document.body.appendChild(component);
@@ -101,53 +86,5 @@ export function wrapupFinalizePageTest() {
     await flushTasks();
 
     assertDeepEquals(savedResult, expectedResult);
-  });
-
-  test('FinalizationFailedBlockingRetry', async () => {
-    const resolver = new PromiseResolver();
-    await initializeFinalizePage();
-
-    const retryButton =
-        component.shadowRoot.querySelector('#retryFinalizationButton');
-    assertTrue(retryButton.hidden);
-
-    let callCount = 0;
-    service.retryFinalization = () => {
-      callCount++;
-      return resolver.promise;
-    };
-    service.triggerFinalizationObserver(
-        FinalizationStatus.kFailedBlocking, 1.0, 0);
-    await flushTasks();
-
-    assertFalse(retryButton.hidden);
-    retryButton.click();
-
-    await flushTasks();
-    assertEquals(1, callCount);
-  });
-
-  test('FinalizationFailedNonBlockingRetry', async () => {
-    const resolver = new PromiseResolver();
-    await initializeFinalizePage();
-
-    const retryButton =
-        component.shadowRoot.querySelector('#retryFinalizationButton');
-    assertTrue(retryButton.hidden);
-
-    let callCount = 0;
-    service.retryFinalization = () => {
-      callCount++;
-      return resolver.promise;
-    };
-    service.triggerFinalizationObserver(
-        FinalizationStatus.kFailedNonBlocking, 1.0, 0);
-    await flushTasks();
-
-    assertFalse(retryButton.hidden);
-    retryButton.click();
-
-    await flushTasks();
-    assertEquals(1, callCount);
   });
 }

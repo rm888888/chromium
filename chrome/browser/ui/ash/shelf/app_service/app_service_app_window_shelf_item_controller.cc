@@ -50,12 +50,10 @@ void AppServiceAppWindowShelfItemController::ItemSelected(
         Profile* profile = ChromeShelfController::instance()->profile();
         arc::ArcPipBridge* pip_bridge =
             arc::ArcPipBridge::GetForBrowserContext(profile);
-        if (pip_bridge) {
-          // ClosePip() actually expands PIP.
-          pip_bridge->ClosePip();
-          std::move(callback).Run(ash::SHELF_ACTION_NONE, {});
-          return;
-        }
+        // ClosePip() actually expands PIP.
+        pip_bridge->ClosePip();
+        std::move(callback).Run(ash::SHELF_ACTION_NONE, {});
+        return;
       }
     }
     AppWindowShelfItemController::ItemSelected(std::move(event), display_id,
@@ -191,5 +189,5 @@ bool AppServiceAppWindowShelfItemController::IsChromeApp() {
   Profile* const profile = ChromeShelfController::instance()->profile();
   return apps::AppServiceProxyFactory::GetForProfile(profile)
              ->AppRegistryCache()
-             .GetAppType(shelf_id().app_id) == apps::mojom::AppType::kChromeApp;
+             .GetAppType(shelf_id().app_id) == apps::mojom::AppType::kExtension;
 }

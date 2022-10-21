@@ -7,6 +7,7 @@
 #include <string>
 
 #include "base/guid.h"
+#include "base/macros.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/test/metrics/histogram_tester.h"
@@ -93,8 +94,7 @@ TEST(CreditCardTest, GetObfuscatedStringForCardDigits) {
   const std::u16string digits = u"1235";
   const std::u16string expected =
       std::u16string() + base::i18n::kLeftToRightEmbeddingMark +
-      CreditCard::GetMidlineEllipsisDots(4) + digits +
-      base::i18n::kPopDirectionalFormatting;
+      kMidlineEllipsis4Dots + digits + base::i18n::kPopDirectionalFormatting;
   EXPECT_EQ(expected, internal::GetObfuscatedStringForCardDigits(
                           digits, /*obfuscation_length=*/4));
 }
@@ -1862,8 +1862,7 @@ TEST_F(CreditCardTestForKeyboardAccessory, GetObfuscatedStringForCardDigits) {
   const std::u16string digits = u"1235";
   const std::u16string expected =
       std::u16string() + base::i18n::kLeftToRightEmbeddingMark +
-      CreditCard::GetMidlineEllipsisDots(2) + digits +
-      base::i18n::kPopDirectionalFormatting;
+      kMidlineEllipsis2Dots + digits + base::i18n::kPopDirectionalFormatting;
 
   EXPECT_EQ(expected, internal::GetObfuscatedStringForCardDigits(
                           digits, /*obfuscation_length=*/2));

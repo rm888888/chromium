@@ -10,7 +10,7 @@
 
 #include "base/callback.h"
 #include "base/location.h"
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 
 namespace sessions {
 class SessionCommand;
@@ -47,7 +47,7 @@ class CommandStorageManagerTestHelper {
   void ForceAppendCommandsToFailForTesting();
 
  private:
-  raw_ptr<CommandStorageManager> command_storage_manager_;
+  CommandStorageManager* command_storage_manager_;
 };
 
 }  // namespace sessions

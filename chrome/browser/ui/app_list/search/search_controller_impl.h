@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "base/callback.h"
+#include "base/macros.h"
 #include "base/observer_list.h"
 #include "chrome/browser/ui/app_list/search/mixer.h"
 #include "chrome/browser/ui/app_list/search/ranking/launch_data.h"
@@ -53,9 +54,7 @@ class SearchControllerImpl : public SearchController {
 
   // SearchController:
   void InitializeRankers() override;
-  void StartSearch(const std::u16string& query) override;
-  void StartZeroState(base::OnceClosure on_done,
-                      base::TimeDelta timeout) override;
+  void Start(const std::u16string& query) override;
   void ViewClosing() override;
   void OpenResult(ChromeSearchResult* result, int event_flags) override;
   void InvokeResultAction(ChromeSearchResult* result,
@@ -63,7 +62,8 @@ class SearchControllerImpl : public SearchController {
   size_t AddGroup(size_t max_results) override;
   void AddProvider(size_t group_id,
                    std::unique_ptr<SearchProvider> provider) override;
-  void SetResults(const SearchProvider* provider, Results results) override;
+  void SetResults(ash::AppListSearchResultType provider_type,
+                  Results results) override;
   ChromeSearchResult* FindSearchResult(const std::string& result_id) override;
   ChromeSearchResult* GetResultByTitleForTest(
       const std::string& title) override;
@@ -100,7 +100,7 @@ class SearchControllerImpl : public SearchController {
   // The query associated with the most recent search.
   std::u16string last_query_;
 
-  // The time when StartSearch was most recently called.
+  // The time when Start was most recently called.
   base::Time session_start_;
 
   // The ID of the most recently launched app. This is used for app list launch

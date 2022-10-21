@@ -7,6 +7,7 @@
 
 #include <string>
 
+#include "base/macros.h"
 #include "components/prefs/scoped_user_pref_update.h"
 
 class PrefService;
@@ -14,7 +15,7 @@ class PrefService;
 namespace arc {
 
 // Pref updater for ARC apps. Used in deferent pref sections.
-class ArcAppScopedPrefUpdate : public DictionaryPrefUpdateDeprecated {
+class ArcAppScopedPrefUpdate : public DictionaryPrefUpdate {
  public:
   // This is used in following cases:
   // |path| is "arc.apps" - To update ARC apps preferences. In this case |id|
@@ -32,7 +33,7 @@ class ArcAppScopedPrefUpdate : public DictionaryPrefUpdateDeprecated {
 
   ~ArcAppScopedPrefUpdate() override;
 
-  // DictionaryPrefUpdateDeprecated:
+  // DictionaryPrefUpdate:
   base::DictionaryValue* Get() override;
 
  private:

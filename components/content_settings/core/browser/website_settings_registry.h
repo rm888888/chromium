@@ -10,6 +10,7 @@
 #include <string>
 
 #include "base/lazy_instance.h"
+#include "base/macros.h"
 #include "base/values.h"
 #include "components/content_settings/core/browser/content_settings_utils.h"
 #include "components/content_settings/core/browser/website_settings_info.h"
@@ -71,7 +72,7 @@ class WebsiteSettingsRegistry {
   const WebsiteSettingsInfo* Register(
       ContentSettingsType type,
       const std::string& name,
-      base::Value initial_default_value,
+      std::unique_ptr<base::Value> initial_default_value,
       WebsiteSettingsInfo::SyncStatus sync_status,
       WebsiteSettingsInfo::LossyStatus lossy_status,
       WebsiteSettingsInfo::ScopingType scoping_type,

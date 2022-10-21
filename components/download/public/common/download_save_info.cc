@@ -15,13 +15,8 @@ DownloadSaveInfo::~DownloadSaveInfo() = default;
 
 DownloadSaveInfo::DownloadSaveInfo(DownloadSaveInfo&& that) = default;
 
-int64_t DownloadSaveInfo::GetStartingFileWriteOffset() const {
+int64_t DownloadSaveInfo::GetStartingFileWriteOffset() {
   return file_offset >= 0 ? file_offset : offset;
-}
-
-bool DownloadSaveInfo::IsArbitraryRangeRequest() const {
-  return range_request_from != kInvalidRange ||
-         range_request_to != kInvalidRange;
 }
 
 }  // namespace download

@@ -16,7 +16,6 @@
 #include "base/files/file_path.h"
 #include "base/json/json_writer.h"
 #include "base/memory/ptr_util.h"
-#include "base/memory/raw_ptr.h"
 #include "base/memory/ref_counted.h"
 #include "base/run_loop.h"
 #include "base/strings/string_piece.h"
@@ -186,7 +185,7 @@ std::string MakeServerResponse(const SkBitmap& image,
                                const std::string& dark_mime_type,
                                const std::string& fingerprint,
                                base::TimeDelta time_to_live) {
-  base::Value dict(base::Value::Type::DICTIONARY);
+  base::DictionaryValue dict;
 
   std::string data_uri = "data:";
   data_uri += mime_type;
@@ -198,27 +197,27 @@ std::string MakeServerResponse(const SkBitmap& image,
   dark_data_uri += ";base64,";
   dark_data_uri += EncodeBitmapAsPNGBase64(dark_image);
 
-  dict.SetStringPath("ddljson.target_url", on_click_url);
-  dict.SetStringPath("ddljson.alt_text", alt_text);
+  dict.SetString("ddljson.target_url", on_click_url);
+  dict.SetString("ddljson.alt_text", alt_text);
   if (animated_url.empty()) {
-    dict.SetStringPath("ddljson.doodle_type", "SIMPLE");
+    dict.SetString("ddljson.doodle_type", "SIMPLE");
     if (!image.isNull())
-      dict.SetStringPath("ddljson.data_uri", data_uri);
+      dict.SetString("ddljson.data_uri", data_uri);
     if (!dark_image.isNull())
-      dict.SetStringPath("ddljson.dark_data_uri", dark_data_uri);
+      dict.SetString("ddljson.dark_data_uri", dark_data_uri);
   } else {
-    dict.SetStringPath("ddljson.doodle_type", "ANIMATED");
-    dict.SetBoolPath("ddljson.large_image.is_animated_gif", true);
-    dict.SetStringPath("ddljson.large_image.url", animated_url);
-    dict.SetStringPath("ddljson.dark_large_image.url", dark_animated_url);
+    dict.SetString("ddljson.doodle_type", "ANIMATED");
+    dict.SetBoolean("ddljson.large_image.is_animated_gif", true);
+    dict.SetString("ddljson.large_image.url", animated_url);
+    dict.SetString("ddljson.dark_large_image.url", dark_animated_url);
     if (!image.isNull())
-      dict.SetStringPath("ddljson.cta_data_uri", data_uri);
+      dict.SetString("ddljson.cta_data_uri", data_uri);
     if (!dark_image.isNull())
-      dict.SetStringPath("ddljson.dark_cta_data_uri", dark_data_uri);
+      dict.SetString("ddljson.dark_cta_data_uri", dark_data_uri);
   }
-  dict.SetStringPath("ddljson.fingerprint", fingerprint);
+  dict.SetString("ddljson.fingerprint", fingerprint);
   if (time_to_live != base::TimeDelta())
-    dict.SetIntPath("ddljson.time_to_live_ms",
+    dict.SetInteger("ddljson.time_to_live_ms",
                     static_cast<int>(time_to_live.InMilliseconds()));
 
   std::string output;
@@ -371,7 +370,7 @@ class LogoServiceImplTest : public ::testing::Test {
         base::BindRepeating(&LogoServiceImplTest::use_gray_background,
                             base::Unretained(this)));
     logo_service_->SetClockForTests(&test_clock_);
-    logo_service_->SetLogoCacheForTests(base::WrapUnique(logo_cache_.get()));
+    logo_service_->SetLogoCacheForTests(base::WrapUnique(logo_cache_));
   }
 
   void TearDown() override {
@@ -420,7 +419,7 @@ class LogoServiceImplTest : public ::testing::Test {
   base::test::TaskEnvironment task_environment_;
   TemplateURLService template_url_service_;
   base::SimpleTestClock test_clock_;
-  raw_ptr<NiceMock<MockLogoCache>> logo_cache_;
+  NiceMock<MockLogoCache>* logo_cache_;
 
   // Used for mocking |logo_service_| URLs.
   network::TestURLLoaderFactory test_url_loader_factory_;

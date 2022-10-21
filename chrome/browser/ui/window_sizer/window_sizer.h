@@ -7,7 +7,7 @@
 
 #include <memory>
 
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "ui/base/ui_base_types.h"
 #include "ui/gfx/geometry/rect.h"
 
@@ -111,9 +111,6 @@ class WindowSizer {
       gfx::Rect* bounds,
       ui::WindowShowState* show_state);
 
-  // Adjusts the work area the platform-specific way.
-  virtual void AdjustWorkAreaForPlatform(gfx::Rect& work_area);
-
   // Gets the size and placement of the last active window. Returns true if this
   // data is valid, false if there is no last window and the application should
   // restore saved state from preferences using RestoreWindowPosition.
@@ -164,7 +161,7 @@ class WindowSizer {
   std::unique_ptr<StateProvider> state_provider_;
 
   // Note that this browser handle might be NULL.
-  const raw_ptr<const Browser> browser_;
+  const Browser* const browser_;
 };
 
 #endif  // CHROME_BROWSER_UI_WINDOW_SIZER_WINDOW_SIZER_H_

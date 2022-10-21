@@ -16,6 +16,7 @@
 
 #include "base/callback.h"
 #include "base/containers/stack_container.h"
+#include "base/macros.h"
 #include "base/time/time.h"
 #include "components/favicon_base/favicon_types.h"
 #include "components/history/core/browser/history_context.h"
@@ -758,9 +759,7 @@ struct AnnotatedVisit {
                  VisitID opener_visit_of_redirect_chain_start,
                  VisitSource visit);
   AnnotatedVisit(const AnnotatedVisit&);
-  AnnotatedVisit(AnnotatedVisit&&);
   AnnotatedVisit& operator=(const AnnotatedVisit&);
-  AnnotatedVisit& operator=(AnnotatedVisit&&);
   ~AnnotatedVisit();
 
   URLRow url_row;
@@ -807,9 +806,6 @@ struct ClusterVisit {
   ClusterVisit();
   ~ClusterVisit();
   ClusterVisit(const ClusterVisit&);
-  ClusterVisit(ClusterVisit&&);
-  ClusterVisit& operator=(const ClusterVisit&);
-  ClusterVisit& operator=(ClusterVisit&&);
 
   AnnotatedVisit annotated_visit;
 
@@ -822,23 +818,9 @@ struct ClusterVisit {
   // its vector. The worse duplicates will have an empty vector here.
   std::vector<VisitID> duplicate_visit_ids;
 
-  // A list of visits that have been de-duplicated into this visit. After
-  // post-processing by the service, this will be populated with the visits
-  // marked within `duplicate_visit_ids`.
-  // TODO(tommycli): Move the un-flattening into the backend and eliminate
-  // `duplicate_visit_ids`.
-  std::vector<ClusterVisit> duplicate_visits;
-
   // The normalized URL for the visit (i.e. a SRP URL normalized based on the
   // user's default search provider).
   GURL normalized_url;
-
-  // Whether this visit contained a user-input search or query.
-  bool is_search_visit = false;
-
-  // The site engagement score of the URL associated with this visit. This
-  // should not be used by the UI.
-  float engagement_score = 0.0;
 };
 
 // A cluster of `ClusterVisit`s with associated metadata (i.e. `keywords` and
@@ -850,9 +832,7 @@ struct Cluster {
           const std::vector<std::u16string>& keywords,
           bool should_show_on_prominent_ui_surfaces = true);
   Cluster(const Cluster&);
-  Cluster(Cluster&&);
   Cluster& operator=(const Cluster&);
-  Cluster& operator=(Cluster&&);
   ~Cluster();
 
   int64_t cluster_id = 0;

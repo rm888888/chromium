@@ -7,6 +7,7 @@
 
 #include <set>
 
+#include "base/macros.h"
 #include "base/time/time.h"
 #include "ui/compositor/compositor_export.h"
 #include "ui/compositor/layer_animation_element.h"

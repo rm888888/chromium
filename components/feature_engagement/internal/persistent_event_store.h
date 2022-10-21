@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "base/files/file_path.h"
+#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "components/feature_engagement/internal/event_store.h"
 #include "components/feature_engagement/internal/proto/feature_event.pb.h"

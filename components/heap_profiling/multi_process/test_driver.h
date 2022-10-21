@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "base/allocator/partition_allocator/partition_alloc.h"
+#include "base/macros.h"
 #include "base/memory/ref_counted_memory.h"
 #include "base/process/process_handle.h"
 #include "base/synchronization/waitable_event.h"

@@ -13,7 +13,6 @@
 #include "base/files/scoped_temp_dir.h"
 #include "base/format_macros.h"
 #include "base/location.h"
-#include "base/memory/raw_ptr.h"
 #include "base/run_loop.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
@@ -29,8 +28,8 @@
 #include "components/sync/engine/cancelation_signal.h"
 #include "components/sync/engine/cycle/sync_cycle.h"
 #include "components/sync/engine/events/protocol_event.h"
-#include "components/sync/engine/net/http_post_provider.h"
 #include "components/sync/engine/net/http_post_provider_factory.h"
+#include "components/sync/engine/net/http_post_provider_interface.h"
 #include "components/sync/engine/nigori/key_derivation_params.h"
 #include "components/sync/engine/polling_constants.h"
 #include "components/sync/engine/sync_scheduler.h"
@@ -54,7 +53,7 @@ namespace syncer {
 
 namespace {
 
-class TestHttpPostProvider : public HttpPostProvider {
+class TestHttpPostProviderInterface : public HttpPostProviderInterface {
  public:
   void SetExtraRequestHeaders(const char* headers) override {}
   void SetURL(const GURL& url) override {}
@@ -74,14 +73,14 @@ class TestHttpPostProvider : public HttpPostProvider {
   void Abort() override {}
 
  private:
-  ~TestHttpPostProvider() override = default;
+  ~TestHttpPostProviderInterface() override = default;
 };
 
 class TestHttpPostProviderFactory : public HttpPostProviderFactory {
  public:
   ~TestHttpPostProviderFactory() override = default;
-  scoped_refptr<HttpPostProvider> Create() override {
-    return new TestHttpPostProvider();
+  scoped_refptr<HttpPostProviderInterface> Create() override {
+    return new TestHttpPostProviderInterface();
   }
 };
 
@@ -108,6 +107,7 @@ class SyncEncryptionHandlerObserverMock
   MOCK_METHOD(void, OnPassphraseAccepted, (), (override));
   MOCK_METHOD(void, OnTrustedVaultKeyRequired, (), (override));
   MOCK_METHOD(void, OnTrustedVaultKeyAccepted, (), (override));
+  MOCK_METHOD(void, OnBootstrapTokenUpdated, (const std::string&), (override));
   MOCK_METHOD(void, OnEncryptedTypesChanged, (ModelTypeSet, bool), (override));
   MOCK_METHOD(void,
               OnCryptographerStateChanged,
@@ -214,9 +214,8 @@ class SyncManagerImplTest : public testing::Test {
   CancelationSignal cancelation_signal_;
   StrictMock<SyncManagerObserverMock> manager_observer_;
   // Owned by |sync_manager_|.
-  raw_ptr<StrictMock<SyncEncryptionHandlerObserverMock>> encryption_observer_ =
-      nullptr;
-  raw_ptr<MockSyncScheduler> scheduler_ = nullptr;
+  StrictMock<SyncEncryptionHandlerObserverMock>* encryption_observer_ = nullptr;
+  MockSyncScheduler* scheduler_ = nullptr;
 };
 
 // Test that the configuration params are properly created and sent to

@@ -5,9 +5,8 @@
 #ifndef COMPONENTS_SAFE_BROWSING_CONTENT_BROWSER_TRIGGERS_SUSPICIOUS_SITE_TRIGGER_H_
 #define COMPONENTS_SAFE_BROWSING_CONTENT_BROWSER_TRIGGERS_SUSPICIOUS_SITE_TRIGGER_H_
 
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
-#include "components/safe_browsing/core/common/proto/csd.pb.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "content/public/browser/web_contents_user_data.h"
 
@@ -132,8 +131,6 @@ class SuspiciousSiteTrigger
       PrefService* prefs,
       scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory,
       history::HistoryService* history_service,
-      base::RepeatingCallback<ChromeUserPopulation()>
-          get_user_population_callback,
       ReferrerChainProvider* referrer_chain_provider,
       bool monitor_mode);
 
@@ -169,13 +166,12 @@ class SuspiciousSiteTrigger
 
   // TriggerManager gets called if this trigger detects a suspicious site and
   // wants to collect data abou tit. Not owned.
-  raw_ptr<TriggerManager> trigger_manager_;
+  TriggerManager* trigger_manager_;
 
-  raw_ptr<PrefService> prefs_;
+  PrefService* prefs_;
   scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory_;
-  raw_ptr<history::HistoryService> history_service_;
-  base::RepeatingCallback<ChromeUserPopulation()> get_user_population_callback_;
-  raw_ptr<ReferrerChainProvider> referrer_chain_provider_;
+  history::HistoryService* history_service_;
+  ReferrerChainProvider* referrer_chain_provider_;
 
   // Task runner for posting delayed tasks. Normally set to the runner for the
   // UI thread, but can be overwritten for tests.

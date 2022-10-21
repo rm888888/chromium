@@ -7,6 +7,7 @@
 
 #include <memory>
 
+#include "base/macros.h"
 #include "components/webxr/android/ar_compositor_delegate_provider.h"
 #include "device/vr/public/cpp/vr_device_provider.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
@@ -28,7 +29,16 @@ class ArCoreDeviceProvider : public device::VRDeviceProvider {
   ArCoreDeviceProvider& operator=(const ArCoreDeviceProvider&) = delete;
 
   ~ArCoreDeviceProvider() override;
-  void Initialize(device::VRDeviceProviderClient* client) override;
+  void Initialize(
+      base::RepeatingCallback<void(
+          device::mojom::XRDeviceId,
+          device::mojom::VRDisplayInfoPtr,
+          device::mojom::XRDeviceDataPtr,
+          mojo::PendingRemote<device::mojom::XRRuntime>)> add_device_callback,
+      base::RepeatingCallback<void(device::mojom::XRDeviceId)>
+          remove_device_callback,
+      base::OnceClosure initialization_complete,
+      device::XrFrameSinkClientFactory xr_frame_sink_client_factory) override;
   bool Initialized() override;
 
  private:

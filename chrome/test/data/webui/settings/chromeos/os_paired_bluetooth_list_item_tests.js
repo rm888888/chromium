@@ -18,11 +18,7 @@ suite('OsPairedBluetoothListItemTest', function() {
   /** @type {!SettingsPairedBluetoothListItemElement|undefined} */
   let pairedBluetoothListItem;
 
-  /** @type {!chromeos.bluetoothConfig.mojom} */
-  let mojom;
-
   setup(function() {
-    mojom = chromeos.bluetoothConfig.mojom;
     pairedBluetoothListItem =
         document.createElement('os-settings-paired-bluetooth-list-item');
     document.body.appendChild(pairedBluetoothListItem);
@@ -88,6 +84,10 @@ suite('OsPairedBluetoothListItemTest', function() {
             pairedBluetoothListItem.i18n(
                 'bluetoothPairedDeviceItemA11yLabelTypeUnknown', itemIndex + 1,
                 listSize, publicName));
+        assertEquals(
+            getSubpageButtonA11yLabel(),
+            pairedBluetoothListItem.i18n(
+                'bluetoothPairedDeviceItemSubpageButtonA11yLabel', publicName));
 
         // Set device nickname, type and battery info.
         const nickname = 'nickname';
@@ -112,6 +112,10 @@ suite('OsPairedBluetoothListItemTest', function() {
             pairedBluetoothListItem.i18n(
                 'bluetoothPairedDeviceItemA11yLabelTypeComputerWithBatteryInfo',
                 itemIndex + 1, listSize, nickname, batteryPercentage));
+        assertEquals(
+            getSubpageButtonA11yLabel(),
+            pairedBluetoothListItem.i18n(
+                'bluetoothPairedDeviceItemSubpageButtonA11yLabel', nickname));
       });
 
   test('Battery percentage out of bounds', async function() {
@@ -176,60 +180,5 @@ suite('OsPairedBluetoothListItemTest', function() {
     // Simulate clicking the item's subpage button.
     pairedBluetoothListItem.$.subpageButton.click();
     await assertInDetailSubpage();
-  });
-
-  test('Enterprise-managed icon UI state', async function() {
-    const getManagedIcon = () => {
-      return pairedBluetoothListItem.$$('#managedIcon');
-    };
-    assertFalse(!!getManagedIcon());
-
-    const device = createDefaultBluetoothDevice(
-        /*id=*/ '12//345&6789',
-        /*publicName=*/ 'BeatsX',
-        /*connectionState=*/
-        chromeos.bluetoothConfig.mojom.DeviceConnectionState.kConnected,
-        /*opt_nickname=*/ 'device1',
-        /*opt_audioCapability=*/
-        mojom.AudioOutputCapability.kCapableOfAudioOutput,
-        /*opt_deviceType=*/ mojom.DeviceType.kMouse,
-        /*opt_isBlockedByPolicy=*/ true);
-
-    pairedBluetoothListItem.device = Object.assign({}, device);
-    await flushAsync();
-
-    // The icon should now be showing.
-    assertTrue(!!getManagedIcon());
-
-    // Simulate hovering over the icon.
-    const showTooltipPromise =
-        eventToPromise('managed-tooltip-state-change', pairedBluetoothListItem);
-    getManagedIcon().dispatchEvent(new Event('mouseenter'));
-
-    // The managed-tooltip-state-changed event should have been fired.
-    const showTooltipEvent = await showTooltipPromise;
-    assertEquals(showTooltipEvent.detail.show, true);
-    assertEquals(showTooltipEvent.detail.element, getManagedIcon());
-    assertEquals(
-        showTooltipEvent.detail.address, device.deviceProperties.address);
-
-    // Simulate the device being unblocked by policy.
-    const hideTooltipPromise =
-        eventToPromise('managed-tooltip-state-change', pairedBluetoothListItem);
-    const device1 = Object.assign({}, device);
-    device1.deviceProperties.isBlockedByPolicy = false;
-    pairedBluetoothListItem.device = Object.assign({}, device1);
-
-    await flushAsync();
-
-    // The icon should now be hidden.
-    assertFalse(!!getManagedIcon());
-
-    // The managed-tooltip-state-changed event should have been fired again.
-    const hideTooltipEvent = await hideTooltipPromise;
-    assertEquals(hideTooltipEvent.detail.show, false);
-    assertEquals(hideTooltipEvent.detail.element, undefined);
-    assertEquals(
-        hideTooltipEvent.detail.address, device.deviceProperties.address);
   });
 });

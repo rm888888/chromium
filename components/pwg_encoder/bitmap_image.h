@@ -9,6 +9,7 @@
 
 #include <memory>
 
+#include "base/macros.h"
 #include "ui/gfx/geometry/point.h"
 #include "ui/gfx/geometry/size.h"
 

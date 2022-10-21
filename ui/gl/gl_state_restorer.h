@@ -5,6 +5,7 @@
 #ifndef UI_GL_GL_STATE_RESTORER_H_
 #define UI_GL_GL_STATE_RESTORER_H_
 
+#include "base/macros.h"
 #include "ui/gl/gl_export.h"
 
 namespace gpu {

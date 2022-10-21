@@ -12,7 +12,7 @@
 #include <string>
 #include <vector>
 
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/memory/ref_counted.h"
 #include "base/memory/weak_ptr.h"
 #include "base/task/sequenced_task_runner_helpers.h"
@@ -75,8 +75,6 @@ class QuotaInternalsProxy
                        blink::mojom::StorageType type,
                        int64_t usage,
                        blink::mojom::UsageBreakdownPtr usage_breakdown);
-  void DidGetStatistics(
-      const base::flat_map<std::string, std::string>& statistics);
 
   // Helper. Called on IO Thread.
   void RequestPerOriginInfo(blink::mojom::StorageType type);
@@ -84,7 +82,7 @@ class QuotaInternalsProxy
   void GetHostUsage(const std::string& host, blink::mojom::StorageType type);
 
   // Used on UI Thread.
-  raw_ptr<QuotaInternalsHandler> handler_;
+  QuotaInternalsHandler* handler_;
 
   // Used on IO Thread.
   scoped_refptr<storage::QuotaManager> quota_manager_;

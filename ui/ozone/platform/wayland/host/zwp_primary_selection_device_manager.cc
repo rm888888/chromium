@@ -11,13 +11,12 @@
 #include "base/logging.h"
 #include "ui/ozone/platform/wayland/host/wayland_connection.h"
 #include "ui/ozone/platform/wayland/host/wayland_data_source.h"
-#include "ui/ozone/platform/wayland/host/wayland_seat.h"
 #include "ui/ozone/platform/wayland/host/zwp_primary_selection_device.h"
 
 namespace ui {
 
 namespace {
-constexpr uint32_t kMinVersion = 1;
+constexpr uint32_t kMaxGtkPrimarySelectionDeviceManagerVersion = 1;
 }  // namespace
 
 // static
@@ -32,13 +31,12 @@ void ZwpPrimarySelectionDeviceManager::Instantiate(
     uint32_t version) {
   DCHECK_EQ(interface, kInterfaceName);
 
-  if (connection->zwp_primary_selection_device_manager_ ||
-      !wl::CanBind(interface, version, kMinVersion, kMinVersion)) {
+  if (connection->zwp_primary_selection_device_manager_)
     return;
-  }
 
   auto manager = wl::Bind<zwp_primary_selection_device_manager_v1>(
-      registry, name, kMinVersion);
+      registry, name,
+      std::min(version, kMaxGtkPrimarySelectionDeviceManagerVersion));
   if (!manager) {
     LOG(ERROR) << "Failed to bind zwp_primary_selection_device_manager_v1";
     return;
@@ -62,9 +60,8 @@ ZwpPrimarySelectionDevice* ZwpPrimarySelectionDeviceManager::GetDevice() {
   DCHECK(connection_->seat());
   if (!device_) {
     device_ = std::make_unique<ZwpPrimarySelectionDevice>(
-        connection_,
-        zwp_primary_selection_device_manager_v1_get_device(
-            device_manager_.get(), connection_->seat()->wl_object()));
+        connection_, zwp_primary_selection_device_manager_v1_get_device(
+                         device_manager_.get(), connection_->seat()));
     connection_->ScheduleFlush();
   }
   DCHECK(device_);

@@ -160,10 +160,10 @@ class Storage::QueueUploaderInterface : public UploaderInterface {
 
   void ProcessRecord(EncryptedRecord encrypted_record,
                      base::OnceCallback<void(bool)> processed_cb) override {
-    // Update sequence information: add Priority.
-    SequenceInformation* const sequence_info =
+    // Update sequencing information: add Priority.
+    SequenceInformation* const sequencing_info =
         encrypted_record.mutable_sequence_information();
-    sequence_info->set_priority(priority_);
+    sequencing_info->set_priority(priority_);
     storage_interface_->ProcessRecord(std::move(encrypted_record),
                                       std::move(processed_cb));
   }
@@ -171,7 +171,7 @@ class Storage::QueueUploaderInterface : public UploaderInterface {
   void ProcessGap(SequenceInformation start,
                   uint64_t count,
                   base::OnceCallback<void(bool)> processed_cb) override {
-    // Update sequence information: add Priority.
+    // Update sequencing information: add Priority.
     start.set_priority(priority_);
     storage_interface_->ProcessGap(std::move(start), count,
                                    std::move(processed_cb));
@@ -721,28 +721,27 @@ void Storage::Write(Priority priority,
   ASSIGN_OR_ONCE_CALLBACK_AND_RETURN(scoped_refptr<StorageQueue> queue,
                                      completion_cb, GetQueue(priority));
 
+  KeyDelivery::RequestCallback action = base::BindOnce(
+      [](scoped_refptr<StorageQueue> queue, Record record,
+         base::OnceCallback<void(Status)> completion_cb, Status status) {
+        if (!status.ok()) {
+          std::move(completion_cb).Run(status);
+          return;
+        }
+        queue->Write(std::move(record), std::move(completion_cb));
+      },
+      queue, std::move(record), std::move(completion_cb));
+
   if (EncryptionModuleInterface::is_enabled() &&
       !encryption_module_->has_encryption_key()) {
     // Key was not found at startup time. Note that if the key is outdated,
     // we still can't use it, and won't load it now. So this processing can
     // only happen after Storage is initialized (until the first successful
-    // delivery of a key). After that we will resume the write into the queue.
-    KeyDelivery::RequestCallback action = base::BindOnce(
-        [](scoped_refptr<StorageQueue> queue, Record record,
-           base::OnceCallback<void(Status)> completion_cb, Status status) {
-          if (!status.ok()) {
-            std::move(completion_cb).Run(status);
-            return;
-          }
-          queue->Write(std::move(record), std::move(completion_cb));
-        },
-        queue, std::move(record), std::move(completion_cb));
+    // delivery of a key).
     key_delivery_->Request(std::move(action));
-    return;
+  } else {
+    std::move(action).Run(Status::StatusOK());
   }
-
-  // Otherwise we can write into the queue right away.
-  queue->Write(std::move(record), std::move(completion_cb));
 }
 
 void Storage::Confirm(Priority priority,
@@ -780,7 +779,7 @@ void Storage::UpdateEncryptionKey(SignedEncryptionInfo signed_encryption_key) {
       signed_encryption_key.public_asymmetric_key(),
       signed_encryption_key.public_key_id(),
       base::BindOnce(
-          [](scoped_refptr<Storage> storage, Status status) {
+          [](Storage* storage, Status status) {
             if (!status.ok()) {
               LOG(WARNING) << "Encryption key update failed, status=" << status;
               storage->key_delivery_->OnCompletion(status);
@@ -789,7 +788,7 @@ void Storage::UpdateEncryptionKey(SignedEncryptionInfo signed_encryption_key) {
             // Encryption key updated successfully.
             storage->key_delivery_->OnCompletion(Status::StatusOK());
           },
-          base::WrapRefCounted(this)));
+          base::Unretained(this)));
 
   // Serialize whole signed_encryption_key to a new file, discard the old
   // one(s). Do it on a thread which may block doing file operations.

@@ -9,7 +9,7 @@
 #include <memory>
 #include <string>
 
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/observer_list.h"
 #include "build/chromeos_buildflags.h"
 #include "chrome/browser/ui/webui/signin/signin_ui_error.h"
@@ -86,6 +86,11 @@ class LoginUIService : public KeyedService {
   // option chosen by the user in the confirmation UI.
   void SyncConfirmationUIClosed(SyncConfirmationUIClosedResult result);
 
+  // Delegate to an existing login tab if one exists. If not, a new sigin tab is
+  // created.
+  void ShowExtensionLoginPrompt(bool enable_sync,
+                                const std::string& email_hint);
+
   // Displays login results. This is either the Modal Signin Error dialog if
   // |error.message()| is a non-empty string, or the User Menu with a blue
   // header toast otherwise.
@@ -103,7 +108,7 @@ class LoginUIService : public KeyedService {
   // Weak pointers to the recently opened UIs, with the most recent in front.
   std::list<LoginUI*> ui_list_;
 #if !BUILDFLAG(IS_CHROMEOS_ASH)
-  raw_ptr<Profile> profile_;
+  Profile* profile_;
   SigninUIError last_login_error_ = SigninUIError::Ok();
 #endif
 

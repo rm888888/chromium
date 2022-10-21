@@ -37,6 +37,11 @@ const base::Feature kEditPasswordsInSettings = {
 const base::Feature kEnableManualPasswordGeneration = {
     "EnableManualPasswordGeneration", base::FEATURE_ENABLED_BY_DEFAULT};
 
+// Enables UI in settings that allows the user to move multiple passwords to the
+// account storage.
+const base::Feature kEnableMovingMultiplePasswordsToAccount = {
+    "EnableMovingMultiplePasswordsToAccount", base::FEATURE_ENABLED_BY_DEFAULT};
+
 // Enables the overwriting of prefilled username fields if the server predicted
 // the field to contain a placeholder value.
 const base::Feature kEnableOverwritingPlaceholderUsernames{
@@ -72,12 +77,6 @@ const base::Feature kFillOnAccountSelect = {"fill-on-account-select",
 // TODO(crbug.com/1164861): Remove once confirmed to be safe (around M92 or so).
 const base::Feature kInferConfirmationPasswordField = {
     "InferConfirmationPasswordField", base::FEATURE_ENABLED_BY_DEFAULT};
-
-// Feature flag that updates icons, strings, and views for Google Password
-// Manager.
-const base::Feature kIOSEnablePasswordManagerBrandingUpdate{
-    "IOSEnablePasswordManagerBrandingUpdate",
-    base::FEATURE_DISABLED_BY_DEFAULT};
 
 // Enables password leak detection for unauthenticated users.
 const base::Feature kLeakDetectionUnauthenticated = {
@@ -134,24 +133,12 @@ const base::Feature kSecondaryServerFieldPredictions = {
 const base::Feature kSupportForAddPasswordsInSettings = {
     "SupportForAddPasswordsInSettings", base::FEATURE_DISABLED_BY_DEFAULT};
 
-#if defined(OS_LINUX)
-// When enabled, all undecryptable passwords are deleted from the local database
-// during initial sync flow.
-const base::Feature kSyncUndecryptablePasswordsLinux = {
-    "SyncUndecryptablePasswordsLinux", base::FEATURE_DISABLED_BY_DEFAULT};
-#endif
-
 // Treat heuritistics to find new password fields as reliable. This enables
 // password generation on more forms, but could lead to false positives.
 const base::Feature kTreatNewPasswordHeuristicsAsReliable = {
     "TreatNewPasswordHeuristicsAsReliable", base::FEATURE_DISABLED_BY_DEFAULT};
 
 #if defined(OS_ANDROID)
-// Enables the intent fetching for the credential manager in Google Mobile
-// Services. It does not enable launching the credential manager.
-const base::Feature kUnifiedCredentialManagerDryRun = {
-    "UnifiedCredentialManagerDryRun", base::FEATURE_DISABLED_BY_DEFAULT};
-
 // Enables use of Google Mobile Services for password storage. Chrome's local
 // database will be unused but kept in sync for local passwords.
 const base::Feature kUnifiedPasswordManagerAndroid{
@@ -167,12 +154,6 @@ const base::Feature kUnifiedPasswordManagerMigration{
 // source of truth.
 const base::Feature kUnifiedPasswordManagerShadowAndroid{
     "UnifiedPasswordManagerShadowAndroid", base::FEATURE_DISABLED_BY_DEFAULT};
-
-// Similar to kUnifiedPasswordManagerShadowAndroid but send modify operations
-// instead of read operations.Relevant only for non-sync'ing users.
-const base::Feature kUnifiedPasswordManagerShadowWriteOperationsAndroid{
-    "UnifiedPasswordManagerShadowWriteOperationsAndroid",
-    base::FEATURE_DISABLED_BY_DEFAULT};
 
 // If enabled, the built-in sync functionality in PasswordSyncBridge becomes
 // unused, meaning that SyncService/SyncEngine will no longer download or

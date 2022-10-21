@@ -13,7 +13,7 @@ import {assert} from '../../js/assert.m.js';
 import {hasKeyModifiers} from '../../js/util.m.js';
 
 /** @polymer */
-export class CrProfileAvatarSelectorGridElement extends PolymerElement {
+class CrProfileAvatarSelectorGridElement extends PolymerElement {
   static get is() {
     return 'cr-profile-avatar-selector-grid';
   }

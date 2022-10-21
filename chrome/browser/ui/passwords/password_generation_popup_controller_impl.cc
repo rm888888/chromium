@@ -13,7 +13,6 @@
 
 #include "base/bind.h"
 #include "base/i18n/rtl.h"
-#include "base/memory/raw_ptr.h"
 #include "base/strings/string_split.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversion_utils.h"
@@ -74,7 +73,7 @@ class PasswordGenerationPopupControllerImpl::KeyPressRegistrator {
   }
 
  private:
-  const raw_ptr<content::RenderFrameHost> frame_;
+  content::RenderFrameHost* const frame_;
   content::RenderWidgetHost::KeyPressEventCallback callback_;
 };
 
@@ -220,7 +219,7 @@ bool PasswordGenerationPopupControllerImpl::Show(GenerationUIState state) {
   state_ = state;
 
   if (!view_) {
-    view_ = PasswordGenerationPopupView::Create(GetWeakPtr());
+    view_ = PasswordGenerationPopupView::Create(this);
 
     // Treat popup as being hidden if creation fails.
     if (!view_) {

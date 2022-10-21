@@ -18,7 +18,6 @@
 #include "base/containers/flat_map.h"
 #include "base/files/file_path.h"
 #include "base/logging.h"
-#include "base/memory/raw_ptr.h"
 #include "base/metrics/histogram_functions.h"
 #include "base/metrics/histogram_macros.h"
 #include "base/numerics/safe_conversions.h"
@@ -58,7 +57,7 @@ using autofill::GaiaIdHash;
 namespace password_manager {
 
 // The current version number of the login database schema.
-constexpr int kCurrentVersionNumber = 32;
+constexpr int kCurrentVersionNumber = 31;
 // The oldest version of the schema such that a legacy Chrome client using that
 // version can still read/write the current database.
 constexpr int kCompatibleVersionNumber = 31;
@@ -122,7 +121,7 @@ class ScopedTransaction {
   ~ScopedTransaction() { db_->CommitTransaction(); }
 
  private:
-  raw_ptr<LoginDatabase> db_;
+  LoginDatabase* db_;
 };
 
 // Convenience enum for interacting with SQL queries that use all the columns.
@@ -437,10 +436,6 @@ void InitializeBuilders(SQLTableBuilders builders) {
   builders.logins->DropColumn("date_synced");
   SealVersion(builders, /*expected_version=*/31u);
 
-  // Version 32. Set timestamps of uninitialized timestamps in
-  // 'insecure_credentials' table.
-  SealVersion(builders, /*expected_version=*/32u);
-
   DCHECK_EQ(static_cast<size_t>(COLUMN_NUM), builders.logins->NumberOfColumns())
       << "Adjust LoginDatabaseTableColumns if you change column definitions "
          "here.";
@@ -583,18 +578,6 @@ bool MigrateDatabase(unsigned current_version,
       return false;
   }
 
-  // Set the create_time value when uninitialized for 'insecure_credentials'.
-  if (current_version >= 29 && current_version < 32) {
-    sql::Statement set_timestamp;
-    set_timestamp.Assign(
-        db->GetUniqueStatement("UPDATE insecure_credentials SET create_time = "
-                               "? WHERE create_time = 0"));
-    set_timestamp.BindInt64(
-        0, base::Time::Now().ToDeltaSinceWindowsEpoch().InMicroseconds());
-    if (!set_timestamp.Run())
-      return false;
-  }
-
   return true;
 }
 
@@ -644,7 +627,7 @@ std::string GeneratePlaceholders(size_t count) {
   return result;
 }
 
-#if defined(OS_MAC) || defined(OS_LINUX)
+#if defined(OS_MAC)
 // Fills |form| with necessary data required to be removed from the database
 // and returns it.
 PasswordForm GetFormForRemoval(sql::Statement& statement) {
@@ -1335,18 +1318,43 @@ bool LoginDatabase::GetLogins(
 
   // PSL matching only applies to HTML forms.
   if (should_PSL_matching_apply) {
-    s.BindString(placeholder++, GetRegexForPSLMatching(form.signon_realm));
+    const GURL signon_realm(form.signon_realm);
+    std::string registered_domain = GetRegistryControlledDomain(signon_realm);
+    DCHECK(!registered_domain.empty());
+    // We are extending the original SQL query with one that includes more
+    // possible matches based on public suffix domain matching. Using a regexp
+    // here is just an optimization to not have to parse all the stored entries
+    // in the |logins| table. The result (scheme, domain and port) is verified
+    // further down using GURL. See the functions SchemeMatches,
+    // RegistryControlledDomainMatches and PortMatches.
+    // We need to escape . in the domain. Since the domain has already been
+    // sanitized using GURL, we do not need to escape any other characters.
+    base::ReplaceChars(registered_domain, ".", "\\.", &registered_domain);
+    std::string scheme = signon_realm.scheme();
+    // We need to escape . in the scheme. Since the scheme has already been
+    // sanitized using GURL, we do not need to escape any other characters.
+    // The scheme soap.beep is an example with '.'.
+    base::ReplaceChars(scheme, ".", "\\.", &scheme);
+    const std::string port = signon_realm.port();
+    // For a signon realm such as http://foo.bar/, this regexp will match
+    // domains on the form http://foo.bar/, http://www.foo.bar/,
+    // http://www.mobile.foo.bar/. It will not match http://notfoo.bar/.
+    // The scheme and port has to be the same as the observed form.
+    std::string regexp = "^(" + scheme + ":\\/\\/)([\\w-]+\\.)*" +
+                         registered_domain + "(:" + port + ")?\\/$";
+    s.BindString(placeholder++, regexp);
 
     if (should_federated_apply) {
       // This regex matches any subdomain of |registered_domain|, in particular
       // it matches the empty subdomain. Hence exact domain matches are also
       // retrieved.
       s.BindString(placeholder++,
-                   GetRegexForPSLFederatedMatching(form.signon_realm));
+                   "^federation://([\\w-]+\\.)*" + registered_domain + "/.+$");
     }
   } else if (should_federated_apply) {
-    s.BindString(placeholder++,
-                 GetExpressionForFederatedMatching(form.url) + "%");
+    std::string expression =
+        base::StringPrintf("federation://%s/%%", form.url.host().c_str());
+    s.BindString(placeholder++, expression);
   }
 
   PrimaryKeyToFormMap key_to_form_map;
@@ -1458,10 +1466,9 @@ bool LoginDatabase::DeleteAndRecreateDatabaseFile() {
 }
 
 DatabaseCleanupResult LoginDatabase::DeleteUndecryptableLogins() {
-#if defined(OS_MAC) || defined(OS_LINUX)
+#if defined(OS_MAC)
   TRACE_EVENT0("passwords", "LoginDatabase::DeleteUndecryptableLogins");
-  // If the Keychain in MacOS or the real secret key in Linux is unavailable,
-  // don't delete any logins.
+  // If the Keychain is unavailable, don't delete any logins.
   if (!OSCrypt::IsEncryptionAvailable()) {
     metrics_util::LogDeleteUndecryptableLoginsReturnValue(
         metrics_util::DeleteCorruptedPasswordsResult::kEncryptionUnavailable);

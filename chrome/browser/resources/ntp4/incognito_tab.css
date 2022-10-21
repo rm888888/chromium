@@ -1,0 +1,420 @@
+/* Copyright 2017 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file. */
+
+body {
+  -webkit-font-smoothing: antialiased;
+  font-size: 100%;
+  margin: 0;
+
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -20;
+  zoom: 1;
+  background-repeat: no-repeat;
+  background-size: cover;
+  -webkit-background-size: cover;
+  -o-background-size: cover;
+  background-position: 0 0;
+  background-image: url(../../../../ui/webui/resources/images/incognito_tab_bk.png);
+}
+
+[hidden] {
+  display: none !important;
+}
+
+/** Typography -------------------------------------------------------------- */
+
+.content {
+  /* This is identical to the default background color. It's necessary to set it
+     for the case when a theme with a background image is installed. */
+
+  /*background-color: rgb(53, 54, 58);*/
+  /*color: rgb(232, 234, 237);  /* --google-grey-200 */
+  /*font-size: calc(100% - 2px);*/
+  /*line-height: calc(100% + 6px);*/
+  /*min-width: 240px;*/
+}
+h1 {
+  font-size: calc(100% + 8px);
+  font-weight: 400;
+  line-height: calc(100% + 8px);
+}
+
+em {
+  color: white;
+  font-style: normal;
+}
+/*update on 20220810*/
+.dao-content{
+  background: #FFF200;
+  box-shadow: 0px 2px 20px 0px rgba(24,25,28,0.24);
+  border-radius: 6px;
+  width: 289px;
+  height: 96px;
+  position: absolute;
+  right: 20px;
+  top: 20px;
+}
+.dao-row-1{
+  font-family: STHeiti;
+  font-size: 12px;
+  color: #18191C;
+  text-align: right;
+  line-height: 12px;
+  font-weight: 600;
+}
+.dao-row-2{
+  font-family: STHeiti;
+  font-size: 24px;
+  color: #18191C;
+  position: absolute;
+  left: 53px;
+  line-height: 28px;
+  font-weight: 600;
+}
+.dao-row-3{
+  font-family: STHeiti;
+  font-size: 14px;
+  color: #18191C;
+  position: absolute;
+  left: 53px;
+  top: 42px;
+  line-height: 28px;
+  font-weight: 600;
+}
+.dao-progress{
+  border-radius: 6px;
+  background-color: black;
+  width: 74px;
+  height: 74px;
+  top: 31px;
+  right: 272px;
+  position: fixed;
+  text-align: center;
+}
+.dao-progress-row1{
+  border-radius: 4px;
+  background: #D03C26;
+  width: 32px;
+  height: 8px;
+  display:inline-block;
+  vertical-align: middle;
+}
+.dao-progress-row2{
+  border-radius: 4px;
+  background: #E0AF38 ;
+  width: 32px;
+  height: 8px;
+  display:inline-block;
+  vertical-align: middle;
+}
+.dao-progress-row3{
+  border-radius: 4px;
+  background: #03D9DA;
+  width: 32px;
+  height: 8px;
+  display:inline-block;
+  vertical-align: middle;
+}
+.dao-progress-row4{
+  border-radius: 4px;
+  background: #03D9DA;
+  width: 32px;
+  height: 8px;
+  display:inline-block;
+  vertical-align: middle;
+}
+/*update on 20220810*/
+.learn-more-button {
+  color: rgb(138, 180, 248);
+  text-decoration: none;
+}
+
+/* Small font on small screens. */
+@media (max-width: 240px),
+       (max-height: 320px) {
+  .content {
+    font-size: calc(100% - 4px);
+    /*line-height: calc(100% + 6px);*/
+  }
+
+  h1 {
+    font-size: calc(100% + 4px);
+    line-height: calc(100% + 4px);
+  }
+}
+
+/** Icon -------------------------------------------------------------------- */
+
+.icon {
+  /*content: url(../../../../ui/webui/resources/images/incognito_splash.svg);*/
+  /*update on 20220921*/
+  content: url(../../../../ui/webui/resources/images/fingerprint_default.svg);
+  height: 120px;
+  width: 120px;
+}
+
+/* Medium-sized icon on medium-sized screens. */
+@media (max-height: 480px),
+       (max-width: 720px) {
+  .icon {
+    height: 72px;
+    width: 72px;
+  }
+}
+
+/* Very small icon on very small screens. */
+@media (max-width: 720px) {
+  @media (max-width: 240px),
+         (max-height: 480px) {
+    .icon {
+      height: 48px;
+      width: 48px;
+    }
+  }
+}
+
+/** The "Learn more" link --------------------------------------------------- */
+
+/* By default, we only show the inline "Learn more" link. */
+.content > .learn-more-button {
+  display: none;
+}
+
+/* On narrow screens, we show the standalone "Learn more" link. */
+@media (max-width: 720px) {
+  #subtitle > .learn-more-button {
+    display: none;
+  }
+
+  .content > .learn-more-button {
+    display: block;
+  }
+}
+
+/** Cookie Controls --------------------------------------------------------- */
+
+#cookie-controls {
+  align-items: center;
+  background-color: rgb(60, 64, 67); /* --google-grey-800 */
+  border-radius: 4px;
+  box-sizing: border-box;
+  display: flex;
+  padding: 12px 20px;
+}
+
+#cookie-controls-description {
+  flex: 1;
+  padding-inline-end: 12px;
+}
+
+#cookie-controls-description em {
+  display: block;
+}
+
+#cookie-controls-toggle,
+#cookie-controls-tooltip-icon {
+  flex: none;
+}
+
+#cookie-controls-toggle:not(:defined) {
+  width: 34px;
+}
+
+#cookie-controls-tooltip-icon {
+  margin-inline-end: 24px; /* var(--cr-controlled-by-spacing) */
+}
+
+#cookie-controls-tooltip-icon:not(:defined) {
+  width: 20px; /* var(--cr-icon-size) */
+}
+
+/** Layout ------------------------------------------------------------------ */
+
+/* Align the content, icon, and title to to the center. */
+.content {
+  margin-inline-end: auto;
+  margin-inline-start: auto;
+  max-width: 600px;
+}
+
+.icon {
+  margin-inline-end: auto;
+  margin-inline-start: auto;
+}
+
+h1 {
+  text-align: center;
+}
+
+/* Align the two columns of bulletpoints next to each other. */
+#bulletpoints-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
+.bulletpoints {
+  flex-basis: 285px;  /* (600px - 30px) / 2. */
+  flex-grow: 1;
+  flex-shrink: 0;
+}
+
+.bulletpoints.first {
+  margin-inline-end: 30px;
+}
+
+/* On narrow screens, align everything to the left. */
+@media (max-width: 720px) {
+  .content {
+    max-width: 600px !important;  /* must override the rule set by JS which
+                                   * is only valid for width > 720px cases. */
+    text-align: start;
+  }
+
+  .icon {
+    margin-inline-start: 0;
+  }
+
+  h1 {
+    text-align: start;
+  }
+}
+
+/** Paddings and margins ---------------------------------------------------- */
+
+.bulletpoints ul {
+  margin: 4px 0 0;
+  padding-inline-start: 16px;
+}
+
+/* Wide screens. */
+@media (min-width: 720px) {
+  .icon,
+  h1,
+  #subtitle,
+  .learn-more-button {
+    margin-top: 1.5rem;
+  }
+
+  .icon,
+  h1,
+  #subtitle,
+  .bulletpoints,
+  #cookie-controls {
+    margin-bottom: 1.5rem;
+  }
+
+  .content {
+    /*margin-top: 40px;*/
+    min-width: 240px;
+    padding: 8px 48px 24px;
+  }
+
+  /* Snap the content box to the whole height on short screens. */
+  @media (max-height: 480px) {
+    html,
+    body,
+    .content {
+      height: 100%;
+    }
+
+    .content {
+      margin-bottom: 0;
+      margin-top: 0;
+      padding-bottom: 0;
+      padding-top: 0;
+    }
+
+    .icon {
+      margin-top: 0;
+      padding-top: 32px;  /* Define the top offset through the icon's padding,
+                           * otherwise the screen height would be 100% + 32px */
+    }
+  }
+
+  /* Smaller vertical margins on very short screens. */
+  @media (max-height: 320px) {
+    h1,
+    #subtitle {
+      margin-bottom: 16px;
+      margin-top: 16px;
+    }
+
+    .learn-more-button,
+    .bulletpoints,
+    .icon,
+    #cookie-controls {
+      margin-bottom: 16px;
+    }
+  }
+}
+
+/* Narrow screens */
+@media (max-width: 720px) {
+  .content {
+    min-width: 176px;
+    padding: 72px 32px;
+  }
+
+  .icon,
+  h1,
+  #subtitle {
+    margin-bottom: 1.5rem;
+    margin-top: 1.5rem;
+  }
+
+  .bulletpoints,
+  .learn-more-button,
+  #cookie-controls {
+    margin-bottom: 1.5rem;
+  }
+
+  /* Smaller offsets on smaller screens. */
+  @media (max-height: 600px) {
+    .content {
+      padding-top: 48px;
+    }
+
+    .icon,
+    h1,
+    #subtitle {
+      margin-bottom: 1rem;
+      margin-top: 1rem;
+    }
+
+    .bulletpoints,
+    .learn-more-button,
+    #cookie-controls {
+      margin-bottom: 1rem;
+    }
+  }
+
+  /* Small top offset on very small screens. */
+  @media (max-height: 480px) {
+    .content {
+      padding-top: 32px;
+    }
+  }
+
+  /* Undo the first and last elements margins. */
+  .icon {
+    margin-top: 0;
+  }
+
+  .learn-more-button {
+    margin-bottom: 0;
+  }
+}
+
+/* Very narrow screens. */
+@media (max-width: 240px) {
+  .content {
+    min-width: 192px;
+    padding-inline-end: 24px;
+    padding-inline-start: 24px;
+  }
+}

@@ -40,7 +40,6 @@ namespace enterprise.reportingPrivate {
     DOMString[] macAddresses;
     DOMString? windowsMachineDomain;
     DOMString? windowsUserDomain;
-    DOMString securityPatchLevel;
   };
 
   // Invoked by <code>getDeviceInfo</code> to return device information.

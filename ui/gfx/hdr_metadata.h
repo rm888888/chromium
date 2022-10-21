@@ -58,8 +58,6 @@ struct GFX_EXPORT HDRMetadata {
         (max_frame_average_light_level == rhs.max_frame_average_light_level) &&
         (color_volume_metadata == rhs.color_volume_metadata));
   }
-
-  bool operator!=(const HDRMetadata& rhs) const { return !(*this == rhs); }
 };
 
 // HDR metadata types as described in

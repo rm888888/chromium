@@ -7,6 +7,7 @@
 
 #include <memory>
 
+#include "base/macros.h"
 #include "components/sync/engine/cycle/nudge_tracker.h"
 #include "components/sync/engine/cycle/status_controller.h"
 #include "components/sync/engine/events/protocol_event.h"

@@ -86,8 +86,7 @@ bool WebMeasureMemoryStressTester::FeatureIsEnabled() {
 }
 
 void WebMeasureMemoryStressTester::OnLoadingStateChanged(
-    const PageNode* page_node,
-    PageNode::LoadingState previous_state) {
+    const PageNode* page_node) {
   DCHECK(page_node);
   DCHECK_ON_GRAPH_SEQUENCE(page_node->GetGraph());
   if (page_node->GetLoadingState() != PageNode::LoadingState::kLoadedIdle)

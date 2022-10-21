@@ -5,7 +5,6 @@
 #include "components/js_injection/browser/js_to_browser_messaging.h"
 
 #include "base/containers/contains.h"
-#include "base/memory/raw_ptr.h"
 #include "components/js_injection/browser/web_message.h"
 #include "components/js_injection/browser/web_message_host.h"
 #include "components/js_injection/browser/web_message_host_factory.h"
@@ -56,10 +55,9 @@ class JsToBrowserMessaging::ReplyProxyImpl : public WebMessageReplyProxy {
     return render_frame_host_->GetLifecycleState() ==
            content::RenderFrameHost::LifecycleState::kInBackForwardCache;
   }
-  content::Page& GetPage() override { return render_frame_host_->GetPage(); }
 
  private:
-  raw_ptr<content::RenderFrameHost> render_frame_host_;
+  content::RenderFrameHost* render_frame_host_;
   mojo::AssociatedRemote<mojom::BrowserToJsMessaging> java_to_js_messaging_;
 };
 

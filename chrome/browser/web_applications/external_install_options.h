@@ -19,8 +19,8 @@
 
 namespace web_app {
 
-using WebAppInstallInfoFactory =
-    base::RepeatingCallback<std::unique_ptr<WebAppInstallInfo>()>;
+using WebApplicationInfoFactory =
+    base::RepeatingCallback<std::unique_ptr<WebApplicationInfo>()>;
 
 enum class ExternalInstallSource;
 
@@ -176,9 +176,9 @@ struct ExternalInstallOptions {
   // |service_worker_registration_url| will not be loaded.
   bool only_use_app_info_factory = false;
 
-  // A factory callback that returns a unique_ptr<WebAppInstallInfo> to be used
+  // A factory callback that returns a unique_ptr<WebApplicationInfo> to be used
   // as the app's installation metadata.
-  WebAppInstallInfoFactory app_info_factory;
+  WebApplicationInfoFactory app_info_factory;
 
   // The type of SystemWebApp, if this app is a System Web App.
   absl::optional<SystemAppType> system_app_type = absl::nullopt;
@@ -190,9 +190,6 @@ struct ExternalInstallOptions {
   // Whether this should be installed on devices without a touch screen with
   // stylus support.
   bool disable_if_touchscreen_with_stylus_not_supported = false;
-
-  // Whether the app should show up in file-open intent and picking surfaces.
-  bool handles_file_open_intents = false;
 };
 
 WebAppInstallParams ConvertExternalInstallOptionsToParams(

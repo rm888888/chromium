@@ -142,9 +142,6 @@ enum MetricEnrollment {
   kMetricEnrollmentTooManyRequests = 62,
   // Enrollment failed: illegal account for packaged EDU license.
   kMetricEnrollmentIllegalAccountForPackagedEDULicense = 63,
-  // Enrollment failed: dev mode would be blocked but this is prevented by a
-  // command-line switch.
-  kMetricEnrollmentMayNotBlockDevMode = 64,
   // Max value for use with enumeration histogram UMA functions.
   kMaxValue = kMetricEnrollmentIllegalAccountForPackagedEDULicense
 };
@@ -243,13 +240,22 @@ POLICY_EXPORT extern const char
     kMetricRemoteCommandInvalidationsRegistrationResult[];
 
 POLICY_EXPORT extern const char kMetricUserRemoteCommandReceived[];
+POLICY_EXPORT extern const char kMetricUserUnsignedRemoteCommandReceived[];
 POLICY_EXPORT extern const char kMetricUserRemoteCommandExecutedTemplate[];
+POLICY_EXPORT extern const char
+    kMetricUserUnsignedRemoteCommandExecutedTemplate[];
 
 POLICY_EXPORT extern const char kMetricDeviceRemoteCommandReceived[];
+POLICY_EXPORT extern const char kMetricDeviceUnsignedRemoteCommandReceived[];
 POLICY_EXPORT extern const char kMetricDeviceRemoteCommandExecutedTemplate[];
+POLICY_EXPORT extern const char
+    kMetricDeviceUnsignedRemoteCommandExecutedTemplate[];
 
 POLICY_EXPORT extern const char kMetricCBCMRemoteCommandReceived[];
+POLICY_EXPORT extern const char kMetricCBCMUnsignedRemoteCommandReceived[];
 POLICY_EXPORT extern const char kMetricCBCMRemoteCommandExecutedTemplate[];
+POLICY_EXPORT extern const char
+    kMetricCBCMUnsignedRemoteCommandExecutedTemplate[];
 
 // Private set membership UMA histogram names.
 POLICY_EXPORT extern const char kUMAPsmSuccessTime[];

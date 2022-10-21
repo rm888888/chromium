@@ -13,6 +13,7 @@
 
 #include <string>
 
+#include "base/macros.h"
 #include "components/nacl/renderer/ppb_nacl_private.h"
 
 namespace plugin {

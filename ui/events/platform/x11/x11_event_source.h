@@ -11,6 +11,7 @@
 
 #include "base/auto_reset.h"
 #include "base/callback.h"
+#include "base/macros.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/events/events_export.h"
 #include "ui/events/platform/platform_event_source.h"

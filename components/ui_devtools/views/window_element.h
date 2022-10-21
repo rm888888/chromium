@@ -5,6 +5,7 @@
 #ifndef COMPONENTS_UI_DEVTOOLS_VIEWS_WINDOW_ELEMENT_H_
 #define COMPONENTS_UI_DEVTOOLS_VIEWS_WINDOW_ELEMENT_H_
 
+#include "base/macros.h"
 #include "components/ui_devtools/views/ui_element_with_metadata.h"
 #include "ui/aura/window.h"
 #include "ui/aura/window_observer.h"
@@ -43,6 +44,7 @@ class WindowElement : public aura::WindowObserver,
   std::vector<std::string> GetAttributes() const override;
   std::pair<gfx::NativeWindow, gfx::Rect> GetNodeWindowAndScreenBounds()
       const override;
+  int GetBackingElementID() override;
   bool DispatchKeyEvent(protocol::DOM::KeyEvent* event) override;
 
   static aura::Window* From(const UIElement* element);

@@ -15,7 +15,6 @@
 #include "base/containers/flat_set.h"
 #include "base/memory/scoped_refptr.h"
 #include "base/time/time.h"
-#include "base/version.h"
 #include "components/password_manager/core/browser/password_scripts_fetcher.h"
 #include "services/network/public/cpp/simple_url_loader.h"
 
@@ -25,6 +24,10 @@ class Origin;
 
 namespace network {
 class SharedURLLoaderFactory;
+}
+
+namespace base {
+class Version;
 }
 
 namespace password_manager {
@@ -63,10 +66,8 @@ class PasswordScriptsFetcherImpl
   // The first constructor calls the second one. The second one is called
   // directly only from tests.
   PasswordScriptsFetcherImpl(
-      const base::Version& version,
       scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory);
   PasswordScriptsFetcherImpl(
-      const base::Version& version,
       scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory,
       std::string scripts_list_url);
 
@@ -77,8 +78,10 @@ class PasswordScriptsFetcherImpl
   void RefreshScriptsIfNecessary(
       base::OnceClosure fetch_finished_callback) override;
   void FetchScriptAvailability(const url::Origin& origin,
+                               const base::Version& version,
                                ResponseCallback callback) override;
-  bool IsScriptAvailable(const url::Origin& origin) const override;
+  bool IsScriptAvailable(const url::Origin& origin,
+                         const base::Version& version) const override;
 
 #if defined(UNIT_TEST)
   void make_cache_stale_for_testing() {
@@ -102,9 +105,9 @@ class PasswordScriptsFetcherImpl
   // Returns whether a re-fetch is needed.
   bool IsCacheStale() const;
   // Runs |callback| immediately with the script availability for |origin|.
-  void RunResponseCallback(url::Origin origin, ResponseCallback callback);
-
-  const base::Version version_;
+  void RunResponseCallback(url::Origin origin,
+                           base::Version version,
+                           ResponseCallback callback);
 
   // URL to fetch a list of scripts from.
   const std::string scripts_list_url_;
@@ -116,7 +119,9 @@ class PasswordScriptsFetcherImpl
   // Stores the callbacks that are waiting for the request to finish.
   std::vector<base::OnceClosure> fetch_finished_callbacks_;
   // Stores the per-origin callbacks that are waiting for the request to finish.
-  std::vector<std::pair<url::Origin, ResponseCallback>> pending_callbacks_;
+  std::vector<
+      std::pair<std::pair<url::Origin, base::Version>, ResponseCallback>>
+      pending_callbacks_;
   // URL loader object for the gstatic request. If |url_loader_| is not null, a
   // request is currently in flight.
   std::unique_ptr<network::SimpleURLLoader> url_loader_;

@@ -10,6 +10,7 @@
 #include <string>
 
 #include "ash/public/cpp/new_window_delegate.h"
+#include "base/macros.h"
 #include "components/arc/intent_helper/control_camera_app_delegate.h"
 #include "components/arc/intent_helper/open_url_delegate.h"
 #include "url/gurl.h"
@@ -58,7 +59,6 @@ class ChromeNewWindowClient : public ash::NewWindowDelegate,
   void OpenDiagnostics() override;
   void OpenFeedbackPage(FeedbackSource source,
                         const std::string& description_template) override;
-  void OpenPersonalizationHub() override;
 
   // arc::OpenUrlDelegate:
   void OpenUrlFromArc(const GURL& url) override;

@@ -120,6 +120,15 @@ class USER_MANAGER_EXPORT KnownUser final {
                          const std::string& id,
                          const AccountType& account_type);
 
+  // Returns true if |subsystem| data was migrated to GaiaId for the
+  // |account_id|.
+  bool GetGaiaIdMigrationStatus(const AccountId& account_id,
+                                const std::string& subsystem);
+
+  // Marks |subsystem| migrated to GaiaId for the |account_id|.
+  void SetGaiaIdMigrationStatusDone(const AccountId& account_id,
+                                    const std::string& subsystem);
+
   // Saves |account_id| into known users. Tries to commit the change on disk.
   // Use only if account_id is not yet in the known user list. Important if
   // Chrome crashes shortly after starting a session. Cryptohome should be able
@@ -187,7 +196,7 @@ class USER_MANAGER_EXPORT KnownUser final {
   // Setter and getter for the information about challenge-response keys that
   // can be used by this user to authenticate. The getter returns a null value
   // when the property isn't present. For the format of the value, refer to
-  // ash/components/login/auth/challenge_response/known_user_pref_utils.h.
+  // chromeos/login/auth/challenge_response/known_user_pref_utils.h.
   void SetChallengeResponseKeys(const AccountId& account_id, base::Value value);
 
   base::Value GetChallengeResponseKeys(const AccountId& account_id);
@@ -384,6 +393,19 @@ AccountId USER_MANAGER_EXPORT GetAccountId(const std::string& user_email,
                                            const std::string& id,
                                            const AccountType& account_type);
 
+// Returns true if |subsystem| data was migrated to GaiaId for the |account_id|.
+// TODO(https://crbug.com/1150434): Deprecated, use
+// KnownUser::GetGaiaIdMigrationStatus instead.
+bool USER_MANAGER_EXPORT GetGaiaIdMigrationStatus(const AccountId& account_id,
+                                                  const std::string& subsystem);
+
+// Marks |subsystem| migrated to GaiaId for the |account_id|.
+// TODO(https://crbug.com/1150434): Deprecated, use
+// KnownUser::SetGaiaIdMigrationStatusDone instead.
+void USER_MANAGER_EXPORT
+SetGaiaIdMigrationStatusDone(const AccountId& account_id,
+                             const std::string& subsystem);
+
 // Saves |account_id| into known users. Tries to commit the change on disk. Use
 // only if account_id is not yet in the known user list. Important if Chrome
 // crashes shortly after starting a session. Cryptohome should be able to find
@@ -493,7 +515,7 @@ bool USER_MANAGER_EXPORT FindReauthReason(const AccountId& account_id,
 // be used by this user to authenticate.
 // The getter returns a null value when the property isn't present.
 // For the format of the value, refer to
-// ash/components/login/auth/challenge_response/known_user_pref_utils.h.
+// chromeos/login/auth/challenge_response/known_user_pref_utils.h.
 // TODO(https://crbug.com/1150434): Deprecated, use
 // KnownUser::SetChallengeResponseKeys instead.
 void USER_MANAGER_EXPORT SetChallengeResponseKeys(const AccountId& account_id,

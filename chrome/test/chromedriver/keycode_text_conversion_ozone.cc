@@ -14,7 +14,6 @@
 #include "ui/events/keycodes/dom/keycode_converter.h"
 #include "ui/events/keycodes/keyboard_code_conversion.h"
 #include "ui/events/ozone/layout/stub/stub_keyboard_layout_engine.h"
-#include "ui/ozone/buildflags.h"
 
 #if defined(USE_OZONE)
 #include "ui/base/ui_base_features.h"

@@ -34,8 +34,7 @@ std::vector<SharedField> ExtractSharedFields(
 NavigateParams NavigateParamsForShareTarget(
     Browser* browser,
     const apps::ShareTarget& share_target,
-    const apps::mojom::Intent& intent,
-    const std::vector<base::FilePath>& launch_files);
+    const apps::mojom::Intent& intent);
 
 }  // namespace web_app
 

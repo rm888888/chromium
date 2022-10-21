@@ -5,7 +5,6 @@
 #include "ui/accessibility/platform/ax_platform_node_base.h"
 #include "base/strings/utf_string_conversions.h"
 #include "testing/gtest/include/gtest/gtest.h"
-#include "ui/accessibility/platform/ax_platform_node_unittest.h"
 #include "ui/accessibility/platform/test_ax_node_wrapper.h"
 
 namespace ui {
@@ -44,7 +43,7 @@ void SetRole(AXTree* tree, int id, ax::mojom::Role role) {
 
 }  // namespace
 
-TEST_F(AXPlatformNodeTest, GetHypertext) {
+TEST(AXPlatformNodeBaseTest, GetHypertext) {
   AXTreeUpdate update;
 
   // RootWebArea #1
@@ -63,8 +62,7 @@ TEST_F(AXPlatformNodeTest, GetHypertext) {
   MakeStaticText(&update.nodes[2], 3, "text2");
   MakeStaticText(&update.nodes[3], 4, "text3");
 
-  Init(update);
-  AXTree& tree = *GetTree();
+  AXTree tree(update);
 
   // Set an AXMode on the AXPlatformNode as some platforms (auralinux) use it to
   // determine if it should enable accessibility.
@@ -88,7 +86,7 @@ TEST_F(AXPlatformNodeTest, GetHypertext) {
   EXPECT_EQ(text3->GetHypertext(), u"text3");
 }
 
-TEST_F(AXPlatformNodeTest, GetHypertextIgnoredContainerSiblings) {
+TEST(AXPlatformNodeBaseTest, GetHypertextIgnoredContainerSiblings) {
   AXTreeUpdate update;
 
   // RootWebArea #1
@@ -124,9 +122,7 @@ TEST_F(AXPlatformNodeTest, GetHypertextIgnoredContainerSiblings) {
   update.nodes[5].AddState(ax::mojom::State::kIgnored);
   MakeStaticText(&update.nodes[6], 7, "text3");
 
-  Init(update);
-
-  AXTree& tree = *GetTree();
+  AXTree tree(update);
   // Set an AXMode on the AXPlatformNode as some platforms (auralinux) use it to
   // determine if it should enable accessibility.
   ui::testing::ScopedAxModeSetter ax_mode_setter(kAXModeComplete);
@@ -152,7 +148,7 @@ TEST_F(AXPlatformNodeTest, GetHypertextIgnoredContainerSiblings) {
   EXPECT_EQ(text3_ignored_container->GetHypertext(), u"text3");
 }
 
-TEST_F(AXPlatformNodeTest, GetTextContentIgnoresInvisibleAndIgnored) {
+TEST(AXPlatformNodeBaseTest, InnerTextIgnoresInvisibleAndIgnored) {
   AXTreeUpdate update;
 
   update.root_id = 1;
@@ -167,9 +163,8 @@ TEST_F(AXPlatformNodeTest, GetTextContentIgnoresInvisibleAndIgnored) {
   MakeGroup(&update.nodes[3], 4, {5, 6});
   MakeGroup(&update.nodes[0], 1, {2, 3, 4});
 
-  Init(update);
+  AXTree tree(update);
 
-  AXTree& tree = *GetTree();
   auto* root = static_cast<AXPlatformNodeBase*>(
       TestAXNodeWrapper::GetOrCreate(&tree, tree.root())->ax_platform_node());
 
@@ -177,36 +172,36 @@ TEST_F(AXPlatformNodeTest, GetTextContentIgnoresInvisibleAndIgnored) {
   // determine if it should enable accessibility.
   ui::testing::ScopedAxModeSetter ax_mode_setter(kAXModeComplete);
 
-  EXPECT_EQ(root->GetTextContentUTF16(), u"abde");
+  EXPECT_EQ(root->GetInnerText(), u"abde");
 
   // Setting invisible or ignored on a static text node causes it to be included
-  // or excluded from the root node's text content:
+  // or excluded from the root node's inner text:
   {
     SetIsInvisible(&tree, 2, true);
-    EXPECT_EQ(root->GetTextContentUTF16(), u"bde");
+    EXPECT_EQ(root->GetInnerText(), u"bde");
 
     SetIsInvisible(&tree, 2, false);
-    EXPECT_EQ(root->GetTextContentUTF16(), u"abde");
+    EXPECT_EQ(root->GetInnerText(), u"abde");
 
     SetRole(&tree, 2, ax::mojom::Role::kNone);
-    EXPECT_EQ(root->GetTextContentUTF16(), u"bde");
+    EXPECT_EQ(root->GetInnerText(), u"bde");
 
     SetRole(&tree, 2, ax::mojom::Role::kStaticText);
-    EXPECT_EQ(root->GetTextContentUTF16(), u"abde");
+    EXPECT_EQ(root->GetInnerText(), u"abde");
   }
 
-  // Setting invisible or ignored on a group node has no effect on the
-  // text content:
+  // Setting invisible or ignored on a group node has no effect on the inner
+  // text:
   {
     SetIsInvisible(&tree, 4, true);
-    EXPECT_EQ(root->GetTextContentUTF16(), u"abde");
+    EXPECT_EQ(root->GetInnerText(), u"abde");
 
     SetRole(&tree, 4, ax::mojom::Role::kNone);
-    EXPECT_EQ(root->GetTextContentUTF16(), u"abde");
+    EXPECT_EQ(root->GetInnerText(), u"abde");
   }
 }
 
-TEST_F(AXPlatformNodeTest, TestMenuSelectedItems) {
+TEST(AXPlatformNodeBaseTest, TestMenuSelectedItems) {
   ui::testing::ScopedAxModeSetter ax_mode_setter(kAXModeComplete);
 
   AXNodeData root_data;
@@ -227,9 +222,8 @@ TEST_F(AXPlatformNodeTest, TestMenuSelectedItems) {
   AXTreeUpdate update;
   update.root_id = 1;
   update.nodes = {root_data, item_1_data, item_2_data};
-  Init(update);
+  AXTree tree(update);
 
-  AXTree& tree = *GetTree();
   auto* root = static_cast<AXPlatformNodeBase*>(
       TestAXNodeWrapper::GetOrCreate(&tree, tree.root())->ax_platform_node());
 
@@ -242,7 +236,7 @@ TEST_F(AXPlatformNodeTest, TestMenuSelectedItems) {
   EXPECT_EQ(nullptr, root->GetSelectedItem(1));
 }
 
-TEST_F(AXPlatformNodeTest, TestSelectedChildren) {
+TEST(AXPlatformNodeBaseTest, TestSelectedChildren) {
   ui::testing::ScopedAxModeSetter ax_mode_setter(kAXModeComplete);
 
   AXNodeData root_data;
@@ -263,9 +257,8 @@ TEST_F(AXPlatformNodeTest, TestSelectedChildren) {
   AXTreeUpdate update;
   update.root_id = 1;
   update.nodes = {root_data, item_1_data, item_2_data};
-  Init(update);
+  AXTree tree(update);
 
-  AXTree& tree = *GetTree();
   auto* root = static_cast<AXPlatformNodeBase*>(
       TestAXNodeWrapper::GetOrCreate(&tree, tree.root())->ax_platform_node());
 
@@ -278,7 +271,7 @@ TEST_F(AXPlatformNodeTest, TestSelectedChildren) {
   EXPECT_EQ(nullptr, root->GetSelectedItem(1));
 }
 
-TEST_F(AXPlatformNodeTest, TestSelectedChildrenWithGroup) {
+TEST(AXPlatformNodeBaseTest, TestSelectedChildrenWithGroup) {
   ui::testing::ScopedAxModeSetter ax_mode_setter(kAXModeComplete);
 
   AXNodeData root_data;
@@ -320,9 +313,8 @@ TEST_F(AXPlatformNodeTest, TestSelectedChildrenWithGroup) {
   update.root_id = 1;
   update.nodes = {root_data,   group_1_data, group_2_data, item_1_data,
                   item_2_data, item_3_data,  item_4_data};
-  Init(update);
+  AXTree tree(update);
 
-  AXTree& tree = *GetTree();
   auto* root = static_cast<AXPlatformNodeBase*>(
       TestAXNodeWrapper::GetOrCreate(&tree, tree.root())->ax_platform_node());
 
@@ -345,7 +337,7 @@ TEST_F(AXPlatformNodeTest, TestSelectedChildrenWithGroup) {
             second_selected_node->GetNativeViewAccessible());
 }
 
-TEST_F(AXPlatformNodeTest, TestSelectedChildrenMixed) {
+TEST(AXPlatformNodeBaseTest, TestSelectedChildrenMixed) {
   ui::testing::ScopedAxModeSetter ax_mode_setter(kAXModeComplete);
 
   // Build the below tree which is mixed with listBoxOption and group.
@@ -409,9 +401,8 @@ TEST_F(AXPlatformNodeTest, TestSelectedChildrenMixed) {
   update.nodes = {root_data,   item_1_data, group_1_data,
                   item_2_data, item_3_data, group_2_data,
                   item_4_data, item_5_data, item_6_data};
-  Init(update);
+  AXTree tree(update);
 
-  AXTree& tree = *GetTree();
   auto* root = static_cast<AXPlatformNodeBase*>(
       TestAXNodeWrapper::GetOrCreate(&tree, tree.root())->ax_platform_node());
 
@@ -441,7 +432,7 @@ TEST_F(AXPlatformNodeTest, TestSelectedChildrenMixed) {
   EXPECT_EQ(fourth_child, fourth_selected_node->GetNativeViewAccessible());
 }
 
-TEST_F(AXPlatformNodeTest, CompareTo) {
+TEST(AXPlatformNodeBaseTest, CompareTo) {
   // Compare the nodes' logical orders for the following tree. Node name is
   // denoted according to its id (i.e. "n#" is id#). Nodes that have smaller ids
   // are always logically less than nodes with bigger ids.
@@ -506,9 +497,8 @@ TEST_F(AXPlatformNodeTest, CompareTo) {
   update.nodes = {node1, node2, node3, node4, node5,
                   node6, node7, node8, node9, node10};
 
-  Init(update);
+  AXTree tree(update);
 
-  AXTree& tree = *GetTree();
   // Retrieve the nodes in a level-order traversal way.
   auto* n1 = static_cast<AXPlatformNodeBase*>(
       TestAXNodeWrapper::GetOrCreate(&tree, tree.root())->ax_platform_node());
@@ -533,12 +523,8 @@ TEST_F(AXPlatformNodeTest, CompareTo) {
 
   // Test for two nodes that do not share the same root. They should not be
   // comparable.
-  AXPlatformNodeDelegateBase detached_delegate;
-  AXPlatformNodeBase* detached_node = static_cast<AXPlatformNodeBase*>(
-      AXPlatformNode::Create(&detached_delegate));
-  EXPECT_EQ(absl::nullopt, n1->CompareTo(*detached_node));
-  detached_node->Destroy();
-  detached_node = nullptr;
+  AXPlatformNodeBase detached_node;
+  EXPECT_EQ(absl::nullopt, n1->CompareTo(detached_node));
 
   // Create a test vector of all the tree nodes arranged in a pre-order
   // traversal way. The node that has a smaller index in the vector should also

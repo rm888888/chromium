@@ -6,6 +6,7 @@
 #define UI_BASE_WIN_FOREGROUND_HELPER_H_
 
 #include "base/component_export.h"
+#include "base/macros.h"
 #include "base/notreached.h"
 #include "ui/gfx/win/window_impl.h"
 

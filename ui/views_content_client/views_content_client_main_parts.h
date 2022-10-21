@@ -7,10 +7,9 @@
 
 #include <memory>
 
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "build/build_config.h"
 #include "content/public/browser/browser_main_parts.h"
-#include "content/public/common/main_function_params.h"
 
 namespace base {
 class RunLoop;
@@ -18,6 +17,7 @@ class RunLoop;
 
 namespace content {
 class ShellBrowserContext;
+struct MainFunctionParams;
 }
 
 namespace views {
@@ -32,7 +32,7 @@ class ViewsContentClientMainParts : public content::BrowserMainParts {
  public:
   // Platform-specific create function.
   static std::unique_ptr<ViewsContentClientMainParts> Create(
-      content::MainFunctionParams content_params,
+      const content::MainFunctionParams& content_params,
       ViewsContentClient* views_content_client);
 
   static void PreBrowserMain();
@@ -56,8 +56,9 @@ class ViewsContentClientMainParts : public content::BrowserMainParts {
   }
 
  protected:
-  ViewsContentClientMainParts(content::MainFunctionParams content_params,
-                              ViewsContentClient* views_content_client);
+  ViewsContentClientMainParts(
+      const content::MainFunctionParams& content_params,
+      ViewsContentClient* views_content_client);
 
 #if defined(OS_APPLE)
   views::TestViewsDelegate* views_delegate() { return views_delegate_.get(); }
@@ -68,7 +69,7 @@ class ViewsContentClientMainParts : public content::BrowserMainParts {
 
   std::unique_ptr<views::TestViewsDelegate> views_delegate_;
 
-  raw_ptr<ViewsContentClient> views_content_client_;
+  ViewsContentClient* views_content_client_;
 
   std::unique_ptr<base::RunLoop> run_loop_;
 };

@@ -6,6 +6,7 @@
 
 #include <memory>
 
+#include "base/macros.h"
 #include "chrome/installer/util/work_item.h"
 #include "chrome/installer/util/work_item_mocks.h"
 #include "testing/gmock/include/gmock/gmock.h"

@@ -9,6 +9,7 @@
 
 #include <list>
 
+#include "base/macros.h"
 #include "base/sequence_checker.h"
 #include "base/time/time.h"
 #include "components/no_state_prefetch/common/no_state_prefetch_final_status.h"

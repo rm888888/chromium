@@ -5,7 +5,6 @@
 #ifndef COMPONENTS_GLOBAL_MEDIA_CONTROLS_PUBLIC_MEDIA_ITEM_MANAGER_H_
 #define COMPONENTS_GLOBAL_MEDIA_CONTROLS_PUBLIC_MEDIA_ITEM_MANAGER_H_
 
-#include <memory>
 #include <string>
 
 #include "base/component_export.h"

@@ -10,7 +10,7 @@
 
 #include "base/bind.h"
 #include "base/i18n/time_formatting.h"
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
 #include "chrome/browser/extensions/api/identity/identity_api.h"
@@ -130,7 +130,7 @@ class IdentityInternalsTokenRevoker : public GaiaAuthConsumer {
   // The JS callback to resolve when revoking is done.
   const std::string callback_id_;
   // An object that needs to be notified once the access token is revoked.
-  raw_ptr<IdentityInternalsUIMessageHandler> consumer_;  // weak.
+  IdentityInternalsUIMessageHandler* consumer_;  // weak.
 };
 
 IdentityInternalsUIMessageHandler::IdentityInternalsUIMessageHandler() {}
@@ -228,7 +228,8 @@ IdentityInternalsUIMessageHandler::GetInfoForToken(
 
 void IdentityInternalsUIMessageHandler::GetInfoForAllTokens(
     const base::ListValue* args) {
-  const std::string& callback_id = args->GetList()[0].GetString();
+  std::string callback_id;
+  CHECK(args->GetString(0, &callback_id));
   CHECK(!callback_id.empty());
 
   AllowJavascript();
@@ -262,19 +263,14 @@ void IdentityInternalsUIMessageHandler::RegisterMessages() {
 
 void IdentityInternalsUIMessageHandler::RevokeToken(
     const base::ListValue* args) {
-  const auto& list = args->GetList();
-  const std::string& callback_id = list[0].GetString();
-  CHECK(!callback_id.empty());
   std::string extension_id;
   std::string access_token;
-  if (!list.empty() && list[kRevokeTokenExtensionOffset].is_string()) {
-    extension_id = args->GetList()[kRevokeTokenExtensionOffset].GetString();
-  }
-  if (list.size() > kRevokeTokenTokenOffset &&
-      list[kRevokeTokenTokenOffset].is_string()) {
-    access_token = args->GetList()[kRevokeTokenTokenOffset].GetString();
-  }
+  std::string callback_id;
+  CHECK(args->GetString(0, &callback_id));
+  CHECK(!callback_id.empty());
 
+  args->GetString(kRevokeTokenExtensionOffset, &extension_id);
+  args->GetString(kRevokeTokenTokenOffset, &access_token);
   token_revokers_.push_back(std::make_unique<IdentityInternalsTokenRevoker>(
       extension_id, access_token, callback_id, Profile::FromWebUI(web_ui()),
       this));

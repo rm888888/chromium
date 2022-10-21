@@ -6,6 +6,7 @@
 
 #include <stddef.h>
 
+#include "base/macros.h"
 #include "base/memory/ptr_util.h"
 #include "testing/gtest/include/gtest/gtest.h"
 #include "ui/base/ime/ash/extension_ime_util.h"
@@ -17,7 +18,7 @@ namespace {
 
 class ComponentExtensionIMEManagerTest : public testing::Test {
  public:
-  ComponentExtensionIMEManagerTest() : mock_delegate_(nullptr) {}
+  ComponentExtensionIMEManagerTest() : mock_delegate_(NULL) {}
 
   ComponentExtensionIMEManagerTest(const ComponentExtensionIMEManagerTest&) =
       delete;
@@ -137,7 +138,7 @@ TEST_F(ComponentExtensionIMEManagerTest, LoadComponentExtensionIMETest) {
           extension_ime_util::GetComponentInputMethodID(
               ime_list_[i].id,
               ime_list_[i].engines[j].engine_id);
-      component_ext_mgr_->LoadComponentExtensionIME(nullptr /* profile */,
+      component_ext_mgr_->LoadComponentExtensionIME(NULL /* profile */,
                                                     input_method_id);
       EXPECT_EQ(ime_list_[i].id, mock_delegate_->last_loaded_extension_id());
     }
@@ -152,7 +153,7 @@ TEST_F(ComponentExtensionIMEManagerTest, UnloadComponentExtensionIMETest) {
           extension_ime_util::GetComponentInputMethodID(
               ime_list_[i].id,
               ime_list_[i].engines[j].engine_id);
-      component_ext_mgr_->UnloadComponentExtensionIME(nullptr /* profile */,
+      component_ext_mgr_->UnloadComponentExtensionIME(NULL /* profile */,
                                                       input_method_id);
       EXPECT_EQ(ime_list_[i].id, mock_delegate_->last_unloaded_extension_id());
     }

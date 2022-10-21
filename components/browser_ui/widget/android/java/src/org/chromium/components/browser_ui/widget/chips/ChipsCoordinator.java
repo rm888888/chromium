@@ -80,7 +80,6 @@ public class ChipsCoordinator {
                         .with(ChipProperties.CLICK_HANDLER, clickHandler)
                         .with(ChipProperties.ICON, iconId)
                         .with(ChipProperties.ENABLED, true)
-                        .with(ChipProperties.SELECTED, false)
                         .with(ChipProperties.TEXT_MAX_WIDTH_PX, ChipProperties.SHOW_WHOLE_TEXT)
                         .build();
         return new ListItem(ChipProperties.BASIC_CHIP, model);

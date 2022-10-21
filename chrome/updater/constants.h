@@ -230,23 +230,12 @@ constexpr int kUninstallPingReasonUserNotAnOwner = 1;
 // The file downloaded to a temporary location could not be moved.
 constexpr int kErrorFailedToMoveDownloadedFile = 5;
 
-// A connection was rejected due to insufficient permissions.
-constexpr int kPermissionDeniedError = 403;
-
 constexpr double kInitialDelay = 60;
 constexpr int kServerKeepAliveSeconds = 10;
 
 // The maximum number of server starts before the updater uninstalls itself
 // while waiting for the first app registration.
 constexpr int kMaxServerStartsBeforeFirstReg = 24;
-
-// These are GoogleUpdate error codes, which must be retained by this
-// implementation in order to be backward compatible with the existing update
-// client code in Chrome.
-constexpr int GOOPDATE_E_APP_INSTALL_DISABLED_BY_POLICY = 0x80040812;
-constexpr int GOOPDATE_E_APP_UPDATE_DISABLED_BY_POLICY = 0x80040813;
-constexpr int GOOPDATE_E_APP_UPDATE_DISABLED_BY_POLICY_MANUAL = 0x8004081f;
-constexpr int GOOPDATEINSTALL_E_INSTALLER_FAILED = 0x80040902;
 
 }  // namespace updater
 

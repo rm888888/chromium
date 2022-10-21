@@ -8,6 +8,7 @@
 #include <memory>
 
 #include "base/containers/circular_deque.h"
+#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "ipc/ipc_message.h"
 #include "v8/include/v8-forward.h"

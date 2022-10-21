@@ -32,12 +32,8 @@ const char kDynamicSchedulerPercentile[] = "percentile";
 
 namespace features {
 
-// Enables the use of power hint APIs on Android.
+// Enables the use of CPU scheduling APIs on Android.
 const base::Feature kAdpf{"Adpf", base::FEATURE_DISABLED_BY_DEFAULT};
-
-// Target duration used for power hint on Android.
-const base::FeatureParam<int> kAdpfTargetDurationMs{&kAdpf,
-                                                    "AdpfTargetDurationMs", 12};
 
 const base::Feature kEnableOverlayPrioritization {
   "EnableOverlayPrioritization",
@@ -47,10 +43,6 @@ const base::Feature kEnableOverlayPrioritization {
       base::FEATURE_DISABLED_BY_DEFAULT
 #endif
 };
-
-const base::Feature kUseMultipleOverlays{"UseMultipleOverlays",
-                                         base::FEATURE_DISABLED_BY_DEFAULT};
-const char kMaxOverlaysParam[] = "max_overlays";
 
 const base::Feature kDelegatedCompositing{"DelegatedCompositing",
                                           base::FEATURE_DISABLED_BY_DEFAULT};
@@ -190,13 +182,6 @@ bool IsAdpfEnabled() {
   return base::FeatureList::IsEnabled(kAdpf);
 }
 
-bool IsClipPrewalkDamageEnabled() {
-  static constexpr base::Feature kClipPrewalkDamage{
-      "ClipPrewalkDamage", base::FEATURE_DISABLED_BY_DEFAULT};
-
-  return base::FeatureList::IsEnabled(kClipPrewalkDamage);
-}
-
 bool IsOverlayPrioritizationEnabled() {
   return base::FeatureList::IsEnabled(kEnableOverlayPrioritization);
 }
@@ -261,6 +246,11 @@ bool IsUsingVizFrameSubmissionForWebView() {
 
 bool IsUsingPreferredIntervalForVideo() {
   return base::FeatureList::IsEnabled(kUsePreferredIntervalForVideo);
+}
+
+bool IsVizHitTestingDebugEnabled() {
+  return base::CommandLine::ForCurrentProcess()->HasSwitch(
+      switches::kEnableVizHitTestDebug);
 }
 
 bool ShouldUseRealBuffersForPageFlipTest() {
@@ -355,19 +345,6 @@ absl::optional<double> IsDynamicSchedulerEnabledForClients() {
   if (result < 0.0)
     return absl::nullopt;
   return result;
-}
-
-int MaxOverlaysConsidered() {
-  if (!IsOverlayPrioritizationEnabled()) {
-    return 1;
-  }
-
-  if (!base::FeatureList::IsEnabled(kUseMultipleOverlays)) {
-    return 1;
-  }
-
-  return base::GetFieldTrialParamByFeatureAsInt(kUseMultipleOverlays,
-                                                kMaxOverlaysParam, 2);
 }
 
 }  // namespace features

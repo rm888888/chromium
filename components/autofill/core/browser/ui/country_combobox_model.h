@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "base/callback.h"
+#include "base/macros.h"
 #include "ui/base/models/combobox_model.h"
 
 namespace autofill {

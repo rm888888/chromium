@@ -9,6 +9,7 @@
 #include <string>
 #include <utility>
 
+#include "base/macros.h"
 #include "build/build_config.h"
 
 namespace base {

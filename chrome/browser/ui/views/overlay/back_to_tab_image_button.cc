@@ -18,8 +18,12 @@ const int kBackToTabImageSize = 14;
 
 }  // namespace
 
+namespace views {
+
 BackToTabImageButton::BackToTabImageButton(PressedCallback callback)
-    : OverlayWindowImageButton(std::move(callback)) {
+    : ImageButton(std::move(callback)) {
+  SetImageHorizontalAlignment(views::ImageButton::ALIGN_CENTER);
+  SetImageVerticalAlignment(views::ImageButton::ALIGN_MIDDLE);
   SetImage(views::Button::STATE_NORMAL,
            gfx::CreateVectorIcon(views::kLaunchIcon, kBackToTabImageSize,
                                  kPipWindowIconColor));
@@ -29,7 +33,10 @@ BackToTabImageButton::BackToTabImageButton(PressedCallback callback)
       IDS_PICTURE_IN_PICTURE_BACK_TO_TAB_CONTROL_TEXT));
   SetAccessibleName(back_to_tab_button_label);
   SetTooltipText(back_to_tab_button_label);
+  SetInstallFocusRingOnFocus(true);
 }
 
-BEGIN_METADATA(BackToTabImageButton, OverlayWindowImageButton)
+BEGIN_METADATA(BackToTabImageButton, views::ImageButton)
 END_METADATA
+
+}  // namespace views

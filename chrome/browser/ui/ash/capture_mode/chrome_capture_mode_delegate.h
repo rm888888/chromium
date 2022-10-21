@@ -36,12 +36,10 @@ class ChromeCaptureModeDelegate : public ash::CaptureModeDelegate {
   void ShowScreenCaptureItemInFolder(const base::FilePath& file_path) override;
   void OpenScreenshotInImageEditor(const base::FilePath& file_path) override;
   bool Uses24HourFormat() const override;
-  void CheckCaptureModeInitRestrictionByDlp(
-      ash::OnCaptureModeDlpRestrictionChecked callback) override;
-  void CheckCaptureOperationRestrictionByDlp(
-      const aura::Window* window,
-      const gfx::Rect& bounds,
-      ash::OnCaptureModeDlpRestrictionChecked callback) override;
+  bool IsCaptureModeInitRestrictedByDlp() const override;
+  bool IsCaptureAllowedByDlp(const aura::Window* window,
+                             const gfx::Rect& bounds,
+                             bool for_video) const override;
   bool IsCaptureAllowedByPolicy() const override;
   void StartObservingRestrictedContent(
       const aura::Window* window,
@@ -57,7 +55,6 @@ class ChromeCaptureModeDelegate : public ash::CaptureModeDelegate {
   void OnSessionStateChanged(bool started) override;
   void OnServiceRemoteReset() override;
   bool GetDriveFsMountPointPath(base::FilePath* path) const override;
-  base::FilePath GetAndroidFilesPath() const override;
   std::unique_ptr<ash::RecordingOverlayView> CreateRecordingOverlayView()
       const override;
 

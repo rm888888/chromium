@@ -5,7 +5,8 @@
 #ifndef UI_AURA_TEST_TEST_WINDOW_PARENTING_CLIENT_H_
 #define UI_AURA_TEST_TEST_WINDOW_PARENTING_CLIENT_H_
 
-#include "base/memory/raw_ptr.h"
+#include "base/compiler_specific.h"
+#include "base/macros.h"
 #include "ui/aura/client/window_parenting_client.h"
 
 namespace aura {
@@ -27,10 +28,10 @@ class TestWindowParentingClient : public client::WindowParentingClient {
   Window* GetDefaultParent(Window* window, const gfx::Rect& bounds) override;
 
  private:
-  raw_ptr<Window> root_window_;
+  Window* root_window_;
 
   // If non-null this is returned from GetDefaultParent().
-  raw_ptr<Window> default_parent_ = nullptr;
+  Window* default_parent_ = nullptr;
 };
 
 }  // namespace test

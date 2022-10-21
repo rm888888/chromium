@@ -21,7 +21,7 @@
 
 #include "base/callback.h"
 #include "base/compiler_specific.h"
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/memory/ref_counted.h"
 #include "base/sequence_checker.h"
 #include "base/time/time.h"
@@ -168,7 +168,7 @@ class COMPONENTS_PREFS_EXPORT PrefService {
     const uint32_t registration_flags_;
 
     // Reference to the PrefService in which this pref was created.
-    const raw_ptr<const PrefService> pref_service_;
+    const PrefService* const pref_service_;
   };
 
   // You may wish to use PrefServiceFactory or one of its subclasses
@@ -233,8 +233,8 @@ class COMPONENTS_PREFS_EXPORT PrefService {
   // Note that |path| must point to a registered preference. In that case, these
   // functions will never return NULL.
   const base::Value* Get(const std::string& path) const;
-  const base::Value* GetDictionary(const std::string& path) const;
-  const base::Value* GetList(const std::string& path) const;
+  const base::DictionaryValue* GetDictionary(const std::string& path) const;
+  const base::ListValue* GetList(const std::string& path) const;
 
   // Removes a user pref and restores the pref to its default value.
   void ClearPref(const std::string& path);

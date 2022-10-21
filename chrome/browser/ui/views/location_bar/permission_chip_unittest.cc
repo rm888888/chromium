@@ -2,7 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "base/memory/raw_ptr.h"
 #include "chrome/browser/ui/views/frame/browser_view.h"
 #include "chrome/browser/ui/views/frame/test_with_browser_view.h"
 #include "chrome/browser/ui/views/location_bar/permission_quiet_chip.h"
@@ -98,7 +97,7 @@ class PermissionChipUnitTest : public TestWithBrowserView {
     base::RunLoop().RunUntilIdle();
   }
 
-  raw_ptr<content::WebContents> web_contents_;
+  content::WebContents* web_contents_;
 
   base::TimeDelta kChipCollapseDuration = base::Seconds(12);
   base::TimeDelta kNormalChipDismissDuration = base::Seconds(6);

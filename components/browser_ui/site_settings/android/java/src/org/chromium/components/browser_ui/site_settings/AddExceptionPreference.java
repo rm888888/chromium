@@ -28,7 +28,6 @@ import androidx.preference.Preference;
 import androidx.preference.PreferenceViewHolder;
 
 import org.chromium.base.ApiCompatibilityUtils;
-import org.chromium.components.browser_ui.styles.SemanticColorUtils;
 import org.chromium.ui.KeyboardVisibilityDelegate;
 
 /**
@@ -85,7 +84,8 @@ public class AddExceptionPreference
 
         setKey(key);
         Resources resources = getContext().getResources();
-        mPrefAccentColor = SemanticColorUtils.getDefaultControlColorActive(getContext());
+        mPrefAccentColor =
+                ApiCompatibilityUtils.getColor(resources, R.color.default_control_color_active);
         mErrorColor = resources.getColor(R.color.default_red);
         mDefaultColor =
                 AppCompatResources.getColorStateList(getContext(), R.color.default_text_color_list)

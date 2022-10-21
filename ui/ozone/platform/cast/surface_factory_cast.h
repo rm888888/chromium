@@ -8,6 +8,7 @@
 #include <memory>
 #include <vector>
 
+#include "base/macros.h"
 #include "ui/gfx/geometry/size.h"
 #include "ui/ozone/platform/cast/gl_ozone_egl_cast.h"
 #include "ui/ozone/public/gl_ozone.h"

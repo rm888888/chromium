@@ -8,6 +8,7 @@
 #include <string>
 #include <utility>
 
+#include "base/macros.h"
 #include "chrome/browser/ui/passwords/manage_passwords_view_utils.h"
 #include "chrome/browser/ui/passwords/passwords_model_delegate.h"
 #include "chrome/browser/ui/views/chrome_layout_provider.h"

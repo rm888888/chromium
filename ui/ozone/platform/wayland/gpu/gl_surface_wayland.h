@@ -8,6 +8,7 @@
 #include <memory>
 
 #include "base/callback_forward.h"
+#include "base/macros.h"
 #include "ui/gfx/geometry/size.h"
 #include "ui/gl/gl_surface_egl.h"
 

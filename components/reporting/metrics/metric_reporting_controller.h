@@ -10,7 +10,6 @@
 #include "base/callback_forward.h"
 #include "base/callback_helpers.h"
 #include "base/callback_list.h"
-#include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/sequence_checker.h"
 
@@ -25,7 +24,6 @@ class MetricReportingController {
   MetricReportingController(
       ReportingSettings* reporting_settings,
       const std::string& setting_path,
-      bool setting_enabled_default_value,
       base::RepeatingClosure on_setting_enabled,
       base::RepeatingClosure on_setting_disabled = base::DoNothing());
 
@@ -38,9 +36,8 @@ class MetricReportingController {
  private:
   void UpdateSetting();
 
-  const raw_ptr<ReportingSettings> reporting_settings_;
+  ReportingSettings* const reporting_settings_;
   const std::string setting_path_;
-  const bool setting_enabled_default_value_;
   const base::RepeatingClosure on_setting_enabled_;
   const base::RepeatingClosure on_setting_disabled_;
 

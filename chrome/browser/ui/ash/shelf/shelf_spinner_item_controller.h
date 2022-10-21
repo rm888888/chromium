@@ -11,6 +11,7 @@
 #include <string>
 
 #include "ash/public/cpp/shelf_item_delegate.h"
+#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "base/time/time.h"
 

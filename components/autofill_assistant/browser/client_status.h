@@ -7,6 +7,7 @@
 
 #include <memory>
 
+#include "base/macros.h"
 #include "components/autofill_assistant/browser/service.pb.h"
 
 namespace autofill_assistant {

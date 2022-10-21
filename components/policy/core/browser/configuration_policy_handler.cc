@@ -15,6 +15,7 @@
 #include "base/cxx17_backports.h"
 #include "base/files/file_path.h"
 #include "base/json/json_reader.h"
+#include "base/macros.h"
 #include "base/metrics/histogram.h"
 #include "base/metrics/histogram_functions.h"
 #include "base/notreached.h"
@@ -31,10 +32,7 @@
 
 namespace policy {
 
-const size_t kMaxUrlFiltersPerPolicy = 1000;
-
-// ConfigurationPolicyHandler implementation
-// -----------------------------------
+// ConfigurationPolicyHandler implementation -----------------------------------
 
 ConfigurationPolicyHandler::ConfigurationPolicyHandler() {}
 
@@ -245,13 +243,14 @@ bool StringMappingListPolicyHandler::Convert(const base::Value* input,
   if (!input)
     return true;
 
-  if (!input->is_list()) {
+  const base::ListValue* list_value = nullptr;
+  if (!input->GetAsList(&list_value)) {
     NOTREACHED();
     return false;
   }
 
   int index = -1;
-  for (const auto& entry : input->GetList()) {
+  for (const auto& entry : list_value->GetList()) {
     ++index;
     if (!entry.is_string()) {
       if (errors) {

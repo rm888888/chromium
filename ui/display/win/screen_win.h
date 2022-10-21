@@ -10,6 +10,7 @@
 #include <memory>
 #include <vector>
 
+#include "base/macros.h"
 #include "base/scoped_observation.h"
 #include "ui/display/display_change_notifier.h"
 #include "ui/display/display_export.h"

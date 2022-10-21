@@ -4,7 +4,6 @@
 
 #include "chrome/browser/ui/ash/calendar/calendar_keyed_service.h"
 
-#include <memory>
 #include <vector>
 
 #include "ash/calendar/calendar_controller.h"
@@ -37,8 +36,7 @@ const char kTestUserAgent[] = "test-user-agent";
 
 class CalendarKeyedServiceTest : public BrowserWithTestWindowTest {
  public:
-  CalendarKeyedServiceTest()
-      : fake_user_manager_(std::make_unique<FakeChromeUserManager>()) {}
+  CalendarKeyedServiceTest() : fake_user_manager_(new FakeChromeUserManager) {}
 
   CalendarKeyedServiceTest(const CalendarKeyedServiceTest& other) = delete;
   CalendarKeyedServiceTest& operator=(const CalendarKeyedServiceTest& other) =
@@ -81,7 +79,7 @@ class CalendarKeyedServiceTest : public BrowserWithTestWindowTest {
   }
 
  private:
-  std::unique_ptr<FakeChromeUserManager> fake_user_manager_;
+  FakeChromeUserManager* fake_user_manager_;
 };
 
 class CalendarKeyedServiceIOTest : public testing::Test {

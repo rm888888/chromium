@@ -9,6 +9,7 @@
 #include <string>
 
 #include "base/callback.h"
+#include "base/macros.h"
 #include "components/autofill/core/browser/logging/log_buffer_submitter.h"
 
 namespace base {

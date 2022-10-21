@@ -5,6 +5,7 @@
 #ifndef COMPONENTS_DOWNLOAD_INTERNAL_COMMON_SAVE_PACKAGE_DOWNLOAD_JOB_H_
 #define COMPONENTS_DOWNLOAD_INTERNAL_COMMON_SAVE_PACKAGE_DOWNLOAD_JOB_H_
 
+#include "base/macros.h"
 #include "components/download/public/common/download_item.h"
 #include "components/download/public/common/download_job.h"
 

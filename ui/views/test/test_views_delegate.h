@@ -7,6 +7,7 @@
 
 #include <memory>
 
+#include "base/macros.h"
 #include "build/build_config.h"
 #include "ui/views/layout/layout_provider.h"
 #include "ui/views/views_delegate.h"
@@ -73,7 +74,7 @@ class TestViewsDelegate : public ViewsDelegate {
   std::unique_ptr<LayoutProvider> layout_provider_ =
       std::make_unique<LayoutProvider>();
 #if defined(OS_CHROMEOS)
-  gfx::NativeWindow context_ = nullptr;
+  gfx::NativeWindow context_;
 #endif
 };
 

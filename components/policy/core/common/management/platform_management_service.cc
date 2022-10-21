@@ -4,6 +4,7 @@
 
 #include "components/policy/core/common/management/platform_management_service.h"
 
+#include "base/no_destructor.h"
 #include "build/build_config.h"
 
 #if defined(OS_WIN)

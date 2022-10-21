@@ -7,6 +7,8 @@
 
 #include <string>
 
+#include "base/macros.h"
+
 namespace feature_engagement {
 
 // A EventStorageValidator checks the required storage conditions for a given

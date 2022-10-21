@@ -98,7 +98,7 @@ const std::string& AXComputedNodeData::GetOrComputeAttributeUTF8(
         DCHECK(HasOrCanComputeAttribute(attribute))
             << "Code in `HasOrCanComputeAttribute` should be in sync with "
                "'GetOrComputeAttributeUTF8`";
-        return GetOrComputeTextContentWithParagraphBreaksUTF8();
+        return GetOrComputeInnerTextUTF8();
       }
       return base::EmptyString();
     default:
@@ -156,32 +156,28 @@ const std::vector<int32_t>& AXComputedNodeData::GetOrComputeAttribute(
   return *result;
 }
 
-const std::string&
-AXComputedNodeData::GetOrComputeTextContentWithParagraphBreaksUTF8() const {
-  if (!text_content_with_paragraph_breaks_utf8_) {
-    VLOG_IF(1, text_content_with_paragraph_breaks_utf16_)
-        << "Only a single encoding of text content with paragraph breaks "
-           "should be cached.";
+const std::string& AXComputedNodeData::GetOrComputeInnerTextUTF8() const {
+  if (!inner_text_utf8_) {
+    VLOG_IF(1, inner_text_utf16_)
+        << "Only a single encoding of inner text should be cached.";
     auto range =
         AXRange<AXPosition<AXNodePosition, AXNode>>::RangeOfContents(*owner_);
-    text_content_with_paragraph_breaks_utf8_ = base::UTF16ToUTF8(
-        range.GetText(AXTextConcatenationBehavior::kWithParagraphBreaks));
+    inner_text_utf8_ = base::UTF16ToUTF8(
+        range.GetText(AXTextConcatenationBehavior::kAsInnerText));
   }
-  return *text_content_with_paragraph_breaks_utf8_;
+  return *inner_text_utf8_;
 }
 
-const std::u16string&
-AXComputedNodeData::GetOrComputeTextContentWithParagraphBreaksUTF16() const {
-  if (!text_content_with_paragraph_breaks_utf16_) {
-    VLOG_IF(1, text_content_with_paragraph_breaks_utf8_)
-        << "Only a single encoding of text content with paragraph breaks "
-           "should be cached.";
+const std::u16string& AXComputedNodeData::GetOrComputeInnerTextUTF16() const {
+  if (!inner_text_utf16_) {
+    VLOG_IF(1, inner_text_utf8_)
+        << "Only a single encoding of inner text should be cached.";
     auto range =
         AXRange<AXPosition<AXNodePosition, AXNode>>::RangeOfContents(*owner_);
-    text_content_with_paragraph_breaks_utf16_ =
-        range.GetText(AXTextConcatenationBehavior::kWithParagraphBreaks);
+    inner_text_utf16_ =
+        range.GetText(AXTextConcatenationBehavior::kAsInnerText);
   }
-  return *text_content_with_paragraph_breaks_utf16_;
+  return *inner_text_utf16_;
 }
 
 const std::string& AXComputedNodeData::GetOrComputeTextContentUTF8() const {
@@ -280,13 +276,9 @@ void AXComputedNodeData::ComputeSentenceOffsetsIfNeeded() const {
 
   sentence_starts_ = std::vector<int32_t>();
   sentence_ends_ = std::vector<int32_t>();
-  if (owner_->IsLineBreak())
-    return;
   const std::u16string& text_content = GetOrComputeTextContentUTF16();
-  if (text_content.empty() ||
-      base::ContainsOnlyChars(text_content, base::kWhitespaceUTF16)) {
+  if (text_content.empty())
     return;
-  }
 
   // Unlike in ICU, a sentence boundary is not valid in Blink if it falls within
   // some whitespace that is used to separate sentences. We therefore need to
@@ -399,7 +391,7 @@ std::string AXComputedNodeData::ComputeTextContentUTF8() const {
   std::string text_content;
   for (auto it = owner_->UnignoredChildrenCrossingTreeBoundaryBegin();
        it != owner_->UnignoredChildrenCrossingTreeBoundaryEnd(); ++it) {
-    text_content += it->GetTextContentUTF8();
+    text_content += it->GetInnerText();
   }
   return text_content;
 }

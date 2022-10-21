@@ -9,7 +9,7 @@
 #include <memory>
 #include <string>
 
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "base/task/cancelable_task_tracker.h"
 #include "components/favicon_base/favicon_types.h"
@@ -75,10 +75,10 @@ class NTPTilesInternalsMessageHandler : public MostVisitedSites::Observer {
                            const GURL& page_url,
                            const favicon_base::FaviconRawBitmapResult& result);
 
-  raw_ptr<favicon::FaviconService> favicon_service_;
+  favicon::FaviconService* favicon_service_;
 
   // Bridge to embedder's API.
-  raw_ptr<NTPTilesInternalsMessageHandlerClient> client_;
+  NTPTilesInternalsMessageHandlerClient* client_;
 
   int site_count_;
   std::unique_ptr<MostVisitedSites> most_visited_sites_;

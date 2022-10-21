@@ -4,7 +4,6 @@
 
 #include "components/cbor/writer.h"
 
-#include <ostream>
 #include <string>
 
 #include "base/check_op.h"

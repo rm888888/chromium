@@ -7,7 +7,6 @@
 
 #include "components/page_load_metrics/browser/observers/click_input_tracker.h"
 #include "components/page_load_metrics/browser/page_load_metrics_observer.h"
-#include "content/public/browser/navigation_handle_timing.h"
 #include "services/metrics/public/cpp/ukm_source.h"
 
 namespace internal {
@@ -59,6 +58,11 @@ extern const char kHistogramLargestContentfulPaintContentType[];
 extern const char kHistogramLargestContentfulPaintMainFrame[];
 extern const char kHistogramLargestContentfulPaintMainFrameContentType[];
 extern const char kHistogramLargestContentfulPaintCrossSiteSubFrame[];
+extern const char kDeprecatedHistogramLargestContentfulPaint[];
+extern const char kHistogramExperimentalLargestContentfulPaintContentType[];
+extern const char kDeprecatedHistogramLargestContentfulPaintMainFrame[];
+extern const char
+    kHistogramExperimentalLargestContentfulPaintMainFrameContentType[];
 extern const char kHistogramParseDuration[];
 extern const char kHistogramParseBlockedOnScriptLoad[];
 extern const char kHistogramParseBlockedOnScriptExecution[];
@@ -117,6 +121,10 @@ extern const char kHistogramLoadTypeCacheBytesReload[];
 extern const char kHistogramLoadTypeTotalBytesNewNavigation[];
 extern const char kHistogramLoadTypeNetworkBytesNewNavigation[];
 extern const char kHistogramLoadTypeCacheBytesNewNavigation[];
+
+extern const char kHistogramTotalCompletedResources[];
+extern const char kHistogramNetworkCompletedResources[];
+extern const char kHistogramCacheCompletedResources[];
 
 extern const char kHistogramInputToNavigation[];
 extern const char kBackgroundHistogramInputToNavigation[];
@@ -275,6 +283,10 @@ class UmaPageLoadMetricsObserver
 
   ui::PageTransition transition_;
   bool was_no_store_main_resource_;
+
+  // Number of complete resources loaded by the page.
+  int num_cache_resources_;
+  int num_network_resources_;
 
   // The number of body (not header) prefilter bytes consumed by completed
   // requests for the page.

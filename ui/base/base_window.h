@@ -5,6 +5,7 @@
 #ifndef UI_BASE_BASE_WINDOW_H_
 #define UI_BASE_BASE_WINDOW_H_
 
+#include "base/compiler_specific.h"
 #include "base/component_export.h"
 #include "build/build_config.h"
 #include "ui/base/ui_base_types.h"

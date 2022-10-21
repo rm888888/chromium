@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+#include "base/compiler_specific.h"
 #include "chrome/test/chromedriver/chrome/chrome_impl.h"
 
 class Device;

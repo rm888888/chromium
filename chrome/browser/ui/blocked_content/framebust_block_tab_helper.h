@@ -8,10 +8,15 @@
 #include <vector>
 
 #include "base/callback.h"
+#include "base/macros.h"
 #include "components/blocked_content/url_list_manager.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "url/gurl.h"
+
+namespace content {
+class NavigationHandle;
+}
 
 // A tab helper that keeps track of blocked Framebusts that happened on each
 // page. Only used for the desktop version of the blocked Framebust UI.
@@ -51,7 +56,8 @@ class FramebustBlockTabHelper
   explicit FramebustBlockTabHelper(content::WebContents* web_contents);
 
   // content::WebContentsObserver:
-  void PrimaryPageChanged(content::Page& page) override;
+  void DidFinishNavigation(
+      content::NavigationHandle* navigation_handle) override;
 
   blocked_content::UrlListManager manager_;
 

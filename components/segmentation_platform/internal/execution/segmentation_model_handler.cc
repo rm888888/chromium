@@ -27,11 +27,7 @@ SegmentationModelHandler::SegmentationModelHandler(
           std::make_unique<SegmentationModelExecutor>(),
           optimization_target,
           /*model_metadata=*/absl::nullopt),
-      model_updated_callback_(model_updated_callback) {
-  stats::RecordModelAvailability(
-      optimization_target,
-      stats::SegmentationModelAvailability::kModelHandlerCreated);
-}
+      model_updated_callback_(model_updated_callback) {}
 
 SegmentationModelHandler::~SegmentationModelHandler() = default;
 
@@ -57,14 +53,8 @@ void SegmentationModelHandler::OnModelUpdated(
     // expected to pass this along. Either something failed horribly on the way,
     // we failed to read the metadata, or the server side configuration is
     // wrong.
-    stats::RecordModelAvailability(
-        optimization_target,
-        stats::SegmentationModelAvailability::kMetadataInvalid);
     return;
   }
-  stats::RecordModelAvailability(
-      optimization_target,
-      stats::SegmentationModelAvailability::kModelAvailable);
 
   model_updated_callback_.Run(optimization_target,
                               std::move(*segmentation_model_metadata));

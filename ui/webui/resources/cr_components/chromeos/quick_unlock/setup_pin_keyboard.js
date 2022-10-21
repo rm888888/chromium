@@ -14,7 +14,7 @@
  * Keep in sync with the string keys provided by settings.
  * @enum {string}
  */
-/* #export */ const MessageType = {
+const MessageType = {
   TOO_SHORT: 'configurePinTooShort',
   TOO_LONG: 'configurePinTooLong',
   TOO_WEAK: 'configurePinWeakPin',
@@ -23,7 +23,7 @@
 };
 
 /** @enum {string} */
-/* #export */ const ProblemType = {
+const ProblemType = {
   WARNING: 'warning',
   ERROR: 'error'
 };

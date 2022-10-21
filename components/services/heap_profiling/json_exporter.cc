@@ -12,6 +12,7 @@
 #include "base/containers/adapters.h"
 #include "base/json/json_writer.h"
 #include "base/json/string_escape.h"
+#include "base/macros.h"
 #include "base/strings/stringprintf.h"
 #include "base/trace_event/traced_value.h"
 #include "base/values.h"

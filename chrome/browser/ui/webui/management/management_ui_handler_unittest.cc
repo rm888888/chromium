@@ -8,7 +8,6 @@
 
 #include "base/files/file_path.h"
 #include "base/json/json_reader.h"
-#include "base/memory/raw_ptr.h"
 #include "base/memory/scoped_refptr.h"
 #include "base/strings/utf_string_conversions.h"
 
@@ -256,7 +255,7 @@ class TestManagementUIHandler : public ManagementUIHandler {
 #endif  // BUILDFLAG(IS_CHROMEOS_ASH)
 
  private:
-  raw_ptr<policy::PolicyService> policy_service_ = nullptr;
+  policy::PolicyService* policy_service_ = nullptr;
   bool update_required_eol_ = false;
   std::string device_domain = "devicedomain.com";
 #if BUILDFLAG(IS_CHROMEOS_ASH)
@@ -440,14 +439,15 @@ class ManagementUIHandlerTests : public TestingBaseClass {
     GetTestConfig().override_policy_connector_is_managed = true;
     GetTestConfig().managed_device = true;
     SetUpProfileAndHandler();
-    const TestDeviceStatusCollector status_collector(
-        &local_state_, GetTestConfig().report_activity_times,
-        GetTestConfig().report_nics, GetTestConfig().report_hardware_data,
-        GetTestConfig().report_users, GetTestConfig().report_crash_info,
-        GetTestConfig().report_app_info_and_activity);
+    const TestDeviceStatusCollector* status_collector =
+        new TestDeviceStatusCollector(
+            &local_state_, GetTestConfig().report_activity_times,
+            GetTestConfig().report_nics, GetTestConfig().report_hardware_data,
+            GetTestConfig().report_users, GetTestConfig().report_crash_info,
+            GetTestConfig().report_app_info_and_activity);
     settings_.device_settings()->SetTrustedStatus(
-        ash::CrosSettingsProvider::TRUSTED);
-    settings_.device_settings()->SetBoolean(ash::kSystemLogUploadEnabled,
+        chromeos::CrosSettingsProvider::TRUSTED);
+    settings_.device_settings()->SetBoolean(chromeos::kSystemLogUploadEnabled,
                                             GetTestConfig().upload_enabled);
     profile_->GetPrefs()->SetBoolean(
         prefs::kPrintingSendUsernameAndFilenameEnabled,
@@ -463,17 +463,17 @@ class ManagementUIHandlerTests : public TestingBaseClass {
         GetTestConfig().crostini_ansible_playbook_filepath);
     crostini_features()->set_is_allowed_now(true);
 
-    const policy::SystemLogUploader system_log_uploader(
-        /*syslog_delegate=*/nullptr,
-        /*task_runner=*/task_runner_);
+    const policy::SystemLogUploader* system_uploader =
+        new policy::SystemLogUploader(/*syslog_delegate=*/nullptr,
+                                      /*task_runner=*/task_runner_);
     ON_CALL(testing::Const(handler_), GetDeviceCloudPolicyManager())
         .WillByDefault(Return(manager_.get()));
     EXPECT_CALL(*static_cast<const policy::MockDlpRulesManager*>(
                     handler_.GetDlpRulesManager()),
                 IsReportingEnabled)
         .WillRepeatedly(testing::Return(GetTestConfig().report_dlp_events));
-    return handler_.GetDeviceReportingInfo(manager_.get(), &status_collector,
-                                           &system_log_uploader, GetProfile());
+    return handler_.GetDeviceReportingInfo(manager_.get(), status_collector,
+                                           system_uploader, GetProfile());
   }
 #endif  // BUILDFLAG(IS_CHROMEOS_ASH)
 

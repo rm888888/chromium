@@ -158,7 +158,7 @@ void WebView::SetCrashedOverlayView(View* crashed_overlay_view) {
 
   crashed_overlay_view_ = crashed_overlay_view;
   if (crashed_overlay_view_) {
-    AddChildView(crashed_overlay_view_.get());
+    AddChildView(crashed_overlay_view_);
     holder_->SetVisible(false);
     crashed_overlay_view_->SetBoundsRect(gfx::Rect(size()));
   }
@@ -450,7 +450,7 @@ std::unique_ptr<content::WebContents> WebView::CreateWebContents(
   }
 
   if (!contents) {
-    content::WebContents::CreateParams create_params(browser_context,
+    content::WebContents::CreateParams create_params(browser_context, nullptr,
                                                      creator_location);
     return content::WebContents::Create(create_params);
   }

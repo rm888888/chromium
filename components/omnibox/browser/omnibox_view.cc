@@ -12,13 +12,10 @@
 #include <string>
 #include <utility>
 
-#include "base/strings/strcat.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "build/build_config.h"
 #include "components/bookmarks/browser/bookmark_model.h"
-#include "components/omnibox/browser/autocomplete_controller.h"
-#include "components/omnibox/browser/autocomplete_input.h"
 #include "components/omnibox/browser/autocomplete_match.h"
 #include "components/omnibox/browser/location_bar_model.h"
 #include "components/omnibox/browser/omnibox_edit_controller.h"
@@ -27,7 +24,6 @@
 #include "components/omnibox/common/omnibox_features.h"
 #include "extensions/common/constants.h"
 #include "ui/base/l10n/l10n_util.h"
-#include "url/url_constants.h"
 
 #if !defined(OS_ANDROID) && !defined(OS_IOS)
 
@@ -53,8 +49,8 @@ OmniboxView::State::State(const State& state) = default;
 
 // static
 std::u16string OmniboxView::StripJavascriptSchemas(const std::u16string& text) {
-  const std::u16string kJsPrefix(
-      base::StrCat({url::kJavaScriptScheme16, u":"}));
+  const std::u16string kJsPrefix(base::ASCIIToUTF16(url::kJavaScriptScheme) +
+                                 u":");
 
   bool found_JavaScript = false;
   size_t i = 0;
@@ -258,11 +254,6 @@ void OmniboxView::CloseOmniboxPopup() {
     model_->StopAutocomplete();
 }
 
-void OmniboxView::StartPrefetch(const AutocompleteInput& input) {
-  if (model_)
-    model_->autocomplete_controller()->StartPrefetch(input);
-}
-
 bool OmniboxView::IsImeShowingPopup() const {
   // Default to claiming that the IME is not showing a popup, since hiding the
   // omnibox dropdown is a bad user experience when we don't know for sure that
@@ -374,7 +365,7 @@ void OmniboxView::UpdateTextStyle(
   // For normal URLs, the host is the best proxy for "identity".
   if (url_scheme == base::UTF8ToUTF16(extensions::kExtensionScheme))
     deemphasize = EVERYTHING;
-  else if (url_scheme == url::kDataScheme16)
+  else if (url_scheme == base::UTF8ToUTF16(url::kDataScheme))
     deemphasize = ALL_BUT_SCHEME;
   else if (host.is_nonempty())
     deemphasize = ALL_BUT_HOST;

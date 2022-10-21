@@ -64,8 +64,4 @@ int SoftwareOutputDevice::MaxFramesPending() const {
   return 1;
 }
 
-bool SoftwareOutputDevice::SupportsOverridePlatformSize() const {
-  return false;
-}
-
 }  // namespace viz

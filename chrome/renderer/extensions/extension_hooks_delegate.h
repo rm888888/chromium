@@ -7,8 +7,8 @@
 
 #include <vector>
 
+#include "base/macros.h"
 #include "extensions/renderer/bindings/api_binding_hooks_delegate.h"
-#include "extensions/renderer/bindings/api_signature.h"
 #include "v8/include/v8.h"
 
 namespace extensions {
@@ -43,19 +43,19 @@ class ExtensionHooksDelegate : public APIBindingHooksDelegate {
   // Request handlers for the corresponding API methods.
   APIBindingHooks::RequestResult HandleSendRequest(
       ScriptContext* script_context,
-      const APISignature::V8ParseResult& parse_result);
+      const std::vector<v8::Local<v8::Value>>& arguments);
   APIBindingHooks::RequestResult HandleGetURL(
       ScriptContext* script_context,
-      const APISignature::V8ParseResult& parse_result);
+      const std::vector<v8::Local<v8::Value>>& arguments);
   APIBindingHooks::RequestResult HandleGetViews(
       ScriptContext* script_context,
-      const APISignature::V8ParseResult& parse_result);
+      const std::vector<v8::Local<v8::Value>>& arguments);
   APIBindingHooks::RequestResult HandleGetExtensionTabs(
       ScriptContext* script_context,
-      const APISignature::V8ParseResult& parse_result);
+      const std::vector<v8::Local<v8::Value>>& arguments);
   APIBindingHooks::RequestResult HandleGetBackgroundPage(
       ScriptContext* script_context,
-      const APISignature::V8ParseResult& parse_result);
+      const std::vector<v8::Local<v8::Value>>& arguments);
 
   // The messaging service to handle messaging calls.
   // Guaranteed to outlive this object.

@@ -5,7 +5,6 @@
 #include "chrome/browser/ui/views/page_action/pwa_install_view.h"
 
 #include "base/files/file_path.h"
-#include "base/memory/raw_ptr.h"
 #include "base/run_loop.h"
 #include "base/test/bind.h"
 #include "base/test/metrics/histogram_tester.h"
@@ -50,14 +49,12 @@
 #include "ui/views/view_observer.h"
 
 #if BUILDFLAG(IS_CHROMEOS_ASH)
-#include "ash/components/arc/test/arc_util_test_support.h"
-#include "ash/components/arc/test/connection_holder_util.h"
-#include "ash/components/arc/test/fake_app_instance.h"
-#include "ash/constants/ash_features.h"
 #include "chrome/browser/ash/arc/arc_util.h"
 #include "chrome/browser/ash/arc/session/arc_session_manager.h"
 #include "chrome/browser/ui/app_list/arc/arc_app_list_prefs.h"
-#include "chrome/common/chrome_features.h"
+#include "components/arc/test/arc_util_test_support.h"
+#include "components/arc/test/connection_holder_util.h"
+#include "components/arc/test/fake_app_instance.h"
 #endif  // BUILDFLAG(IS_CHROMEOS_ASH)
 
 namespace {
@@ -117,14 +114,7 @@ class PwaInstallViewBrowserTest : public extensions::ExtensionBrowserTest {
           {{feature_engagement::kIPHDemoModeFeatureChoiceParam,
             feature_engagement::kIPHDesktopPwaInstallFeature.name}}},
          {feature_engagement::kIPHDesktopPwaInstallFeature, {}}},
-#if BUILDFLAG(IS_CHROMEOS_ASH)
-        {
-          {features::kWebAppsCrosapi, chromeos::features::kLacrosPrimary}, {}
-        }
-#else
-        {}
-#endif
-    );
+        {});
   }
 
   PwaInstallViewBrowserTest(const PwaInstallViewBrowserTest&) = delete;
@@ -165,6 +155,9 @@ class PwaInstallViewBrowserTest : public extensions::ExtensionBrowserTest {
   void SetUpOnMainThread() override {
     extensions::ExtensionBrowserTest::SetUpOnMainThread();
 
+    os_hooks_suppress_ =
+        web_app::OsIntegrationManager::ScopedSuppressOsHooksForTesting();
+
     pwa_install_view_ =
         BrowserView::GetBrowserViewForBrowser(browser())
             ->toolbar_button_provider()
@@ -194,8 +187,8 @@ class PwaInstallViewBrowserTest : public extensions::ExtensionBrowserTest {
   }
 
   struct OpenTabResult {
-    raw_ptr<content::WebContents> web_contents;
-    raw_ptr<webapps::TestAppBannerManagerDesktop> app_banner_manager;
+    content::WebContents* web_contents;
+    webapps::TestAppBannerManagerDesktop* app_banner_manager;
     bool installable;
   };
 
@@ -295,12 +288,12 @@ class PwaInstallViewBrowserTest : public extensions::ExtensionBrowserTest {
   std::string intercept_request_path_;
   std::string intercept_request_response_;
 
-  raw_ptr<PageActionIconView> pwa_install_view_ = nullptr;
-  raw_ptr<content::WebContents> web_contents_ = nullptr;
-  raw_ptr<webapps::TestAppBannerManagerDesktop> app_banner_manager_ = nullptr;
+  PageActionIconView* pwa_install_view_ = nullptr;
+  content::WebContents* web_contents_ = nullptr;
+  webapps::TestAppBannerManagerDesktop* app_banner_manager_ = nullptr;
 
  private:
-  web_app::OsIntegrationManager::ScopedSuppressForTesting os_hooks_suppress_;
+  web_app::ScopedOsHooksSuppress os_hooks_suppress_;
   base::test::ScopedFeatureList features_;
 };
 

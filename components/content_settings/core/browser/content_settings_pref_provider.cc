@@ -55,8 +55,6 @@ const char kObsoletePluginsExceptionsPref[] =
     "profile.content_settings.exceptions.plugins";
 const char kObsoletePluginsDataExceptionsPref[] =
     "profile.content_settings.exceptions.flash_data";
-const char kObsoleteFileHandlingExceptionsPref[] =
-    "profile.content_settings.exceptions.file_handling";
 #endif  // !defined(OS_ANDROID)
 #endif  // !defined(OS_IOS)
 
@@ -95,7 +93,6 @@ void PrefProvider::RegisterProfilePrefs(
       user_prefs::PrefRegistrySyncable::SYNCABLE_PREF);
   registry->RegisterDictionaryPref(kObsoletePluginsDataExceptionsPref);
   registry->RegisterDictionaryPref(kObsoletePluginsExceptionsPref);
-  registry->RegisterDictionaryPref(kObsoleteFileHandlingExceptionsPref);
 #endif  // !defined(OS_ANDROID)
 #endif  // !defined(OS_IOS)
 }
@@ -179,7 +176,7 @@ bool PrefProvider::SetWebsiteSetting(
     const ContentSettingsPattern& primary_pattern,
     const ContentSettingsPattern& secondary_pattern,
     ContentSettingsType content_type,
-    base::Value&& in_value,
+    std::unique_ptr<base::Value>&& in_value,
     const ContentSettingConstraints& constraints) {
   DCHECK(CalledOnValidThread());
   DCHECK(prefs_);
@@ -205,13 +202,12 @@ bool PrefProvider::SetWebsiteSetting(
   // existing Allow Always setting.
   if (constraints.session_model == SessionModel::OneTime) {
     DCHECK_EQ(content_type, ContentSettingsType::GEOLOCATION);
-    in_value = base::Value();
+    in_value = nullptr;
   }
 
-  GetPref(content_type)
+  return GetPref(content_type)
       ->SetWebsiteSetting(primary_pattern, secondary_pattern, modified_time,
                           std::move(in_value), constraints);
-  return true;
 }
 
 base::Time PrefProvider::GetWebsiteSettingLastModified(
@@ -280,7 +276,6 @@ void PrefProvider::DiscardOrMigrateObsoletePreferences() {
   prefs_->ClearPref(kObsoleteMouseLockExceptionsPref);
   prefs_->ClearPref(kObsoletePluginsExceptionsPref);
   prefs_->ClearPref(kObsoletePluginsDataExceptionsPref);
-  prefs_->ClearPref(kObsoleteFileHandlingExceptionsPref);
 #endif  // !defined(OS_ANDROID)
 #endif  // !defined(OS_IOS)
 }

@@ -10,6 +10,7 @@
 #include <string>
 
 #include "base/component_export.h"
+#include "base/macros.h"
 #include "components/tab_groups/tab_group_color.h"
 #include "third_party/skia/include/core/SkColor.h"
 

@@ -5,6 +5,7 @@
 #include "chrome/browser/ui/extensions/extension_install_ui_default.h"
 
 #include "base/bind.h"
+#include "base/macros.h"
 #include "base/strings/utf_string_conversions.h"
 #include "build/build_config.h"
 #include "build/chromeos_buildflags.h"
@@ -31,10 +32,7 @@
 #include "extensions/common/extension.h"
 
 #if BUILDFLAG(IS_CHROMEOS_ASH)
-#include "ash/public/cpp/toast_data.h"
-#include "ash/public/cpp/toast_manager.h"
-#include "chrome/grit/generated_resources.h"
-#include "ui/base/l10n/l10n_util.h"
+#include "chrome/browser/ui/extensions/extension_installed_notification.h"
 #else
 #include "chrome/common/url_constants.h"
 #include "content/public/browser/notification_service.h"
@@ -57,15 +55,6 @@ Browser* FindOrCreateVisibleBrowser(Profile* profile) {
     chrome::AddTabAt(browser, GURL(), -1, true);
   return browser;
 }
-
-#if BUILDFLAG(IS_CHROMEOS_ASH)
-// Toast id and duration for extension install success.
-constexpr char kExtensionInstallSuccessToastId[] = "extension_install_success";
-
-void ShowToast(const std::string& id, const std::u16string& text) {
-  ash::ToastManager::Get()->Show(ash::ToastData(id, text));
-}
-#endif  // BUILDFLAG(IS_CHROMEOS_ASH)
 
 }  // namespace
 
@@ -102,9 +91,7 @@ void ExtensionInstallUIDefault::OnInstallSuccess(
     }
 
 #if BUILDFLAG(IS_CHROMEOS_ASH)
-    ShowToast(kExtensionInstallSuccessToastId,
-              l10n_util::GetStringFUTF16(IDS_EXTENSION_NOTIFICATION_INSTALLED,
-                                         base::UTF8ToUTF16(extension->name())));
+    ExtensionInstalledNotification::Show(extension.get(), current_profile);
 #else   // BUILDFLAG(IS_CHROMEOS_ASH)
     OpenAppInstalledUI(extension->id());
 #endif  // BUILDFLAG(IS_CHROMEOS_ASH)

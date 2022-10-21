@@ -12,7 +12,6 @@
 #include "ash/public/cpp/window_properties.h"
 #include "base/containers/contains.h"
 #include "base/feature_list.h"
-#include "base/strings/string_number_conversions.h"
 #include "base/task/post_task.h"
 #include "base/task/thread_pool.h"
 #include "base/time/time.h"
@@ -26,7 +25,6 @@
 #include "chrome/browser/ash/arc/session/arc_session_manager.h"
 #include "chrome/browser/profiles/profile.h"
 #include "chrome/browser/ui/app_list/arc/arc_app_utils.h"
-#include "chrome/browser/ui/app_list/arc/intent.h"
 #include "chrome/browser/ui/ash/multi_user/multi_user_window_manager_helper.h"
 #include "chrome/browser/ui/ash/shelf/app_service/app_service_app_window_shelf_controller.h"
 #include "chrome/browser/ui/ash/shelf/app_service/app_service_app_window_shelf_item_controller.h"
@@ -47,53 +45,6 @@ constexpr int kArcAppWindowIconSize = extension_misc::EXTENSION_ICON_MEDIUM;
 constexpr char kArcPaymentAppPackage[] = "org.chromium.arc.payment_app";
 constexpr char kArcPaymentAppInvokePaymentAppActivity[] =
     "org.chromium.arc.payment_app.InvokePaymentAppActivity";
-
-// Calculates time delta from the current time and reference time encoded into
-// |intent| and defined by |param_key|. Returns false if could not be parsed or
-// not found. Result is returned in |out|.
-bool GetTimeDeltaFromIntent(const arc::Intent& intent,
-                            const std::string& param_key,
-                            base::TimeDelta* out) {
-  std::string time_ms_string;
-  if (!intent.GetExtraParamValue(param_key, &time_ms_string))
-    return false;
-
-  int64_t time_ms;
-  if (!base::StringToInt64(time_ms_string, &time_ms)) {
-    LOG(ERROR) << "Failed to parse start time value " << time_ms_string;
-    return false;
-  }
-
-  *out = (base::TimeTicks::Now() - base::TimeTicks()) -
-         base::Milliseconds(time_ms);
-  DCHECK_GE(*out, base::TimeDelta());
-  return true;
-}
-
-void HandlePlayStoreLaunch(const arc::Intent& intent) {
-  // Don't track initial Play Store launch. We currently shows Play Store in
-  // very rare case in-session provisioning.
-  if (intent.HasExtraParam(arc::kInitialStartParam))
-    return;
-
-  base::TimeDelta launch_time;
-  // This param is injected by |arc:: LaunchAppWithIntent|.
-  if (!GetTimeDeltaFromIntent(intent, arc::kRequestStartTimeParamKey,
-                              &launch_time)) {
-    return;
-  }
-  arc::UpdatePlayStoreLaunchTime(launch_time);
-}
-
-void MaybeHandleDeferredLaunch(const arc::Intent& intent) {
-  base::TimeDelta launch_time;
-  // This param is injected by |arc:: LaunchAppWithIntent|.
-  if (!GetTimeDeltaFromIntent(intent, arc::kRequestDeferredStartTimeParamKey,
-                              &launch_time)) {
-    return;
-  }
-  arc::UpdateDeferredLaunchTime(launch_time);
-}
 
 }  // namespace
 
@@ -147,10 +98,9 @@ void AppServiceAppWindowArcTracker::ActiveUserChanged(
   } else {
     // Some controllers might have no windows attached, for example background
     // task when foreground tasks is in full screen.
-    for (const auto& it : app_shelf_group_to_controller_map_) {
+    for (const auto& it : app_shelf_group_to_controller_map_)
       app_service_controller_->owner()->ReplaceWithAppShortcutOrRemove(
           it.second->shelf_id());
-    }
     app_shelf_group_to_controller_map_.clear();
   }
 }
@@ -277,11 +227,13 @@ void AppServiceAppWindowArcTracker::OnTaskCreated(
   // Update |state|. The app must be started, and running state. If visible,
   // set it as |kVisible|, otherwise, clear the visible bit.
   auto* proxy = apps::AppServiceProxyFactory::GetForProfile(observed_profile_);
-  apps::InstanceState state = proxy->InstanceRegistry().GetState(window);
+  auto instance_key = apps::Instance::InstanceKey::ForWindowBasedApp(window);
+  apps::InstanceState state = proxy->InstanceRegistry().GetState(instance_key);
   state = static_cast<apps::InstanceState>(
       state | apps::InstanceState::kStarted | apps::InstanceState::kRunning);
   app_service_controller_->app_service_instance_helper()->OnInstances(
-      task_id_to_arc_app_window_info_[task_id]->app_shelf_id().app_id(), window,
+      instance_key,
+      task_id_to_arc_app_window_info_[task_id]->app_shelf_id().app_id(),
       std::string(), state);
   arc_window_candidates_.erase(window);
 }
@@ -332,7 +284,8 @@ void AppServiceAppWindowArcTracker::OnTaskDestroyed(int32_t task_id) {
     // instance though the window has been closed, and the task has been
     // destroyed.
     app_service_controller_->app_service_instance_helper()->OnInstances(
-        it->second.get()->app_shelf_id().app_id(), window, std::string(),
+        apps::Instance::InstanceKey::ForWindowBasedApp(window),
+        it->second.get()->app_shelf_id().app_id(), std::string(),
         apps::InstanceState::kDestroyed);
     app_service_controller_->UnregisterWindow(window);
   }
@@ -362,16 +315,14 @@ void AppServiceAppWindowArcTracker::OnTaskSetActive(int32_t task_id) {
   if (task_id == active_task_id_)
     return;
 
-  auto* helper = app_service_controller_->app_service_instance_helper();
   auto it = task_id_to_arc_app_window_info_.find(active_task_id_);
   if (it != task_id_to_arc_app_window_info_.end()) {
     ArcAppWindowInfo* const previous_arc_app_window_info = it->second.get();
     DCHECK(previous_arc_app_window_info);
     app_service_controller_->owner()->SetItemStatus(
         previous_arc_app_window_info->shelf_id(), ash::STATUS_RUNNING);
-    auto* window = previous_arc_app_window_info->window();
-    AppWindowBase* previous_app_window =
-        app_service_controller_->GetAppWindow(window);
+    AppWindowBase* previous_app_window = app_service_controller_->GetAppWindow(
+        previous_arc_app_window_info->window());
     if (previous_app_window) {
       previous_app_window->SetFullscreenMode(
           previous_app_window->widget() &&
@@ -379,11 +330,15 @@ void AppServiceAppWindowArcTracker::OnTaskSetActive(int32_t task_id) {
               ? ArcAppWindow::FullScreenMode::kActive
               : ArcAppWindow::FullScreenMode::kNonActive);
     }
-    if (window) {
+    if (previous_arc_app_window_info->window()) {
+      auto instance_key = apps::Instance::InstanceKey::ForWindowBasedApp(
+          previous_arc_app_window_info->window());
       apps::InstanceState state =
-          helper->CalculateActivatedState(window, false /* active */);
-      helper->OnInstances(previous_arc_app_window_info->app_shelf_id().app_id(),
-                          window, std::string(), state);
+          app_service_controller_->app_service_instance_helper()
+              ->CalculateActivatedState(instance_key, false /* active */);
+      app_service_controller_->app_service_instance_helper()->OnInstances(
+          instance_key, previous_arc_app_window_info->app_shelf_id().app_id(),
+          std::string(), state);
     }
   }
 
@@ -405,10 +360,13 @@ void AppServiceAppWindowArcTracker::OnTaskSetActive(int32_t task_id) {
   app_service_controller_->owner()->SetItemStatus(
       current_arc_app_window_info->shelf_id(), ash::STATUS_RUNNING);
 
+  auto instance_key = apps::Instance::InstanceKey::ForWindowBasedApp(window);
   apps::InstanceState state =
-      helper->CalculateActivatedState(window, true /* active */);
-  helper->OnInstances(current_arc_app_window_info->app_shelf_id().app_id(),
-                      window, std::string(), state);
+      app_service_controller_->app_service_instance_helper()
+          ->CalculateActivatedState(instance_key, true /* active */);
+  app_service_controller_->app_service_instance_helper()->OnInstances(
+      instance_key, current_arc_app_window_info->app_shelf_id().app_id(),
+      std::string(), state);
 }
 
 void AppServiceAppWindowArcTracker::AttachControllerToWindow(
@@ -457,18 +415,8 @@ void AppServiceAppWindowArcTracker::AttachControllerToWindow(
   window->SetProperty(ash::kAppIDKey, shelf_id.app_id);
   window->SetProperty(aura::client::kSkipImeProcessing, true);
 
-  if (info->launch_intent().empty())
-    return;
-
-  auto intent = arc::Intent::Get(info->launch_intent());
-  if (!intent) {
-    LOG(ERROR) << "Failed to parse launch intent: " << info->launch_intent();
-    return;
-  }
-
   if (info->app_shelf_id().app_id() == arc::kPlayStoreAppId)
-    HandlePlayStoreLaunch(*intent);
-  MaybeHandleDeferredLaunch(*intent);
+    HandlePlayStoreLaunch(info);
 }
 
 void AppServiceAppWindowArcTracker::AddCandidateWindow(aura::Window* window) {
@@ -567,6 +515,16 @@ void AppServiceAppWindowArcTracker::AttachControllerToSession(int session_id) {
   app_shelf_group_to_controller_map_[app_shelf_id] = item_controller;
 }
 
+void AppServiceAppWindowArcTracker::OnArcOptInManagementCheckStarted() {
+  // In case of retry this time is updated and we measure only successful run.
+  opt_in_management_check_start_time_ = base::Time::Now();
+}
+
+void AppServiceAppWindowArcTracker::OnArcSessionStopped(
+    arc::ArcStopReason stop_reason) {
+  opt_in_management_check_start_time_ = base::Time();
+}
+
 void AppServiceAppWindowArcTracker::OnArcPlayStoreEnabledChanged(bool enabled) {
   if (enabled)
     return;
@@ -580,6 +538,37 @@ void AppServiceAppWindowArcTracker::OnArcPlayStoreEnabledChanged(bool enabled) {
     OnSessionDestroyed(session_id);
 
   DCHECK(session_id_to_arc_app_window_info_.empty());
+}
+
+void AppServiceAppWindowArcTracker::HandlePlayStoreLaunch(
+    ArcAppWindowInfo* app_window_info) {
+  arc::Intent intent;
+  if (!arc::ParseIntent(app_window_info->launch_intent(), &intent))
+    return;
+
+  if (!opt_in_management_check_start_time_.is_null()) {
+    if (intent.HasExtraParam(arc::kInitialStartParam)) {
+      DCHECK(!arc::IsRobotOrOfflineDemoAccountMode());
+      arc::UpdatePlayStoreShownTimeDeprecated(
+          base::Time::Now() - opt_in_management_check_start_time_,
+          app_service_controller_->owner()->profile());
+      VLOG(1) << "Play Store is initially shown.";
+    }
+    opt_in_management_check_start_time_ = base::Time();
+    return;
+  }
+
+  for (const auto& param : intent.extra_params()) {
+    int64_t start_request_ms;
+    if (sscanf(param.c_str(), arc::kRequestStartTimeParamTemplate,
+               &start_request_ms) != 1)
+      continue;
+    const base::TimeDelta launch_time = base::TimeTicks::Now() -
+                                        base::TimeTicks() -
+                                        base::Milliseconds(start_request_ms);
+    DCHECK_GE(launch_time, base::TimeDelta());
+    arc::UpdatePlayStoreLaunchTime(launch_time);
+  }
 }
 
 int AppServiceAppWindowArcTracker::GetTaskIdSharingLogicalWindow(int task_id) {
@@ -681,7 +670,8 @@ void AppServiceAppWindowArcTracker::OnSessionDestroyed(int32_t session_id) {
   aura::Window* const window = it->second.get()->window();
   if (window) {
     app_service_controller_->app_service_instance_helper()->OnInstances(
-        it->second.get()->app_shelf_id().app_id(), window, std::string(),
+        apps::Instance::InstanceKey::ForWindowBasedApp(window),
+        it->second.get()->app_shelf_id().app_id(), std::string(),
         apps::InstanceState::kDestroyed);
     app_service_controller_->UnregisterWindow(window);
   }

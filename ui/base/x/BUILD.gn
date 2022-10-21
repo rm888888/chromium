@@ -6,7 +6,7 @@ import("//build/config/linux/gtk/gtk.gni")
 import("//build/config/ozone.gni")
 import("//build/config/ui.gni")
 
-assert(ozone_platform_x11)
+assert(use_x11 || ozone_platform_x11)
 
 component("x") {
   output_name = "ui_base_x"
@@ -66,11 +66,7 @@ component("x") {
 
   defines = [ "IS_UI_BASE_X_IMPL" ]
 
-  public_deps = [
-    "//ui/base/cursor",
-    "//ui/base/cursor:theme_manager",
-    "//ui/base/cursor/mojom:cursor_type_shared",
-  ]
+  public_deps = [ "//ui/base/cursor:cursor_base" ]
   deps = [
     "//base",
     "//base:i18n",
@@ -81,6 +77,8 @@ component("x") {
     "//ui/base:features",
     "//ui/base/clipboard:clipboard_types",
     "//ui/base/clipboard:file_info",
+    "//ui/base/cursor:theme_manager",
+    "//ui/base/cursor/mojom:cursor_type",
     "//ui/display/util",
     "//ui/display/util:gpu_info_util",
     "//ui/events",
@@ -109,7 +107,6 @@ component("x") {
     ]
     public_deps += [ "//ui/base/dragdrop/mojom:mojom_shared" ]
     deps += [
-      "//ui/base",
       "//ui/base/dragdrop:types",
       "//ui/base/dragdrop/mojom",
     ]
@@ -165,8 +162,6 @@ source_set("unittests") {
     "//base/test:test_support",
     "//skia",
     "//testing/gtest",
-    "//ui/base/cursor",
-    "//ui/base/cursor/mojom:cursor_type_shared",
     "//ui/gfx/geometry",
     "//ui/gfx/x",
   ]

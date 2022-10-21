@@ -11,10 +11,10 @@
 #include <string>
 #include <vector>
 
-#include "ash/components/arc/arc_util.h"
 #include "ash/public/cpp/shelf_types.h"
 #include "chrome/browser/ash/arc/session/arc_session_manager_observer.h"
 #include "chrome/browser/ui/app_list/arc/arc_app_list_prefs.h"
+#include "components/arc/arc_util.h"
 
 namespace arc {
 class ArcAppShelfId;
@@ -26,6 +26,10 @@ class ShelfItemDelegate;
 
 namespace aura {
 class window;
+}
+
+namespace base {
+class Time;
 }
 
 namespace gfx {
@@ -116,7 +120,11 @@ class AppServiceAppWindowArcTracker : public ArcAppListPrefs::Observer,
   void AttachControllerToSession(int session_id);
 
   // arc::ArcSessionManagerObserver:
+  void OnArcOptInManagementCheckStarted() override;
+  void OnArcSessionStopped(arc::ArcStopReason stop_reason) override;
   void OnArcPlayStoreEnabledChanged(bool enabled) override;
+
+  void HandlePlayStoreLaunch(ArcAppWindowInfo* app_window_info);
 
   // Returns a task ID different from |task_id| that is part of the same
   // logical window. Return arc::kNoTaskId if there is no such window.
@@ -156,6 +164,12 @@ class AppServiceAppWindowArcTracker : public ArcAppListPrefs::Observer,
 
   int active_task_id_ = arc::kNoTaskId;
   int active_session_id_ = arc::kNoTaskId;
+
+  // The time when the ARC OptIn management check was started. This happens
+  // right after user agrees the ToS or in some cases for managed user when ARC
+  // starts for the first time. OptIn management check is preceding step before
+  // ARC container is actually started.
+  base::Time opt_in_management_check_start_time_;
 
   base::WeakPtrFactory<AppServiceAppWindowArcTracker> weak_ptr_factory_{this};
 };

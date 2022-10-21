@@ -4,7 +4,7 @@
 
 #include "ui/ozone/public/overlay_candidates_ozone.h"
 
-#include "base/notreached.h"
+#include <stdlib.h>
 
 namespace ui {
 

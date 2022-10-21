@@ -7,6 +7,8 @@
 
 #include <vector>
 
+#include "base/macros.h"
+
 namespace ui {
 class LayerAnimator;
 

@@ -10,7 +10,7 @@ function setUp() {
 
 function testDefineProperty() {
   var obj = new EventTarget;
-  Object.defineProperty(obj, 'test', cr.getPropertyDescriptor('test'));
+  cr.defineProperty(obj, 'test');
 
   obj.test = 1;
   assertEquals(1, obj.test);
@@ -20,7 +20,7 @@ function testDefineProperty() {
 function testDefinePropertyOnClass() {
   class C extends EventTarget {}
 
-  Object.defineProperty(C.prototype, 'test', cr.getPropertyDescriptor('test'));
+  cr.defineProperty(C, 'test');
 
   var obj = new C;
   assertEquals(undefined, obj.test);
@@ -41,16 +41,14 @@ function testDefinePropertyWithSetter() {
     assertEquals(2, value);
     hit = true;
   }
-  Object.defineProperty(
-      obj, 'test',
-      cr.getPropertyDescriptor('test', cr.PropertyKind.JS, onTestSet));
+  cr.defineProperty(obj, 'test', cr.PropertyKind.JS, onTestSet);
   obj.test = 2;
   assertTrue(hit);
 }
 
 function testDefinePropertyEvent() {
   var obj = new EventTarget;
-  Object.defineProperty(obj, 'test', cr.getPropertyDescriptor('test'));
+  cr.defineProperty(obj, 'test');
   obj.test = 1;
 
   var count = 0;
@@ -73,8 +71,7 @@ function testDefinePropertyEvent() {
 
 function testDefinePropertyEventWithDefault() {
   var obj = new EventTarget;
-  Object.defineProperty(
-      obj, 'test', cr.getPropertyDescriptor('test', cr.PropertyKind.JS));
+  cr.defineProperty(obj, 'test', cr.PropertyKind.JS);
 
   var count = 0;
   function f(e) {
@@ -100,8 +97,7 @@ function testDefinePropertyEventWithDefault() {
 
 function testDefinePropertyAttr() {
   var obj = document.createElement('div');
-  Object.defineProperty(
-      obj, 'test', cr.getPropertyDescriptor('test', cr.PropertyKind.ATTR));
+  cr.defineProperty(obj, 'test', cr.PropertyKind.ATTR);
 
   obj.test = 'a';
   assertEquals('a', obj.test);
@@ -114,8 +110,7 @@ function testDefinePropertyAttr() {
 
 function testDefinePropertyAttrOnClass() {
   var obj = document.createElement('button');
-  Object.defineProperty(
-      obj, 'test', cr.getPropertyDescriptor('test', cr.PropertyKind.ATTR));
+  cr.defineProperty(HTMLButtonElement, 'test', cr.PropertyKind.ATTR);
 
   assertEquals(null, obj.test);
 
@@ -140,17 +135,14 @@ function testDefinePropertyAttrWithSetter() {
     assertEquals('b', this.test);
     hit = true;
   }
-  Object.defineProperty(
-      obj, 'test',
-      cr.getPropertyDescriptor('test', cr.PropertyKind.ATTR, onTestSet));
+  cr.defineProperty(obj, 'test', cr.PropertyKind.ATTR, onTestSet);
   obj.test = 'b';
   assertTrue(hit);
 }
 
 function testDefinePropertyAttrEvent() {
   var obj = document.createElement('div');
-  Object.defineProperty(
-      obj, 'test', cr.getPropertyDescriptor('test', cr.PropertyKind.ATTR));
+  cr.defineProperty(obj, 'test', cr.PropertyKind.ATTR);
 
   var count = 0;
   function f(e) {
@@ -176,8 +168,7 @@ function testDefinePropertyAttrEvent() {
 
 function testDefinePropertyBoolAttr() {
   var obj = document.createElement('div');
-  Object.defineProperty(
-      obj, 'test', cr.getPropertyDescriptor('test', cr.PropertyKind.BOOL_ATTR));
+  cr.defineProperty(obj, 'test', cr.PropertyKind.BOOL_ATTR);
 
   assertFalse(obj.test);
   assertFalse(obj.hasAttribute('test'));
@@ -193,8 +184,7 @@ function testDefinePropertyBoolAttr() {
 
 function testDefinePropertyBoolAttrEvent() {
   var obj = document.createElement('div');
-  Object.defineProperty(
-      obj, 'test', cr.getPropertyDescriptor('test', cr.PropertyKind.BOOL_ATTR));
+  cr.defineProperty(obj, 'test', cr.PropertyKind.BOOL_ATTR);
 
   var count = 0;
   function f(e) {
@@ -225,9 +215,7 @@ function testDefinePropertyBoolAttrEventWithHook() {
     assertTrue(value);
     hit = true;
   }
-  Object.defineProperty(
-      obj, 'test',
-      cr.getPropertyDescriptor('test', cr.PropertyKind.BOOL_ATTR, onTestSet));
+  cr.defineProperty(obj, 'test', cr.PropertyKind.BOOL_ATTR, onTestSet);
   obj.test = true;
   assertTrue(hit);
 }

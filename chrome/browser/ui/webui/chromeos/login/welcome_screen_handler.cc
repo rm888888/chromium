@@ -139,12 +139,6 @@ void WelcomeScreenHandler::DeclareLocalizedValues(
   if (policy::EnrollmentRequisitionManager::IsRemoraRequisition()) {
     builder->Add("welcomeScreenGreeting", IDS_REMORA_CONFIRM_MESSAGE);
     builder->Add("welcomeScreenGreetingSubtitle", IDS_EMPTY_STRING);
-  } else if (switches::IsRevenBranding()) {
-    builder->AddF("welcomeScreenGreeting",
-                  IDS_WELCOME_SCREEN_GREETING_CLOUD_READY,
-                  IDS_INSTALLED_PRODUCT_OS_NAME);
-    builder->Add("welcomeScreenGreetingSubtitle",
-                 IDS_WELCOME_SCREEN_GREETING_SUBTITLE);
   } else {
     builder->AddF("welcomeScreenGreeting", IDS_NEW_WELCOME_SCREEN_GREETING,
                   ui::GetChromeOSDeviceTypeResourceId());
@@ -232,10 +226,6 @@ void WelcomeScreenHandler::DeclareLocalizedValues(
                IDS_ENTERPRISE_DEVICE_REQUISITION_REMORA_PROMPT_TEXT);
   builder->Add("deviceRequisitionSharkPromptText",
                IDS_ENTERPRISE_DEVICE_REQUISITION_SHARK_PROMPT_TEXT);
-
-  if (ash::features::IsOobeQuickStartEnabled()) {
-    builder->Add("welcomeScreenQuickStart", IDS_LOGIN_GET_STARTED);
-  }
 }
 
 void WelcomeScreenHandler::DeclareJSCallbacks() {
@@ -274,29 +264,30 @@ void WelcomeScreenHandler::GetAdditionalParameters(
 
   const std::string application_locale =
       g_browser_process->GetApplicationLocale();
-  input_method::InputMethodManager* input_method_manager =
-      input_method::InputMethodManager::Get();
   const std::string selected_input_method =
-      input_method_manager->GetActiveIMEState()->GetCurrentInputMethod().id();
+      input_method::InputMethodManager::Get()
+          ->GetActiveIMEState()
+          ->GetCurrentInputMethod()
+          .id();
 
-  base::Value language_list{base::Value::Type::LIST};
+  std::unique_ptr<base::ListValue> language_list;
   if (screen_) {
-    if (!screen_->language_list().GetList().empty() &&
+    if (screen_->language_list() &&
         screen_->language_list_locale() == application_locale) {
-      language_list = screen_->language_list().Clone();
+      language_list = screen_->language_list()->CreateDeepCopy();
     } else {
       screen_->UpdateLanguageList();
     }
   }
 
-  if (language_list.GetList().empty())
-    language_list = std::move(*GetMinimalUILanguageList());
+  if (!language_list)
+    language_list = GetMinimalUILanguageList();
 
-  dict->SetKey("languageList", std::move(language_list));
-  dict->SetKey(
-      "inputMethodsList",
-      GetAndActivateLoginKeyboardLayouts(
-          application_locale, selected_input_method, input_method_manager));
+  dict->SetKey("languageList",
+               base::Value::FromUniquePtrValue(std::move(language_list)));
+  dict->SetKey("inputMethodsList",
+               GetAndActivateLoginKeyboardLayouts(application_locale,
+                                                  selected_input_method));
   dict->SetKey("timezoneList", GetTimezoneList());
   dict->SetKey("demoModeCountryList", DemoSession::GetCountryList());
 
@@ -312,7 +303,7 @@ void WelcomeScreenHandler::Initialize() {
   }
 
   // Reload localized strings if they are already resolved.
-  if (screen_ && !screen_->language_list().GetList().empty())
+  if (screen_ && screen_->language_list())
     ReloadLocalizedContent();
   UpdateA11yState();
 }

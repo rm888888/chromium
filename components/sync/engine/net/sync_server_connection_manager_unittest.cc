@@ -12,15 +12,16 @@
 #include "base/threading/thread.h"
 #include "base/time/time.h"
 #include "components/sync/engine/cancelation_signal.h"
-#include "components/sync/engine/net/http_post_provider.h"
 #include "components/sync/engine/net/http_post_provider_factory.h"
+#include "components/sync/engine/net/http_post_provider_interface.h"
 #include "net/base/net_errors.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
 namespace syncer {
 namespace {
 
-class BlockingHttpPost : public HttpPostProvider {
+
+class BlockingHttpPost : public HttpPostProviderInterface {
  public:
   BlockingHttpPost()
       : wait_for_abort_(base::WaitableEvent::ResetPolicy::AUTOMATIC,
@@ -55,7 +56,7 @@ class BlockingHttpPostFactory : public HttpPostProviderFactory {
  public:
   ~BlockingHttpPostFactory() override = default;
 
-  scoped_refptr<HttpPostProvider> Create() override {
+  scoped_refptr<HttpPostProviderInterface> Create() override {
     return new BlockingHttpPost();
   }
 };
@@ -113,7 +114,7 @@ TEST(SyncServerConnectionManagerTest, AbortPost) {
 
 namespace {
 
-class FailingHttpPost : public HttpPostProvider {
+class FailingHttpPost : public HttpPostProviderInterface {
  public:
   explicit FailingHttpPost(int net_error_code)
       : net_error_code_(net_error_code) {}
@@ -148,7 +149,7 @@ class FailingHttpPostFactory : public HttpPostProviderFactory {
       : net_error_code_(net_error_code) {}
   ~FailingHttpPostFactory() override = default;
 
-  scoped_refptr<HttpPostProvider> Create() override {
+  scoped_refptr<HttpPostProviderInterface> Create() override {
     return new FailingHttpPost(net_error_code_);
   }
 

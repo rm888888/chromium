@@ -36,9 +36,7 @@ void AddUiColorMixer(ColorProvider* provider,
       kColorButtonBackgroundProminent};
   mixer[kColorButtonBorder] = {kColorMidground};
   mixer[kColorButtonBorderDisabled] = {kColorSubtleEmphasisBackground};
-  mixer[kColorButtonForeground] =
-      PickGoogleColor(kColorAccent, kColorButtonBackground,
-                      color_utils::kMinimumReadableContrastRatio);
+  mixer[kColorButtonForeground] = {kColorAccent};
   mixer[kColorButtonForegroundChecked] = {kColorButtonForeground};
   mixer[kColorButtonForegroundDisabled] = {kColorDisabledForeground};
   mixer[kColorButtonForegroundProminent] =
@@ -66,9 +64,7 @@ void AddUiColorMixer(ColorProvider* provider,
   mixer[kColorLabelForegroundSecondary] = {kColorSecondaryForeground};
   mixer[kColorLabelSelectionBackground] = {kColorTextSelectionBackground};
   mixer[kColorLabelSelectionForeground] = {kColorTextSelectionForeground};
-  mixer[kColorLinkForeground] =
-      PickGoogleColor(kColorAccent, kColorDialogBackground,
-                      color_utils::kMinimumReadableContrastRatio);
+  mixer[kColorLinkForeground] = {kColorAccent};
   mixer[kColorLinkForegroundDisabled] = {kColorDisabledForeground};
   mixer[kColorLinkForegroundPressed] = {kColorLinkForeground};
   mixer[kColorMenuBackground] = {kColorPrimaryBackground};
@@ -143,9 +139,7 @@ void AddUiColorMixer(ColorProvider* provider,
   mixer[kColorTabBorderSelected] = {kColorAccent};
   mixer[kColorTabContentSeparator] = {kColorMidground};
   mixer[kColorTabForeground] = {kColorSecondaryForeground};
-  mixer[kColorTabForegroundSelected] =
-      PickGoogleColor(kColorAccent, kColorDialogBackground,
-                      color_utils::kMinimumReadableContrastRatio);
+  mixer[kColorTabForegroundSelected] = {kColorAccent};
   mixer[kColorTableBackground] = {kColorPrimaryBackground};
   mixer[kColorTableBackgroundAlternate] = {kColorTableBackground};
   mixer[kColorTableBackgroundSelectedFocused] = {kColorItemSelectionBackground};

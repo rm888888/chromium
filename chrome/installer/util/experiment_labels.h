@@ -8,6 +8,7 @@
 #include <string>
 #include <utility>
 
+#include "base/macros.h"
 #include "base/strings/string_piece.h"
 #include "base/time/time.h"
 

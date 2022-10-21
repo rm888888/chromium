@@ -422,12 +422,6 @@ export class FileManager extends EventTarget {
      * @private {?FakeEntry}
      */
     this.recentEntry_ = null;
-
-    /**
-     * Whether or not we are running in guest mode.
-     * @private {boolean}
-     */
-    this.guestMode_ = false;
   }
 
   /**
@@ -591,13 +585,6 @@ export class FileManager extends EventTarget {
   }
 
   /**
-   * @return {boolean} If the app is running in the guest mode.
-   */
-  get guestMode() {
-    return this.guestMode_;
-  }
-
-  /**
    * Launch a new File Manager app.
    * @param {!FilesAppState=} appState App state.
    */
@@ -625,23 +612,6 @@ export class FileManager extends EventTarget {
     this.appStateController_ = new AppStateController(this.dialogType);
     await this.appStateController_.loadInitialViewOptions();
     metrics.recordInterval('Load.InitSettings');
-  }
-
-  /**
-   * Updates guestMode_ field based on what the result of the util.isInGuestMode
-   * helper function. It errs on the side of not-in-guestmode, if the util
-   * function fails. The worse this causes are extra notifications.
-   */
-  async setGuestMode_() {
-    try {
-      const guest = await util.isInGuestMode();
-      if (guest !== null) {
-        this.guestMode_ = guest;
-      }
-    } catch (error) {
-      console.error(error);
-      // Leave this.guestMode_ as its initial value.
-    }
   }
 
   /**
@@ -784,8 +754,7 @@ export class FileManager extends EventTarget {
     this.ui_.decorateFilesMenuItems();
     this.ui_.selectionMenuButton.hidden = false;
 
-    await Promise.all(
-        [fileListPromise, currentDirectoryPromise, this.setGuestMode_()]);
+    await Promise.all([fileListPromise, currentDirectoryPromise]);
   }
 
   /**

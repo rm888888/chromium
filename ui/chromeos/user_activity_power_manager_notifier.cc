@@ -73,7 +73,7 @@ void UserActivityPowerManagerNotifier::OnUserActivity(const Event* event) {
 }
 
 void UserActivityPowerManagerNotifier::OnAuthScanDone(
-    const device::mojom::FingerprintMessagePtr msg,
+    device::mojom::ScanResult scan_result,
     const base::flat_map<std::string, std::vector<std::string>>& matches) {
   MaybeNotifyUserActivity(power_manager::USER_ACTIVITY_OTHER);
 }

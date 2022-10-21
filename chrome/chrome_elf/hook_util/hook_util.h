@@ -7,6 +7,8 @@
 
 #include <windows.h>
 
+#include "base/macros.h"
+
 namespace sandbox {
 class ServiceResolverThunk;
 }

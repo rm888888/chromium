@@ -170,7 +170,7 @@ gfx::NativeViewAccessible TestAXNodeWrapper::GetNativeViewAccessible() {
   return ax_platform_node()->GetNativeViewAccessible();
 }
 
-gfx::NativeViewAccessible TestAXNodeWrapper::GetParent() const {
+gfx::NativeViewAccessible TestAXNodeWrapper::GetParent() {
   TestAXNodeWrapper* parent_wrapper =
       GetOrCreate(tree_, node_->GetUnignoredParent());
   return parent_wrapper ?
@@ -703,7 +703,7 @@ std::u16string TestAXNodeWrapper::GetLocalizedStringForLandmarkType() const {
     case ax::mojom::Role::kSection:
       if (HasStringAttribute(ax::mojom::StringAttribute::kName))
         return u"region";
-      [[fallthrough]];
+      FALLTHROUGH;
 
     default:
       return {};

@@ -100,7 +100,8 @@ void BookmarkModelObserverImpl::BookmarkNodeAdded(
   // the tombstone was not committed yet. In that case the existing entity
   // should be updated.
   const SyncedBookmarkTracker::Entity* entity =
-      bookmark_tracker_->GetEntityForGUID(node->guid());
+      bookmark_tracker_->GetEntityForClientTagHash(
+          SyncedBookmarkTracker::GetClientTagHashFromGUID(node->guid()));
   const base::Time creation_time = base::Time::Now();
   if (entity) {
     // If there is a tracked entity with the same client tag hash (effectively
@@ -247,9 +248,10 @@ void BookmarkModelObserverImpl::BookmarkNodeFaviconChanged(
   // The favicon content didn't actually change, which means this event is
   // almost certainly the result of favicon loading having completed.
   if (entity->IsUnsynced()) {
-    // Nudge for commit once favicon is loaded. This is needed in case when
-    // unsynced entity was skipped while building commit requests (since favicon
-    // wasn't loaded).
+    // When kSyncDoNotCommitBookmarksWithoutFavicon is enabled, nudge for
+    // commit once favicon is loaded. This is needed in case when unsynced
+    // entity was skipped while building commit requests (since favicon wasn't
+    // loaded).
     nudge_for_commit_closure_.Run();
   }
 }

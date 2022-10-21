@@ -5,8 +5,7 @@
 #ifndef CHROME_BROWSER_UI_VIEWS_PASSWORDS_PASSWORD_GENERATION_POPUP_VIEW_VIEWS_H_
 #define CHROME_BROWSER_UI_VIEWS_PASSWORDS_PASSWORD_GENERATION_POPUP_VIEW_VIEWS_H_
 
-#include "base/memory/raw_ptr.h"
-#include "base/memory/weak_ptr.h"
+#include "base/macros.h"
 #include "chrome/browser/ui/passwords/password_generation_popup_view.h"
 #include "chrome/browser/ui/views/autofill/autofill_popup_base_view.h"
 
@@ -20,7 +19,7 @@ class PasswordGenerationPopupViewViews : public autofill::AutofillPopupBaseView,
                                          public PasswordGenerationPopupView {
  public:
   PasswordGenerationPopupViewViews(
-      base::WeakPtr<PasswordGenerationPopupController> controller,
+      PasswordGenerationPopupController* controller,
       views::Widget* parent_widget);
 
   PasswordGenerationPopupViewViews(const PasswordGenerationPopupViewViews&) =
@@ -50,13 +49,13 @@ class PasswordGenerationPopupViewViews : public autofill::AutofillPopupBaseView,
   gfx::Size CalculatePreferredSize() const override;
 
   // Sub view that displays the actual generated password.
-  raw_ptr<GeneratedPasswordBox> password_view_ = nullptr;
+  GeneratedPasswordBox* password_view_ = nullptr;
 
   // The footer label.
-  raw_ptr<views::Label> help_label_ = nullptr;
+  views::Label* help_label_ = nullptr;
 
   // Controller for this view. Weak reference.
-  base::WeakPtr<PasswordGenerationPopupController> controller_;
+  PasswordGenerationPopupController* controller_;
 };
 
 #endif  // CHROME_BROWSER_UI_VIEWS_PASSWORDS_PASSWORD_GENERATION_POPUP_VIEW_VIEWS_H_

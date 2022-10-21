@@ -12,12 +12,11 @@
 #include <vector>
 
 #include "base/gtest_prod_util.h"
-#include "base/memory/raw_ptr.h"
 #include "build/build_config.h"
 #include "components/autofill/core/browser/autofill_client.h"
+#include "components/autofill/core/browser/autofill_metrics.h"
 #include "components/autofill/core/browser/data_model/credit_card.h"
 #include "components/autofill/core/browser/form_structure.h"
-#include "components/autofill/core/browser/metrics/autofill_metrics.h"
 #include "components/autofill/core/browser/payments/credit_card_save_strike_database.h"
 #include "components/autofill/core/browser/payments/legal_message_line.h"
 #include "components/autofill/core/browser/payments/local_card_migration_strike_database.h"
@@ -152,10 +151,8 @@ class CreditCardSaveManager {
   // |AutofillClient::PaymentsRpcResult::kSuccess|, clears strikes for the saved
   // card. Additionally, |server_id| may, optionally, contain the opaque
   // identifier for the card on the server. Exposed for testing.
-  virtual void OnDidUploadCard(
-      AutofillClient::PaymentsRpcResult result,
-      const payments::PaymentsClient::UploadCardResponseDetails&
-          upload_card_response_details);
+  virtual void OnDidUploadCard(AutofillClient::PaymentsRpcResult result,
+                               const std::string& server_id);
 
  private:
   friend class CreditCardSaveManagerTest;
@@ -301,11 +298,11 @@ class CreditCardSaveManager {
     observer_for_testing_ = observer;
   }
 
-  const raw_ptr<AutofillClient> client_;
+  AutofillClient* const client_;
 
   // Handles Payments service requests.
   // Owned by BrowserAutofillManager.
-  raw_ptr<payments::PaymentsClient> payments_client_;
+  payments::PaymentsClient* payments_client_;
 
   std::string app_locale_;
 
@@ -313,7 +310,7 @@ class CreditCardSaveManager {
   // web database.  This is overridden by the BrowserAutofillManagerTest.
   // Weak reference.
   // May be NULL.  NULL indicates OTR.
-  raw_ptr<PersonalDataManager> personal_data_manager_;
+  PersonalDataManager* personal_data_manager_;
 
   // The credit card to be saved if local credit card save is accepted.
   CreditCard local_card_save_candidate_;
@@ -384,7 +381,7 @@ class CreditCardSaveManager {
 #endif  // !defined(OS_ANDROID) && !defined(OS_IOS)
 
   // May be null.
-  raw_ptr<ObserverForTest> observer_for_testing_ = nullptr;
+  ObserverForTest* observer_for_testing_ = nullptr;
 
   base::WeakPtrFactory<CreditCardSaveManager> weak_ptr_factory_{this};
 

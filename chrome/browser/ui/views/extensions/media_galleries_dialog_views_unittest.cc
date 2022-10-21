@@ -4,7 +4,7 @@
 
 #include <stdint.h>
 
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/browser/media_galleries/media_galleries_dialog_controller_mock.h"
@@ -64,15 +64,14 @@ class MediaGalleriesDialogTest : public ChromeViewsTestBase {
   views::Widget::InitParams CreateParams(
       views::Widget::InitParams::Type type) override {
     // This relies on the setup done in the ToggleCheckboxes test below.
-    auto dialog = std::make_unique<MediaGalleriesDialogViews>(controller());
+    auto* dialog = new MediaGalleriesDialogViews(controller());  // Owns itself.
     dialog->SetModalType(ui::MODAL_TYPE_WINDOW);
     EXPECT_EQ(1U, dialog->checkbox_map_.size());
     checkbox_ = dialog->checkbox_map_[1]->checkbox();
     EXPECT_TRUE(checkbox_->GetChecked());
 
     views::Widget::InitParams params = ChromeViewsTestBase::CreateParams(type);
-    params.delegate = dialog.release();
-    params.delegate->SetOwnedByWidget(true);
+    params.delegate = dialog;
     return params;
   }
 
@@ -86,7 +85,7 @@ class MediaGalleriesDialogTest : public ChromeViewsTestBase {
   // TODO(gbillock): Get rid of this mock; make something specialized.
   NiceMock<MediaGalleriesDialogControllerMock> controller_;
 
-  raw_ptr<views::Checkbox> checkbox_ = nullptr;
+  views::Checkbox* checkbox_ = nullptr;
 };
 
 // Tests that checkboxes are initialized according to the contents of

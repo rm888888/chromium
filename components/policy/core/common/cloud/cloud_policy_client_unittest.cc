@@ -85,43 +85,42 @@ namespace policy {
 
 namespace {
 
-constexpr char kClientID[] = "fake-client-id";
-constexpr char kMachineID[] = "fake-machine-id";
-constexpr char kMachineModel[] = "fake-machine-model";
-constexpr char kBrandCode[] = "fake-brand-code";
-constexpr char kAttestedDeviceId[] = "fake-attested-device-id";
-constexpr char kEthernetMacAddress[] = "fake-ethernet-mac-address";
-constexpr char kDockMacAddress[] = "fake-dock-mac-address";
-constexpr char kManufactureDate[] = "fake-manufacture-date";
-constexpr char kOAuthToken[] = "fake-oauth-token";
-constexpr char kDMToken[] = "fake-dm-token";
-constexpr char kDeviceDMToken[] = "fake-device-dm-token";
-constexpr char kMachineCertificate[] = "fake-machine-certificate";
-constexpr char kEnrollmentCertificate[] = "fake-enrollment-certificate";
-constexpr char kEnrollmentId[] = "fake-enrollment-id";
-constexpr char kOsName[] = "fake-os-name";
+const char kClientID[] = "fake-client-id";
+const char kMachineID[] = "fake-machine-id";
+const char kMachineModel[] = "fake-machine-model";
+const char kBrandCode[] = "fake-brand-code";
+const char kAttestedDeviceId[] = "fake-attested-device-id";
+const char kEthernetMacAddress[] = "fake-ethernet-mac-address";
+const char kDockMacAddress[] = "fake-dock-mac-address";
+const char kManufactureDate[] = "fake-manufacture-date";
+const char kOAuthToken[] = "fake-oauth-token";
+const char kDMToken[] = "fake-dm-token";
+const char kDeviceDMToken[] = "fake-device-dm-token";
+const char kMachineCertificate[] = "fake-machine-certificate";
+const char kEnrollmentCertificate[] = "fake-enrollment-certificate";
+const char kEnrollmentId[] = "fake-enrollment-id";
 
 #if defined(OS_WIN) || defined(OS_APPLE) || \
     (defined(OS_LINUX) || BUILDFLAG(IS_CHROMEOS_LACROS))
-constexpr char kEnrollmentToken[] = "enrollment_token";
+const char kEnrollmentToken[] = "enrollment_token";
 #endif
 
-constexpr char kRequisition[] = "fake-requisition";
-constexpr char kStateKey[] = "fake-state-key";
-constexpr char kPayload[] = "input_payload";
-constexpr char kResultPayload[] = "output_payload";
-constexpr char kAssetId[] = "fake-asset-id";
-constexpr char kLocation[] = "fake-location";
-constexpr char kGcmID[] = "fake-gcm-id";
-constexpr char kPolicyToken[] = "fake-policy-token";
-constexpr char kPolicyName[] = "fake-policy-name";
-constexpr char kValueValidationMessage[] = "fake-value-validation-message";
-constexpr char kRobotAuthCode[] = "fake-robot-auth-code";
-constexpr char kApiAuthScope[] = "fake-api-auth-scope";
+const char kRequisition[] = "fake-requisition";
+const char kStateKey[] = "fake-state-key";
+const char kPayload[] = "input_payload";
+const char kResultPayload[] = "output_payload";
+const char kAssetId[] = "fake-asset-id";
+const char kLocation[] = "fake-location";
+const char kGcmID[] = "fake-gcm-id";
+const char kPolicyToken[] = "fake-policy-token";
+const char kPolicyName[] = "fake-policy-name";
+const char kValueValidationMessage[] = "fake-value-validation-message";
+const char kRobotAuthCode[] = "fake-robot-auth-code";
+const char kApiAuthScope[] = "fake-api-auth-scope";
 
-constexpr int64_t kAgeOfCommand = 123123123;
-constexpr int64_t kLastCommandId = 123456789;
-constexpr int64_t kTimestamp = 987654321;
+const int64_t kAgeOfCommand = 123123123;
+const int64_t kLastCommandId = 123456789;
+const int64_t kTimestamp = 987654321;
 
 MATCHER_P(MatchProto, expected, "matches protobuf") {
   return arg.SerializePartialAsString() == expected.SerializePartialAsString();
@@ -183,7 +182,9 @@ struct MockStatusCallbackObserver {
 struct MockRemoteCommandsObserver {
   MOCK_METHOD(void,
               OnRemoteCommandsFetched,
-              (DeviceManagementStatus, const std::vector<em::SignedData>&));
+              (DeviceManagementStatus,
+               const std::vector<em::RemoteCommand>&,
+               const std::vector<em::SignedData>&));
 };
 
 struct MockDeviceDMTokenCallbackObserver {
@@ -1659,34 +1660,6 @@ TEST_F(CloudPolicyClientTest, UploadChromeOsUserReport) {
   EXPECT_EQ(DM_STATUS_SUCCESS, client_->status());
 }
 
-TEST_F(CloudPolicyClientTest, UploadChromeProfileReport) {
-  RegisterClient();
-
-  em::DeviceManagementRequest device_managment_request;
-  device_managment_request.mutable_chrome_profile_report_request()
-      ->mutable_os_report()
-      ->set_name(kOsName);
-
-  ExpectAndCaptureJob(GetEmptyResponse());
-  EXPECT_CALL(callback_observer_, OnCallbackComplete(true)).Times(1);
-  CloudPolicyClient::StatusCallback callback =
-      base::BindOnce(&MockStatusCallbackObserver::OnCallbackComplete,
-                     base::Unretained(&callback_observer_));
-  auto chrome_profile_report =
-      std::make_unique<em::ChromeProfileReportRequest>();
-  chrome_profile_report->mutable_os_report()->set_name(kOsName);
-  client_->UploadChromeProfileReport(std::move(chrome_profile_report),
-                                     std::move(callback));
-  base::RunLoop().RunUntilIdle();
-  EXPECT_EQ(
-      DeviceManagementService::JobConfiguration::TYPE_CHROME_PROFILE_REPORT,
-      job_type_);
-  EXPECT_EQ(auth_data_, DMAuth::FromDMToken(kDMToken));
-  EXPECT_EQ(job_request_.SerializePartialAsString(),
-            device_managment_request.SerializePartialAsString());
-  EXPECT_EQ(DM_STATUS_SUCCESS, client_->status());
-}
-
 // A helper class to test all em::DeviceRegisterRequest::PsmExecutionResult enum
 // values.
 class CloudPolicyClientRegisterWithPsmParamsTest
@@ -2200,11 +2173,11 @@ TEST_F(CloudPolicyClientTest, RequestCancelOnUnregister) {
   EXPECT_EQ(0, client_->GetActiveRequestCountForTest());
 }
 
-TEST_F(CloudPolicyClientTest, ShouldRejectUnsignedCommands) {
-  const DeviceManagementStatus expected_error =
-      DM_STATUS_RESPONSE_DECODING_ERROR;
-
+TEST_F(CloudPolicyClientTest, FetchRemoteCommands) {
   RegisterClient();
+
+  em::DeviceManagementRequest remote_command_request =
+      GetRemoteCommandRequest();
 
   em::DeviceManagementResponse remote_command_response;
   em::RemoteCommand* command =
@@ -2217,74 +2190,30 @@ TEST_F(CloudPolicyClientTest, ShouldRejectUnsignedCommands) {
   ExpectAndCaptureJob(remote_command_response);
 
   StrictMock<MockRemoteCommandsObserver> remote_commands_observer;
-  EXPECT_CALL(remote_commands_observer,
-              OnRemoteCommandsFetched(expected_error, _))
+  EXPECT_CALL(
+      remote_commands_observer,
+      OnRemoteCommandsFetched(
+          DM_STATUS_SUCCESS,
+          ElementsAre(MatchProto(
+              remote_command_response.remote_command_response().commands(0))),
+          _))
       .Times(1);
   CloudPolicyClient::RemoteCommandCallback callback =
       base::BindOnce(&MockRemoteCommandsObserver::OnRemoteCommandsFetched,
                      base::Unretained(&remote_commands_observer));
 
+  const std::vector<em::RemoteCommandResult> command_results(
+      1, remote_command_request.remote_command_request().command_results(0));
   client_->FetchRemoteCommands(
-      std::make_unique<RemoteCommandJob::UniqueIDType>(kLastCommandId), {},
-      std::move(callback));
+      std::make_unique<RemoteCommandJob::UniqueIDType>(kLastCommandId),
+      command_results, std::move(callback));
   base::RunLoop().RunUntilIdle();
-}
-
-TEST_F(CloudPolicyClientTest,
-       ShouldIgnoreSignedCommandsIfUnsignedCommandsArePresent) {
-  const DeviceManagementStatus expected_error =
-      DM_STATUS_RESPONSE_DECODING_ERROR;
-
-  RegisterClient();
-
-  em::DeviceManagementResponse remote_command_response;
-  auto* response = remote_command_response.mutable_remote_command_response();
-  response->add_commands();
-  response->add_secure_commands();
-
-  ExpectAndCaptureJob(remote_command_response);
-
-  std::vector<em::SignedData> received_commands;
-  StrictMock<MockRemoteCommandsObserver> remote_commands_observer;
-  EXPECT_CALL(remote_commands_observer,
-              OnRemoteCommandsFetched(expected_error, _))
-      .WillOnce(SaveArg<1>(&received_commands));
-  CloudPolicyClient::RemoteCommandCallback callback =
-      base::BindOnce(&MockRemoteCommandsObserver::OnRemoteCommandsFetched,
-                     base::Unretained(&remote_commands_observer));
-
-  client_->FetchRemoteCommands(
-      std::make_unique<RemoteCommandJob::UniqueIDType>(kLastCommandId), {},
-      std::move(callback));
-  base::RunLoop().RunUntilIdle();
-
-  EXPECT_THAT(received_commands, ElementsAre());
-}
-
-TEST_F(CloudPolicyClientTest, ShouldNotFailIfRemoteCommandResponseIsEmpty) {
-  const DeviceManagementStatus expected_result = DM_STATUS_SUCCESS;
-
-  RegisterClient();
-
-  em::DeviceManagementResponse empty_server_response;
-
-  ExpectAndCaptureJob(empty_server_response);
-
-  std::vector<em::SignedData> received_commands;
-  StrictMock<MockRemoteCommandsObserver> remote_commands_observer;
-  EXPECT_CALL(remote_commands_observer,
-              OnRemoteCommandsFetched(expected_result, _))
-      .Times(1);
-  CloudPolicyClient::RemoteCommandCallback callback =
-      base::BindOnce(&MockRemoteCommandsObserver::OnRemoteCommandsFetched,
-                     base::Unretained(&remote_commands_observer));
-
-  client_->FetchRemoteCommands(
-      std::make_unique<RemoteCommandJob::UniqueIDType>(kLastCommandId), {},
-      std::move(callback));
-  base::RunLoop().RunUntilIdle();
-
-  EXPECT_THAT(received_commands, ElementsAre());
+  EXPECT_EQ(DeviceManagementService::JobConfiguration::TYPE_REMOTE_COMMANDS,
+            job_type_);
+  EXPECT_EQ(auth_data_, DMAuth::FromDMToken(kDMToken));
+  EXPECT_EQ(job_request_.SerializePartialAsString(),
+            remote_command_request.SerializePartialAsString());
+  EXPECT_EQ(DM_STATUS_SUCCESS, client_->status());
 }
 
 TEST_F(CloudPolicyClientTest, FetchSecureRemoteCommands) {
@@ -2306,7 +2235,7 @@ TEST_F(CloudPolicyClientTest, FetchSecureRemoteCommands) {
   EXPECT_CALL(
       remote_commands_observer,
       OnRemoteCommandsFetched(
-          DM_STATUS_SUCCESS,
+          DM_STATUS_SUCCESS, _,
           ElementsAre(MatchProto(
               remote_command_response.remote_command_response().secure_commands(
                   0)))))
@@ -2316,9 +2245,10 @@ TEST_F(CloudPolicyClientTest, FetchSecureRemoteCommands) {
   CloudPolicyClient::RemoteCommandCallback callback =
       base::BindLambdaForTesting(
           [&](DeviceManagementStatus status,
+              const std::vector<enterprise_management::RemoteCommand>& commands,
               const std::vector<enterprise_management::SignedData>&
                   signed_commands) {
-            remote_commands_observer.OnRemoteCommandsFetched(status,
+            remote_commands_observer.OnRemoteCommandsFetched(status, commands,
                                                              signed_commands);
             run_loop.Quit();
           });

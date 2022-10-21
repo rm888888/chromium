@@ -10,19 +10,76 @@
 
 #include "base/location.h"
 #include "base/run_loop.h"
+#include "base/task/sequenced_task_runner.h"
 #include "base/test/bind.h"
 #include "base/test/task_environment.h"
+#include "base/threading/sequenced_task_runner_handle.h"
 #include "base/time/time.h"
-#include "components/reporting/metrics/fake_metric_report_queue.h"
+#include "components/reporting/client/report_queue.h"
 #include "components/reporting/metrics/fake_reporting_settings.h"
-#include "components/reporting/metrics/fake_sampler.h"
 #include "components/reporting/metrics/metric_report_queue.h"
-#include "components/reporting/proto/synced/metric_data.pb.h"
+#include "components/reporting/metrics/sampler.h"
+#include "components/reporting/proto/metric_data.pb.h"
+#include "components/reporting/proto/synced/record_constants.pb.h"
+#include "components/reporting/util/status.h"
 #include "testing/gtest/include/gtest/gtest.h"
-#include "third_party/abseil-cpp/absl/types/optional.h"
 
 namespace reporting {
-namespace test {
+
+class FakeSampler : public Sampler {
+ public:
+  FakeSampler() = default;
+
+  FakeSampler(const FakeSampler& other) = delete;
+  FakeSampler& operator=(const FakeSampler& other) = delete;
+
+  ~FakeSampler() override = default;
+
+  void Collect(MetricCallback cb) override {
+    num_calls_++;
+    std::move(cb).Run(std::move(metric_data_));
+  }
+
+  void SetMetricData(MetricData metric_data) {
+    metric_data_ = std::move(metric_data);
+  }
+
+  int GetNumCollectCalls() { return num_calls_; }
+
+ private:
+  MetricData metric_data_;
+
+  int num_calls_ = 0;
+};
+
+class FakeMetricReportQueue : public MetricReportQueue {
+ public:
+  FakeMetricReportQueue()
+      : MetricReportQueue(
+            std::unique_ptr<ReportQueue, base::OnTaskRunnerDeleter>(
+                nullptr,
+                base::OnTaskRunnerDeleter(
+                    base::SequencedTaskRunnerHandle::Get())),
+            Priority::IMMEDIATE) {}
+
+  FakeMetricReportQueue(const FakeMetricReportQueue& other) = delete;
+  FakeMetricReportQueue& operator=(const FakeMetricReportQueue& other) = delete;
+
+  ~FakeMetricReportQueue() override = default;
+
+  void Enqueue(const MetricData& metric_data,
+               ReportQueue::EnqueueCallback callback) override {
+    reported_data_.emplace_back(metric_data);
+    std::move(callback).Run(Status());
+  }
+
+  void Flush() override {}
+
+  std::vector<MetricData> GetMetricDataReported() { return reported_data_; }
+
+ private:
+  std::vector<MetricData> reported_data_;
+};
 
 class FakeEventDetector : public EventDetector {
  public:
@@ -33,14 +90,14 @@ class FakeEventDetector : public EventDetector {
 
   ~FakeEventDetector() override = default;
 
-  absl::optional<MetricEventType> DetectEvent(
-      const MetricData& previous_metric_data,
-      const MetricData& current_metric_data) override {
+  bool DetectEvent(const MetricData& previous_metric_data,
+                   MetricData* current_metric_data) override {
     previous_metric_list_.emplace_back(previous_metric_data);
     if (!has_event_) {
-      return absl::nullopt;
+      return false;
     }
-    return MetricEventType::NETWORK_HTTPS_LATENCY_CHANGE;
+    current_metric_data->mutable_event_data();
+    return true;
   }
 
   void SetHasEvent(bool has_event) { has_event_ = has_event; }
@@ -54,34 +111,25 @@ class FakeEventDetector : public EventDetector {
 
   std::vector<MetricData> previous_metric_list_;
 };
-}  // namespace test
-
-namespace {
 
 class MetricDataCollectorTest : public ::testing::Test {
- protected:
+ public:
   void SetUp() override {
-    settings_ = std::make_unique<test::FakeReportingSettings>();
-    sampler_ = std::make_unique<test::FakeSampler>();
-    metric_report_queue_ = std::make_unique<test::FakeMetricReportQueue>();
+    settings_ = std::make_unique<FakeReportingSettings>();
+    sampler_ = std::make_unique<FakeSampler>();
+    metric_report_queue_ = std::make_unique<FakeMetricReportQueue>();
   }
 
-  void FlushTasks() {
-    base::RunLoop run_loop;
-    task_environment_.GetMainThreadTaskRunner()->PostTask(
-        FROM_HERE, run_loop.QuitClosure());
-    run_loop.Run();
-  }
-
+ protected:
   base::test::SingleThreadTaskEnvironment task_environment_{
       base::test::TaskEnvironment::TimeSource::MOCK_TIME};
 
   const std::string kEnableSettingPath = "enable_path";
   const std::string kRateSettingPath = "rate_path";
 
-  std::unique_ptr<test::FakeReportingSettings> settings_;
-  std::unique_ptr<test::FakeSampler> sampler_;
-  std::unique_ptr<test::FakeMetricReportQueue> metric_report_queue_;
+  std::unique_ptr<FakeReportingSettings> settings_;
+  std::unique_ptr<FakeSampler> sampler_;
+  std::unique_ptr<FakeMetricReportQueue> metric_report_queue_;
 };
 
 TEST_F(MetricDataCollectorTest, OneShotCollector_InitiallyEnabled) {
@@ -94,7 +142,6 @@ TEST_F(MetricDataCollectorTest, OneShotCollector_InitiallyEnabled) {
 
   OneShotCollector collector(sampler_.get(), metric_report_queue_.get(),
                              settings_.get(), kEnableSettingPath,
-                             /*setting_enabled_default_value=*/false,
                              base::BindLambdaForTesting([&callback_called]() {
                                callback_called = true;
                              }));
@@ -109,7 +156,10 @@ TEST_F(MetricDataCollectorTest, OneShotCollector_InitiallyEnabled) {
   // re-enabled.
   EXPECT_EQ(sampler_->GetNumCollectCalls(), 1);
 
-  FlushTasks();
+  base::RunLoop run_loop;
+  task_environment_.GetMainThreadTaskRunner()->PostTask(FROM_HERE,
+                                                        run_loop.QuitClosure());
+  run_loop.Run();
   auto metric_data_reported = metric_report_queue_->GetMetricDataReported();
 
   ASSERT_EQ(metric_data_reported.size(), 1ul);
@@ -126,8 +176,7 @@ TEST_F(MetricDataCollectorTest, OneShotCollector_InitiallyDisabled) {
   sampler_->SetMetricData(std::move(metric_data));
 
   OneShotCollector collector(sampler_.get(), metric_report_queue_.get(),
-                             settings_.get(), kEnableSettingPath,
-                             /*setting_enabled_default_value=*/false);
+                             settings_.get(), kEnableSettingPath);
 
   // Setting is initially disabled, no data is collected.
   EXPECT_EQ(sampler_->GetNumCollectCalls(), 0);
@@ -144,52 +193,15 @@ TEST_F(MetricDataCollectorTest, OneShotCollector_InitiallyDisabled) {
   // re-enabled.
   EXPECT_EQ(sampler_->GetNumCollectCalls(), 1);
 
-  FlushTasks();
+  base::RunLoop run_loop;
+  task_environment_.GetMainThreadTaskRunner()->PostTask(FROM_HERE,
+                                                        run_loop.QuitClosure());
+  run_loop.Run();
   auto metric_data_reported = metric_report_queue_->GetMetricDataReported();
 
   ASSERT_EQ(metric_data_reported.size(), 1ul);
   EXPECT_TRUE(metric_data_reported[0].has_timestamp_ms());
   EXPECT_TRUE(metric_data_reported[0].has_info_data());
-}
-
-TEST_F(MetricDataCollectorTest, OneShotCollector_DefaultEnabled) {
-  MetricData metric_data;
-  metric_data.mutable_info_data();
-  sampler_->SetMetricData(std::move(metric_data));
-  bool callback_called = false;
-
-  OneShotCollector collector(sampler_.get(), metric_report_queue_.get(),
-                             settings_.get(), "invalid/path",
-                             /*setting_enabled_default_value=*/true,
-                             base::BindLambdaForTesting([&callback_called]() {
-                               callback_called = true;
-                             }));
-
-  // Setting is enabled by default, data is being collected.
-  EXPECT_EQ(sampler_->GetNumCollectCalls(), 1);
-
-  FlushTasks();
-  auto metric_data_reported = metric_report_queue_->GetMetricDataReported();
-
-  ASSERT_EQ(metric_data_reported.size(), 1ul);
-  EXPECT_TRUE(callback_called);
-  EXPECT_TRUE(metric_data_reported[0].has_timestamp_ms());
-  EXPECT_TRUE(metric_data_reported[0].has_info_data());
-}
-
-TEST_F(MetricDataCollectorTest, OneShotCollector_DefaultDisabled) {
-  MetricData metric_data;
-  metric_data.mutable_info_data();
-  sampler_->SetMetricData(std::move(metric_data));
-
-  OneShotCollector collector(sampler_.get(), metric_report_queue_.get(),
-                             settings_.get(), kEnableSettingPath,
-                             /*setting_enabled_default_value=*/false);
-  FlushTasks();
-
-  // Setting is disabled by default, no data is collected.
-  EXPECT_EQ(sampler_->GetNumCollectCalls(), 0);
-  EXPECT_TRUE(metric_report_queue_->GetMetricDataReported().empty());
 }
 
 TEST_F(MetricDataCollectorTest, PeriodicCollector_InitiallyEnabled) {
@@ -204,8 +216,7 @@ TEST_F(MetricDataCollectorTest, PeriodicCollector_InitiallyEnabled) {
 
   PeriodicCollector collector(
       sampler_.get(), metric_report_queue_.get(), settings_.get(),
-      kEnableSettingPath, /*setting_enabled_default_value=*/false,
-      kRateSettingPath, base::Milliseconds(interval / 2));
+      kEnableSettingPath, kRateSettingPath, base::Milliseconds(interval / 2));
 
   EXPECT_EQ(sampler_->GetNumCollectCalls(), 0);
 
@@ -236,7 +247,10 @@ TEST_F(MetricDataCollectorTest, PeriodicCollector_InitiallyEnabled) {
   task_environment_.FastForwardBy(base::Milliseconds(interval / 2));
   EXPECT_EQ(sampler_->GetNumCollectCalls(), expected_collect_calls);
 
-  FlushTasks();
+  base::RunLoop run_loop;
+  task_environment_.GetMainThreadTaskRunner()->PostTask(FROM_HERE,
+                                                        run_loop.QuitClosure());
+  run_loop.Run();
   auto metric_data_reported = metric_report_queue_->GetMetricDataReported();
 
   ASSERT_EQ(metric_data_reported.size(), 3ul);
@@ -261,8 +275,7 @@ TEST_F(MetricDataCollectorTest, PeriodicCollector_InitiallyDisabled) {
 
   PeriodicCollector collector(
       sampler_.get(), metric_report_queue_.get(), settings_.get(),
-      kEnableSettingPath, /*setting_enabled_default_value=*/false,
-      kRateSettingPath, base::Milliseconds(interval / 2));
+      kEnableSettingPath, kRateSettingPath, base::Milliseconds(interval / 2));
 
   sampler_->SetMetricData(metric_data);
   task_environment_.FastForwardBy(base::Milliseconds(interval));
@@ -273,60 +286,15 @@ TEST_F(MetricDataCollectorTest, PeriodicCollector_InitiallyDisabled) {
   task_environment_.FastForwardBy(base::Milliseconds(interval));
   EXPECT_EQ(sampler_->GetNumCollectCalls(), 1);
 
-  FlushTasks();
+  base::RunLoop run_loop;
+  task_environment_.GetMainThreadTaskRunner()->PostTask(FROM_HERE,
+                                                        run_loop.QuitClosure());
+  run_loop.Run();
   auto metric_data_reported = metric_report_queue_->GetMetricDataReported();
 
   ASSERT_EQ(metric_data_reported.size(), 1ul);
   EXPECT_TRUE(metric_data_reported[0].has_timestamp_ms());
   EXPECT_TRUE(metric_data_reported[0].has_telemetry_data());
-}
-
-TEST_F(MetricDataCollectorTest, PeriodicCollector_DefaultEnabled) {
-  constexpr int interval = 10000;
-  settings_->SetInteger(kRateSettingPath, interval);
-
-  MetricData metric_data;
-  metric_data.mutable_telemetry_data();
-
-  PeriodicCollector collector(
-      sampler_.get(), metric_report_queue_.get(), settings_.get(),
-      "invalid/path", /*setting_enabled_default_value=*/true, kRateSettingPath,
-      base::Milliseconds(interval / 2));
-
-  sampler_->SetMetricData(metric_data);
-  EXPECT_EQ(sampler_->GetNumCollectCalls(), 0);
-
-  // 10 secs elapsed, data should be collected.
-  task_environment_.FastForwardBy(base::Milliseconds(interval));
-  EXPECT_EQ(sampler_->GetNumCollectCalls(), 1);
-
-  FlushTasks();
-  auto metric_data_reported = metric_report_queue_->GetMetricDataReported();
-
-  ASSERT_EQ(metric_data_reported.size(), 1ul);
-  EXPECT_TRUE(metric_data_reported[0].has_timestamp_ms());
-  EXPECT_TRUE(metric_data_reported[0].has_telemetry_data());
-}
-
-TEST_F(MetricDataCollectorTest, PeriodicCollector_DefaultDisabled) {
-  constexpr int interval = 10000;
-  settings_->SetInteger(kRateSettingPath, interval);
-
-  MetricData metric_data;
-  metric_data.mutable_telemetry_data();
-
-  PeriodicCollector collector(
-      sampler_.get(), metric_report_queue_.get(), settings_.get(),
-      "invalid/path", /*setting_enabled_default_value=*/false, kRateSettingPath,
-      base::Milliseconds(interval / 2));
-
-  sampler_->SetMetricData(metric_data);
-  task_environment_.FastForwardBy(base::Milliseconds(interval));
-  FlushTasks();
-
-  // Setting is disabled by default, no data collected.
-  EXPECT_EQ(sampler_->GetNumCollectCalls(), 0);
-  EXPECT_TRUE(metric_report_queue_->GetMetricDataReported().empty());
 }
 
 TEST_F(MetricDataCollectorTest, PeriodicEventCollector_NoAdditionalSamplers) {
@@ -338,13 +306,12 @@ TEST_F(MetricDataCollectorTest, PeriodicEventCollector_NoAdditionalSamplers) {
   metric_data[0].mutable_info_data();
   metric_data[1].mutable_telemetry_data();
 
-  auto event_detector = std::make_unique<test::FakeEventDetector>();
+  auto event_detector = std::make_unique<FakeEventDetector>();
   auto* event_detector_ptr = event_detector.get();
 
   PeriodicEventCollector collector(sampler_.get(), std::move(event_detector),
                                    {}, metric_report_queue_.get(),
                                    settings_.get(), kEnableSettingPath,
-                                   /*setting_enabled_default_value=*/false,
                                    kRateSettingPath, base::Milliseconds(15000));
 
   sampler_->SetMetricData(metric_data[0]);
@@ -358,7 +325,10 @@ TEST_F(MetricDataCollectorTest, PeriodicEventCollector_NoAdditionalSamplers) {
   // Data collected and reported.
   EXPECT_EQ(sampler_->GetNumCollectCalls(), 2);
 
-  FlushTasks();
+  base::RunLoop run_loop;
+  task_environment_.GetMainThreadTaskRunner()->PostTask(FROM_HERE,
+                                                        run_loop.QuitClosure());
+  run_loop.Run();
   auto previous_metric_list = event_detector_ptr->GetPreviousMetricList();
 
   ASSERT_EQ(previous_metric_list.size(), 2ul);
@@ -407,22 +377,21 @@ TEST_F(MetricDataCollectorTest, PeriodicEventCollector_WithAdditionalSamplers) {
       ->mutable_https_latency_data()
       ->set_latency_ms(1500);
 
-  test::FakeSampler additional_samplers[3];
+  FakeSampler additional_samplers[3];
   std::vector<Sampler*> additional_sampler_ptrs;
   for (int i = 0; i < 3; ++i) {
     additional_samplers[i].SetMetricData(additional_metric_data[i]);
     additional_sampler_ptrs.emplace_back(additional_samplers + i);
   }
 
-  auto event_detector = std::make_unique<test::FakeEventDetector>();
+  auto event_detector = std::make_unique<FakeEventDetector>();
   auto* event_detector_ptr = event_detector.get();
 
   PeriodicEventCollector collector(sampler_.get(), std::move(event_detector),
                                    std::move(additional_sampler_ptrs),
                                    metric_report_queue_.get(), settings_.get(),
-                                   kEnableSettingPath,
-                                   /*setting_enabled_default_value=*/false,
-                                   kRateSettingPath, base::Milliseconds(15000));
+                                   kEnableSettingPath, kRateSettingPath,
+                                   base::Milliseconds(15000));
 
   sampler_->SetMetricData(metric_data);
   event_detector_ptr->SetHasEvent(true);
@@ -430,7 +399,10 @@ TEST_F(MetricDataCollectorTest, PeriodicEventCollector_WithAdditionalSamplers) {
   // Data collected and reported.
   EXPECT_EQ(sampler_->GetNumCollectCalls(), 1);
 
-  FlushTasks();
+  base::RunLoop run_loop;
+  task_environment_.GetMainThreadTaskRunner()->PostTask(FROM_HERE,
+                                                        run_loop.QuitClosure());
+  run_loop.Run();
   auto metric_data_reported = metric_report_queue_->GetMetricDataReported();
 
   ASSERT_EQ(metric_data_reported.size(), 1ul);
@@ -464,5 +436,4 @@ TEST_F(MetricDataCollectorTest, PeriodicEventCollector_WithAdditionalSamplers) {
                                                  .https_latency_data()
                                                  .latency_ms());
 }
-}  // namespace
 }  // namespace reporting

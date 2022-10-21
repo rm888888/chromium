@@ -10,6 +10,7 @@
 
 #include "base/command_line.h"
 #include "base/json/json_reader.h"
+#include "base/macros.h"
 #include "base/path_service.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
@@ -95,11 +96,8 @@ MessageResponse LoadTestMessageHandler::HandleStructuredMessage(
     std::string message;
     if (!msg->GetString("message", &message))
       return MissingField(type, "message");
-    if (absl::optional<bool> passed = msg->FindBoolKey("passed")) {
-      test_passed_ = *passed;
-    } else {
+    if (!msg->GetBoolean("passed", &test_passed_))
       return MissingField(type, "passed");
-    }
     Log("SHUTDOWN", message);
     return DONE;
   } else {
@@ -155,11 +153,8 @@ MessageResponse NaClIntegrationMessageHandler::HandleStructuredMessage(
     std::string message;
     if (!msg->GetString("message", &message))
       return MissingField(type, "message");
-    if (absl::optional<bool> passed = msg->FindBoolKey("passed")) {
-      test_passed_ = *passed;
-    } else {
+    if (!msg->GetBoolean("passed", &test_passed_))
       return MissingField(type, "passed");
-    }
     Log(message);
     return DONE;
   } else if (type == "Ping") {
@@ -305,6 +300,16 @@ void NaClBrowserTestPnaclSubzero::SetUpCommandLine(
   command_line->AppendSwitch(switches::kForcePNaClSubzero);
 }
 
+base::FilePath::StringType NaClBrowserTestNonSfiMode::Variant() {
+  return FILE_PATH_LITERAL("libc-free");
+}
+
+void NaClBrowserTestNonSfiMode::SetUpCommandLine(
+    base::CommandLine* command_line) {
+  NaClBrowserTestBase::SetUpCommandLine(command_line);
+  command_line->AppendSwitch(switches::kEnableNaClNonSfiMode);
+}
+
 base::FilePath::StringType NaClBrowserTestStatic::Variant() {
   return FILE_PATH_LITERAL("static");
 }
@@ -312,6 +317,16 @@ base::FilePath::StringType NaClBrowserTestStatic::Variant() {
 bool NaClBrowserTestStatic::GetDocumentRoot(base::FilePath* document_root) {
   *document_root = base::FilePath(FILE_PATH_LITERAL("chrome/test/data/nacl"));
   return true;
+}
+
+base::FilePath::StringType NaClBrowserTestPnaclNonSfi::Variant() {
+  return FILE_PATH_LITERAL("nonsfi");
+}
+
+void NaClBrowserTestPnaclNonSfi::SetUpCommandLine(
+    base::CommandLine* command_line) {
+  NaClBrowserTestBase::SetUpCommandLine(command_line);
+  command_line->AppendSwitch(switches::kEnableNaClNonSfiMode);
 }
 
 void NaClBrowserTestNewlibExtension::SetUpCommandLine(

@@ -5,6 +5,7 @@
 #ifndef CHROME_BROWSER_VR_ELEMENTS_INVISIBLE_HIT_TARGET_H_
 #define CHROME_BROWSER_VR_ELEMENTS_INVISIBLE_HIT_TARGET_H_
 
+#include "base/macros.h"
 #include "chrome/browser/vr/elements/ui_element.h"
 
 namespace vr {

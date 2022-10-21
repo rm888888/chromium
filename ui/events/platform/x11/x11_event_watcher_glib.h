@@ -7,6 +7,7 @@
 
 #include <memory>
 
+#include "base/macros.h"
 #include "ui/events/platform/x11/x11_event_source.h"
 
 using GPollFD = struct _GPollFD;

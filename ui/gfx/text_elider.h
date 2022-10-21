@@ -12,6 +12,7 @@
 #include <string>
 #include <vector>
 
+#include "base/macros.h"
 #include "build/build_config.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/gfx/gfx_export.h"

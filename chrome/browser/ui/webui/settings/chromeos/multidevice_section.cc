@@ -4,10 +4,6 @@
 
 #include "chrome/browser/ui/webui/settings/chromeos/multidevice_section.h"
 
-#include "ash/components/phonehub/phone_hub_manager.h"
-#include "ash/components/phonehub/pref_names.h"
-#include "ash/components/phonehub/screen_lock_manager.h"
-#include "ash/components/phonehub/url_constants.h"
 #include "ash/constants/ash_features.h"
 #include "base/feature_list.h"
 #include "base/no_destructor.h"
@@ -15,7 +11,6 @@
 #include "chrome/browser/ash/android_sms/android_sms_service.h"
 #include "chrome/browser/nearby_sharing/common/nearby_share_features.h"
 #include "chrome/browser/nearby_sharing/common/nearby_share_prefs.h"
-#include "chrome/browser/nearby_sharing/nearby_sharing_service.h"
 #include "chrome/browser/nearby_sharing/nearby_sharing_service_factory.h"
 #include "chrome/browser/profiles/profile.h"
 #include "chrome/browser/ui/ash/session_controller_client_impl.h"
@@ -27,7 +22,8 @@
 #include "chrome/common/url_constants.h"
 #include "chrome/common/webui_url_constants.h"
 #include "chrome/grit/generated_resources.h"
-#include "chromeos/constants/chromeos_features.h"
+#include "chromeos/components/phonehub/phone_hub_manager.h"
+#include "chromeos/components/phonehub/url_constants.h"
 #include "chromeos/services/multidevice_setup/public/cpp/prefs.h"
 #include "chromeos/services/multidevice_setup/public/cpp/url_provider.h"
 #include "chromeos/services/multidevice_setup/public/mojom/multidevice_setup.mojom.h"
@@ -43,9 +39,6 @@ namespace settings {
 namespace {
 
 using FeatureState = multidevice_setup::mojom::FeatureState;
-
-// TODO(https://crbug.com/1164001): remove after migrating to namespace ash.
-namespace phonehub = ::ash::phonehub;
 
 const std::vector<SearchConcept>& GetMultiDeviceOptedInSearchConcepts() {
   static const base::NoDestructor<std::vector<SearchConcept>> tags(
@@ -248,32 +241,6 @@ const std::vector<SearchConcept>& GetNearbyShareOnSearchConcepts() {
   return *tags;
 }
 
-const std::vector<SearchConcept>&
-GetNearbyShareBackgroundScanningOnSearchConcepts() {
-  static const base::NoDestructor<std::vector<SearchConcept>> tags(
-      {{IDS_OS_SETTINGS_TAG_NEARBY_SHARE_DEVICES_NEARBY_SHARING_NOTIFICATION_ON,
-        mojom::kNearbyShareSubpagePath,
-        mojom::SearchResultIcon::kNearbyShare,
-        mojom::SearchResultDefaultRank::kMedium,
-        mojom::SearchResultType::kSetting,
-        {.setting =
-             mojom::Setting::kDevicesNearbyAreSharingNotificationOnOff}}});
-  return *tags;
-}
-
-const std::vector<SearchConcept>&
-GetNearbyShareBackgroundScanningOffSearchConcepts() {
-  static const base::NoDestructor<std::vector<SearchConcept>> tags(
-      {{IDS_OS_SETTINGS_TAG_NEARBY_SHARE_DEVICES_NEARBY_SHARING_NOTIFICATION_OFF,
-        mojom::kNearbyShareSubpagePath,
-        mojom::SearchResultIcon::kNearbyShare,
-        mojom::SearchResultDefaultRank::kMedium,
-        mojom::SearchResultType::kSetting,
-        {.setting =
-             mojom::Setting::kDevicesNearbyAreSharingNotificationOnOff}}});
-  return *tags;
-}
-
 const std::vector<SearchConcept>& GetNearbyShareOffSearchConcepts() {
   static const base::NoDestructor<std::vector<SearchConcept>> tags({
       {IDS_OS_SETTINGS_TAG_NEARBY_SHARE_TURN_ON,
@@ -313,25 +280,20 @@ MultiDeviceSection::MultiDeviceSection(
     multidevice_setup::MultiDeviceSetupClient* multidevice_setup_client,
     phonehub::PhoneHubManager* phone_hub_manager,
     android_sms::AndroidSmsService* android_sms_service,
-    PrefService* pref_service,
-    ash::eche_app::EcheAppManager* eche_app_manager)
+    PrefService* pref_service)
     : OsSettingsSection(profile, search_tag_registry),
       multidevice_setup_client_(multidevice_setup_client),
       phone_hub_manager_(phone_hub_manager),
       android_sms_service_(android_sms_service),
-      pref_service_(pref_service),
-      eche_app_manager_(eche_app_manager) {
+      pref_service_(pref_service) {
   if (NearbySharingServiceFactory::IsNearbyShareSupportedForBrowserContext(
           profile)) {
-    NearbySharingService* nearby_sharing_service =
-        NearbySharingServiceFactory::GetForBrowserContext(profile);
-    nearby_sharing_service->GetSettings()->AddSettingsObserver(
-        settings_receiver_.BindNewPipeAndPassRemote());
-
-    NearbyShareSettings* nearby_share_settings =
-        nearby_sharing_service->GetSettings();
-    OnEnabledChanged(nearby_share_settings->GetEnabled());
-    RefreshNearbyBackgroundScanningShareSearchConcepts();
+    pref_change_registrar_.Init(pref_service_);
+    pref_change_registrar_.Add(
+        ::prefs::kNearbySharingEnabledPrefName,
+        base::BindRepeating(&MultiDeviceSection::OnNearbySharingEnabledChanged,
+                            base::Unretained(this)));
+    OnNearbySharingEnabledChanged();
   }
 
   // Note: |multidevice_setup_client_| is null when multi-device features are
@@ -386,6 +348,8 @@ void MultiDeviceSection::AddLoadTimeData(
        IDS_SETTINGS_MULTIDEVICE_NOTIFICATION_ACCESS_SETUP_DIALOG_CONNECTING_TITLE},
       {"multideviceNotificationAccessSetupScreenLockTitle",
        IDS_SETTINGS_MULTIDEVICE_NOTIFICATION_ACCESS_SETUP_DIALOG_SCREEN_LOCK_TITLE},
+      {"multideviceNotificationAccessSetupScreenLockSubtitle",
+       IDS_SETTINGS_MULTIDEVICE_NOTIFICATION_ACCESS_SETUP_DIALOG_SCREEN_LOCK_SUBTITLE},
       {"multideviceNotificationAccessSetupScreenLockInstruction",
        IDS_SETTINGS_MULTIDEVICE_NOTIFICATION_ACCESS_SETUP_DIALOG_SCREEN_LOCK_INSTRUCTION},
       {"multideviceNotificationAccessSetupAwaitingResponseTitle",
@@ -441,10 +405,6 @@ void MultiDeviceSection::AddLoadTimeData(
       "multideviceNotificationAccessSetupCompletedSummary",
       ui::SubstituteChromeOSDeviceType(
           IDS_SETTINGS_MULTIDEVICE_NOTIFICATION_ACCESS_SETUP_DIALOG_COMPLETED_SUMMARY));
-  html_source->AddString(
-      "multideviceNotificationAccessSetupScreenLockSubtitle",
-      ui::SubstituteChromeOSDeviceType(
-          IDS_SETTINGS_MULTIDEVICE_NOTIFICATION_ACCESS_SETUP_DIALOG_SCREEN_LOCK_SUBTITLE));
   html_source->AddString(
       "multideviceForgetDeviceSummary",
       ui::SubstituteChromeOSDeviceType(
@@ -541,12 +501,6 @@ void MultiDeviceSection::AddLoadTimeData(
   html_source->AddString(
       "multidevicePhoneHubPermissionsLearnMoreURL",
       GetHelpUrlWithBoard(chrome::kPhoneHubPermissionLearnMoreURL));
-  html_source->AddString(
-      "multidevicePhoneHubCameraRollDisabledItemSummary",
-      l10n_util::GetStringFUTF16(
-          IDS_SETTINGS_MULTIDEVICE_PHONE_HUB_CAMERA_ROLL_DISABLED_SUMMARY,
-          ui::GetChromeOSDeviceName(),
-          GetHelpUrlWithBoard(phonehub::kPhoneHubLearnMoreLink)));
 
   AddEasyUnlockStrings(html_source);
 
@@ -566,12 +520,8 @@ void MultiDeviceSection::AddLoadTimeData(
           base::FeatureList::IsEnabled(
               ::features::kNearbySharingBackgroundScanning));
   html_source->AddBoolean("isEcheAppEnabled", features::IsEcheSWAEnabled());
-  bool is_phone_screen_lock_enabled =
-      static_cast<phonehub::ScreenLockManager::LockStatus>(
-          pref_service_->GetInteger(phonehub::prefs::kScreenLockStatus)) ==
-      phonehub::ScreenLockManager::LockStatus::kLockedOn;
-  html_source->AddBoolean("isPhoneScreenLockEnabled",
-                          is_phone_screen_lock_enabled);
+  // TODO(crbug.com/1256644): Query the real value from pref.
+  html_source->AddBoolean("isPhoneScreenLockEnabled", false);
   const bool is_screen_lock_enabled =
       SessionControllerClientImpl::CanLockScreen() &&
       SessionControllerClientImpl::ShouldLockScreenAutomatically();
@@ -594,11 +544,7 @@ void MultiDeviceSection::AddHandlers(content::WebUI* web_ui) {
               ? android_sms_service_->android_sms_pairing_state_tracker()
               : nullptr,
           android_sms_service_ ? android_sms_service_->android_sms_app_manager()
-                               : nullptr,
-          eche_app_manager_ ? eche_app_manager_->GetAppsAccessManager()
-                            : nullptr,
-          phone_hub_manager_ ? phone_hub_manager_->GetCameraRollManager()
-                             : nullptr));
+                               : nullptr));
 }
 
 int MultiDeviceSection::GetSectionNameMessageId() const {
@@ -678,7 +624,6 @@ void MultiDeviceSection::RegisterHierarchy(
       mojom::Setting::kNearbyShareDeviceVisibility,
       mojom::Setting::kNearbyShareContacts,
       mojom::Setting::kNearbyShareDataUsage,
-      mojom::Setting::kDevicesNearbyAreSharingNotificationOnOff,
   };
   RegisterNestedSettingBulk(mojom::Subpage::kNearbyShare, kNearbyShareSettings,
                             generator);
@@ -729,44 +674,10 @@ void MultiDeviceSection::OnFeatureStatesChanged(
     updater.AddSearchTags(GetMultiDeviceOptedInPhoneHubAppsSearchConcepts());
 }
 
-bool MultiDeviceSection::IsFeatureSupported(
-    multidevice_setup::mojom::Feature feature) {
-  const FeatureState feature_state =
-      multidevice_setup_client_->GetFeatureState(feature);
-  return feature_state != FeatureState::kNotSupportedByPhone &&
-         feature_state != FeatureState::kNotSupportedByChromebook;
-}
-
-void MultiDeviceSection::RefreshNearbyBackgroundScanningShareSearchConcepts() {
+void MultiDeviceSection::OnNearbySharingEnabledChanged() {
   SearchTagRegistry::ScopedTagUpdater updater = registry()->StartUpdate();
-  NearbySharingService* nearby_sharing_service =
-      NearbySharingServiceFactory::GetForBrowserContext(profile());
-  NearbyShareSettings* nearby_share_settings =
-      nearby_sharing_service->GetSettings();
 
-  if (!nearby_share_settings->is_fast_initiation_hardware_supported()) {
-    updater.RemoveSearchTags(
-        GetNearbyShareBackgroundScanningOnSearchConcepts());
-    updater.RemoveSearchTags(
-        GetNearbyShareBackgroundScanningOffSearchConcepts());
-    return;
-  }
-
-  if (nearby_share_settings->GetFastInitiationNotificationState() ==
-      nearby_share::mojom::FastInitiationNotificationState::kEnabled) {
-    updater.AddSearchTags(GetNearbyShareBackgroundScanningOnSearchConcepts());
-    updater.RemoveSearchTags(
-        GetNearbyShareBackgroundScanningOffSearchConcepts());
-  } else {
-    updater.AddSearchTags(GetNearbyShareBackgroundScanningOffSearchConcepts());
-    updater.RemoveSearchTags(
-        GetNearbyShareBackgroundScanningOnSearchConcepts());
-  }
-}
-
-void MultiDeviceSection::OnEnabledChanged(bool enabled) {
-  SearchTagRegistry::ScopedTagUpdater updater = registry()->StartUpdate();
-  if (enabled) {
+  if (pref_service_->GetBoolean(::prefs::kNearbySharingEnabledPrefName)) {
     updater.RemoveSearchTags(GetNearbyShareOffSearchConcepts());
     updater.AddSearchTags(GetNearbyShareOnSearchConcepts());
   } else {
@@ -775,14 +686,12 @@ void MultiDeviceSection::OnEnabledChanged(bool enabled) {
   }
 }
 
-void MultiDeviceSection::OnFastInitiationNotificationStateChanged(
-    nearby_share::mojom::FastInitiationNotificationState state) {
-  RefreshNearbyBackgroundScanningShareSearchConcepts();
-}
-
-void MultiDeviceSection::OnIsFastInitiationHardwareSupportedChanged(
-    bool is_supported) {
-  RefreshNearbyBackgroundScanningShareSearchConcepts();
+bool MultiDeviceSection::IsFeatureSupported(
+    multidevice_setup::mojom::Feature feature) {
+  const FeatureState feature_state =
+      multidevice_setup_client_->GetFeatureState(feature);
+  return feature_state != FeatureState::kNotSupportedByPhone &&
+         feature_state != FeatureState::kNotSupportedByChromebook;
 }
 
 }  // namespace settings

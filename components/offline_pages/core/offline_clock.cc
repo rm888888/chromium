@@ -4,8 +4,6 @@
 
 #include "components/offline_pages/core/offline_clock.h"
 
-#include <ostream>
-
 #include "base/check.h"
 #include "base/time/default_clock.h"
 #include "base/time/time.h"

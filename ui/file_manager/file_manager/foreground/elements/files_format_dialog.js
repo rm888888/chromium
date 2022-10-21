@@ -18,7 +18,6 @@ import {EntryList, VolumeEntry} from '../../common/js/files_app_entry_types.js';
 import {util} from '../../common/js/util.js';
 import {VolumeManagerCommon} from '../../common/js/volume_manager_types.js';
 import {VolumeInfo} from '../../externs/volume_info.js';
-import {validateExternalDriveName} from '../js/file_rename.js';
 
 Polymer({
   _template: html`{__html_template__}`,
@@ -60,14 +59,14 @@ Polymer({
   },
 
   /** @private */
-  format_: function() {
+  format_: async function() {
     try {
-      validateExternalDriveName(
+      await util.validateExternalDriveName(
           this.label_,
           /** @type {!VolumeManagerCommon.FileSystemType} */
           (this.formatType_));
-    } catch (error) {
-      this.$.label.setAttribute('error-message', error.message);
+    } catch (errorMessage) {
+      this.$.label.setAttribute('error-message', errorMessage);
       this.$.label.invalid = true;
       return;
     }

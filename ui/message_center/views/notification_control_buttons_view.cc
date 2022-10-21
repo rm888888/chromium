@@ -57,7 +57,7 @@ void NotificationControlButtonsView::ShowCloseButton(bool show) {
     Layout();
   } else if (!show && close_button_) {
     DCHECK(Contains(close_button_));
-    RemoveChildViewT(close_button_.get());
+    RemoveChildViewT(close_button_);
     close_button_ = nullptr;
   }
 }
@@ -84,7 +84,7 @@ void NotificationControlButtonsView::ShowSettingsButton(bool show) {
     Layout();
   } else if (!show && settings_button_) {
     DCHECK(Contains(settings_button_));
-    RemoveChildViewT(settings_button_.get());
+    RemoveChildViewT(settings_button_);
     settings_button_ = nullptr;
   }
 }
@@ -110,7 +110,7 @@ void NotificationControlButtonsView::ShowSnoozeButton(bool show) {
     Layout();
   } else if (!show && snooze_button_) {
     DCHECK(Contains(snooze_button_));
-    RemoveChildViewT(snooze_button_.get());
+    RemoveChildViewT(snooze_button_);
     snooze_button_ = nullptr;
   }
 }

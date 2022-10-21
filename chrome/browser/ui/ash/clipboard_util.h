@@ -22,15 +22,23 @@ namespace clipboard_util {
 // should not be run on the UI Thread as it performs blocking IO.
 void ReadFileAndCopyToClipboardLocal(const base::FilePath& local_file);
 
-// Takes the content of a PNG file, decodes it and copies it to the system
-// clipboard.
+// Takes an image file as a string and copies it to the system clipboard.
+// May decode the image into a bitmap, or skip decoding when possible.
 //
 // `clipboard_sequence` - Clipboard version to determine whether the clipboard
 // state has changed. An empty token is used to specify an invalid sequence.
+// `maintain_clipboard` - Used to determine whether or not we care about
+// maintaining the clipboard state or not. If this value is false, it is okay to
+// pass an empty `clipboard_sequence` token.
 // `png_data` - The image we want to copy to the clipboard as a string.
-void DecodeImageFileAndCopyToClipboard(
+// `callback` - Reports if the copy was successful. Reasons that this could
+// return false include that the sequence numbers do not match and when
+// `maintain_clipboard` is true.
+void MaybeDecodeImageFileAndCopyToClipboard(
     ui::ClipboardSequenceNumberToken clipboard_sequence,
-    std::string png_data);
+    bool maintain_clipboard,
+    scoped_refptr<base::RefCountedString> png_data,
+    base::OnceCallback<void(bool)> callback);
 
 }  // namespace clipboard_util
 

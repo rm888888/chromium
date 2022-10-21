@@ -73,6 +73,7 @@ std::string FindURLMimeType(const GURL& url) {
 
 void OnFindURLMimeType(const GURL& url,
                        int process_id,
+                       int routing_id,
                        FileSupportedCallback callback,
                        const std::string& mime_type) {
   // Check whether the mime type, if given, is known to be supported or whether
@@ -83,9 +84,9 @@ void OnFindURLMimeType(const GURL& url,
 
 #if BUILDFLAG(ENABLE_PLUGINS)
   content::WebPluginInfo plugin;
-  result = result ||
-           content::PluginService::GetInstance()->GetPluginInfo(
-               process_id, url, mime_type, false, nullptr, &plugin, nullptr);
+  result = result || content::PluginService::GetInstance()->GetPluginInfo(
+                         process_id, routing_id, url, url::Origin(), mime_type,
+                         false, nullptr, &plugin, nullptr);
 #endif
 
   std::move(callback).Run(url, result);
@@ -168,18 +169,15 @@ void BrowserRootView::OnDragEntered(const ui::DropTargetEvent& event) {
 
     // Check if the file is supported.
     if (url.SchemeIsFile()) {
-      // Avoid crashing while the tab strip is being initialized or is empty.
-      content::WebContents* web_contents =
-          browser_view_->browser()->tab_strip_model()->GetActiveWebContents();
-      if (!web_contents) {
-        return;
-      }
-
-      content::RenderFrameHost* rfh = web_contents->GetMainFrame();
+      content::RenderFrameHost* rfh = browser_view_->browser()
+                                          ->tab_strip_model()
+                                          ->GetActiveWebContents()
+                                          ->GetMainFrame();
       base::ThreadPool::PostTaskAndReplyWithResult(
           FROM_HERE, {base::MayBlock(), base::TaskPriority::USER_VISIBLE},
           base::BindOnce(&FindURLMimeType, url),
           base::BindOnce(&OnFindURLMimeType, url, rfh->GetProcess()->GetID(),
+                         rfh->GetRoutingID(),
                          base::BindOnce(&BrowserRootView::OnFileSupported,
                                         weak_ptr_factory_.GetWeakPtr())));
     }

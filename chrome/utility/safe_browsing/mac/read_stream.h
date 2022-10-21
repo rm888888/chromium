@@ -11,6 +11,8 @@
 
 #include <vector>
 
+#include "base/macros.h"
+
 namespace safe_browsing {
 namespace dmg {
 

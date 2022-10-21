@@ -27,9 +27,9 @@
 #include "base/threading/thread_task_runner_handle.h"
 #include "build/build_config.h"
 #include "components/autofill/core/browser/autofill_driver.h"
+#include "components/autofill/core/browser/autofill_metrics.h"
 #include "components/autofill/core/browser/logging/log_manager.h"
 #include "components/autofill/core/browser/logging/log_protobufs.h"
-#include "components/autofill/core/browser/metrics/autofill_metrics.h"
 #include "components/autofill/core/browser/proto/api_v1.pb.h"
 #include "components/autofill/core/common/autofill_clock.h"
 #include "components/autofill/core/common/autofill_features.h"
@@ -514,8 +514,7 @@ bool CanThrottleUpload(const FormStructure& form,
   // event pref to set the appropriate bit.
   bool is_first_upload_for_event = ((value & mask) == 0);
   if (is_first_upload_for_event) {
-    DictionaryPrefUpdateDeprecated update(pref_service,
-                                          prefs::kAutofillUploadEvents);
+    DictionaryPrefUpdate update(pref_service, prefs::kAutofillUploadEvents);
     update->SetKey(std::move(key), base::Value(value | mask));
   }
 

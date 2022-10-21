@@ -10,7 +10,6 @@
 
 #include "base/callback.h"
 #include "base/gtest_prod_util.h"
-#include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/strings/string_piece.h"
 #include "build/build_config.h"
@@ -190,6 +189,10 @@ class ChromeAuthenticatorRequestDelegate
   // information that will be broadcast by the device.
   bool ShouldPermitCableExtension(const url::Origin& origin);
 
+  // GetCablePairings returns any known caBLE pairing data.
+  virtual std::vector<std::unique_ptr<device::cablev2::Pairing>>
+  GetCablePairings();
+
   void HandleCablePairingEvent(device::cablev2::PairingEvent pairing);
 
   const content::GlobalRenderFrameHostId render_frame_host_id_;
@@ -200,7 +203,7 @@ class ChromeAuthenticatorRequestDelegate
   // |weak_dialog_model_|.
   std::unique_ptr<AuthenticatorRequestDialogModel>
       transient_dialog_model_holder_;
-  raw_ptr<AuthenticatorRequestDialogModel> weak_dialog_model_ = nullptr;
+  AuthenticatorRequestDialogModel* weak_dialog_model_ = nullptr;
   base::OnceClosure cancel_callback_;
   base::RepeatingClosure start_over_callback_;
   device::FidoRequestHandlerBase::RequestCallback request_callback_;

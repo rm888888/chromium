@@ -109,16 +109,14 @@ TEST_F(ManifestUnitTest, Extension) {
   AssertType(manifest.get(), Manifest::TYPE_EXTENSION);
 
   // The known key 'background.page' should be accessible.
-  const std::string* background_page =
-      manifest->FindStringPath(keys::kBackgroundPage);
-  ASSERT_TRUE(background_page);
-  EXPECT_EQ("bg.html", *background_page);
+  std::string value;
+  EXPECT_TRUE(manifest->GetString(keys::kBackgroundPage, &value));
+  EXPECT_EQ("bg.html", value);
 
-  // The unknown key 'unknown_key' should be accessible.
-  const std::string* unknown_key_value =
-      manifest->FindStringPath("unknown_key");
-  ASSERT_TRUE(unknown_key_value);
-  EXPECT_EQ("foo", *unknown_key_value);
+  // The unknown key 'unknown_key' should be accesible.
+  value.clear();
+  EXPECT_TRUE(manifest->GetString("unknown_key", &value));
+  EXPECT_EQ("foo", value);
 
   // Test EqualsForTesting.
   auto manifest2 = std::make_unique<Manifest>(
@@ -216,13 +214,16 @@ TEST_F(ManifestUnitTest, RestrictedKeys_ManifestVersion) {
   // "host_permissions" requires manifest version 3.
   MutateManifest(&manifest, keys::kHostPermissions,
                  std::make_unique<base::Value>(base::Value::Type::LIST));
-  EXPECT_FALSE(manifest->FindKey(keys::kHostPermissions));
+  const base::Value* output = nullptr;
+  EXPECT_FALSE(manifest->HasKey(keys::kHostPermissions));
+  EXPECT_FALSE(manifest->Get(keys::kHostPermissions, &output));
 
   // Update the extension to be manifest_version: 3; the host_permissions
   // should then be available.
   MutateManifest(&manifest, keys::kManifestVersion,
                  std::make_unique<base::Value>(3));
-  EXPECT_TRUE(manifest->FindKey(keys::kHostPermissions));
+  EXPECT_TRUE(manifest->HasKey(keys::kHostPermissions));
+  EXPECT_TRUE(manifest->Get(keys::kHostPermissions, &output));
 }
 
 // Verifies that the getters filter restricted keys taking into account the
@@ -248,13 +249,16 @@ TEST_F(ManifestUnitTest, RestrictedKeys_ItemType) {
   AssertType(manifest.get(), Manifest::TYPE_EXTENSION);
 
   // Extensions can specify "page_action"...
-  EXPECT_TRUE(manifest->FindKey(keys::kPageAction));
+  const base::Value* output = nullptr;
+  EXPECT_TRUE(manifest->HasKey(keys::kPageAction));
+  EXPECT_TRUE(manifest->Get(keys::kPageAction, &output));
 
   MutateManifest(&manifest, keys::kPlatformAppBackground,
                  std::make_unique<base::DictionaryValue>());
   AssertType(manifest.get(), Manifest::TYPE_PLATFORM_APP);
   // ...But platform apps may not.
-  EXPECT_FALSE(manifest->FindKey(keys::kPageAction));
+  EXPECT_FALSE(manifest->HasKey(keys::kPageAction));
+  EXPECT_FALSE(manifest->Get(keys::kPageAction, &output));
 }
 
 }  // namespace extensions

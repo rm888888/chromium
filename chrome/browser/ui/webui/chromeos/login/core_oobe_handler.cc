@@ -88,9 +88,6 @@ void CoreOobeHandler::DeclareLocalizedValues(
 
   builder->AddF("missingAPIKeysNotice", IDS_LOGIN_API_KEYS_NOTICE,
                 base::ASCIIToUTF16(google_apis::kAPIKeysDevelopersHowToURL));
-
-  builder->Add("playAnimationAriaLabel", IDS_OOBE_PLAY_ANIMATION_MESSAGE);
-  builder->Add("pauseAnimationAriaLabel", IDS_OOBE_PAUSE_ANIMATION_MESSAGE);
 }
 
 void CoreOobeHandler::Initialize() {
@@ -113,8 +110,6 @@ void CoreOobeHandler::GetAdditionalParameters(base::DictionaryValue* dict) {
   if (policy::EnrollmentRequisitionManager::IsRemoraRequisition()) {
     dict->SetKey("flowType", base::Value("meet"));
   }
-  dict->SetKey("isQuickStartEnabled",
-               base::Value(ash::features::IsOobeQuickStartEnabled()));
 }
 
 void CoreOobeHandler::RegisterMessages() {
@@ -387,12 +382,13 @@ void CoreOobeHandler::HandleRaiseTabKeyEvent(bool reverse) {
 void CoreOobeHandler::HandleGetPrimaryDisplayNameForTesting(
     const base::ListValue* args) {
   CHECK_EQ(1U, args->GetList().size());
-  const base::Value& callback_id = args->GetList()[0];
+  const base::Value* callback_id;
+  CHECK(args->Get(0, &callback_id));
 
   cros_display_config_->GetDisplayUnitInfoList(
       false /* single_unified */,
       base::BindOnce(&CoreOobeHandler::GetPrimaryDisplayNameCallback,
-                     weak_ptr_factory_.GetWeakPtr(), callback_id.Clone()));
+                     weak_ptr_factory_.GetWeakPtr(), callback_id->Clone()));
 }
 
 void CoreOobeHandler::GetPrimaryDisplayNameCallback(

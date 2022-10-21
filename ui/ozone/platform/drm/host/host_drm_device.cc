@@ -234,18 +234,13 @@ bool HostDrmDevice::GpuSetGammaCorrection(
   return true;
 }
 
-void HostDrmDevice::GpuSetPrivacyScreen(
-    int64_t display_id,
-    bool enabled,
-    display::SetPrivacyScreenCallback callback) {
+bool HostDrmDevice::GpuSetPrivacyScreen(int64_t display_id, bool enabled) {
   DCHECK_CALLED_ON_VALID_THREAD(on_ui_thread_);
-  if (IsConnected()) {
-    drm_device_->SetPrivacyScreen(display_id, enabled, std::move(callback));
-  } else {
-    // There's no connection to the DRM device, so trigger Chrome's callback
-    // with a failed state.
-    std::move(callback).Run(/*success=*/false);
-  }
+  if (!IsConnected())
+    return false;
+
+  drm_device_->SetPrivacyScreen(display_id, enabled);
+  return true;
 }
 
 void HostDrmDevice::GpuRefreshNativeDisplaysCallback(

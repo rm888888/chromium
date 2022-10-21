@@ -5,6 +5,7 @@
 #ifndef CHROME_RENDERER_PRINTING_CHROME_PRINT_RENDER_FRAME_HELPER_DELEGATE_H_
 #define CHROME_RENDERER_PRINTING_CHROME_PRINT_RENDER_FRAME_HELPER_DELEGATE_H_
 
+#include "base/macros.h"
 #include "components/printing/renderer/print_render_frame_helper.h"
 
 class ChromePrintRenderFrameHelperDelegate

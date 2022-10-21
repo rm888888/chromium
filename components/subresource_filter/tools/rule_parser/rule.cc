@@ -9,6 +9,7 @@
 #include <utility>
 
 #include "base/logging.h"
+#include "base/macros.h"
 #include "base/strings/string_util.h"
 
 namespace subresource_filter {
@@ -294,7 +295,7 @@ std::string ToString(const url_pattern_index::proto::UrlRule& rule) {
       break;
     case url_pattern_index::proto::SOURCE_TYPE_FIRST_PARTY:
       source_type_string = "~";
-      [[fallthrough]];
+      FALLTHROUGH;
     case url_pattern_index::proto::SOURCE_TYPE_THIRD_PARTY:
       source_type_string += "third-party";
       options.push_back(std::move(source_type_string));

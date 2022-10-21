@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "base/callback.h"
+#include "base/macros.h"
 #include "base/sequence_checker.h"
 #include "base/time/time.h"
 #include "components/sync/engine/nigori/key_derivation_params.h"
@@ -48,7 +49,8 @@ class NigoriSyncBridgeImpl : public KeystoreKeysHandler,
                              public SyncEncryptionHandler {
  public:
   NigoriSyncBridgeImpl(std::unique_ptr<NigoriLocalChangeProcessor> processor,
-                       std::unique_ptr<NigoriStorage> storage);
+                       std::unique_ptr<NigoriStorage> storage,
+                       const std::string& packed_explicit_passphrase_key);
 
   NigoriSyncBridgeImpl(const NigoriSyncBridgeImpl&) = delete;
   NigoriSyncBridgeImpl& operator=(const NigoriSyncBridgeImpl&) = delete;
@@ -63,7 +65,7 @@ class NigoriSyncBridgeImpl : public KeystoreKeysHandler,
   Cryptographer* GetCryptographer() override;
   PassphraseType GetPassphraseType() override;
   void SetEncryptionPassphrase(const std::string& passphrase) override;
-  void SetExplicitPassphraseDecryptionKey(std::unique_ptr<Nigori> key) override;
+  void SetDecryptionPassphrase(const std::string& passphrase) override;
   void AddTrustedVaultDecryptionKeys(
       const std::vector<std::vector<uint8_t>>& keys) override;
   base::Time GetKeystoreMigrationTime() override;
@@ -86,6 +88,9 @@ class NigoriSyncBridgeImpl : public KeystoreKeysHandler,
   const CryptographerImpl& GetCryptographerImplForTesting() const;
   bool HasPendingKeysForTesting() const;
   KeyDerivationParams GetCustomPassphraseKeyDerivationParamsForTesting() const;
+
+  static std::string PackExplicitPassphraseKeyForTesting(
+      const CryptographerImpl& cryptographer);
 
  private:
   absl::optional<ModelError> UpdateLocalState(
@@ -129,6 +134,11 @@ class NigoriSyncBridgeImpl : public KeystoreKeysHandler,
   // the appropriate observer methods (if any).
   void MaybeNotifyOfPendingKeys() const;
 
+  // Persists Nigori derived from explicit passphrase into preferences, in case
+  // error occurs during serialization/encryption, corresponding preference
+  // just won't be updated.
+  void MaybeNotifyBootstrapTokenUpdated() const;
+
   // Queues keystore rotation or full keystore migration if current state
   // assumes it should happen.
   void MaybeTriggerKeystoreReencryption();
@@ -154,6 +164,11 @@ class NigoriSyncBridgeImpl : public KeystoreKeysHandler,
 
   const std::unique_ptr<NigoriLocalChangeProcessor> processor_;
   const std::unique_ptr<NigoriStorage> storage_;
+
+  // Stores a key derived from explicit passphrase and loaded from the prefs.
+  // Empty (i.e. default value) if prefs doesn't contain this key or in case of
+  // decryption/decoding errors.
+  const sync_pb::NigoriKey explicit_passphrase_key_;
 
   syncer::NigoriState state_;
 

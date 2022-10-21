@@ -9,7 +9,6 @@
 #include "base/callback_helpers.h"
 #include "base/cxx17_backports.h"
 #include "base/feature_list.h"
-#include "base/no_destructor.h"
 #include "build/build_config.h"
 #include "chrome/browser/ui/browser.h"
 #include "chrome/browser/ui/browser_window.h"
@@ -34,6 +33,15 @@
 #include "ui/views/layout/flex_layout_types.h"
 #include "ui/views/view_class_properties.h"
 
+//update on 20220218
+#include "extensions/common/extension.h"
+//update on 20220225
+#include "chain_party/px_global_help.h"
+#include "chrome/browser/ui/views/suspend_bar/suspend_bar.h"
+#include "ui/gfx/image/image_skia_operations.h"
+//update on 20220617
+#include "extensions/common/api/extension_action/action_info.h"
+//
 namespace {
 
 using ::ui::mojom::DragOperation;
@@ -66,7 +74,8 @@ ExtensionsToolbarContainer::DropInfo::DropInfo(
     : action_id(action_id), index(index) {}
 
 ExtensionsToolbarContainer::ExtensionsToolbarContainer(Browser* browser,
-                                                       DisplayMode display_mode)
+                                                       DisplayMode display_mode,
+                                                       int type)
     : ToolbarIconContainerView(/*uses_highlight=*/true),
       browser_(browser),
       model_(ToolbarActionsModel::Get(browser_->profile())),
@@ -89,11 +98,13 @@ ExtensionsToolbarContainer::ExtensionsToolbarContainer(Browser* browser,
                         this,
                         ExtensionsToolbarButton::ButtonType::kSiteAccess))
               : nullptr),
-      display_mode_(display_mode) {
+      display_mode_(display_mode),type_(type) {
   // The container shouldn't show unless / until we have extensions available.
   SetVisible(false);
-
-  model_observation_.Observe(model_.get());
+  //update on 20220218
+  //SetVisible(true);
+  //
+  model_observation_.Observe(model_);
 
   const views::FlexSpecification hide_icon_flex_specification =
       views::FlexSpecification(views::LayoutOrientation::kHorizontal,
@@ -105,44 +116,75 @@ ExtensionsToolbarContainer::ExtensionsToolbarContainer(Browser* browser,
       .SetDefault(views::kFlexBehaviorKey,
                   hide_icon_flex_specification.WithOrder(3));
 
-  views::View* const main_item =
-      extensions_button_
-          ? static_cast<views::View* const>(extensions_button_)
-          : static_cast<views::View* const>(extensions_controls_);
-  switch (display_mode) {
-    case DisplayMode::kNormal:
-      // In normal mode, the menu icon is always shown.
-      main_item->SetProperty(views::kFlexBehaviorKey,
-                             views::FlexSpecification());
-      break;
-    case DisplayMode::kCompact:
-    case DisplayMode::kAutoHide:
-      // In compact/auto hide mode, the menu icon can be hidden but has the
-      // highest priority.
-      main_item->SetProperty(views::kFlexBehaviorKey,
-                             hide_icon_flex_specification.WithOrder(1));
-      break;
-  }
-  if (extensions_button_) {
-    // Do not flip the Extensions icon in RTL.
-    extensions_button_->SetFlipCanvasOnPaintForRTLUI(false);
-    extensions_button_->SetID(VIEW_ID_EXTENSIONS_MENU_BUTTON);
-  }
-
-  AddMainItem(main_item);
+     views::View *const main_item =
+             extensions_button_
+             ? static_cast<views::View *const>(extensions_button_)
+             : static_cast<views::View *const>(extensions_controls_);
+     switch (display_mode) {
+         case DisplayMode::kNormal:
+             // In normal mode, the menu icon is always shown.
+             main_item->SetProperty(views::kFlexBehaviorKey,
+                                    views::FlexSpecification());
+             break;
+         case DisplayMode::kCompact:
+         case DisplayMode::kAutoHide:
+             // In compact/auto hide mode, the menu icon can be hidden but has the
+             // highest priority.
+             main_item->SetProperty(views::kFlexBehaviorKey,
+                                    hide_icon_flex_specification.WithOrder(1));
+             break;
+     }
+     if (extensions_button_) {
+         // Do not flip the Extensions icon in RTL.
+         extensions_button_->SetFlipCanvasOnPaintForRTLUI(false);
+         //update on 20220218
+         //extensions_button_->SetFlipCanvasOnPaintForRTLUI(true);
+         extensions_button_->SetID(VIEW_ID_EXTENSIONS_MENU_BUTTON);
+     }
+     //if(type == 0)
+//     AddMainItem(main_item);
+//update on 20220525
+    main_item->SetID(888888);
+    AddMainItem(main_item);
+    main_item->SetVisible(false);
+//
   CreateActions();
 
   // TODO(pbos): Consider splitting out tab-strip observing into another class.
   // Triggers for Extensions-related bubbles should preferably be separate from
   // the container where they are shown.
   browser_->tab_strip_model()->AddObserver(this);
+          
+  //update on 20220218
+//  configfile_path = GlobalHelp::GetAppRunPath();
+//  configfile_path += "/pundix";
+//  GlobalHelp::CreateDir((char*)configfile_path.c_str());
+//  configfile_path += "/config.txt";
+//  std::string info = GlobalHelp::GetInfoFromFile((char*)configfile_path.c_str());
+//  if(info == "false"/*!model_->IsActionPinned(extensions::kOurExtensionIds[1])*/)
+//  {
+//      //model_->SetActionVisibility(extensions::kOurExtensionIds[1],false);
+//      //OnToolbarActionAdded(extensions::kOurExtensionIds[1]);
+//      model_->SetActionVisibility(extensions::kOurExtensionIds[1],!model_->IsActionPinned(extensions::kOurExtensionIds[1]));
+//      //UpdateIconVisibility(extensions::kOurExtensionIds[1]);
+//      GlobalHelp::WriteInfoToFile((char*)configfile_path.c_str(),(char*)"true",0);
+//  }
 }
 
 ExtensionsToolbarContainer::~ExtensionsToolbarContainer() {
+    //update on 20220221
+//    if(model_->IsActionPinned(extensions::kOurExtensionIds[1]))
+//    model_->SetActionVisibility(extensions::kOurExtensionIds[1],!model_->IsActionPinned(extensions::kOurExtensionIds[1]));
+//    GlobalHelp::WriteInfoToFile((char*)configfile_path.c_str(),(char*)"false",0);
+//    //OnToolbarActionRemoved(extensions::kOurExtensionIds[1]);
+//    //model_->SetActionVisibility(extensions::kOurExtensionIds[1],false);
+//    //SetExtensionIconVisibility(extensions::kOurExtensionIds[1],false);
+//    //model_->MovePinnedAction(extensions::kOurExtensionIds[1], drop_info_->index);
+//    //
+    
   // The child views hold pointers to the |actions_|, and thus need to be
   // destroyed before them.
   RemoveAllChildViews();
-
   // Create a copy of the anchored widgets, since |anchored_widgets_| will
   // be modified by closing them.
   std::vector<views::Widget*> widgets;
@@ -169,7 +211,7 @@ void ExtensionsToolbarContainer::UpdateAllIcons() {
 // redesigned menu and toolbar with access control is released.
 ExtensionsToolbarButton* ExtensionsToolbarContainer::GetExtensionsButton()
     const {
-  return extensions_button_ ? extensions_button_.get()
+  return extensions_button_ ? extensions_button_
                             : extensions_controls_->extensions_button();
 }
 
@@ -197,7 +239,7 @@ ExtensionsToolbarContainer::GetAnchoredWidgetForExtensionForTesting(
                            [extension_id](const auto& info) {
                              return info.extension_id == extension_id;
                            });
-  return iter == anchored_widgets_.end() ? nullptr : iter->widget.get();
+  return iter == anchored_widgets_.end() ? nullptr : iter->widget;
 }
 
 bool ExtensionsToolbarContainer::ShouldForceVisibility(
@@ -253,8 +295,13 @@ void ExtensionsToolbarContainer::UpdateIconVisibility(
   } else {
     action_view->ClearProperty(views::kFlexBehaviorKey);
   }
-
-  if (must_show ||
+  //update on 20220218
+//  if(extension_id == extensions::kOurExtensionIds[1])
+//      must_show = true;
+//  if (must_show ||
+//  (CanShowIconInToolbar() && model_->IsActionPinned(extension_id)))
+  //
+  if (must_show /*|| (extension_id == extensions::kOurExtensionIds[1])*/ ||
       (CanShowIconInToolbar() && model_->IsActionPinned(extension_id)))
     GetAnimatingLayoutManager()->FadeIn(action_view);
   else
@@ -437,6 +484,7 @@ void ExtensionsToolbarContainer::ShowToolbarActionBubbleAsync(
 
 void ExtensionsToolbarContainer::ToggleExtensionsMenu() {
   GetExtensionsButton()->ToggleExtensionsMenu();
+    printf("ExtensionsToolbarContainer::ToggleExtensionsMenu():%s","start");
 }
 
 bool ExtensionsToolbarContainer::HasAnyExtensions() const {
@@ -457,6 +505,7 @@ void ExtensionsToolbarContainer::OnTabStripModelChanged(
 void ExtensionsToolbarContainer::OnToolbarActionAdded(
     const ToolbarActionsModel::ActionId& action_id) {
   CreateActionForId(action_id);
+  //update on 20220427
   ReorderViews();
 
   // Auto hide mode should not become visible due to extensions being added,
@@ -467,6 +516,18 @@ void ExtensionsToolbarContainer::OnToolbarActionAdded(
   UpdateControlsVisibility();
 
   drop_weak_ptr_factory_.InvalidateWeakPtrs();
+
+  //update on 20220621
+    auto* main_item = GetViewForId(action_id);
+    if(main_item->GetID() != 888888){
+              printf("ExtensionsToolbarContainer::OnToolbarActionAdded::--%s\r\n", "start");
+      BrowserView::GetBrowserViewForBrowser(browser_)->GetSuspendbarView()
+              ->VitrualButtonClick(action_id,0);
+        printf("\n6666666\n");
+        printf("ExtensionsToolbarContainer::OnToolbarActionAdded::--%s\r\n", "end");
+    }
+
+  //
 }
 
 void ExtensionsToolbarContainer::OnToolbarActionRemoved(
@@ -507,14 +568,16 @@ void ExtensionsToolbarContainer::OnToolbarActionUpdated(
 
 void ExtensionsToolbarContainer::OnToolbarModelInitialized() {
   CreateActions();
+  //update on 20220510
+//  if(!browser_->profile()->IsGuestSession())
+//  ToggleExtensionsMenu();
 }
 
 void ExtensionsToolbarContainer::OnToolbarPinnedActionsChanged() {
   for (const auto& it : icons_)
     UpdateIconVisibility(it.first);
+  //update on 20220427
   ReorderViews();
-
-  drop_weak_ptr_factory_.InvalidateWeakPtrs();
 }
 
 void ExtensionsToolbarContainer::ReorderViews() {
@@ -530,8 +593,9 @@ void ExtensionsToolbarContainer::ReorderViews() {
 }
 
 void ExtensionsToolbarContainer::CreateActions() {
-  DCHECK(icons_.empty());
-  DCHECK(actions_.empty());
+    //update on 20220510
+//  DCHECK(icons_.empty());
+//  DCHECK(actions_.empty());
 
   // If the model isn't initialized, wait for it.
   if (!model_->actions_initialized())
@@ -539,21 +603,73 @@ void ExtensionsToolbarContainer::CreateActions() {
 
   for (const auto& action_id : model_->action_ids())
     CreateActionForId(action_id);
-
+//update on 20220427
   ReorderViews();
   UpdateContainerVisibility();
 }
 
 void ExtensionsToolbarContainer::CreateActionForId(
     const ToolbarActionsModel::ActionId& action_id) {
-  actions_.push_back(
-      ExtensionActionViewController::Create(action_id, browser_, this));
+    //update on 20220510
+    std::unique_ptr<ExtensionActionViewController> temp = ExtensionActionViewController::Create(action_id, browser_, this);
+
+    actions_.push_back(ExtensionActionViewController::Create(action_id, browser_, this));
+    //
+//  actions_.push_back(
+//      ExtensionActionViewController::Create(action_id, browser_, this));
   auto icon = std::make_unique<ToolbarActionView>(actions_.back().get(), this);
   // Set visibility before adding to prevent extraneous animation.
-  icon->SetVisible(CanShowIconInToolbar() && model_->IsActionPinned(action_id));
+  //update on 20220510
+  if(temp.get()->GetPundixInfo() != "")
+      icon->SetVisible(false);
+  else {
+      icon->SetVisible(CanShowIconInToolbar() && model_->IsActionPinned(action_id));
+      //update on 20220516
+//      printf("ExtensionsToolbarContainer::CreateActionForId:extention_icon:--%s\r\n", "start");
+//      auto* extention_icon = new ToolbarActionView(actions_.back().get(), this);
+//      printf("ExtensionsToolbarContainer::CreateActionForId:extention_icon:--%s\r\n", "end");
+//      BrowserView::GetBrowserViewForBrowser(browser_)->GetSuspendbarView()
+//              ->AddExtensionsView(extention_icon);
+//      ObserveButton(extention_icon);
+//      icons_.insert({action_id, AddChildView(extention_icon)});
+      //
+  }
   ObserveButton(icon.get());
   icons_.insert({action_id, AddChildView(std::move(icon))});
+  //update on 20220525
+  if(type_==1){
+      auto* main_item = GetViewForId(action_id);
+      if(main_item->GetID() == 888888)
+          main_item->SetVisible(false);
+      else {
+          //update on 20220616
+//          auto* extensioninfo = extensions::ActionInfo::GetExtensionActionInfo(
+//                  temp->extension()
+//                  );
+//          if(!extensioninfo)
+//              return;
+//          auto* suspend = BrowserView::GetBrowserViewForBrowser(browser_)->GetSuspendbarView();
+//          if(suspend != nullptr) {
+//              printf("auto* suspend :--%s\r\n", "not null");
+//              //suspend->ShowExtensionsView(extensioninfo->default_popup_url);
+//              printf("extensioninfo->default_popup_url :--%s\r\n", extensioninfo->default_popup_url.spec().c_str());
+//
+//          }
+//          extension_infos_.insert(pair<std::string, ExtensionActionViewController*>
+//                  (action_id, temp.get()));
+          //
+      }
+  }
 }
+
+//update on 20220620
+std::vector<ToolbarActionViewController*> ExtensionsToolbarContainer::GetToolbarActionViewController(){
+    std::vector<ToolbarActionViewController*> result;
+    for (const auto& action : actions_)
+        result.push_back(action.get());
+    return result;
+}
+//
 
 content::WebContents* ExtensionsToolbarContainer::GetCurrentWebContents() {
   return browser_->tab_strip_model()->GetActiveWebContents();
@@ -570,12 +686,15 @@ views::LabelButton* ExtensionsToolbarContainer::GetOverflowReferenceView()
 }
 
 gfx::Size ExtensionsToolbarContainer::GetToolbarActionSize() {
-  constexpr gfx::Size kDefaultSize(28, 28);
-  BrowserView* const browser_view =
-      BrowserView::GetBrowserViewForBrowser(browser_);
-  return browser_view
-             ? browser_view->toolbar_button_provider()->GetToolbarButtonSize()
-             : kDefaultSize;
+//  constexpr gfx::Size kDefaultSize(28, 28);
+//  BrowserView* const browser_view =
+//      BrowserView::GetBrowserViewForBrowser(browser_);
+//  return browser_view
+//             ? browser_view->toolbar_button_provider()->GetToolbarButtonSize()
+//             : kDefaultSize;
+//update on 20220515
+    constexpr gfx::Size kDefaultSize(480, 480);
+    return kDefaultSize;
 }
 
 void ExtensionsToolbarContainer::WriteDragDataForView(
@@ -623,11 +742,7 @@ bool ExtensionsToolbarContainer::CanStartDragForView(View* sender,
                          [this, sender](const std::string& action_id) {
                            return GetViewForId(action_id) == sender;
                          });
-  if (it == model_->pinned_action_ids().cend())
-    return false;
-
-  // TODO(crbug.com/1275586): Force-pinned extensions are not draggable.
-  return model_->IsActionForcePinned(*it);
+  return it != model_->pinned_action_ids().cend();
 }
 
 bool ExtensionsToolbarContainer::GetDropFormats(
@@ -683,6 +798,7 @@ int ExtensionsToolbarContainer::OnDragUpdated(
   if (!drop_info_.get() || drop_info_->index != before_icon) {
     drop_info_ = std::make_unique<DropInfo>(data.id(), before_icon);
     SetExtensionIconVisibility(drop_info_->action_id, false);
+    //update on 20220427
     ReorderViews();
   }
 
@@ -766,23 +882,41 @@ void ExtensionsToolbarContainer::SetExtensionIconVisibility(
                          [this, id](const std::string& action_id) {
                            return GetViewForId(action_id) == GetViewForId(id);
                          });
-  if (it == model_->pinned_action_ids().cend())
-    return;
-
   ToolbarActionView* extension_view = GetViewForId(*it);
   if (!extension_view)
     return;
-
-  extension_view->SetImageModel(
-      views::Button::STATE_NORMAL,
-      visible ? ui::ImageModel::FromImageSkia(GetExtensionIcon(extension_view))
-              : ui::ImageModel());
+//update on 20220525
+if(type_ == 1){
+    if(extension_view->GetID() == 888888)
+        return;
+}
+else{
+    auto icon_resize = gfx::ImageSkiaOperations::CreateResizedImage(
+            GetExtensionIcon(extension_view),skia::ImageOperations::ResizeMethod::RESIZE_BEST,gfx::Size(480,480)
+    );
+    extension_view->SetImageModel(
+            views::Button::STATE_NORMAL,
+            visible ? ui::ImageModel::FromImageSkia(icon_resize)
+                    : ui::ImageModel());
+}
+//
+//  extension_view->SetImageModel(
+//      views::Button::STATE_NORMAL,
+//      visible ? ui::ImageModel::FromImageSkia(GetExtensionIcon(extension_view))
+//              : ui::ImageModel());
 }
 
 void ExtensionsToolbarContainer::UpdateContainerVisibility() {
   bool was_visible = GetVisible();
+  if(type_ == 1)
   SetVisible(ShouldContainerBeVisible());
-
+//update on 20220425
+    //SetVisible(false);
+    //bool tag = ShouldContainerBeVisible();
+//    if(tag)
+//        ToggleExtensionsMenu();
+    //SetVisible(false);
+//
   // Layout animation does not handle host view visibility changing; requires
   // resetting.
   if (was_visible != GetVisible())
@@ -849,6 +983,7 @@ void ExtensionsToolbarContainer::MovePinnedAction(
 
 void ExtensionsToolbarContainer::DragDropCleanup(
     const ToolbarActionsModel::ActionId& dragged_extension_id) {
+    //update on 20220427
   ReorderViews();
   GetAnimatingLayoutManager()->PostOrQueueAction(base::BindOnce(
       &ExtensionsToolbarContainer::SetExtensionIconVisibility,

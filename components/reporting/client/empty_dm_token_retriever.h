@@ -6,6 +6,7 @@
 #define COMPONENTS_REPORTING_CLIENT_EMPTY_DM_TOKEN_RETRIEVER_H_
 
 #include "components/reporting/client/dm_token_retriever.h"
+#include "components/reporting/util/statusor.h"
 
 namespace reporting {
 

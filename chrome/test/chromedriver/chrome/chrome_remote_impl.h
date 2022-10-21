@@ -8,6 +8,7 @@
 #include <memory>
 #include <string>
 
+#include "base/compiler_specific.h"
 #include "chrome/test/chromedriver/chrome/chrome_impl.h"
 
 class DevToolsClient;

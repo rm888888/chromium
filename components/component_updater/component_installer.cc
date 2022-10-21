@@ -4,11 +4,7 @@
 
 #include "components/component_updater/component_installer.h"
 
-#include <cstdint>
-#include <string>
-#include <tuple>
 #include <utility>
-#include <vector>
 
 #include "base/bind.h"
 #include "base/callback.h"
@@ -18,6 +14,7 @@
 #include "base/files/scoped_temp_dir.h"
 #include "base/location.h"
 #include "base/logging.h"
+#include "base/macros.h"
 #include "base/path_service.h"
 #include "base/strings/string_util.h"
 #include "base/task/post_task.h"
@@ -39,10 +36,6 @@
 #include "components/update_client/update_client_errors.h"
 #include "components/update_client/utils.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
-
-#if defined(OS_APPLE)
-#include "base/mac/backup_util.h"
-#endif
 
 namespace component_updater {
 
@@ -155,7 +148,7 @@ Result ComponentInstaller::InstallHelper(const base::FilePath& unpack_path,
 
   // Acquire the ownership of the |local_install_path|.
   base::ScopedTempDir install_path_owner;
-  std::ignore = install_path_owner.Set(local_install_path);
+  ignore_result(install_path_owner.Set(local_install_path));
 
 #if BUILDFLAG(IS_CHROMEOS_ASH)
   if (!base::SetPosixFilePermissions(local_install_path, 0755)) {
@@ -167,12 +160,6 @@ Result ComponentInstaller::InstallHelper(const base::FilePath& unpack_path,
 
   DCHECK(!base::PathExists(unpack_path));
   DCHECK(base::PathExists(local_install_path));
-
-#if defined(OS_APPLE)
-  // Since components can be large and can be re-downloaded when needed, they
-  // are excluded from backups.
-  base::mac::SetBackupExclusion(local_install_path);
-#endif
 
   const Result result =
       installer_policy_->OnCustomInstall(local_manifest, local_install_path);
@@ -431,18 +418,23 @@ void ComponentInstaller::FinishRegistration(
   current_version_ = registration_info->version;
   current_fingerprint_ = registration_info->fingerprint;
 
-  std::vector<uint8_t> public_key_hash;
-  installer_policy_->GetHash(&public_key_hash);
+  update_client::CrxComponent crx;
+  installer_policy_->GetHash(&crx.pk_hash);
+  crx.app_id = update_client::GetCrxIdFromPublicKeyHash(crx.pk_hash);
+  crx.installer = this;
+  crx.action_handler = action_handler_;
+  crx.version = current_version_;
+  crx.fingerprint = current_fingerprint_;
+  crx.name = installer_policy_->GetName();
+  crx.installer_attributes = installer_policy_->GetInstallerAttributes();
+  crx.requires_network_encryption =
+      installer_policy_->RequiresNetworkEncryption();
+  crx.crx_format_requirement =
+      crx_file::VerifierFormat::CRX3_WITH_PUBLISHER_PROOF;
+  crx.supports_group_policy_enable_component_updates =
+      installer_policy_->SupportsGroupPolicyEnabledComponentUpdates();
 
-  if (!std::move(register_callback)
-           .Run(ComponentRegistration(
-               update_client::GetCrxIdFromPublicKeyHash(public_key_hash),
-               installer_policy_->GetName(), public_key_hash, current_version_,
-               current_fingerprint_,
-               installer_policy_->GetInstallerAttributes(), action_handler_,
-               this, installer_policy_->RequiresNetworkEncryption(),
-               installer_policy_
-                   ->SupportsGroupPolicyEnabledComponentUpdates()))) {
+  if (!std::move(register_callback).Run(crx)) {
     LOG(ERROR) << "Component registration failed for "
                << installer_policy_->GetName();
     if (!callback.is_null())

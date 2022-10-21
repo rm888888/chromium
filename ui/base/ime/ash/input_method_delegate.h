@@ -7,6 +7,8 @@
 
 #include <string>
 
+#include "base/macros.h"
+
 namespace ash {
 namespace input_method {
 

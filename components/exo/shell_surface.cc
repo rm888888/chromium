@@ -13,12 +13,10 @@
 #include "ash/wm/window_state.h"
 #include "base/bind.h"
 #include "base/logging.h"
-#include "base/strings/string_piece.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/trace_event/trace_event.h"
 #include "chromeos/ui/base/window_state_type.h"
 #include "components/exo/shell_surface_util.h"
-#include "components/exo/window_properties.h"
 #include "ui/aura/client/aura_constants.h"
 #include "ui/aura/client/cursor_client.h"
 #include "ui/aura/env.h"
@@ -156,19 +154,14 @@ void ShellSurface::Maximize() {
   TRACE_EVENT0("exo", "ShellSurface::Maximize");
 
   if (!widget_) {
-    if (initial_show_state_ != ui::SHOW_STATE_FULLSCREEN ||
-        ShouldExitFullscreenFromRestoreOrMaximized())
-      initial_show_state_ = ui::SHOW_STATE_MAXIMIZED;
+    initial_show_state_ = ui::SHOW_STATE_MAXIMIZED;
     return;
   }
 
-  if (!widget_->IsFullscreen() ||
-      ShouldExitFullscreenFromRestoreOrMaximized()) {
-    // Note: This will ask client to configure its surface even if already
-    // maximized.
-    ScopedConfigure scoped_configure(this, true);
-    widget_->Maximize();
-  }
+  // Note: This will ask client to configure its surface even if already
+  // maximized.
+  ScopedConfigure scoped_configure(this, true);
+  widget_->Maximize();
 }
 
 void ShellSurface::Minimize() {
@@ -189,30 +182,21 @@ void ShellSurface::Restore() {
   TRACE_EVENT0("exo", "ShellSurface::Restore");
 
   if (!widget_) {
-    if (initial_show_state_ != ui::SHOW_STATE_FULLSCREEN ||
-        ShouldExitFullscreenFromRestoreOrMaximized())
-      initial_show_state_ = ui::SHOW_STATE_NORMAL;
+    initial_show_state_ = ui::SHOW_STATE_NORMAL;
     return;
   }
 
-  if (!widget_->IsFullscreen() ||
-      ShouldExitFullscreenFromRestoreOrMaximized()) {
-    // Note: This will ask client to configure its surface even if already
-    // maximized.
-    ScopedConfigure scoped_configure(this, true);
-    widget_->Restore();
-  }
+  // Note: This will ask client to configure its surface even if not already
+  // maximized or minimized.
+  ScopedConfigure scoped_configure(this, true);
+  widget_->Restore();
 }
 
 void ShellSurface::SetFullscreen(bool fullscreen) {
   TRACE_EVENT1("exo", "ShellSurface::SetFullscreen", "fullscreen", fullscreen);
 
   if (!widget_) {
-    if (fullscreen) {
-      initial_show_state_ = ui::SHOW_STATE_FULLSCREEN;
-    } else if (initial_show_state_ == ui::SHOW_STATE_FULLSCREEN) {
-      initial_show_state_ = ui::SHOW_STATE_DEFAULT;
-    }
+    initial_show_state_ = ui::SHOW_STATE_FULLSCREEN;
     return;
   }
 

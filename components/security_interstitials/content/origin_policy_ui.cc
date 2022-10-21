@@ -12,9 +12,7 @@
 #include "components/security_interstitials/content/security_interstitial_tab_helper.h"
 #include "components/security_interstitials/content/settings_page_helper.h"
 #include "components/security_interstitials/core/metrics_helper.h"
-#include "content/public/browser/browser_context.h"
 #include "content/public/browser/navigation_handle.h"
-#include "content/public/browser/storage_partition.h"
 #include "services/network/public/cpp/origin_policy.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 #include "url/gurl.h"
@@ -26,7 +24,6 @@ namespace {
 std::unique_ptr<SecurityInterstitialPage> GetErrorPageImpl(
     network::OriginPolicyState error_reason,
     content::WebContents* web_contents,
-    content::StoragePartition* storage_partition,
     const GURL& url) {
   MetricsHelper::ReportDetails report_details;
   report_details.metric_prefix = "origin_policy";
@@ -37,8 +34,7 @@ std::unique_ptr<SecurityInterstitialPage> GetErrorPageImpl(
           nullptr, /* pref service: can be null */
           "", GURL(), /* settings_page_helper: not used */ nullptr);
   return std::make_unique<security_interstitials::OriginPolicyInterstitialPage>(
-      web_contents, storage_partition, url, std::move(controller),
-      error_reason);
+      web_contents, url, std::move(controller), error_reason);
 }
 
 }  // namespace
@@ -48,8 +44,7 @@ absl::optional<std::string> OriginPolicyUI::GetErrorPageAsHTML(
     content::NavigationHandle* handle) {
   DCHECK(handle);
   std::unique_ptr<SecurityInterstitialPage> page(GetErrorPageImpl(
-      error_reason, handle->GetWebContents(),
-      handle->GetRenderFrameHost()->GetStoragePartition(), handle->GetURL()));
+      error_reason, handle->GetWebContents(), handle->GetURL()));
   std::string html = page->GetHTMLContents();
 
   // The page object is "associated" with the web contents, and this is how
@@ -64,11 +59,7 @@ SecurityInterstitialPage* OriginPolicyUI::GetBlockingPage(
     network::OriginPolicyState error_reason,
     content::WebContents* web_contents,
     const GURL& url) {
-  return GetErrorPageImpl(
-             error_reason, web_contents,
-             web_contents->GetBrowserContext()->GetDefaultStoragePartition(),
-             url)
-      .release();
+  return GetErrorPageImpl(error_reason, web_contents, url).release();
 }
 
 }  // namespace security_interstitials

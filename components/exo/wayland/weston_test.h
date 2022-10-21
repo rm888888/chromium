@@ -5,26 +5,40 @@
 #ifndef COMPONENTS_EXO_WAYLAND_WESTON_TEST_H_
 #define COMPONENTS_EXO_WAYLAND_WESTON_TEST_H_
 
-#include <memory>
+#include <stdint.h>
 
-#include "base/component_export.h"
+#include "base/macros.h"
+
+struct wl_client;
 
 namespace exo {
+class Display;
+
 namespace wayland {
-class Server;
 
-class COMPONENT_EXPORT(WESTON_TEST) WestonTest {
- public:
-  explicit WestonTest(Server* server);
-  WestonTest(const WestonTest&) = delete;
-  WestonTest& operator=(const WestonTest&) = delete;
-  ~WestonTest();
+// Tracks button and mouse states for testing.
+struct WestonTestState {
+  WestonTestState() {}
 
-  struct WestonTestState;
+  WestonTestState(const WestonTestState&) = delete;
+  WestonTestState& operator=(const WestonTestState&) = delete;
 
- private:
-  std::unique_ptr<WestonTestState> data_;
+  bool left_button_pressed = false;
+  bool middle_button_pressed = false;
+  bool right_button_pressed = false;
+
+  bool control_pressed = false;
+  bool alt_pressed = false;
+  bool shift_pressed = false;
+  bool command_pressed = false;
 };
+
+constexpr uint32_t kWestonTestVersion = 1;
+
+void bind_weston_test(wl_client* client,
+                      void* data,
+                      uint32_t version,
+                      uint32_t id);
 
 }  // namespace wayland
 }  // namespace exo

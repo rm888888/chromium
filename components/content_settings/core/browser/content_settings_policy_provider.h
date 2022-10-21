@@ -7,7 +7,8 @@
 
 // A content settings provider that takes its settings out of policies.
 
-#include "base/memory/raw_ptr.h"
+
+#include "base/macros.h"
 #include "base/synchronization/lock.h"
 #include "components/content_settings/core/browser/content_settings_observable_provider.h"
 #include "components/content_settings/core/browser/content_settings_origin_identifier_value_map.h"
@@ -41,7 +42,7 @@ class PolicyProvider : public ObservableProvider {
       const ContentSettingsPattern& primary_pattern,
       const ContentSettingsPattern& secondary_pattern,
       ContentSettingsType content_type,
-      base::Value&& value,
+      std::unique_ptr<base::Value>&& value,
       const ContentSettingConstraints& constraint = {}) override;
 
   void ClearAllContentSettingsRules(ContentSettingsType content_type) override;
@@ -73,7 +74,7 @@ class PolicyProvider : public ObservableProvider {
 
   OriginIdentifierValueMap value_map_;
 
-  raw_ptr<PrefService> prefs_;
+  PrefService* prefs_;
 
   PrefChangeRegistrar pref_change_registrar_;
 

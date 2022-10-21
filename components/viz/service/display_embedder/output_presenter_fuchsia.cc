@@ -14,13 +14,13 @@
 #include "components/viz/common/features.h"
 #include "components/viz/common/gpu/vulkan_context_provider.h"
 #include "components/viz/service/display_embedder/skia_output_surface_dependency.h"
-#include "gpu/command_buffer/service/external_semaphore.h"
 #include "gpu/command_buffer/service/external_semaphore_pool.h"
 #include "gpu/command_buffer/service/shared_context_state.h"
 #include "gpu/ipc/common/gpu_client_ids.h"
 #include "gpu/vulkan/vulkan_device_queue.h"
 #include "gpu/vulkan/vulkan_function_pointers.h"
 #include "gpu/vulkan/vulkan_implementation.h"
+#include "third_party/skia/include/gpu/GrBackendSemaphore.h"
 #include "ui/gfx/buffer_format_util.h"
 #include "ui/gfx/geometry/rect_conversions.h"
 #include "ui/gfx/gpu_fence_handle.h"
@@ -34,119 +34,80 @@ namespace viz {
 
 namespace {
 
+void GrSemaphoresToGpuFenceHandles(
+    gpu::VulkanImplementation* vulkan_implementation,
+    VkDevice vk_device,
+    const std::vector<GrBackendSemaphore>& semaphores,
+    std::vector<gfx::GpuFenceHandle>& fence_handles) {
+  for (auto& semaphore : semaphores) {
+    gpu::SemaphoreHandle handle = vulkan_implementation->GetSemaphoreHandle(
+        vk_device, semaphore.vkSemaphore());
+    DCHECK(handle.is_valid());
+
+    fence_handles.emplace_back();
+    fence_handles.back().owned_event = zx::event(handle.TakeHandle());
+  }
+}
+
 class PresenterImageFuchsia : public OutputPresenter::Image {
  public:
-  PresenterImageFuchsia() = default;
+  explicit PresenterImageFuchsia(
+      scoped_refptr<gfx::NativePixmap> native_pixmap);
   ~PresenterImageFuchsia() override;
 
-  // OutputPresenter::Image implementation.
   void BeginPresent() final;
   void EndPresent(gfx::GpuFenceHandle release_fence) final;
   int GetPresentCount() const final;
   void OnContextLost() final;
 
-  bool Initialize(gpu::SharedImageFactory* factory,
-                  gpu::SharedImageRepresentationFactory* representation_factory,
-                  const gpu::Mailbox& mailbox,
-                  SkiaOutputSurfaceDependency* deps);
-
-  // Must only be called in between BeginPresent() and EndPresent().
-  scoped_refptr<gfx::NativePixmap> GetNativePixmap() {
-    DCHECK(scoped_overlay_read_access_);
-    return scoped_overlay_read_access_->GetNativePixmap();
+  const scoped_refptr<gfx::NativePixmap>& native_pixmap() const {
+    return native_pixmap_;
   }
 
-  // Must be called after BeginPresent() to get fences for frame.
-  void TakePresentationFences(
-      std::vector<gfx::GpuFenceHandle>& read_begin_fences,
-      std::vector<gfx::GpuFenceHandle>& read_end_fences);
+  void TakeSemaphores(std::vector<GrBackendSemaphore>& read_begin_semaphores,
+                      std::vector<GrBackendSemaphore>& read_end_semaphores);
 
  private:
-  VulkanContextProvider* vulkan_context_provider_ = nullptr;
-  gpu::ExternalSemaphorePool* exernal_semaphore_pool_ = nullptr;
-
-  std::unique_ptr<gpu::SharedImageRepresentationOverlay>
-      overlay_representation_;
-  std::unique_ptr<gpu::SharedImageRepresentationOverlay::ScopedReadAccess>
-      scoped_overlay_read_access_;
+  scoped_refptr<gfx::NativePixmap> native_pixmap_;
 
   int present_count_ = 0;
 
-  std::vector<gfx::GpuFenceHandle> read_begin_fences_;
-  gfx::GpuFenceHandle read_end_fence_;
+  std::unique_ptr<gpu::SharedImageRepresentationSkia::ScopedReadAccess>
+      read_access_;
+
+  std::vector<GrBackendSemaphore> read_begin_semaphores_;
+  std::vector<GrBackendSemaphore> read_end_semaphores_;
 };
 
-PresenterImageFuchsia::~PresenterImageFuchsia() {
-  DCHECK(read_begin_fences_.empty());
-  DCHECK(read_end_fence_.is_null());
+PresenterImageFuchsia::PresenterImageFuchsia(
+    scoped_refptr<gfx::NativePixmap> native_pixmap)
+    : native_pixmap_(std::move(native_pixmap)) {
+  DCHECK(native_pixmap_);
 }
 
-bool PresenterImageFuchsia::Initialize(
-    gpu::SharedImageFactory* factory,
-    gpu::SharedImageRepresentationFactory* representation_factory,
-    const gpu::Mailbox& mailbox,
-    SkiaOutputSurfaceDependency* deps) {
-  vulkan_context_provider_ = deps->GetVulkanContextProvider();
-  exernal_semaphore_pool_ =
-      deps->GetSharedContextState()->external_semaphore_pool();
-
-  if (!Image::Initialize(factory, representation_factory, mailbox, deps))
-    return false;
-
-  overlay_representation_ = representation_factory->ProduceOverlay(mailbox);
-
-  if (!overlay_representation_) {
-    DLOG(ERROR) << "ProduceOverlay() failed";
-    return false;
-  }
-
-  return true;
+PresenterImageFuchsia::~PresenterImageFuchsia() {
+  DCHECK(read_begin_semaphores_.empty());
+  DCHECK(read_end_semaphores_.empty());
 }
 
 void PresenterImageFuchsia::BeginPresent() {
-  DCHECK(read_end_fence_.is_null());
-
   ++present_count_;
 
   if (present_count_ == 1) {
-    DCHECK(!scoped_overlay_read_access_);
-    DCHECK(read_begin_fences_.empty());
-
-    scoped_overlay_read_access_ =
-        overlay_representation_->BeginScopedReadAccess(
-            /*needs_gl_image=*/false);
-    DCHECK(scoped_overlay_read_access_);
-
-    // Take ownership of acquire fences.
-    for (auto& gpu_fence : scoped_overlay_read_access_->TakeAcquireFences()) {
-      read_begin_fences_.push_back(gpu_fence.GetGpuFenceHandle().Clone());
-    }
+    DCHECK(!read_access_);
+    DCHECK(read_begin_semaphores_.empty());
+    DCHECK(read_end_semaphores_.empty());
+    read_access_ = skia_representation()->BeginScopedReadAccess(
+        &read_begin_semaphores_, &read_end_semaphores_);
   }
-
-  auto* vulkan_implementation =
-      vulkan_context_provider_->GetVulkanImplementation();
-  VkDevice vk_device =
-      vulkan_context_provider_->GetDeviceQueue()->GetVulkanDevice();
-
-  // A new release fence is generated for each present. The fence for the last
-  // present gets waited on before giving up read access to the shared image.
-  gpu::SemaphoreHandle handle = vulkan_implementation->GetSemaphoreHandle(
-      vk_device,
-      exernal_semaphore_pool_->GetOrCreateSemaphore().GetVkSemaphore());
-  DCHECK(handle.is_valid());
-  read_end_fence_.owned_event = zx::event(handle.TakeHandle());
-
-  scoped_overlay_read_access_->SetReleaseFence(read_end_fence_.Clone());
 }
 
 void PresenterImageFuchsia::EndPresent(gfx::GpuFenceHandle release_fence) {
   DCHECK(present_count_);
   DCHECK(release_fence.is_null());
   --present_count_;
-  if (!present_count_) {
-    DCHECK(scoped_overlay_read_access_);
-    scoped_overlay_read_access_.reset();
-  }
+  if (!present_count_)
+    read_access_.reset();
 }
 
 int PresenterImageFuchsia::GetPresentCount() const {
@@ -154,19 +115,17 @@ int PresenterImageFuchsia::GetPresentCount() const {
 }
 
 void PresenterImageFuchsia::OnContextLost() {
-  if (overlay_representation_)
-    overlay_representation_->OnContextLost();
+  // Nothing to do here.
 }
 
-void PresenterImageFuchsia::TakePresentationFences(
-    std::vector<gfx::GpuFenceHandle>& read_begin_fences,
-    std::vector<gfx::GpuFenceHandle>& read_end_fences) {
-  DCHECK(read_begin_fences.empty());
-  std::swap(read_begin_fences, read_begin_fences_);
+void PresenterImageFuchsia::TakeSemaphores(
+    std::vector<GrBackendSemaphore>& read_begin_semaphores,
+    std::vector<GrBackendSemaphore>& read_end_semaphores) {
+  DCHECK(read_begin_semaphores.empty());
+  std::swap(read_begin_semaphores, read_begin_semaphores_);
 
-  DCHECK(read_end_fences.empty());
-  DCHECK(!read_end_fence_.is_null());
-  read_end_fences.push_back(std::move(read_end_fence_));
+  DCHECK(read_end_semaphores.empty());
+  std::swap(read_end_semaphores, read_end_semaphores_);
 }
 
 }  // namespace
@@ -274,7 +233,16 @@ OutputPresenterFuchsia::AllocateImages(gfx::ColorSpace color_space,
       return {};
     }
 
-    auto image = std::make_unique<PresenterImageFuchsia>();
+    // There is a different NativePixmap object created inside of the shared
+    // image backing from the cloned handle. While the two NativePixmap that
+    // exist at this point should be equivalent, aka have the same handles,
+    // store the new one and let the original be destroyed to avoid confusion.
+    auto shared_image_pixmap =
+        dependency_->GetSharedImageManager()->GetNativePixmap(mailbox);
+    pixmap.reset();
+
+    auto image =
+        std::make_unique<PresenterImageFuchsia>(std::move(shared_image_pixmap));
     if (!image->Initialize(shared_image_factory_,
                            shared_image_representation_factory_, mailbox,
                            dependency_)) {
@@ -322,31 +290,42 @@ void OutputPresenterFuchsia::SchedulePrimaryPlane(
   if (!next_frame_)
     next_frame_.emplace();
   DCHECK(!next_frame_->native_pixmap);
-  next_frame_->native_pixmap = image_fuchsia->GetNativePixmap();
+  next_frame_->native_pixmap = image_fuchsia->native_pixmap();
 
-  // Take semaphores for the image to be passed to ImagePipe::PresentImage().
-  image_fuchsia->TakePresentationFences(next_frame_->acquire_fences,
-                                        next_frame_->release_fences);
-  DCHECK(!next_frame_->acquire_fences.empty());
-  DCHECK(!next_frame_->release_fences.empty());
+  // Take semaphores for the image and covert them to zx::events that are later
+  // passed to ImagePipe::PresentImage().
+  std::vector<GrBackendSemaphore> read_begin_semaphores;
+  std::vector<GrBackendSemaphore> read_end_semaphores;
+  image_fuchsia->TakeSemaphores(read_begin_semaphores, read_end_semaphores);
+  DCHECK(!read_begin_semaphores.empty());
+  DCHECK(!read_end_semaphores.empty());
+
+  auto* vulkan_context_provider = dependency_->GetVulkanContextProvider();
+  auto* vulkan_implementation =
+      vulkan_context_provider->GetVulkanImplementation();
+  VkDevice vk_device =
+      vulkan_context_provider->GetDeviceQueue()->GetVulkanDevice();
+
+  GrSemaphoresToGpuFenceHandles(vulkan_implementation, vk_device,
+                                read_begin_semaphores,
+                                next_frame_->acquire_fences);
+  GrSemaphoresToGpuFenceHandles(vulkan_implementation, vk_device,
+                                read_end_semaphores,
+                                next_frame_->release_fences);
 }
 
 void OutputPresenterFuchsia::ScheduleOverlays(
     SkiaOutputSurface::OverlayList overlays,
     std::vector<ScopedOverlayAccess*> accesses) {
-  DCHECK_EQ(overlays.size(), accesses.size());
-
   if (!next_frame_)
     next_frame_.emplace();
   DCHECK(next_frame_->overlays.empty());
 
-  for (size_t i = 0; i < overlays.size(); ++i) {
-    auto& candidate = overlays[i];
-    auto* scoped_access = accesses[i];
-
+  for (auto& candidate : overlays) {
     DCHECK(candidate.mailbox.IsSharedImage());
 
-    auto pixmap = scoped_access->GetNativePixmap();
+    auto pixmap = dependency_->GetSharedImageManager()->GetNativePixmap(
+        candidate.mailbox);
     if (!pixmap) {
       DLOG(ERROR) << "Cannot access SysmemNativePixmap";
       continue;

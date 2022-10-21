@@ -52,10 +52,6 @@ void InputControllerEvdev::set_has_touchpad(bool has_touchpad) {
   has_touchpad_ = has_touchpad;
 }
 
-void InputControllerEvdev::set_has_haptic_touchpad(bool has_haptic_touchpad) {
-  has_haptic_touchpad_ = has_haptic_touchpad;
-}
-
 void InputControllerEvdev::SetInputDevicesEnabled(bool enabled) {
   input_device_settings_.enable_devices = enabled;
   ScheduleUpdateDeviceSettings();
@@ -71,10 +67,6 @@ bool InputControllerEvdev::HasPointingStick() {
 
 bool InputControllerEvdev::HasTouchpad() {
   return has_touchpad_;
-}
-
-bool InputControllerEvdev::HasHapticTouchpad() {
-  return has_haptic_touchpad_;
 }
 
 bool InputControllerEvdev::IsCapsLockEnabled() {
@@ -332,23 +324,6 @@ void InputControllerEvdev::StopVibration(int id) {
   if (!input_device_factory_)
     return;
   input_device_factory_->StopVibration(id);
-}
-
-void InputControllerEvdev::PlayHapticTouchpadEffect(
-    ui::HapticTouchpadEffect effect,
-    ui::HapticTouchpadEffectStrength strength) {
-  if (!input_device_factory_)
-    return;
-  input_device_factory_->PlayHapticTouchpadEffect(effect, strength);
-}
-
-void InputControllerEvdev::SetHapticTouchpadEffectForNextButtonRelease(
-    ui::HapticTouchpadEffect effect,
-    ui::HapticTouchpadEffectStrength strength) {
-  if (!input_device_factory_)
-    return;
-  input_device_factory_->SetHapticTouchpadEffectForNextButtonRelease(effect,
-                                                                     strength);
 }
 
 }  // namespace ui

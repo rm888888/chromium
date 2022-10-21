@@ -4,6 +4,7 @@
 
 #include "components/cast_channel/enum_table.h"
 
+#include "base/macros.h"
 #include "base/test/gtest_util.h"
 #include "testing/gtest/include/gtest/gtest.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"

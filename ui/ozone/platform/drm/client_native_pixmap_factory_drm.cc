@@ -6,6 +6,7 @@
 
 #include <utility>
 
+#include "base/macros.h"
 #include "ui/gfx/linux/client_native_pixmap_factory_dmabuf.h"
 #include "ui/gfx/native_pixmap_handle.h"
 

@@ -6,14 +6,10 @@
 #define UI_BASE_MODELS_TABLE_MODEL_H_
 
 #include <string>
+#include <vector>
 
 #include "base/component_export.h"
-#include "third_party/icu/source/common/unicode/uversion.h"
-
-// third_party/icu/source/common/unicode/uversion.h will set namespace icu.
-namespace U_ICU_NAMESPACE {
-class Collator;
-}
+#include "third_party/icu/source/i18n/unicode/coll.h"
 
 namespace ui {
 
@@ -59,7 +55,7 @@ class COMPONENT_EXPORT(UI_BASE) TableModel {
   void ClearCollator();
 
  protected:
-  virtual ~TableModel();
+  virtual ~TableModel() {}
 
   // Returns the collator used by CompareValues.
   icu::Collator* GetCollator();

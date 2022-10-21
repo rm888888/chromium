@@ -9,6 +9,8 @@
 #include <string>
 #include <vector>
 
+#include "base/macros.h"
+
 namespace sync_pb {
 
 class EncryptedData;

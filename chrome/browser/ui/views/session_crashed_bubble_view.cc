@@ -12,7 +12,7 @@
 
 #include "base/bind.h"
 #include "base/callback_helpers.h"
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/metrics/histogram_macros.h"
 #include "base/task/task_runner_util.h"
 #include "build/branding_buildflags.h"
@@ -195,7 +195,7 @@ class SessionCrashedBubbleView::BrowserRemovalObserver
   Browser* browser() const { return browser_; }
 
  private:
-  raw_ptr<Browser> browser_;
+  Browser* browser_;
 };
 
 // static
@@ -292,7 +292,7 @@ views::BubbleDialogDelegate* SessionCrashedBubbleView::ShowBubble(
   const SessionStartupPref session_startup_pref =
       SessionStartupPref::GetStartupPref(browser->profile());
 
-  if (session_startup_pref.ShouldOpenUrls() &&
+  if (session_startup_pref.type == SessionStartupPref::URLS &&
       !session_startup_pref.urls.empty()) {
     dialog_builder.AddCancelButton(
         base::BindOnce(&SessionCrashedBubbleDelegate::OpenStartupPages,

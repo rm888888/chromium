@@ -7,6 +7,7 @@
 
 #include <cstdint>
 
+#include "base/macros.h"
 #include "components/performance_manager/public/graph/node_state.h"
 
 namespace performance_manager {

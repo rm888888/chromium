@@ -7,6 +7,7 @@
 
 #include <memory>
 
+#include "base/macros.h"
 #include "base/memory/singleton.h"
 #include "components/keyed_service/core/simple_keyed_service_factory.h"
 

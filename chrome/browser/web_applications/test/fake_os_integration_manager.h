@@ -31,7 +31,7 @@ class FakeOsIntegrationManager : public OsIntegrationManager {
   // OsIntegrationManager:
   void InstallOsHooks(const AppId& app_id,
                       InstallOsHooksCallback callback,
-                      std::unique_ptr<WebAppInstallInfo> web_app_info,
+                      std::unique_ptr<WebApplicationInfo> web_app_info,
                       InstallOsHooksOptions options) override;
   void UninstallOsHooks(const AppId& app_id,
                         const OsHooksOptions& os_hooks,
@@ -41,8 +41,7 @@ class FakeOsIntegrationManager : public OsIntegrationManager {
   void UpdateOsHooks(const AppId& app_id,
                      base::StringPiece old_name,
                      FileHandlerUpdateAction file_handlers_need_os_update,
-                     const WebAppInstallInfo& web_app_info,
-                     UpdateOsHooksCallback callback) override;
+                     const WebApplicationInfo& web_app_info) override;
 
   size_t num_create_shortcuts_calls() const {
     return num_create_shortcuts_calls_;

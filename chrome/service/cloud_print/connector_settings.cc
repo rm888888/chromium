@@ -50,9 +50,8 @@ void ConnectorSettings::InitFrom(ServiceProcessPrefs* prefs) {
     print_system_settings_.reset(print_system_settings->DeepCopy());
     // TODO(vitalybuka) : Consider to rename and move out option from
     // print_system_settings.
-    delete_on_enum_fail_ =
-        print_system_settings_->FindBoolPath(kDeleteOnEnumFail)
-            .value_or(delete_on_enum_fail_);
+    print_system_settings_->GetBoolean(kDeleteOnEnumFail,
+                                       &delete_on_enum_fail_);
   }
 
   // Check if there is an override for the cloud print server URL.
@@ -68,7 +67,7 @@ void ConnectorSettings::InitFrom(ServiceProcessPrefs* prefs) {
       prefs::kCloudPrintXmppPingTimeout, kDefaultXmppPingTimeoutSecs);
   SetXmppPingTimeoutSec(timeout);
 
-  const base::Value* printers = prefs->GetList(prefs::kCloudPrintPrinters);
+  const base::ListValue* printers = prefs->GetList(prefs::kCloudPrintPrinters);
   if (printers) {
     for (const auto& printer : printers->GetList()) {
       if (printer.is_dict()) {

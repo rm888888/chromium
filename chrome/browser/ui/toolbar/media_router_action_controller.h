@@ -8,7 +8,6 @@
 #include <vector>
 
 #include "base/gtest_prod_util.h"
-#include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "chrome/browser/profiles/profile.h"
@@ -66,8 +65,9 @@ class MediaRouterActionController : public media_router::IssuesObserver,
   void OnIssuesCleared() override;
 
   // media_router::MediaRoutesObserver:
-  void OnRoutesUpdated(
-      const std::vector<media_router::MediaRoute>& routes) override;
+  void OnRoutesUpdated(const std::vector<media_router::MediaRoute>& routes,
+                       const std::vector<media_router::MediaRoute::Id>&
+                           joinable_route_ids) override;
 
   // Called when a Media Router dialog is shown or hidden, and updates the
   // visibility of the action icon. Overridden in tests.
@@ -105,7 +105,7 @@ class MediaRouterActionController : public media_router::IssuesObserver,
 
   // The profile |this| is associated with. There should be one instance of this
   // class per profile.
-  const raw_ptr<Profile> profile_;
+  Profile* const profile_;
 
   bool has_issue_ = false;
   bool has_local_display_route_ = false;

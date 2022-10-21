@@ -8,6 +8,7 @@
 #include <iosfwd>
 #include <list>
 
+#include "base/location.h"
 #include "base/run_loop.h"
 #include "base/threading/thread_task_runner_handle.h"
 

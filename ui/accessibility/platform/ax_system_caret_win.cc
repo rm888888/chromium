@@ -96,7 +96,7 @@ const AXNodeData& AXSystemCaretWin::GetData() const {
   return data_;
 }
 
-gfx::NativeViewAccessible AXSystemCaretWin::GetParent() const {
+gfx::NativeViewAccessible AXSystemCaretWin::GetParent() {
   if (!event_target_)
     return nullptr;
 

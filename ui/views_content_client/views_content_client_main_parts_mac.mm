@@ -10,6 +10,7 @@
 #include "base/callback.h"
 #include "base/files/file_path.h"
 #include "base/mac/scoped_nsobject.h"
+#include "base/macros.h"
 #include "base/path_service.h"
 #include "content/public/browser/context_factory.h"
 #include "content/public/browser/plugin_service.h"
@@ -39,8 +40,9 @@ namespace {
 
 class ViewsContentClientMainPartsMac : public ViewsContentClientMainParts {
  public:
-  ViewsContentClientMainPartsMac(content::MainFunctionParams content_params,
-                                 ViewsContentClient* views_content_client);
+  ViewsContentClientMainPartsMac(
+      const content::MainFunctionParams& content_params,
+      ViewsContentClient* views_content_client);
 
   ViewsContentClientMainPartsMac(const ViewsContentClientMainPartsMac&) =
       delete;
@@ -57,10 +59,9 @@ class ViewsContentClientMainPartsMac : public ViewsContentClientMainParts {
 };
 
 ViewsContentClientMainPartsMac::ViewsContentClientMainPartsMac(
-    content::MainFunctionParams content_params,
+    const content::MainFunctionParams& content_params,
     ViewsContentClient* views_content_client)
-    : ViewsContentClientMainParts(std::move(content_params),
-                                  views_content_client) {
+    : ViewsContentClientMainParts(content_params, views_content_client) {
   // Cache the child process path to avoid triggering an AssertIOAllowed.
   base::FilePath child_process_exe;
   base::PathService::Get(content::CHILD_PROCESS_EXE, &child_process_exe);
@@ -96,10 +97,11 @@ ViewsContentClientMainPartsMac::~ViewsContentClientMainPartsMac() {
 
 // static
 std::unique_ptr<ViewsContentClientMainParts>
-ViewsContentClientMainParts::Create(content::MainFunctionParams content_params,
-                                    ViewsContentClient* views_content_client) {
-  return std::make_unique<ViewsContentClientMainPartsMac>(
-      std::move(content_params), views_content_client);
+ViewsContentClientMainParts::Create(
+    const content::MainFunctionParams& content_params,
+    ViewsContentClient* views_content_client) {
+  return std::make_unique<ViewsContentClientMainPartsMac>(content_params,
+                                                          views_content_client);
 }
 
 // static

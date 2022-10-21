@@ -9,9 +9,7 @@
 namespace subresource_filter {
 
 SubresourceFilterObserverManager::SubresourceFilterObserverManager(
-    content::WebContents* web_contents)
-    : content::WebContentsUserData<SubresourceFilterObserverManager>(
-          *web_contents) {}
+    content::WebContents* web_contents) {}
 
 SubresourceFilterObserverManager::~SubresourceFilterObserverManager() {
   for (auto& observer : observers_)

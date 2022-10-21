@@ -14,12 +14,11 @@
 #include "testing/gtest/include/gtest/gtest.h"
 
 namespace reporting {
-namespace {
 
 class MetricRateControllerTest : public ::testing::Test {
  public:
   void SetUp() override {
-    settings_ = std::make_unique<test::FakeReportingSettings>();
+    settings_ = std::make_unique<FakeReportingSettings>();
     run_count_ = 0;
     run_cb_ = base::BindLambdaForTesting([this]() { ++run_count_; });
   }
@@ -27,7 +26,7 @@ class MetricRateControllerTest : public ::testing::Test {
  protected:
   const std::string rate_setting_path_ = "rate_path";
 
-  std::unique_ptr<test::FakeReportingSettings> settings_;
+  std::unique_ptr<FakeReportingSettings> settings_;
 
   int run_count_ = 0;
   base::RepeatingClosure run_cb_;
@@ -145,5 +144,4 @@ TEST_F(MetricRateControllerTest, RateSettingZero) {
   task_environment_.FastForwardBy(base::Milliseconds(5000));
   EXPECT_EQ(run_count_, 1);
 }
-}  // namespace
 }  // namespace reporting

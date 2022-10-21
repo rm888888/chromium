@@ -13,7 +13,6 @@ import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.view.View;
 
-import org.chromium.base.CollectionUtil;
 import org.chromium.base.ObserverList;
 import org.chromium.components.browser_ui.widget.R;
 import org.chromium.ui.widget.AnchoredPopupWindow;
@@ -30,12 +29,11 @@ import org.chromium.ui.widget.ChromeImageButton;
 public class ListMenuButton
         extends ChromeImageButton implements AnchoredPopupWindow.LayoutObserver {
     /**
-     * A listener that is notified when the popup menu is shown or dismissed.
+     * A listener that is notified when the popup menu is shown.
      */
     @FunctionalInterface
     public interface PopupMenuShownListener {
         void onPopupMenuShown();
-        default void onPopupMenuDismissed() {}
     }
 
     private final int mMenuMaxWidth;
@@ -74,10 +72,8 @@ public class ListMenuButton
      * @param context The string representation of the list item this button represents.
      */
     public void setContentDescriptionContext(String context) {
-        if (TextUtils.isEmpty(context)) {
-            setContentDescription(
-                    getContext().getResources().getString(R.string.accessibility_toolbar_btn_menu));
-            return;
+        if (context == null) {
+            context = "";
         }
         setContentDescription(getContext().getResources().getString(
                 R.string.accessibility_list_menu_button, context));
@@ -110,7 +106,7 @@ public class ListMenuButton
     public void showMenu() {
         initPopupWindow();
         mPopupMenu.show();
-        notifyPopupListeners(true);
+        notifyPopupListeners();
     }
 
     /**
@@ -135,10 +131,7 @@ public class ListMenuButton
         }
         mPopupMenu.setFocusable(true);
         mPopupMenu.setLayoutObserver(this);
-        mPopupMenu.addOnDismissListener(() -> {
-            mPopupMenu = null;
-            notifyPopupListeners(false);
-        });
+        mPopupMenu.addOnDismissListener(() -> { mPopupMenu = null; });
         // This should be called explicitly since it is not a default behavior on Android S
         // in split-screen mode. See crbug.com/1246956.
         mPopupMenu.setOutsideTouchable(true);
@@ -200,15 +193,10 @@ public class ListMenuButton
 
     /**
      * Notify all of the PopupMenuShownListeners of a popup menu action.
-     * @param shown Whether the popup menu was shown or dismissed.
      */
-    private void notifyPopupListeners(boolean shown) {
-        CollectionUtil.forEach(mPopupListeners.mObservers, l -> {
-            if (shown) {
-                l.onPopupMenuShown();
-            } else {
-                l.onPopupMenuDismissed();
-            }
-        });
+    private void notifyPopupListeners() {
+        for (PopupMenuShownListener l : mPopupListeners) {
+            l.onPopupMenuShown();
+        }
     }
 }

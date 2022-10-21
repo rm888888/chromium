@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "base/feature_list.h"
+#include "base/macros.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/test/metrics/histogram_tester.h"
@@ -158,7 +159,7 @@ TEST_F(HttpAuthManagerTest, HttpAuthFilling) {
 
     MockHttpAuthObserver observer;
 
-    base::WeakPtr<PasswordStoreConsumer> consumer;
+    PasswordStoreConsumer* consumer = nullptr;
     EXPECT_CALL(*store_, GetLogins(_, _)).WillOnce(SaveArg<1>(&consumer));
     httpauth_manager()->SetObserverAndDeliverCredentials(&observer,
                                                          observed_form);

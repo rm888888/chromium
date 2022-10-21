@@ -6,7 +6,7 @@
 #define COMPONENTS_FIND_IN_PAGE_ANDROID_FIND_IN_PAGE_BRIDGE_H_
 
 #include "base/android/jni_weak_ref.h"
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "content/public/browser/web_contents.h"
 
 namespace find_in_page {
@@ -51,7 +51,7 @@ class FindInPageBridge {
       const base::android::JavaParamRef<jobject>& obj);
 
  private:
-  raw_ptr<content::WebContents> web_contents_;
+  content::WebContents* web_contents_;
   JavaObjectWeakGlobalRef weak_java_ref_;
 };
 

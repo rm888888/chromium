@@ -4,7 +4,6 @@
 
 #include "components/permissions/contexts/nfc_permission_context.h"
 
-#include "base/memory/raw_ptr.h"
 #include "build/build_config.h"
 #include "components/content_settings/browser/test_page_specific_content_settings_delegate.h"
 #include "components/permissions/permission_manager.h"
@@ -70,7 +69,7 @@ class NfcPermissionContextTests : public content::RenderViewHostTestHarness {
 
   TestPermissionsClient client_;
   // Owned by |manager_|.
-  raw_ptr<NfcPermissionContext> nfc_permission_context_;
+  NfcPermissionContext* nfc_permission_context_;
   std::vector<std::unique_ptr<MockPermissionPromptFactory>>
       mock_permission_prompt_factories_;
   std::unique_ptr<PermissionManager> manager_;
@@ -183,7 +182,7 @@ void NfcPermissionContextTests::SetupRequestManager(
 
 void NfcPermissionContextTests::RequestManagerDocumentLoadCompleted() {
   PermissionRequestManager::FromWebContents(web_contents())
-      ->DocumentOnLoadCompletedInPrimaryMainFrame();
+      ->DocumentOnLoadCompletedInMainFrame(web_contents()->GetMainFrame());
 }
 
 ContentSetting NfcPermissionContextTests::GetNfcContentSetting(GURL frame_0,

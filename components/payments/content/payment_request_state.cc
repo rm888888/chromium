@@ -166,7 +166,9 @@ bool PaymentRequestState::IsRequestedAutofillDataAvailable() {
 }
 
 bool PaymentRequestState::MayCrawlForInstallablePaymentApps() {
-  return !spec_ || !spec_->supports_basic_card();
+  return PaymentsExperimentalFeatures::IsEnabled(
+             features::kAlwaysAllowJustInTimePaymentApp) ||
+         !spec_ || !spec_->supports_basic_card();
 }
 
 bool PaymentRequestState::IsOffTheRecord() const {
@@ -191,10 +193,8 @@ void PaymentRequestState::OnPaymentAppCreated(std::unique_ptr<PaymentApp> app) {
 }
 
 void PaymentRequestState::OnPaymentAppCreationError(
-    const std::string& error_message,
-    AppCreationFailureReason reason) {
+    const std::string& error_message) {
   get_all_payment_apps_error_ = error_message;
-  get_all_payment_apps_error_reason_ = reason;
 }
 
 bool PaymentRequestState::SkipCreatingNativePaymentApps() const {
@@ -353,17 +353,28 @@ void PaymentRequestState::CheckRequestedMethodsSupported(
   if (!spec_)
     return;
 
-  if (!are_requested_methods_supported_ &&
-      get_all_payment_apps_error_.empty() &&
+  // Don't modify the value of |are_requested_methods_supported_|, because it's
+  // used for canMakePayment().
+  bool supported = are_requested_methods_supported_;
+  if (supported && is_show_user_gesture_ &&
+      base::FeatureList::IsEnabled(::features::kPaymentRequestBasicCard) &&
+      base::Contains(spec_->payment_method_identifiers_set(),
+                     methods::kBasicCard) &&
+      !has_non_autofill_app_ && !has_enrolled_instrument_ &&
+      PaymentsExperimentalFeatures::IsEnabled(
+          features::kStrictHasEnrolledAutofillInstrument)) {
+    supported = false;
+    get_all_payment_apps_error_ = errors::kStrictBasicCardShowReject;
+  }
+
+  if (!supported && get_all_payment_apps_error_.empty() &&
       base::Contains(spec_->payment_method_identifiers_set(),
                      methods::kGooglePlayBilling) &&
       !IsInTwa()) {
     get_all_payment_apps_error_ = errors::kAppStoreMethodOnlySupportedInTwa;
   }
 
-  std::move(callback).Run(are_requested_methods_supported_,
-                          get_all_payment_apps_error_,
-                          get_all_payment_apps_error_reason_);
+  std::move(callback).Run(supported, get_all_payment_apps_error_);
 }
 
 std::string PaymentRequestState::GetAuthenticatedEmail() const {
@@ -404,7 +415,7 @@ void PaymentRequestState::OnPaymentAppWindowClosed() {
 void PaymentRequestState::RecordUseStats() {
   if (ShouldShowShippingSection()) {
     DCHECK(selected_shipping_profile_);
-    personal_data_manager_->RecordUseOf(selected_shipping_profile_.get());
+    personal_data_manager_->RecordUseOf(selected_shipping_profile_);
   }
 
   if (ShouldShowContactSection()) {
@@ -414,7 +425,7 @@ void PaymentRequestState::RecordUseStats() {
     // should only be updated once.
     if (!ShouldShowShippingSection() || (selected_shipping_profile_->guid() !=
                                          selected_contact_profile_->guid())) {
-      personal_data_manager_->RecordUseOf(selected_contact_profile_.get());
+      personal_data_manager_->RecordUseOf(selected_contact_profile_);
     }
   }
 

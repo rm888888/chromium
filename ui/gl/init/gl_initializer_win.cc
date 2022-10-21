@@ -2,7 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "ui/gl/direct_composition_surface_win.h"
 #include "ui/gl/init/gl_initializer.h"
 
 #include <dwmapi.h>
@@ -142,7 +141,6 @@ bool InitializeGLOneOffPlatform() {
         LOG(ERROR) << "GLSurfaceEGL::InitializeOneOff failed.";
         return false;
       }
-      DirectCompositionSurfaceWin::InitializeOneOff();
       break;
     case kGLImplementationMockGL:
     case kGLImplementationStubGL:
@@ -182,7 +180,6 @@ bool InitializeStaticGLBindings(GLImplementationParts implementation) {
 }
 
 void ShutdownGLPlatform() {
-  DirectCompositionSurfaceWin::ShutdownOneOff();
   GLSurfaceEGL::ShutdownOneOff();
   ClearBindingsEGL();
   ClearBindingsGL();

@@ -5,6 +5,7 @@
 #ifndef CHROME_INSTALLER_SETUP_PROGRESS_CALCULATOR_H_
 #define CHROME_INSTALLER_SETUP_PROGRESS_CALCULATOR_H_
 
+#include "base/macros.h"
 #include "chrome/installer/util/util_constants.h"
 
 // A helper class to calculate a 0-100 progress value based on an installer

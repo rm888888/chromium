@@ -9,6 +9,7 @@
 
 #include <string>
 
+#include "base/macros.h"
 #include "ui/base/dragdrop/os_exchange_data.h"
 
 class Profile;

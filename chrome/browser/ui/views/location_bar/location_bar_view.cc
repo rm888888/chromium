@@ -405,6 +405,9 @@ std::unique_ptr<views::Background> LocationBarView::CreateRoundRectBackground(
     SkColor stroke_color,
     SkBlendMode blend_mode,
     bool antialias) const {
+    //update on 20220517
+    //background_color = SkColorSetARGB(255,247,244,250);
+    //
   const int radius = GetBorderRadius();
   auto painter =
       stroke_color == SK_ColorTRANSPARENT
@@ -846,7 +849,7 @@ PermissionChip* LocationBarView::DisplayQuietChip(
 
 void LocationBarView::FinalizeChip() {
   DCHECK(chip_);
-  RemoveChildViewT(chip_.get());
+  RemoveChildViewT(chip_);
   chip_ = nullptr;
 }
 
@@ -993,7 +996,9 @@ void LocationBarView::RefreshBackground() {
     background_color = gfx::Tween::ColorValueBetween(opacity, normal, hovered);
     border_color = GetBorderColor();
   }
-
+//update on 20220517
+    //background_color = SkColorSetARGB(255,247,244,250);
+    //
   if (is_popup_mode_) {
     SetBackground(views::CreateSolidBackground(background_color));
   } else {
@@ -1246,16 +1251,15 @@ void LocationBarView::WriteDragDataForView(views::View* sender,
   favicon::FaviconDriver* favicon_driver =
       favicon::ContentFaviconDriver::FromWebContents(web_contents);
   gfx::ImageSkia favicon = favicon_driver->GetFavicon().AsImageSkia();
-  button_drag_utils::SetURLAndDragImage(web_contents->GetVisibleURL(),
-                                        web_contents->GetTitle(), favicon,
-                                        nullptr, data);
+  button_drag_utils::SetURLAndDragImage(
+      web_contents->GetURL(), web_contents->GetTitle(), favicon, nullptr, data);
 }
 
 int LocationBarView::GetDragOperationsForView(views::View* sender,
                                               const gfx::Point& p) {
   DCHECK_EQ(location_icon_view_, sender);
   WebContents* web_contents = delegate_->GetWebContents();
-  return (web_contents && web_contents->GetVisibleURL().is_valid() &&
+  return (web_contents && web_contents->GetURL().is_valid() &&
           (!GetOmniboxView()->IsEditingOrEmpty()))
              ? (ui::DragDropTypes::DRAG_COPY | ui::DragDropTypes::DRAG_LINK)
              : ui::DragDropTypes::DRAG_NONE;
@@ -1410,7 +1414,7 @@ bool LocationBarView::ShowPageInfoDialog() {
     return false;
 
   content::NavigationEntry* entry = contents->GetController().GetVisibleEntry();
-  if (entry->IsInitialEntry())
+  if (!entry)
     return false;
 
   DCHECK(GetWidget());
@@ -1455,7 +1459,7 @@ void LocationBarView::UpdateChipVisibility() {
 ui::MouseEvent LocationBarView::AdjustMouseEventLocationForOmniboxView(
     const ui::MouseEvent& event) const {
   ui::MouseEvent adjusted(event);
-  adjusted.ConvertLocationToTarget<View>(this, omnibox_view_.get());
+  adjusted.ConvertLocationToTarget<View>(this, omnibox_view_);
   return adjusted;
 }
 

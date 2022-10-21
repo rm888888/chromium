@@ -49,7 +49,7 @@ namespace fileManagerPrivate {
 // Type of the mounted volume.
 enum VolumeType { drive, downloads, removable, archive, provided, mtp,
                   media_view, crostini, android_files, documents_provider,
-                  testing, smb, system_internal };
+                  testing, smb };
 
 // Device type. Available if this is removable volume.
 enum DeviceType { usb, sd, optical, mobile, unknown };
@@ -284,7 +284,6 @@ enum EntryPropertyName {
   canRename,
   canAddChildren,
   canShare,
-  canPin,
   isMachineRoot,
   isExternalMedia,
   isArbitrarySyncFolder
@@ -354,9 +353,8 @@ enum IOTaskState {
 
 enum IOTaskType {
   copy,
-  delete,
-  extract,
   move,
+  delete,
   zip
 };
 
@@ -481,9 +479,6 @@ dictionary EntryProperties {
   // True if the entry can be shared by the user.
   boolean? canShare;
 
-  // True if the entry can be pinned by the user.
-  boolean? canPin;
-
   // True if the entry is a machine root for backup and sync.
   boolean? isMachineRoot;
 
@@ -598,9 +593,6 @@ dictionary VolumeMetadata {
   // The path on the remote host where this volume is mounted, for crostini this
   // is the user's homedir (/home/<username>).
   DOMString? remoteMountPath;
-
-  // Flag that specifies whether the volume is hidden from the user.
-  boolean hidden;
 };
 
 // Payload data for mount event.
@@ -730,14 +722,12 @@ dictionary Preferences {
   DOMString timezone;
   boolean arcEnabled;
   boolean arcRemovableMediaAccessEnabled;
-  DOMString[] folderShortcuts;
 };
 
 dictionary PreferencesChange {
   boolean? cellularDisabled;
   boolean? arcEnabled;
   boolean? arcRemovableMediaAccessEnabled;
-  DOMString[]? folderShortcuts;
 };
 
 dictionary SearchParams {
@@ -1019,10 +1009,6 @@ callback AddMountCallback = void(DOMString sourcePath);
 callback GetVolumeMetadataListCallback =
     void(VolumeMetadata[] volumeMetadataList);
 
-// |disallowedEntries| A list of files not allowed to be transfered.
-callback GetDisallowedTransfersCallback =
-    void([instanceOf=Entry] object[] disallowedEntries);
-
 // |copyId| ID of the copy task. Can be used to identify the progress, and to
 // cancel the task.
 callback StartCopyCallback = void(long copyId);
@@ -1283,16 +1269,6 @@ interface Functions {
   // Get the list of mounted volumes.
   // |callback|
   static void getVolumeMetadataList(GetVolumeMetadataListCallback callback);
-
-  // Returns the list of files not allowed to be transfered.
-  // |entires| List of the source entries to be transfered.
-  // |destinationEntry| Entry for the destination (parent) directory.
-  // |callback| Result callback.
-  [nocompile]
-  static void GetDisallowedTransfers(
-      [instanceOf=Entry] object[] entires,
-      [instanceOf=DirectoryEntry] object destinationEntry,
-      GetDisallowedTransfersCallback callback);
 
   // Starts to copy an entry. If the source is a directory, the copy is done
   // recursively.

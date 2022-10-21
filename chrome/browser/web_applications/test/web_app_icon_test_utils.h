@@ -40,8 +40,6 @@ void AddIconToIconsMap(const GURL& icon_url,
                        SkColor solid_color,
                        IconsMap* icons_map);
 
-void AddEmptyIconToIconsMap(const GURL& icon_url, IconsMap* icons_map);
-
 bool AreColorsEqual(SkColor expected_color,
                     SkColor actual_color,
                     int threshold);
@@ -94,8 +92,8 @@ apps::IconInfo CreateIconInfo(const GURL& icon_base_url,
                               IconPurpose purpose,
                               SquareSizePx size_px);
 
-void AddIconsToWebAppInstallInfo(
-    WebAppInstallInfo* web_application_info,
+void AddIconsToWebApplicationInfo(
+    WebApplicationInfo* web_application_info,
     const GURL& icons_base_url,
     const std::vector<GeneratedIconsInfo>& icons_info);
 

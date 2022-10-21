@@ -12,7 +12,6 @@
 #include <utility>
 #include <vector>
 
-#include "base/memory/raw_ptr.h"
 #include "components/autofill/core/browser/payments/payments_client.h"
 
 namespace network {
@@ -60,8 +59,7 @@ class TestPaymentsClient : public payments::PaymentsClient {
   void UploadCard(
       const payments::PaymentsClient::UploadRequestDetails& request_details,
       base::OnceCallback<void(AutofillClient::PaymentsRpcResult,
-                              const PaymentsClient::UploadCardResponseDetails&)>
-          callback) override;
+                              const std::string&)> callback) override;
 
   void MigrateCards(
       const MigrationRequestDetails& details,
@@ -83,9 +81,7 @@ class TestPaymentsClient : public payments::PaymentsClient {
                            std::string credential_id,
                            std::string relying_party_id);
 
-  void SetUploadCardResponseDetailsForUploadCard(
-      const PaymentsClient::UploadCardResponseDetails&
-          upload_card_response_details);
+  void SetServerIdForCardUpload(std::string);
 
   void SetSaveResultForCardsMigration(
       std::unique_ptr<std::unordered_map<std::string, std::string>>
@@ -129,13 +125,13 @@ class TestPaymentsClient : public payments::PaymentsClient {
   }
 
  private:
-  PaymentsClient::UploadCardResponseDetails upload_card_response_details_;
+  std::string server_id_;
   // Some metrics are affected by the latency of GetUnmaskDetails, so it is
   // useful to control whether or not GetUnmaskDetails() is responded to.
   bool should_return_unmask_details_ = true;
   payments::PaymentsClient::UnmaskDetails unmask_details_;
-  raw_ptr<const payments::PaymentsClient::UnmaskRequestDetails>
-      unmask_request_ = nullptr;
+  const payments::PaymentsClient::UnmaskRequestDetails* unmask_request_ =
+      nullptr;
   payments::PaymentsClient::SelectChallengeOptionRequestDetails
       select_challenge_option_request_;
   std::vector<std::pair<int, int>> supported_card_bin_ranges_;

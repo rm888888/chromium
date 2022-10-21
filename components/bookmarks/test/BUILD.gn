@@ -24,4 +24,8 @@ source_set("test") {
     "//ui/gfx",
     "//url",
   ]
+
+  if (use_x11) {
+    deps += [ "//ui/events/platform/x11" ]
+  }
 }

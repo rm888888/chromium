@@ -28,11 +28,9 @@
 #include "chrome/browser/ui/browser_list.h"
 #include "chrome/browser/ui/chrome_pages.h"
 #include "chrome/browser/ui/startup/startup_browser_creator.h"
-#include "chrome/browser/ui/startup/startup_types.h"
 #include "chrome/browser/ui/tabs/pinned_tab_codec.h"
 #include "chrome/browser/ui/tabs/tab_strip_model.h"
 #include "chrome/browser/ui/webui/settings/reset_settings_handler.h"
-#include "chrome/browser/ui/webui/whats_new/whats_new_util.h"
 #include "chrome/common/pref_names.h"
 #include "chrome/common/url_constants.h"
 #include "components/prefs/pref_service.h"
@@ -76,7 +74,7 @@ bool ValidateUrl(const GURL& url) {
 
   const GURL settings_url(chrome::kChromeUISettingsURL);
   bool url_points_to_an_approved_settings_page = false;
-#if defined(OS_CHROMEOS)
+#if BUILDFLAG(IS_CHROMEOS_ASH)
   // In ChromeOS, allow any settings page to be specified on the command line.
   url_points_to_an_approved_settings_page =
       url.DeprecatedGetOriginAsURL() == settings_url.DeprecatedGetOriginAsURL();
@@ -94,7 +92,7 @@ bool ValidateUrl(const GURL& url) {
       url_points_to_an_approved_settings_page ||
       url == reset_settings_url_with_cct_hash;
 #endif  // defined(OS_WIN)
-#endif  // defined(OS_CHROMEOS)
+#endif  // BUILDFLAG(IS_CHROMEOS_ASH)
 
   auto* policy = content::ChildProcessSecurityPolicy::GetInstance();
   return policy->IsWebSafeScheme(url.scheme()) ||
@@ -124,7 +122,7 @@ StartupTabs StartupTabProviderImpl::GetOnboardingTabs(Profile* profile) const {
     standard_params.is_signed_in =
         identity_manager->HasPrimaryAccount(signin::ConsentLevel::kSync);
   }
-  standard_params.is_child_account = profile->IsChild();
+  standard_params.is_supervised_user = profile->IsSupervised();
   standard_params.is_force_signin_enabled = signin_util::IsForceSigninEnabled();
 
   return GetStandardOnboardingTabsForState(standard_params);
@@ -135,16 +133,15 @@ StartupTabs StartupTabProviderImpl::GetOnboardingTabs(Profile* profile) const {
 StartupTabs StartupTabProviderImpl::GetWelcomeBackTabs(
     Profile* profile,
     StartupBrowserCreator* browser_creator,
-    chrome::startup::IsProcessStartup process_startup) const {
+    bool process_startup) const {
   StartupTabs tabs;
-  if (process_startup == chrome::startup::IsProcessStartup::kNo ||
-      !browser_creator) {
+  if (!process_startup || !browser_creator)
     return tabs;
-  }
   if (browser_creator->welcome_back_page() &&
       CanShowWelcome(SyncServiceFactory::IsSyncAllowed(profile),
-                     profile->IsChild(), signin_util::IsForceSigninEnabled())) {
-    tabs.emplace_back(GetWelcomePageUrl(false));
+                     profile->IsSupervised(),
+                     signin_util::IsForceSigninEnabled())) {
+    tabs.emplace_back(GetWelcomePageUrl(false), false);
   }
   return tabs;
 }
@@ -205,38 +202,42 @@ StartupTabs StartupTabProviderImpl::GetCommandLineTabs(
   StartupTabs result;
 
   for (const auto& arg : command_line.GetArgs()) {
-    ParsedCommandLineTabArg parsed_arg =
-        ParseTabFromCommandLineArg(arg, cur_dir, profile);
+    // Note: Type/encoding of |arg| matches with the one of FilePath.
+    // So, we use them for encoding conversions.
 
-    // `ParseTabFromCommandLineArg()` shouldn't return
-    // CommandLineTabsPresent::kUnknown when a profile is provided.
-    DCHECK_NE(parsed_arg.tab_parsed, CommandLineTabsPresent::kUnknown);
-
-    if (parsed_arg.tab_parsed == CommandLineTabsPresent::kYes) {
-      result.emplace_back(std::move(parsed_arg.tab_url));
+    // Handle Vista way of searching - "? <search-term>"
+    if (base::StartsWith(arg, FILE_PATH_LITERAL("? "))) {
+      GURL url(GetDefaultSearchURLForSearchTerms(
+          TemplateURLServiceFactory::GetForProfile(profile),
+          base::FilePath(arg).LossyDisplayName().substr(/* remove "? " */ 2)));
+      if (url.is_valid()) {
+        result.emplace_back(std::move(url), false);
+        continue;
+      }
     }
+
+    // Otherwise, fall through to treating it as a URL.
+    // This will create a file URL or a regular URL.
+    GURL url(base::FilePath(arg).MaybeAsASCII());
+
+    // This call can (in rare circumstances) block the UI thread.
+    // FixupRelativeFile may access to current working directory, which is a
+    // blocking API. http://crbug.com/60641
+    // http://crbug.com/371030: Only use URLFixerUpper if we don't have a valid
+    // URL, otherwise we will look in the current directory for a file named
+    // 'about' if the browser was started with a about:foo argument.
+    // http://crbug.com/424991: Always use URLFixerUpper on file:// URLs,
+    // otherwise we wouldn't correctly handle '#' in a file name.
+    if (!url.is_valid() || url.SchemeIsFile()) {
+      base::ScopedAllowBlocking allow_blocking;
+      url = url_formatter::FixupRelativeFile(cur_dir, base::FilePath(arg));
+    }
+
+    if (ValidateUrl(url))
+      result.emplace_back(std::move(url), false);
   }
 
   return result;
-}
-
-CommandLineTabsPresent StartupTabProviderImpl::HasCommandLineTabs(
-    const base::CommandLine& command_line,
-    const base::FilePath& cur_dir) const {
-  bool is_unknown = false;
-  for (const auto& arg : command_line.GetArgs()) {
-    ParsedCommandLineTabArg parsed_arg =
-        ParseTabFromCommandLineArg(arg, cur_dir, /*maybe_profile=*/nullptr);
-    if (parsed_arg.tab_parsed == CommandLineTabsPresent::kYes) {
-      return CommandLineTabsPresent::kYes;
-    }
-    if (parsed_arg.tab_parsed == CommandLineTabsPresent::kUnknown) {
-      is_unknown = true;
-    }
-  }
-
-  return is_unknown ? CommandLineTabsPresent::kUnknown
-                    : CommandLineTabsPresent::kNo;
 }
 
 #if BUILDFLAG(IS_CHROMEOS_LACROS)
@@ -251,7 +252,7 @@ StartupTabs StartupTabProviderImpl::GetCrosapiTabs() const {
   StartupTabs result;
   for (const GURL& url : *init_params->startup_urls) {
     if (ValidateUrl(url))
-      result.emplace_back(url);
+      result.emplace_back(url, /*is_pinned=*/false);
   }
   return result;
 }
@@ -266,9 +267,9 @@ StartupTabs StartupTabProviderImpl::GetNewFeaturesTabs(
 
 // static
 bool StartupTabProviderImpl::CanShowWelcome(bool is_signin_allowed,
-                                            bool is_child_account,
+                                            bool is_supervised_user,
                                             bool is_force_signin_enabled) {
-  return is_signin_allowed && !is_child_account && !is_force_signin_enabled;
+  return is_signin_allowed && !is_supervised_user && !is_force_signin_enabled;
 }
 
 // static
@@ -282,11 +283,11 @@ bool StartupTabProviderImpl::ShouldShowWelcomeForOnboarding(
 StartupTabs StartupTabProviderImpl::GetStandardOnboardingTabsForState(
     const StandardOnboardingTabsParams& params) {
   StartupTabs tabs;
-  if (CanShowWelcome(params.is_signin_allowed, params.is_child_account,
+  if (CanShowWelcome(params.is_signin_allowed, params.is_supervised_user,
                      params.is_force_signin_enabled) &&
       ShouldShowWelcomeForOnboarding(params.has_seen_welcome_page,
                                      params.is_signed_in)) {
-    tabs.emplace_back(GetWelcomePageUrl(!params.is_first_run));
+    tabs.emplace_back(GetWelcomePageUrl(!params.is_first_run), false);
   }
   return tabs;
 }
@@ -308,7 +309,7 @@ StartupTabs StartupTabProviderImpl::GetInitialPrefsTabsForState(
         url = GURL(chrome::kChromeUINewTabURL);
       else if (url.host_piece() == kWelcomePageUrlHost)
         url = GetWelcomePageUrl(false);
-      tabs.emplace_back(url);
+      tabs.emplace_back(url, false);
     }
   }
   return tabs;
@@ -319,7 +320,7 @@ StartupTabs StartupTabProviderImpl::GetResetTriggerTabsForState(
     bool profile_has_trigger) {
   StartupTabs tabs;
   if (profile_has_trigger)
-    tabs.emplace_back(GetTriggeredResetSettingsUrl());
+    tabs.emplace_back(GetTriggeredResetSettingsUrl(), false);
   return tabs;
 }
 
@@ -328,7 +329,8 @@ StartupTabs StartupTabProviderImpl::GetPinnedTabsForState(
     const SessionStartupPref& pref,
     const StartupTabs& pinned_tabs,
     bool profile_has_other_tabbed_browser) {
-  if (pref.ShouldRestoreLastSession() || profile_has_other_tabbed_browser)
+  if (pref.type == SessionStartupPref::Type::LAST ||
+      profile_has_other_tabbed_browser)
     return StartupTabs();
   return pinned_tabs;
 }
@@ -338,10 +340,10 @@ StartupTabs StartupTabProviderImpl::GetPreferencesTabsForState(
     const SessionStartupPref& pref,
     bool profile_has_other_tabbed_browser) {
   StartupTabs tabs;
-  if (pref.ShouldOpenUrls() && !pref.urls.empty() &&
+  if (pref.type == SessionStartupPref::Type::URLS && !pref.urls.empty() &&
       !profile_has_other_tabbed_browser) {
     for (const auto& url : pref.urls)
-      tabs.emplace_back(url);
+      tabs.push_back(StartupTab(url, false));
   }
   return tabs;
 }
@@ -350,8 +352,8 @@ StartupTabs StartupTabProviderImpl::GetPreferencesTabsForState(
 StartupTabs StartupTabProviderImpl::GetNewTabPageTabsForState(
     const SessionStartupPref& pref) {
   StartupTabs tabs;
-  if (!pref.ShouldRestoreLastSession())
-    tabs.emplace_back(GURL(chrome::kChromeUINewTabURL));
+  if (pref.type != SessionStartupPref::Type::LAST)
+    tabs.emplace_back(GURL(chrome::kChromeUINewTabURL), false);
   return tabs;
 }
 
@@ -369,8 +371,10 @@ StartupTabs StartupTabProviderImpl::GetPostCrashTabsForState(
 StartupTabs StartupTabProviderImpl::GetNewFeaturesTabsForState(
     bool whats_new_enabled) {
   StartupTabs tabs;
-  if (whats_new_enabled)
-    tabs.emplace_back(whats_new::GetWebUIStartupURL());
+  if (whats_new_enabled) {
+    GURL url(chrome::kChromeUIWhatsNewURL);
+    tabs.emplace_back(net::AppendQueryParameter(url, "auto", "true"), false);
+  }
   return tabs;
 }
 #endif
@@ -388,7 +392,7 @@ void StartupTabProviderImpl::AddIncompatibleApplicationsUrl(StartupTabs* tabs) {
 #if defined(OS_WIN) && BUILDFLAG(GOOGLE_CHROME_BRANDING)
   UMA_HISTOGRAM_BOOLEAN("IncompatibleApplicationsPage.AddedPostCrash", true);
   GURL url(chrome::kChromeUISettingsURL);
-  tabs->emplace_back(url.Resolve("incompatibleApplications"));
+  tabs->emplace_back(url.Resolve("incompatibleApplications"), false);
 #endif  // defined(OS_WIN) && BUILDFLAG(GOOGLE_CHROME_BRANDING)
 }
 
@@ -396,53 +400,4 @@ void StartupTabProviderImpl::AddIncompatibleApplicationsUrl(StartupTabs* tabs) {
 GURL StartupTabProviderImpl::GetTriggeredResetSettingsUrl() {
   return GURL(
       chrome::GetSettingsUrl(chrome::kTriggeredResetProfileSettingsSubPage));
-}
-
-// static
-StartupTabProviderImpl::ParsedCommandLineTabArg
-StartupTabProviderImpl::ParseTabFromCommandLineArg(
-    base::FilePath::StringPieceType arg,
-    const base::FilePath& cur_dir,
-    Profile* maybe_profile) {
-  // Note: Type/encoding of |arg| matches with the one of FilePath.
-  // So, we use them for encoding conversions.
-
-  // Handle Vista way of searching - "? <search-term>"
-  if (base::StartsWith(arg, FILE_PATH_LITERAL("? "))) {
-    if (maybe_profile == nullptr) {
-      // In the absence of profile, we are not able to resolve the search URL.
-      // We indicate that we don't know whether a tab would be successfully
-      // created or not.
-      return {CommandLineTabsPresent::kUnknown, GURL()};
-    }
-
-    GURL url(GetDefaultSearchURLForSearchTerms(
-        TemplateURLServiceFactory::GetForProfile(maybe_profile),
-        base::FilePath(arg).LossyDisplayName().substr(/* remove "? " */ 2)));
-    if (url.is_valid()) {
-      return {CommandLineTabsPresent::kYes, std::move(url)};
-    }
-  } else {
-    // Otherwise, fall through to treating it as a URL.
-    // This will create a file URL or a regular URL.
-    GURL url(base::FilePath(arg).MaybeAsASCII());
-
-    // This call can (in rare circumstances) block the UI thread.
-    // FixupRelativeFile may access to current working directory, which is a
-    // blocking API. http://crbug.com/60641
-    // http://crbug.com/371030: Only use URLFixerUpper if we don't have a valid
-    // URL, otherwise we will look in the current directory for a file named
-    // 'about' if the browser was started with a about:foo argument.
-    // http://crbug.com/424991: Always use URLFixerUpper on file:// URLs,
-    // otherwise we wouldn't correctly handle '#' in a file name.
-    if (!url.is_valid() || url.SchemeIsFile()) {
-      base::ScopedAllowBlocking allow_blocking;
-      url = url_formatter::FixupRelativeFile(cur_dir, base::FilePath(arg));
-    }
-
-    if (ValidateUrl(url))
-      return {CommandLineTabsPresent::kYes, std::move(url)};
-  }
-
-  return {CommandLineTabsPresent::kNo, GURL()};
 }

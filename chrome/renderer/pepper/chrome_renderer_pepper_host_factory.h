@@ -5,6 +5,8 @@
 #ifndef CHROME_RENDERER_PEPPER_CHROME_RENDERER_PEPPER_HOST_FACTORY_H_
 #define CHROME_RENDERER_PEPPER_CHROME_RENDERER_PEPPER_HOST_FACTORY_H_
 
+#include "base/compiler_specific.h"
+#include "base/macros.h"
 #include "ppapi/host/host_factory.h"
 
 namespace content {

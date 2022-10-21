@@ -15,7 +15,6 @@
 #include "components/reporting/metrics/reporting_settings.h"
 
 namespace reporting {
-namespace test {
 
 // Fake reporting settings for testing.
 class FakeReportingSettings : public ReportingSettings {
@@ -53,7 +52,6 @@ class FakeReportingSettings : public ReportingSettings {
 
   bool is_trusted_ = true;
 };
-}  // namespace test
 }  // namespace reporting
 
 #endif  // COMPONENTS_REPORTING_METRICS_FAKE_REPORTING_SETTINGS_H_

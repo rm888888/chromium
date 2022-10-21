@@ -87,20 +87,21 @@ ClearBrowsingDataHandler::ClearBrowsingDataHandler(content::WebUI* webui,
       sync_service_(SyncServiceFactory::GetForProfile(profile_)),
       show_history_deletion_dialog_(false) {}
 
-ClearBrowsingDataHandler::~ClearBrowsingDataHandler() = default;
+ClearBrowsingDataHandler::~ClearBrowsingDataHandler() {
+}
 
 void ClearBrowsingDataHandler::RegisterMessages() {
-  web_ui()->RegisterMessageCallback(
+  web_ui()->RegisterDeprecatedMessageCallback(
       "getInstalledApps",
       base::BindRepeating(
           &ClearBrowsingDataHandler::GetRecentlyLaunchedInstalledApps,
           base::Unretained(this)));
-  web_ui()->RegisterMessageCallback(
+  web_ui()->RegisterDeprecatedMessageCallback(
       "clearBrowsingData",
       base::BindRepeating(&ClearBrowsingDataHandler::HandleClearBrowsingData,
                           base::Unretained(this)));
 
-  web_ui()->RegisterMessageCallback(
+  web_ui()->RegisterDeprecatedMessageCallback(
       "initializeClearBrowsingData",
       base::BindRepeating(&ClearBrowsingDataHandler::HandleInitialize,
                           base::Unretained(this)));
@@ -108,7 +109,7 @@ void ClearBrowsingDataHandler::RegisterMessages() {
 
 void ClearBrowsingDataHandler::OnJavascriptAllowed() {
   if (sync_service_)
-    sync_service_observation_.Observe(sync_service_.get());
+    sync_service_observation_.Observe(sync_service_);
 
   dse_service_observation_.Observe(
       TemplateURLServiceFactory::GetForProfile(profile_));
@@ -159,11 +160,12 @@ void ClearBrowsingDataHandler::HandleClearBrowsingDataForTest() {
   list_args.Append(std::move(data_types));
   list_args.Append(1);
   list_args.Append(std::move(installed_apps));
-  HandleClearBrowsingData(list_args.GetList());
+  HandleClearBrowsingData(&base::Value::AsListValue(list_args));
 }
 
 void ClearBrowsingDataHandler::GetRecentlyLaunchedInstalledApps(
-    base::Value::ConstListView list) {
+    const base::ListValue* args) {
+  const auto& list = args->GetList();
   CHECK_EQ(2U, list.size());
   std::string webui_callback_id = list[0].GetString();
   int period_selected = list[1].GetInt();
@@ -212,7 +214,8 @@ ClearBrowsingDataHandler::ProcessInstalledApps(
   for (const auto& item : installed_apps) {
     const base::DictionaryValue* site = nullptr;
     CHECK(item.GetAsDictionary(&site));
-    bool is_checked = site->FindBoolPath(kIsCheckedField).value();
+    bool is_checked = false;
+    CHECK(site->GetBoolean(kIsCheckedField, &is_checked));
     std::string domain;
     CHECK(site->GetString(kRegisterableDomainField, &domain));
     absl::optional<int> domain_reason = site->FindIntKey(kReasonBitfieldField);
@@ -240,11 +243,13 @@ ClearBrowsingDataHandler::ProcessInstalledApps(
 }
 
 void ClearBrowsingDataHandler::HandleClearBrowsingData(
-    base::Value::ConstListView args_list) {
+    const base::ListValue* args) {
+  base::Value::ConstListView args_list = args->GetList();
   CHECK_EQ(4U, args_list.size());
   std::string webui_callback_id = args_list[0].GetString();
 
   PrefService* prefs = profile_->GetPrefs();
+
   int site_data_mask = chrome_browsing_data_remover::DATA_TYPE_SITE_DATA;
   // Don't try to clear LSO data if it's not supported.
   if (!prefs->GetBoolean(prefs::kClearPluginLSODataEnabled))
@@ -412,10 +417,9 @@ void ClearBrowsingDataHandler::OnClearingTaskFinished(
   ResolveJavascriptCallback(base::Value(webui_callback_id), std::move(result));
 }
 
-void ClearBrowsingDataHandler::HandleInitialize(
-    base::Value::ConstListView args) {
+void ClearBrowsingDataHandler::HandleInitialize(const base::ListValue* args) {
   AllowJavascript();
-  const base::Value& callback_id = args[0];
+  const base::Value& callback_id = args->GetList()[0];
 
   // Needed because WebUI doesn't handle renderer crashes. See crbug.com/610450.
   weak_ptr_factory_.InvalidateWeakPtrs();

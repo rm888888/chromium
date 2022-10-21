@@ -20,6 +20,8 @@ group("api") {
   public_deps = [
     ":generated_api_json_strings",
     ":generated_api_types",
+    #update on 20220221
+    #"//chrome/common/extensions/api/pundix_wallet",
   ]
 }
 
@@ -57,10 +59,9 @@ generated_json_strings("generated_api_json_strings") {
     "tts.json",
     "tts_engine.json",
   ]
-  if (is_chromeos_ash || is_chromeos_lacros) {
+  if (is_chromeos_ash) {
     sources += [ "file_browser_handler.json" ]
-  }
-  if (!is_chromeos_ash) {
+  } else {
     # On ChromeOS, input_method_private is fully compiled (as part of
     # schema_files), and so gets added to the bundle already. On other
     # platforms, we still need it added to the bundle.

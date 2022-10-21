@@ -9,9 +9,7 @@
 #include <string>
 #include <vector>
 
-#include "base/memory/raw_ptr.h"
 #include "build/chromeos_buildflags.h"
-#include "chrome/browser/apps/app_service/app_launch_params.h"
 #include "chrome/browser/web_applications/system_web_apps/system_web_app_background_task.h"
 #include "chrome/browser/web_applications/system_web_apps/system_web_app_types.h"
 #include "chrome/browser/web_applications/web_app_id.h"
@@ -23,8 +21,6 @@ class Browser;
 class Profile;
 
 namespace web_app {
-
-class WebAppProvider;
 
 using OriginTrialsMap = std::map<url::Origin, std::vector<std::string>>;
 
@@ -42,7 +38,7 @@ url::Origin GetOrigin(const char* url);
 // their application, overriding GetWebAppInfo(), and other methods as needed.
 class SystemWebAppDelegate {
  public:
-  // When installing via a WebAppInstallInfo, the url is never loaded. It's
+  // When installing via a WebApplicationInfo, the url is never loaded. It's
   // needed only for various legacy reasons, maps for tracking state, and
   // generating the AppId and things of that nature.
   SystemWebAppDelegate(
@@ -67,8 +63,8 @@ class SystemWebAppDelegate {
   // The URL that the System App will be installed from.
   const GURL& GetInstallUrl() const { return install_url_; }
 
-  // Returns a WebAppInstallInfo struct to complete installation.
-  virtual std::unique_ptr<WebAppInstallInfo> GetWebAppInfo() const = 0;
+  // Returns a WebApplicationInfo struct to complete installation.
+  virtual std::unique_ptr<WebApplicationInfo> GetWebAppInfo() const = 0;
 
   // If specified, the apps in |uninstall_and_replace| will have their data
   // migrated to this System App.
@@ -80,24 +76,20 @@ class SystemWebAppDelegate {
   virtual gfx::Size GetMinimumWindowSize() const;
 
   // If set, we allow only a single window for this app.
-  virtual bool ShouldReuseExistingWindow() const;
+  virtual bool ShouldBeSingleWindow() const;
 
   // If true, adds a "New Window" option to App's shelf context menu.
-  // ShouldReuseExistingWindow() should return false at the same time.
+  // ShouldBeSingleWindow() should return false at the same time.
   virtual bool ShouldShowNewWindowMenuOption() const;
 
-  // Called when the app is launched with `params`. If the returned value is
-  // non-empty, it will be passed to the page as a FileSystemDirectoryHandle
-  // pre-pended to the `launchParams` list.
-  virtual base::FilePath GetLaunchDirectory(
-      const apps::AppLaunchParams& params) const;
+  // If true, when the app is launched through the File Handling Web API, we
+  // will include the file's directory in window.launchQueue as the first value.
+  virtual bool ShouldIncludeLaunchDirectory() const;
 
   // Map from origin to enabled origin trial names for this app. For example,
   // "chrome://sample-web-app/" to ["Frobulate"]. If set, we will enable the
   // given origin trials when the corresponding origin is loaded in the app.
-  const OriginTrialsMap& GetEnabledOriginTrials() const {
-    return origin_trials_map_;
-  }
+  const OriginTrialsMap& GetEnabledOriginTrials() const;
 
   // Resource Ids for additional search terms.
   virtual std::vector<int> GetAdditionalSearchTerms() const;
@@ -130,9 +122,6 @@ class SystemWebAppDelegate {
   // using `window.close()`.
   virtual bool ShouldAllowScriptsToCloseWindows() const;
 
-  // If true, allows app to show up in file-open intent and picking surfaces.
-  virtual bool ShouldHandleFileOpenIntents() const;
-
   // Setup information to drive a background task.
   virtual absl::optional<SystemAppBackgroundTaskInfo> GetTimerInfo() const;
 
@@ -158,37 +147,11 @@ class SystemWebAppDelegate {
   virtual bool HasTitlebarTerminalSelectNewTabButton() const;
 #endif
 
-  // Control the launch of an SWA. The default takes into account single vs.
-  // multiple windows, make sure multiple windows don't open directly above
-  // each other, and a few other niceties. Overriding this will require some
-  // knowledge of browser window and launch internals, so hopefully you'll never
-  // have to roll your own here.
-  //
-  // If a browser is returned, app launch will continue. If false is returned,
-  // it's assumed that this method has cleaned up after itself, and launch is
-  // aborted.
-  //
-  // This is implemented in
-  // chrome/browser/ui/web_applications/system_web_app_delegate_ui_impl.cc.
-  virtual Browser* LaunchAndNavigateSystemWebApp(
-      Profile* profile,
-      WebAppProvider* provider,
-      const GURL& url,
-      const apps::AppLaunchParams& params) const;
-
-  // Whether |url| which is outside the normal Navigation Scope should be
-  // considered part of this System App.
-  virtual bool IsUrlInSystemAppScope(const GURL& url) const;
-
  protected:
-  Profile* profile() const { return profile_; }
-
-  // These should all be private. See
-  // https://google.github.io/styleguide/cppguide.html#Access_Control
   SystemAppType type_;
   std::string internal_name_;
   GURL install_url_;
-  raw_ptr<Profile> profile_;
+  const Profile* profile_;
   OriginTrialsMap origin_trials_map_;
 };
 

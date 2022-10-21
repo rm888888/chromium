@@ -64,8 +64,7 @@ class FindBarHostHelper
  private:
   friend class content::WebContentsUserData<FindBarHostHelper>;
 
-  explicit FindBarHostHelper(content::WebContents* web_contents)
-      : content::WebContentsUserData<FindBarHostHelper>(*web_contents) {}
+  explicit FindBarHostHelper(content::WebContents* web_contents) {}
 
   std::unique_ptr<views::ExternalFocusTracker> external_focus_tracker_;
 
@@ -147,7 +146,7 @@ bool FindBarHost::MaybeForwardKeyEventToWebpage(
     case ui::VKEY_END:
       if (key_event.IsControlDown())
         break;
-      [[fallthrough]];
+      FALLTHROUGH;
     default:
       return false;
   }

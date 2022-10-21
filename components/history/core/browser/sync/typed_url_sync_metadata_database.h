@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+#include "base/macros.h"
 #include "components/history/core/browser/url_row.h"
 #include "components/sync/base/model_type.h"
 #include "components/sync/model/metadata_batch.h"

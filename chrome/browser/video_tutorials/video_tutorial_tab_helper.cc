@@ -26,8 +26,7 @@ bool IsVideoPlayerURL(GURL url) {
 
 VideoTutorialTabHelper::VideoTutorialTabHelper(
     content::WebContents* web_contents)
-    : content::WebContentsObserver(web_contents),
-      content::WebContentsUserData<VideoTutorialTabHelper>(*web_contents) {}
+    : content::WebContentsObserver(web_contents) {}
 
 VideoTutorialTabHelper::~VideoTutorialTabHelper() = default;
 

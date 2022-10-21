@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include "base/macros.h"
 #include "base/metrics/histogram_macros.h"
 #include "base/metrics/user_metrics.h"
 #include "base/no_destructor.h"

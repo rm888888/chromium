@@ -12,6 +12,7 @@
 #include "base/memory/scoped_refptr.h"
 #include "components/reporting/proto/synced/record.pb.h"
 #include "components/reporting/proto/synced/record_constants.pb.h"
+#include "components/reporting/storage/missive_storage_module.h"
 #include "components/reporting/storage/storage_module_interface.h"
 #include "components/reporting/util/status.h"
 
@@ -64,7 +65,7 @@ class MissiveStorageModule : public StorageModuleInterface {
   void Flush(Priority priority,
              base::OnceCallback<void(Status)> callback) override;
 
-  // Once a record has been successfully uploaded, the sequence information
+  // Once a record has been successfully uploaded, the sequencing information
   // can be passed back to the StorageModule here for record deletion.
   // If |force| is false (which is used in most cases), |sequence_information|
   // only affects Storage if no higher sequencing was confirmed before;

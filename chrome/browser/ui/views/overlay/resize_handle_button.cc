@@ -23,8 +23,10 @@ constexpr int kResizeHandleButtonSize = 16;
 
 }  // namespace
 
+namespace views {
+
 ResizeHandleButton::ResizeHandleButton(PressedCallback callback)
-    : views::ImageButton(std::move(callback)) {
+    : ImageButton(std::move(callback)) {
   SetSize(gfx::Size(kResizeHandleButtonSize, kResizeHandleButtonSize));
   SetImageForQuadrant(OverlayWindowViews::WindowQuadrant::kBottomRight);
 
@@ -61,21 +63,21 @@ void ResizeHandleButton::SetPosition(
   // This is determined as the opposite quadrant on the window.
   switch (quadrant) {
     case OverlayWindowViews::WindowQuadrant::kBottomLeft:
-      views::ImageButton::SetPosition(gfx::Point(
+      ImageButton::SetPosition(gfx::Point(
           size.width() - kResizeHandleButtonSize - kResizeHandleButtonMargin,
           kResizeHandleButtonMargin));
       break;
     case OverlayWindowViews::WindowQuadrant::kBottomRight:
-      views::ImageButton::SetPosition(
+      ImageButton::SetPosition(
           gfx::Point(kResizeHandleButtonMargin, kResizeHandleButtonMargin));
       break;
     case OverlayWindowViews::WindowQuadrant::kTopLeft:
-      views::ImageButton::SetPosition(gfx::Point(
+      ImageButton::SetPosition(gfx::Point(
           size.width() - kResizeHandleButtonSize - kResizeHandleButtonMargin,
           size.height() - kResizeHandleButtonSize - kResizeHandleButtonMargin));
       break;
     case OverlayWindowViews::WindowQuadrant::kTopRight:
-      views::ImageButton::SetPosition(gfx::Point(
+      ImageButton::SetPosition(gfx::Point(
           kResizeHandleButtonMargin,
           size.height() - kResizeHandleButtonSize - kResizeHandleButtonMargin));
       break;
@@ -123,3 +125,5 @@ void ResizeHandleButton::SetImageForQuadrant(
 
 BEGIN_METADATA(ResizeHandleButton, views::ImageButton)
 END_METADATA
+
+}  // namespace views

@@ -4,6 +4,7 @@
 
 #include "components/translate/core/browser/language_state.h"
 
+#include "base/macros.h"
 #include "components/translate/core/browser/language_state.h"
 #include "components/translate/core/browser/mock_translate_driver.h"
 #include "testing/gtest/include/gtest/gtest.h"

@@ -61,8 +61,4 @@ int SoftwareOutputDeviceOzone::MaxFramesPending() const {
   return surface_ozone_->MaxFramesPending();
 }
 
-bool SoftwareOutputDeviceOzone::SupportsOverridePlatformSize() const {
-  return surface_ozone_->SupportsOverridePlatformSize();
-}
-
 }  // namespace viz

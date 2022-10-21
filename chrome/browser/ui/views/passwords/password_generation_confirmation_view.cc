@@ -17,15 +17,13 @@
 #include "ui/views/controls/styled_label.h"
 #include "ui/views/layout/fill_layout.h"
 
-constexpr base::TimeDelta kCloseTimeout = base::Seconds(30);
-
 PasswordGenerationConfirmationView::PasswordGenerationConfirmationView(
     content::WebContents* web_contents,
     views::View* anchor_view,
     DisplayReason reason)
     : PasswordBubbleViewBase(web_contents,
                              anchor_view,
-                             /*easily_dismissable=*/true),
+                             /*auto_dismissable=*/false),
       controller_(
           PasswordsModelDelegateFromWebContents(web_contents),
           reason == AUTOMATIC
@@ -47,14 +45,6 @@ PasswordGenerationConfirmationView::PasswordGenerationConfirmationView(
   label->AddStyleRange(controller_.save_confirmation_link_range(), link_style);
 
   AddChildView(label.release());
-
-  if (reason == AUTOMATIC) {
-    // Unretained() is safe because |timer_| is owned by |this|.
-    timer_.Start(
-        FROM_HERE, kCloseTimeout,
-        base::BindOnce(&PasswordGenerationConfirmationView::CloseBubble,
-                       base::Unretained(this)));
-  }
 }
 
 PasswordGenerationConfirmationView::~PasswordGenerationConfirmationView() =

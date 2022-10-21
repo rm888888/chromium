@@ -444,7 +444,8 @@ void PasswordProtectionRequest::OnURLLoaderComplete(
   const bool is_success = url_loader_->NetError() == net::OK;
 
   LogPasswordProtectionNetworkResponseAndDuration(
-      response_code, url_loader_->NetError(), request_start_time_);
+      is_success ? response_code : url_loader_->NetError(),
+      request_start_time_);
 
   if (!is_success || net::HTTP_OK != response_code) {
     Finish(RequestOutcome::FETCH_FAILED, nullptr);

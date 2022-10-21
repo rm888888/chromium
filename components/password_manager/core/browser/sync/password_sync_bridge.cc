@@ -11,8 +11,6 @@
 #include "base/callback.h"
 #include "base/check_op.h"
 #include "base/containers/flat_map.h"
-#include "base/feature_list.h"
-#include "base/memory/raw_ptr.h"
 #include "base/metrics/histogram_functions.h"
 #include "base/notreached.h"
 #include "base/strings/string_number_conversions.h"
@@ -181,9 +179,6 @@ bool ShouldRecoverPasswordsDuringMerge() {
   // Delete the local undecryptable copy when this is MacOS only.
 #if defined(OS_MAC)
   return true;
-#elif defined(OS_LINUX)
-  return base::FeatureList::IsEnabled(
-      features::kSyncUndecryptablePasswordsLinux);
 #else
   return false;
 #endif
@@ -216,7 +211,7 @@ class ScopedStoreTransaction {
   }
 
  private:
-  raw_ptr<PasswordStoreSync> store_;
+  PasswordStoreSync* store_;
   bool committed_;
 };
 
@@ -318,6 +313,7 @@ absl::optional<syncer::ModelError> PasswordSyncBridge::MergeSyncData(
   // 3. |F| exists in both the local and the remote models --> both versions
   //    should be merged by accepting the most recently created one, and update
   //    local and remote models accordingly.
+
   base::AutoReset<bool> processing_changes(&is_processing_remote_sync_changes_,
                                            true);
 
@@ -798,7 +794,6 @@ void PasswordSyncBridge::ApplyStopSyncChanges(
   }
   if (!password_store_sync_->IsAccountStore()) {
     password_store_sync_->GetMetadataStore()->DeleteAllSyncMetadata();
-    sync_enabled_or_disabled_cb_.Run();
     return;
   }
   // For the account store, the data should be deleted too. So do the following:

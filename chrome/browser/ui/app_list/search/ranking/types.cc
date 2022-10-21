@@ -33,17 +33,4 @@ double Scoring::FinalScore() const {
              scoring.usage_score, scoring.top_match);
 }
 
-CategoriesList CreateAllCategories() {
-  CategoriesList res({{.category = Category::kApps},
-                      {.category = Category::kAppShortcuts},
-                      {.category = Category::kWeb},
-                      {.category = Category::kFiles},
-                      {.category = Category::kSettings},
-                      {.category = Category::kHelp},
-                      {.category = Category::kPlayStore},
-                      {.category = Category::kSearchAndAssistant}});
-  DCHECK_EQ(res.size(), static_cast<size_t>(Category::kMaxValue));
-  return res;
-}
-
 }  // namespace app_list

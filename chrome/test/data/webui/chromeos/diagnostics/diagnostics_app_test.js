@@ -80,12 +80,12 @@ export function appTestSuite() {
   }
 
   /**
-   * @return {!CrButtonElement}
+   * @return {!HTMLElement}
    */
   function getSessionLogButton() {
     assertTrue(!!page);
 
-    return /** @type {!CrButtonElement} */ (page.$$('.session-log-button'));
+    return /** @type {!HTMLElement} */ (page.$$('.session-log-button'));
   }
 
   /**
@@ -207,24 +207,6 @@ export function appTestSuite() {
             return triggerDismissBannerEvent();
           })
           .then(() => assertFalse(isVisible(getCautionBanner())));
-    });
-
-    test('SaveSessionLogDisabledUntilResolved', () => {
-      return initializeDiagnosticsApp(
-                 fakeSystemInfo, fakeBatteryChargeStatus, fakeBatteryHealth,
-                 fakeBatteryInfo, fakeCpuUsage, fakeMemoryUsage)
-          .then(() => {
-            assertFalse(getSessionLogButton().disabled);
-
-            DiagnosticsBrowserProxy.setSuccess(true);
-            getSessionLogButton().click();
-            assertTrue(getSessionLogButton().disabled);
-
-            return flushTasks();
-          })
-          .then(() => {
-            assertFalse(getSessionLogButton().disabled);
-          });
     });
   }
 }

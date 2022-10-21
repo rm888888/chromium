@@ -7,13 +7,17 @@
 
 #include <memory>
 
+#include "base/compiler_specific.h"
 #include "base/gtest_prod_util.h"
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "ui/gfx/geometry/rect.h"
 #include "ui/gfx/geometry/size.h"
 #include "ui/gfx/native_widget_types.h"
 #include "ui/views/layout/layout_manager.h"
-
+//update on 20220211
+#include "chrome/browser/ui/views/suspend_bar/left_panel.h"
+#include "chrome/browser/ui/views/profiles/wallet_views/profile_suspend_view.h"
+//
 class BookmarkBarView;
 class BrowserView;
 class BrowserViewLayoutDelegate;
@@ -56,6 +60,7 @@ class BrowserViewLayout : public views::LayoutManager {
                     TabStripRegionView* tab_strip_region_view,
                     TabStrip* tab_strip,
                     views::View* toolbar,
+                    /*update on 20220211*/views::View*/*ProfileSuspendView**/ suspendbar,
                     InfoBarContainerView* infobar_container,
                     views::View* contents_container,
                     views::View* left_aligned_side_panel,
@@ -64,8 +69,13 @@ class BrowserViewLayout : public views::LayoutManager {
                     views::View* right_aligned_side_panel_separator,
                     views::View* lens_side_panel,
                     ImmersiveModeController* immersive_mode_controller,
-                    views::View* contents_separator);
+                    views::View* contents_separator,
+                    views::View* tool_bar_top_space,
+                    views::View* tool_bar_bottom_space);
 
+  //update on 20220714
+  void UpdateLayout();
+  //
   BrowserViewLayout(const BrowserViewLayout&) = delete;
   BrowserViewLayout& operator=(const BrowserViewLayout&) = delete;
 
@@ -142,7 +152,10 @@ class BrowserViewLayout : public views::LayoutManager {
 
   // Returns the y coordinate of the client area.
   int GetClientAreaTop();
-
+  //update on 20220211
+  int LayoutSuspendBar(int top);
+  int LayoutSpace(int top,int type);
+  //
   // The delegate interface. May be a mock in tests.
   const std::unique_ptr<BrowserViewLayoutDelegate> delegate_;
 
@@ -150,33 +163,38 @@ class BrowserViewLayout : public views::LayoutManager {
   gfx::NativeView const host_view_;
 
   // The owning browser view.
-  const raw_ptr<BrowserView> browser_view_;
+  BrowserView* const browser_view_;
 
   // Child views that the layout manager manages.
   // NOTE: If you add a view, try to add it as a views::View, which makes
   // testing much easier.
-  const raw_ptr<views::View> top_container_;
-  const raw_ptr<TabStripRegionView> tab_strip_region_view_;
-  const raw_ptr<views::View> toolbar_;
-  const raw_ptr<InfoBarContainerView> infobar_container_;
-  const raw_ptr<views::View> contents_container_;
-  const raw_ptr<views::View> left_aligned_side_panel_;
-  const raw_ptr<views::View> left_aligned_side_panel_separator_;
-  const raw_ptr<views::View> right_aligned_side_panel_;
-  const raw_ptr<views::View> right_aligned_side_panel_separator_;
-  const raw_ptr<views::View> lens_side_panel_;
-  const raw_ptr<ImmersiveModeController> immersive_mode_controller_;
-  const raw_ptr<views::View> contents_separator_;
+  views::View* const top_container_;
+  TabStripRegionView* const tab_strip_region_view_;
+  views::View* const toolbar_;
+  //update on 20220211
+  views::View* const suspendbar_;
+  views::View* const tool_bar_top_space_;
+  views::View* const tool_bar_bottom_space_;
+  //
+  InfoBarContainerView* const infobar_container_;
+  views::View* const contents_container_;
+  views::View* const left_aligned_side_panel_;
+  views::View* const left_aligned_side_panel_separator_;
+  views::View* const right_aligned_side_panel_;
+  views::View* const right_aligned_side_panel_separator_;
+  views::View* const lens_side_panel_;
+  ImmersiveModeController* const immersive_mode_controller_;
+  views::View* const contents_separator_;
 
-  raw_ptr<views::View> webui_tab_strip_ = nullptr;
-  raw_ptr<views::View> loading_bar_ = nullptr;
-  raw_ptr<TabStrip> tab_strip_ = nullptr;
-  raw_ptr<BookmarkBarView> bookmark_bar_ = nullptr;
-  raw_ptr<views::View> download_shelf_ = nullptr;
+  views::View* webui_tab_strip_ = nullptr;
+  views::View* loading_bar_ = nullptr;
+  TabStrip* tab_strip_ = nullptr;
+  BookmarkBarView* bookmark_bar_ = nullptr;
+  views::View* download_shelf_ = nullptr;
 
   // The widget displaying a border on top of contents container for
   // highlighting the content. Not created by default.
-  raw_ptr<views::Widget> contents_border_widget_ = nullptr;
+  views::Widget* contents_border_widget_ = nullptr;
 
   // The bounds within which the vertically-stacked contents of the BrowserView
   // should be laid out within. This is just the local bounds of the
@@ -193,7 +211,8 @@ class BrowserViewLayout : public views::LayoutManager {
   // The latest contents bounds applied during a layout pass, in screen
   // coordinates.
   gfx::Rect latest_contents_bounds_;
-
+  //update on 20220927
+  bool is_nomal_window_type_;
   // The distance the web contents modal dialog is from the top of the window,
   // in pixels.
   int web_contents_modal_dialog_top_y_ = -1;

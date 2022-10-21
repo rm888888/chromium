@@ -8,6 +8,7 @@
 #include <string>
 
 #include "ash/public/cpp/shelf_types.h"
+#include "base/macros.h"
 #include "ui/base/base_window.h"
 
 class AppWindowShelfItemController;

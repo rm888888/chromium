@@ -87,12 +87,11 @@ GURL GetURLToBookmark(content::WebContents* web_contents) {
     return GURL(kChromeUINewTabURL);
   // Users cannot bookmark Reader Mode pages directly, so the bookmark
   // interaction is as if it were with the original page.
-  if (dom_distiller::url_utils::IsDistilledPage(
-          web_contents->GetVisibleURL())) {
+  if (dom_distiller::url_utils::IsDistilledPage(web_contents->GetURL())) {
     return dom_distiller::url_utils::GetOriginalUrlFromDistillerUrl(
-        web_contents->GetVisibleURL());
+        web_contents->GetURL());
   }
-  return web_contents->GetVisibleURL();
+  return web_contents->GetURL();
 }
 
 bool GetURLAndTitleToBookmark(content::WebContents* web_contents,
@@ -102,13 +101,12 @@ bool GetURLAndTitleToBookmark(content::WebContents* web_contents,
   if (!u.is_valid())
     return false;
   *url = u;
-  if (dom_distiller::url_utils::IsDistilledPage(
-          web_contents->GetVisibleURL())) {
+  if (dom_distiller::url_utils::IsDistilledPage(web_contents->GetURL())) {
     // Users cannot bookmark Reader Mode pages directly. Instead, a bookmark
     // is added for the original page and original title.
     *title =
         base::UTF8ToUTF16(dom_distiller::url_utils::GetTitleFromDistillerUrl(
-            web_contents->GetVisibleURL()));
+            web_contents->GetURL()));
   } else {
     *title = web_contents->GetTitle();
   }

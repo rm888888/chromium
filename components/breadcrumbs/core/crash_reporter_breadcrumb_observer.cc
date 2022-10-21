@@ -7,7 +7,6 @@
 #include <numeric>
 #include <string>
 
-#include "base/no_destructor.h"
 #include "components/breadcrumbs/core/crash_reporter_breadcrumb_constants.h"
 #include "components/crash/core/common/crash_key.h"
 

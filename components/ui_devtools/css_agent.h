@@ -5,7 +5,8 @@
 #ifndef COMPONENTS_UI_DEVTOOLS_CSS_AGENT_H_
 #define COMPONENTS_UI_DEVTOOLS_CSS_AGENT_H_
 
-#include "components/ui_devtools/css.h"
+#include "base/macros.h"
+#include "components/ui_devtools/CSS.h"
 #include "components/ui_devtools/dom_agent.h"
 
 namespace gfx {

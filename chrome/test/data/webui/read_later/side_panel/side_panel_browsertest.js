@@ -31,7 +31,7 @@ class SidePanelBrowserTest extends PolymerTest {
 var SidePanelAppTest = class extends SidePanelBrowserTest {
   /** @override */
   get browsePreload() {
-    return 'chrome://read-later.top-chrome/test_loader.html?module=read_later/side_panel/side_panel_app_test.js&host=webui-test';
+    return 'chrome://read-later.top-chrome/test_loader.html?module=read_later/side_panel/side_panel_app_test.js';
   }
 };
 
@@ -42,7 +42,7 @@ TEST_F('SidePanelAppTest', 'All', function() {
 var SidePanelBookmarksListTest = class extends SidePanelBrowserTest {
   /** @override */
   get browsePreload() {
-    return 'chrome://read-later.top-chrome/test_loader.html?module=read_later/side_panel/bookmarks_list_test.js&host=webui-test';
+    return 'chrome://read-later.top-chrome/test_loader.html?module=read_later/side_panel/bookmarks_list_test.js';
   }
 };
 
@@ -54,7 +54,7 @@ TEST_F('SidePanelBookmarksListTest', 'All', function() {
 var SidePanelBookmarkFolderTest = class extends SidePanelBrowserTest {
   /** @override */
   get browsePreload() {
-    return 'chrome://read-later.top-chrome/test_loader.html?module=read_later/side_panel/bookmark_folder_test.js&host=webui-test';
+    return 'chrome://read-later.top-chrome/test_loader.html?module=read_later/side_panel/bookmark_folder_test.js';
   }
 };
 
@@ -66,7 +66,7 @@ TEST_F('SidePanelBookmarkFolderTest', 'All', function() {
 var SidePanelBookmarksDragManagerTest = class extends SidePanelBrowserTest {
   /** @override */
   get browsePreload() {
-    return 'chrome://read-later.top-chrome/test_loader.html?module=read_later/side_panel/bookmarks_drag_manager_test.js&host=webui-test';
+    return 'chrome://read-later.top-chrome/test_loader.html?module=read_later/side_panel/bookmarks_drag_manager_test.js';
   }
 };
 

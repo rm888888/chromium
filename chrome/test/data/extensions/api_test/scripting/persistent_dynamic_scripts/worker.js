@@ -130,7 +130,8 @@ async function runThirdSession() {
 // every browser start, so we call chrome.test.sendMessage
 chrome.runtime.onStartup.addListener(async () => {});
 
-chrome.test.sendMessage('ready',testName => {
+chrome.test.getConfig(config => {
+  const testName = config.customArg;
   if (testName === 'PRE_PRE_PersistentDynamicContentScripts')
     runFirstSession();
   else if (testName === 'PRE_PersistentDynamicContentScripts')

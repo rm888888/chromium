@@ -30,8 +30,7 @@ OsSettingsManager::OsSettingsManager(
     signin::IdentityManager* identity_manager,
     android_sms::AndroidSmsService* android_sms_service,
     CupsPrintersManager* printers_manager,
-    apps::AppServiceProxy* app_service_proxy,
-    ash::eche_app::EcheAppManager* eche_app_manager)
+    apps::AppServiceProxy* app_service_proxy)
     : search_tag_registry_(
           std::make_unique<SearchTagRegistry>(local_search_service_proxy)),
       sections_(
@@ -46,8 +45,7 @@ OsSettingsManager::OsSettingsManager(
                                                identity_manager,
                                                android_sms_service,
                                                printers_manager,
-                                               app_service_proxy,
-                                               eche_app_manager)),
+                                               app_service_proxy)),
       hierarchy_(std::make_unique<Hierarchy>(sections_.get())),
       settings_user_action_tracker_(
           std::make_unique<SettingsUserActionTracker>(hierarchy_.get(),

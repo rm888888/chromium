@@ -9,12 +9,11 @@
 #include "ui/base/metadata/metadata_header_macros.h"
 #include "ui/base/metadata/metadata_impl_macros.h"
 #include "ui/compositor/layer.h"
-#include "ui/gfx/geometry/size.h"
 #include "ui/views/border.h"
 #include "ui/views/controls/label.h"
-#include "ui/views/layout/table_layout.h"
+#include "ui/views/layout/box_layout.h"
+#include "ui/views/layout/grid_layout.h"
 #include "ui/views/style/typography.h"
-#include "ui/views/view_class_properties.h"
 
 namespace {
 
@@ -25,15 +24,19 @@ namespace {
 class IconWrapper : public views::View {
  public:
   METADATA_HEADER(IconWrapper);
-  explicit IconWrapper(std::unique_ptr<views::View> icon) {
-    AddChildView(std::move(icon));
-    SetUseDefaultFillLayout(true);
+  explicit IconWrapper(std::unique_ptr<views::View> icon)
+      : icon_(AddChildView(std::move(icon))) {
+    SetLayoutManager(std::make_unique<views::BoxLayout>(
+        views::BoxLayout::Orientation::kHorizontal));
     // Make sure hovering over the icon also hovers the |HoverButton|.
     SetCanProcessEventsWithinSubtree(false);
     // Don't cover |icon| when the ink drops are being painted.
     SetPaintToLayer();
     layer()->SetFillsBoundsOpaquely(false);
   }
+
+ private:
+  views::View* icon_;
 };
 
 BEGIN_METADATA(IconWrapper, views::View)
@@ -51,70 +54,76 @@ WebAuthnHoverButton::WebAuthnHoverButton(
     : HoverButton(std::move(callback), std::u16string()) {
   ChromeLayoutProvider* layout_provider = ChromeLayoutProvider::Get();
 
-  auto* layout = SetLayoutManager(std::make_unique<views::TableLayout>());
-
-  // TODO (crbug/1267403): This is hideous. We have to tell the TableLayout to
-  // ignore the child views created by the LabelButton ancestor. They're not
-  // used but must exist to keep things happy. This view should be refactored to
-  // descend from views::Button directly.
-  for (auto* child : children())
-    layout->SetChildViewIgnoredByLayout(child, true);
+  views::GridLayout* grid_layout =
+      SetLayoutManager(std::make_unique<views::GridLayout>());
+  constexpr int kColumnSet = 0;
+  views::ColumnSet* columns = grid_layout->AddColumnSet(kColumnSet);
 
   const int icon_padding = layout_provider->GetDistanceMetric(
       views::DISTANCE_RELATED_LABEL_HORIZONTAL);
   if (icon) {
-    layout
-        ->AddColumn(views::LayoutAlignment::kCenter,
-                    views::LayoutAlignment::kCenter,
-                    views::TableLayout::kFixedSize,
-                    views::TableLayout::ColumnSize::kUsePreferred,
-                    /*fixed_width=*/0,
-                    /*min_width=*/0)
-        .AddPaddingColumn(views::TableLayout::kFixedSize, icon_padding);
+    columns->AddColumn(views::GridLayout::CENTER, views::GridLayout::CENTER,
+                       views::GridLayout::kFixedSize,
+                       views::GridLayout::ColumnSize::kUsePreferred,
+                       /*fixed_width=*/0,
+                       /*min_width=*/0);
+    columns->AddPaddingColumn(views::GridLayout::kFixedSize, icon_padding);
   }
-  layout->AddColumn(
-      views::LayoutAlignment::kStretch, views::LayoutAlignment::kStretch,
-      /*horizontal_resize=*/1.0, views::TableLayout::ColumnSize::kUsePreferred,
-      /*fixed_width=*/0,
-      /*min_width=*/0);
+  columns->AddColumn(views::GridLayout::FILL, views::GridLayout::FILL,
+                     /*resize_percent=*/1.0,
+                     views::GridLayout::ColumnSize::kUsePreferred,
+                     /*fixed_width=*/0,
+                     /*min_width=*/0);
   if (secondary_icon) {
-    layout->AddPaddingColumn(views::TableLayout::kFixedSize, icon_padding)
-        .AddColumn(views::LayoutAlignment::kCenter,
-                   views::LayoutAlignment::kCenter,
-                   views::TableLayout::kFixedSize,
-                   views::TableLayout::ColumnSize::kUsePreferred,
-                   /*fixed_width=*/0,
-                   /*min_width=*/0);
+    columns->AddPaddingColumn(views::GridLayout::kFixedSize, icon_padding);
+    columns->AddColumn(views::GridLayout::CENTER, views::GridLayout::CENTER,
+                       views::GridLayout::kFixedSize,
+                       views::GridLayout::ColumnSize::kUsePreferred,
+                       /*fixed_width=*/0,
+                       /*min_width=*/0);
   }
 
   const int row_height = views::style::GetLineHeight(
       views::style::CONTEXT_LABEL, views::style::STYLE_PRIMARY);
+  grid_layout->StartRow(views::GridLayout::kFixedSize, kColumnSet, row_height);
+
   const bool is_two_line = !subtitle_text.empty() || force_two_line;
   const int icon_row_span = is_two_line ? 2 : 1;
-  layout->AddRows(icon_row_span, views::TableLayout::kFixedSize, row_height);
-
   if (icon) {
-    icon_view_ = AddChildView(std::make_unique<IconWrapper>(std::move(icon)));
-    icon_view_->SetProperty(views::kTableColAndRowSpanKey,
-                            gfx::Size(/*width=*/1, icon_row_span));
+    icon_view_ =
+        grid_layout->AddView(std::make_unique<IconWrapper>(std::move(icon)),
+                             /*col_span=*/1, icon_row_span);
   }
 
   const int title_row_span = force_two_line && subtitle_text.empty() ? 2 : 1;
-  title_ = AddChildView(std::make_unique<views::Label>(title_text));
+  title_ = grid_layout->AddView(std::make_unique<views::Label>(title_text),
+                                /*col_span=*/1, title_row_span);
   title_->SetHorizontalAlignment(gfx::ALIGN_LEFT);
-  title_->SetProperty(views::kTableColAndRowSpanKey,
-                      gfx::Size(/*width=*/1, title_row_span));
 
   if (secondary_icon) {
-    secondary_icon_view_ =
-        AddChildView(std::make_unique<IconWrapper>(std::move(secondary_icon)));
-    secondary_icon_view_->SetProperty(views::kTableColAndRowSpanKey,
-                                      gfx::Size(/*width=*/1, icon_row_span));
+    secondary_icon_view_ = grid_layout->AddView(
+        std::make_unique<IconWrapper>(std::move(secondary_icon)),
+        /*col_span=*/1, icon_row_span);
   }
 
-  if (is_two_line && !subtitle_text.empty()) {
-    subtitle_ = AddChildView(std::make_unique<views::Label>(subtitle_text));
-    subtitle_->SetHorizontalAlignment(gfx::ALIGN_LEFT);
+  if (is_two_line) {
+    grid_layout->StartRow(views::GridLayout::kFixedSize, kColumnSet,
+                          row_height);
+    if (icon_view_) {
+      grid_layout->SkipColumns(1);
+    }
+
+    if (!subtitle_text.empty()) {
+      subtitle_ =
+          grid_layout->AddView(std::make_unique<views::Label>(subtitle_text));
+      subtitle_->SetHorizontalAlignment(gfx::ALIGN_LEFT);
+    } else {
+      grid_layout->SkipColumns(1);
+    }
+
+    if (secondary_icon_view_) {
+      grid_layout->SkipColumns(1);
+    }
   }
 
   SetAccessibleName(subtitle_text.empty()
@@ -126,11 +135,12 @@ WebAuthnHoverButton::WebAuthnHoverButton(
   // 8dp assuming a 20dp primary icon, or no icon at all. (With a 24dp primary
   // icon, the left inset would be 12dp, but we don't currently have a button
   // with such an icon.)
-
   const int vert_inset = is_two_line ? 8 : 12;
   constexpr int horz_inset = 8;
   SetBorder(
       views::CreateEmptyBorder(vert_inset, horz_inset, vert_inset, horz_inset));
+
+  Layout();
 }
 
 BEGIN_METADATA(WebAuthnHoverButton, HoverButton)

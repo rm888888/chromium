@@ -12,6 +12,7 @@
 #include "base/containers/contains.h"
 #include "base/fuchsia/fuchsia_logging.h"
 #include "base/fuchsia/process_context.h"
+#include "base/macros.h"
 #include "base/memory/ptr_util.h"
 #include "third_party/angle/src/common/fuchsia_egl/fuchsia_egl.h"
 #include "ui/gfx/geometry/skia_conversions.h"
@@ -232,20 +233,6 @@ void FlatlandSurfaceFactory::CreateNativePixmapAsync(
     NativePixmapCallback callback) {
   std::move(callback).Run(
       CreateNativePixmap(widget, vk_device, size, format, usage));
-}
-
-scoped_refptr<gfx::NativePixmap>
-FlatlandSurfaceFactory::CreateNativePixmapFromHandle(
-    gfx::AcceleratedWidget widget,
-    gfx::Size size,
-    gfx::BufferFormat format,
-    gfx::NativePixmapHandle handle) {
-  auto collection = flatland_sysmem_buffer_manager_.GetCollectionById(
-      handle.buffer_collection_id.value());
-  if (!collection)
-    return nullptr;
-
-  return collection->CreateNativePixmap(handle.buffer_index);
 }
 
 #if BUILDFLAG(ENABLE_VULKAN)

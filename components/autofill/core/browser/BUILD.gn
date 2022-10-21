@@ -25,9 +25,11 @@ action("default_regex_patterns_cc") {
   visibility = [ ":*" ]
   sources = [ "pattern_provider/resources/regex_patterns.json" ]
   script = "pattern_provider/transpile_default_regex_patterns.py"
+  args = [
+    rebase_path("pattern_provider/resources/regex_patterns.json"),
+    rebase_path("$target_gen_dir/pattern_provider/default_regex_patterns.cc"),
+  ]
   outputs = [ "$target_gen_dir/pattern_provider/default_regex_patterns.cc" ]
-  args = rebase_path(sources, root_build_dir) +
-         rebase_path(outputs, root_build_dir)
 }
 
 static_library("browser") {
@@ -68,6 +70,8 @@ static_library("browser") {
     "autofill_field.h",
     "autofill_manager.cc",
     "autofill_manager.h",
+    "autofill_metrics.cc",
+    "autofill_metrics.h",
     "autofill_observer.cc",
     "autofill_observer.h",
     "autofill_profile_import_process.cc",
@@ -193,6 +197,8 @@ static_library("browser") {
     "geo/country_names.h",
     "geo/country_names_for_locale.cc",
     "geo/country_names_for_locale.h",
+    "geo/mock_alternative_state_name_map_updater.cc",
+    "geo/mock_alternative_state_name_map_updater.h",
     "geo/phone_number_i18n.cc",
     "geo/phone_number_i18n.h",
     "geo/region_data_loader.h",
@@ -210,15 +216,13 @@ static_library("browser") {
     "logging/log_receiver.h",
     "logging/log_router.cc",
     "logging/log_router.h",
-    "metrics/autofill_metrics.cc",
-    "metrics/autofill_metrics.h",
-    "metrics/form_events/address_form_event_logger.cc",
-    "metrics/form_events/address_form_event_logger.h",
-    "metrics/form_events/credit_card_form_event_logger.cc",
-    "metrics/form_events/credit_card_form_event_logger.h",
-    "metrics/form_events/form_event_logger_base.cc",
-    "metrics/form_events/form_event_logger_base.h",
-    "metrics/form_events/form_events.h",
+    "metrics/address_form_event_logger.cc",
+    "metrics/address_form_event_logger.h",
+    "metrics/credit_card_form_event_logger.cc",
+    "metrics/credit_card_form_event_logger.h",
+    "metrics/form_event_logger_base.cc",
+    "metrics/form_event_logger_base.h",
+    "metrics/form_events.h",
     "pattern_provider/default_regex_patterns.h",
     "pattern_provider/pattern_configuration_parser.cc",
     "pattern_provider/pattern_configuration_parser.h",
@@ -257,16 +261,11 @@ static_library("browser") {
     "payments/payments_requests/select_challenge_option_request.h",
     "payments/payments_requests/unmask_card_request.cc",
     "payments/payments_requests/unmask_card_request.h",
-    "payments/payments_requests/update_virtual_card_enrollment_request.cc",
-    "payments/payments_requests/update_virtual_card_enrollment_request.h",
     "payments/payments_service_url.cc",
     "payments/payments_service_url.h",
     "payments/payments_util.cc",
     "payments/payments_util.h",
     "payments/risk_data_loader.h",
-    "payments/virtual_card_enrollment_flow.h",
-    "payments/virtual_card_enrollment_manager.cc",
-    "payments/virtual_card_enrollment_manager.h",
     "payments/wait_for_signal_or_timeout.cc",
     "payments/wait_for_signal_or_timeout.h",
     "payments/webauthn_callback_types.h",
@@ -542,8 +541,6 @@ static_library("test_support") {
     "autofill_test_utils.h",
     "geo/alternative_state_name_map_test_utils.cc",
     "geo/alternative_state_name_map_test_utils.h",
-    "geo/mock_alternative_state_name_map_updater.cc",
-    "geo/mock_alternative_state_name_map_updater.h",
     "geo/test_region_data_loader.cc",
     "geo/test_region_data_loader.h",
     "logging/stub_log_manager.cc",
@@ -716,6 +713,7 @@ source_set("unit_tests") {
     "autofill_external_delegate_unittest.cc",
     "autofill_manager_unittest.cc",
     "autofill_merge_unittest.cc",
+    "autofill_metrics_unittest.cc",
     "autofill_profile_import_process_unittest.cc",
     "autofill_profile_save_strike_database_unittest.cc",
     "autofill_profile_sync_util_unittest.cc",
@@ -770,7 +768,6 @@ source_set("unit_tests") {
     "logging/log_buffer_submitter_unittest.cc",
     "logging/log_manager_unittest.cc",
     "logging/log_router_unittest.cc",
-    "metrics/autofill_metrics_unittest.cc",
     "pattern_provider/default_regex_patterns_unittest.cc",
     "pattern_provider/pattern_configuration_parser_unittest.cc",
     "pattern_provider/pattern_provider_unittest.cc",

@@ -6,7 +6,6 @@
 
 #include <algorithm>
 
-#include "base/memory/raw_ptr.h"
 #include "base/observer_list.h"
 #include "base/trace_event/common/trace_event_common.h"
 #include "base/trace_event/trace_event.h"
@@ -39,7 +38,9 @@
 #include "ui/views/controls/webview/webview.h"
 #include "ui/views/widget/widget.h"
 #include "ui/views/window/client_view.h"
-
+//update on 20220321
+#include "chain_party/px_global_help.h"
+//
 using views::View;
 using web_modal::WebContentsModalDialogHost;
 using web_modal::ModalDialogHostObserver;
@@ -127,7 +128,7 @@ class BrowserViewLayout::WebContentsModalDialogHostViews
     observer_list_.RemoveObserver(observer);
   }
 
-  const raw_ptr<BrowserViewLayout> browser_view_layout_;
+  BrowserViewLayout* const browser_view_layout_;
 
   base::ObserverList<ModalDialogHostObserver>::Unchecked observer_list_;
 };
@@ -143,6 +144,7 @@ BrowserViewLayout::BrowserViewLayout(
     TabStripRegionView* tab_strip_region_view,
     TabStrip* tab_strip,
     views::View* toolbar,
+    /*update on 20220211*/views::View*/*ProfileSuspendView**/ suspendbar,
     InfoBarContainerView* infobar_container,
     views::View* contents_container,
     views::View* left_aligned_side_panel,
@@ -151,13 +153,18 @@ BrowserViewLayout::BrowserViewLayout(
     views::View* right_aligned_side_panel_separator,
     views::View* lens_side_panel,
     ImmersiveModeController* immersive_mode_controller,
-    views::View* contents_separator)
+    views::View* contents_separator,
+    views::View* tool_bar_top_space,
+    views::View* tool_bar_bottom_space)
     : delegate_(std::move(delegate)),
       host_view_(host_view),
       browser_view_(browser_view),
       top_container_(top_container),
       tab_strip_region_view_(tab_strip_region_view),
       toolbar_(toolbar),
+      /*update on 20220211*/suspendbar_(suspendbar),
+      tool_bar_top_space_(tool_bar_top_space),
+      tool_bar_bottom_space_(tool_bar_bottom_space),
       infobar_container_(infobar_container),
       contents_container_(contents_container),
       left_aligned_side_panel_(left_aligned_side_panel),
@@ -168,7 +175,12 @@ BrowserViewLayout::BrowserViewLayout(
       immersive_mode_controller_(immersive_mode_controller),
       contents_separator_(contents_separator),
       tab_strip_(tab_strip),
-      dialog_host_(std::make_unique<WebContentsModalDialogHostViews>(this)) {}
+      dialog_host_(std::make_unique<WebContentsModalDialogHostViews>(this)){
+          ///*update on 20220211*/suspendbar_ = suspendbar;
+          //update on 20220927
+    is_nomal_window_type_ =  browser_view->GetIsNormalType();
+
+      }
 
 BrowserViewLayout::~BrowserViewLayout() = default;
 
@@ -345,10 +357,21 @@ int BrowserViewLayout::NonClientHitTest(const gfx::Point& point) {
 
 //////////////////////////////////////////////////////////////////////////////
 // BrowserViewLayout, views::LayoutManager implementation:
-
+//update on 20220714
+void BrowserViewLayout::UpdateLayout(){
+    Layout(browser_view_);
+}
+//
 void BrowserViewLayout::Layout(views::View* browser_view) {
   TRACE_EVENT0("ui", "BrowserViewLayout::Layout");
   vertical_layout_rect_ = browser_view->GetLocalBounds();
+  //update on 20220406
+  if(is_nomal_window_type_) {
+      vertical_layout_rect_.set_x(browser_view_->GetSuspendbarView()->global_left_panel_width_);
+      vertical_layout_rect_.set_width(vertical_layout_rect_.width() -
+                                      browser_view_->GetSuspendbarView()->global_left_panel_width_);
+  }
+  //
   int top_inset = delegate_->GetTopInsetInBrowserView();
   int top = LayoutTabStripRegion(top_inset);
   if (delegate_->IsTabStripVisible()) {
@@ -357,15 +380,24 @@ void BrowserViewLayout::Layout(views::View* browser_view) {
                                     delegate_->GetThemeBackgroundXInset());
   }
   top = LayoutWebUITabStrip(top);
-  top = LayoutToolbar(top);
+  //update on 20220211
+  if(is_nomal_window_type_)
+  /*int rect_x = */LayoutSuspendBar(top);
 
+  top = LayoutToolbar(top);
   top = LayoutBookmarkAndInfoBars(top, browser_view->y());
 
   // Top container requires updated toolbar and bookmark bar to compute bounds.
   UpdateTopContainerBounds();
 
-  // Layout items at the bottom of the view.
+
   const int bottom = LayoutDownloadShelf(browser_view->height());
+  //
+  //const int bottom = LayoutDownloadShelf(browser_view->height());
+  //
+  // Layout items at the bottom of the view.
+  //update on 20220211
+  //  const int bottom = LayoutDownloadShelf(browser_view->height());
 
   // Layout the contents container in the remaining space.
   LayoutContentsContainerView(top, bottom);
@@ -425,7 +457,7 @@ gfx::Size BrowserViewLayout::GetPreferredSize(const views::View* host) const {
 
 int BrowserViewLayout::LayoutTabStripRegion(int top) {
   TRACE_EVENT0("ui", "BrowserViewLayout::LayoutTabStripRegion");
-  if (!delegate_->IsTabStripVisible()) {
+ /* if (!delegate_->IsTabStripVisible()) {
     SetViewVisibility(tab_strip_region_view_, false);
     tab_strip_region_view_->SetBounds(0, 0, 0, 0);
     return top;
@@ -436,10 +468,53 @@ int BrowserViewLayout::LayoutTabStripRegion(int top) {
       delegate_->GetBoundsForTabStripRegionInBrowserView());
 
   SetViewVisibility(tab_strip_region_view_, true);
+  //update on 20220406
+  //tab_strip_region_bounds.set_x(GlobalHelp::SUSPENDBAR_WIDTH);
+  tab_strip_region_bounds.set_height(tab_strip_region_bounds.height()+80);
+  //tab_strip_region_bounds.set_width(tab_strip_region_bounds.width()-
+  //                                            tab_strip_region_bounds.x());
+  //
   tab_strip_region_view_->SetBoundsRect(tab_strip_region_bounds);
-
   return tab_strip_region_bounds.bottom() -
          GetLayoutConstant(TABSTRIP_TOOLBAR_OVERLAP);
+         */
+//update on 20220407
+    if (!delegate_->IsTabStripVisible()) {
+        SetViewVisibility(tab_strip_region_view_, false);
+        tab_strip_region_view_->SetBounds(0, 0, 0, 0);
+        return top;
+    }
+    // This retrieves the bounds for the tab strip based on whether or not we show
+    // anything to the left of it, like the incognito avatar.
+    gfx::Rect tab_strip_region_bounds(
+            delegate_->GetBoundsForTabStripRegionInBrowserView());
+
+    //update on 20220927
+    if(is_nomal_window_type_) {
+        //tab_strip_region_bounds.set_height(20);
+        tab_strip_region_bounds.set_x(0);
+        tab_strip_region_bounds.set_width(vertical_layout_rect_.width());
+        //update on 20220517
+        //tab_strip_region_bounds.set_height(tab_strip_region_bounds.height()+20);
+        //
+    }
+
+    SetViewVisibility(tab_strip_region_view_, true);
+
+    tab_strip_region_view_->SetBoundsRect(tab_strip_region_bounds);
+//    return tab_strip_region_bounds.bottom() -
+//           GetLayoutConstant(TABSTRIP_TOOLBAR_OVERLAP);
+//update on 20220927
+int result = 0;
+if(is_nomal_window_type_)
+    result = tab_strip_region_bounds.bottom();
+else
+    result = tab_strip_region_bounds.bottom() -
+           GetLayoutConstant(TABSTRIP_TOOLBAR_OVERLAP);
+return result;
+//
+//update on 20220517
+    //return tab_strip_region_bounds.bottom();
 }
 
 int BrowserViewLayout::LayoutWebUITabStrip(int top) {
@@ -462,9 +537,20 @@ int BrowserViewLayout::LayoutToolbar(int top) {
   bool toolbar_visible = delegate_->IsToolbarVisible();
   int height = toolbar_visible ? toolbar_->GetPreferredSize().height() : 0;
   SetViewVisibility(toolbar_, toolbar_visible);
-  toolbar_->SetBounds(vertical_layout_rect_.x(), top, browser_view_width,
-                      height);
-  return toolbar_->bounds().bottom();
+  //toolbar_->SetBounds(vertical_layout_rect_.x(), top, browser_view_width,
+  //                    height);
+  //update on 20220407
+//  toolbar_->SetBounds(0, top, browser_view_width,
+//                        height);
+
+  //update on 20220517
+  if(is_nomal_window_type_)
+    toolbar_->SetBounds(0, top, browser_view_width,
+                        height);
+  else
+      toolbar_->SetBounds(vertical_layout_rect_.x(), top, browser_view_width,
+                        height);
+    return toolbar_->bounds().bottom();
 }
 
 int BrowserViewLayout::LayoutBookmarkAndInfoBars(int top, int browser_view_y) {
@@ -473,30 +559,35 @@ int BrowserViewLayout::LayoutBookmarkAndInfoBars(int top, int browser_view_y) {
       top + browser_view_y - kConstrainedWindowOverlap;
 
   if (bookmark_bar_) {
-    top = std::max(toolbar_->bounds().bottom(), LayoutBookmarkBar(top));
+//    top = std::max(toolbar_->bounds().bottom(), LayoutBookmarkBar(top));
+//update on 20220519
+      if(is_nomal_window_type_)
+      top = std::max(tool_bar_bottom_space_->bounds().bottom(), LayoutBookmarkBar(top));
+      else
+          top = std::max(toolbar_->bounds().bottom(), LayoutBookmarkBar(top));
   }
-
-  if (delegate_->IsContentsSeparatorEnabled() &&
-      (toolbar_->GetVisible() || bookmark_bar_) && top > 0) {
-    SetViewVisibility(contents_separator_, true);
-    const int separator_height =
-        contents_separator_->GetPreferredSize().height();
-    contents_separator_->SetBounds(vertical_layout_rect_.x(), top,
-                                   vertical_layout_rect_.width(),
-                                   separator_height);
-    if (loading_bar_) {
-      SetViewVisibility(loading_bar_, true);
-      loading_bar_->SetBounds(vertical_layout_rect_.x(), top - 2,
-                              vertical_layout_rect_.width(),
-                              separator_height + 2);
-      top_container_->ReorderChildView(loading_bar_, -1);
-    }
-    top += separator_height;
-  } else {
-    SetViewVisibility(contents_separator_, false);
-    if (loading_bar_)
-      SetViewVisibility(loading_bar_, false);
-  }
+//update on 20220424
+//  if (delegate_->IsContentsSeparatorEnabled() &&
+//      (toolbar_->GetVisible() || bookmark_bar_) && top > 0) {
+//    SetViewVisibility(contents_separator_, true);
+//    const int separator_height =
+//        contents_separator_->GetPreferredSize().height();
+//    contents_separator_->SetBounds(vertical_layout_rect_.x(), top,
+//                                   vertical_layout_rect_.width(),
+//                                   separator_height);
+//    if (loading_bar_) {
+//      SetViewVisibility(loading_bar_, true);
+//      loading_bar_->SetBounds(vertical_layout_rect_.x(), top - 2,
+//                              vertical_layout_rect_.width(),
+//                              separator_height + 2);
+//      top_container_->ReorderChildView(loading_bar_, -1);
+//    }
+//    top += separator_height;
+//  } else {
+//    SetViewVisibility(contents_separator_, false);
+//    if (loading_bar_)
+//      SetViewVisibility(loading_bar_, false);
+//  }
 
   return LayoutInfoBar(top);
 }
@@ -512,8 +603,16 @@ int BrowserViewLayout::LayoutBookmarkBar(int top) {
 
   bookmark_bar_->SetInfoBarVisible(IsInfobarVisible());
   int bookmark_bar_height = bookmark_bar_->GetPreferredSize().height();
-  bookmark_bar_->SetBounds(vertical_layout_rect_.x(), top,
+  //bookmark_bar_->SetBounds(vertical_layout_rect_.x(), top,
+  //                         vertical_layout_rect_.width(), bookmark_bar_height);
+  //update on 20220407
+  if(is_nomal_window_type_)
+  bookmark_bar_->SetBounds(0, top,
                            vertical_layout_rect_.width(), bookmark_bar_height);
+  else
+      bookmark_bar_->SetBounds(vertical_layout_rect_.x(), top,
+                               vertical_layout_rect_.width(), bookmark_bar_height);
+  //
   // Set visibility after setting bounds, as the visibility update uses the
   // bounds to determine if the mouse is hovering over a button.
   SetViewVisibility(bookmark_bar_, true);
@@ -532,24 +631,37 @@ int BrowserViewLayout::LayoutInfoBar(int top) {
   }
 
   SetViewVisibility(infobar_container_, IsInfobarVisible());
+  //infobar_container_->SetBounds(
+  //    vertical_layout_rect_.x(), top, vertical_layout_rect_.width(),
+  //    infobar_container_->GetPreferredSize().height());
+  //update on 20220407
   infobar_container_->SetBounds(
-      vertical_layout_rect_.x(), top, vertical_layout_rect_.width(),
-      infobar_container_->GetPreferredSize().height());
+          vertical_layout_rect_.x(), top, vertical_layout_rect_.width(),
+          infobar_container_->GetPreferredSize().height());
+  //
   return top + infobar_container_->height();
 }
 
 void BrowserViewLayout::LayoutContentsContainerView(int top, int bottom) {
   TRACE_EVENT0("ui", "BrowserViewLayout::LayoutContentsContainerView");
+  //auto x = LayoutSuspendBar(top);
+  gfx::Rect contents_container_bounds(vertical_layout_rect_.x()/*+x*/,
+                                        top,
+                                        vertical_layout_rect_.width()/*-x*/,
+                                        std::max(0, bottom - top));
+  //update on 20220329
+  GlobalHelp::webview_content_rect_ = contents_container_bounds;
+  //
   // |contents_container_| contains web page contents and devtools.
   // See browser_view.h for details.
-  gfx::Rect contents_container_bounds(vertical_layout_rect_.x(),
-                                      top,
-                                      vertical_layout_rect_.width(),
-                                      std::max(0, bottom - top));
+//  gfx::Rect contents_container_bounds(vertical_layout_rect_.x(),
+//                                      top,
+//                                      vertical_layout_rect_.width(),
+//                                      std::max(0, bottom - top));
   if (webui_tab_strip_ && webui_tab_strip_->GetVisible()) {
     // The WebUI tab strip container should "push" the tab contents down without
     // resizing it.
-    contents_container_bounds.Inset(0, 0, 0,
+    contents_container_bounds.Inset(0, 0/*update on 20220411+20*/, 0,
                                     -webui_tab_strip_->size().height());
   }
 
@@ -597,9 +709,9 @@ void BrowserViewLayout::LayoutSidePanelView(
          side_panel == lens_side_panel_);
   const bool is_right_aligned =
       side_panel == right_aligned_side_panel_ || side_panel == lens_side_panel_;
-  views::View* side_panel_separator =
-      is_right_aligned ? right_aligned_side_panel_separator_.get()
-                       : left_aligned_side_panel_separator_.get();
+  views::View* side_panel_separator = is_right_aligned
+                                          ? right_aligned_side_panel_separator_
+                                          : left_aligned_side_panel_separator_;
 
   DCHECK(side_panel_separator);
   // Shrink container bounds to fit the side panel.
@@ -672,6 +784,10 @@ void BrowserViewLayout::UpdateTopContainerBounds() {
         immersive_mode_controller_->GetTopContainerVerticalOffset(
             top_container_bounds.size()));
   }
+  //update on 20220407
+  if(is_nomal_window_type_)
+  top_container_bounds.set_x(browser_view_->GetSuspendbarView()->global_left_panel_width_);
+  //
   top_container_->SetBoundsRect(top_container_bounds);
 }
 
@@ -697,4 +813,34 @@ int BrowserViewLayout::GetClientAreaTop() {
 bool BrowserViewLayout::IsInfobarVisible() const {
   // NOTE: Can't check if the size IsEmpty() since it's always 0-width.
   return infobar_container_->GetPreferredSize().height() != 0;
+}
+//update on 20220211
+int BrowserViewLayout::LayoutSuspendBar(int top) {
+  //suspendbar layout
+  TRACE_EVENT0("ui", "BrowserViewLayout::LayoutSuspendBar");
+  int browser_view_width = browser_view_->GetSuspendbarView()->global_left_panel_width_;//vertical_layout_rect_.width();
+  //bool toolbar_visible = delegate_->IsToolbarVisible();
+  int height = vertical_layout_rect_.height()/* - top*/;
+  SetViewVisibility(suspendbar_, true);
+  suspendbar_->SetBounds(0, 0, browser_view_width,
+                      height);
+  return browser_view_width;
+}
+
+int BrowserViewLayout::LayoutSpace(int top,int type){
+    TRACE_EVENT0("ui", "BrowserViewLayout::LayoutSpace");
+    int browser_view_width = vertical_layout_rect_.width();
+    int height = 13;
+    int bottom = 0;
+    if(type == 0) {
+        tool_bar_top_space_->SetBounds(vertical_layout_rect_.x(), top, browser_view_width,
+                                       height);
+        bottom = tool_bar_top_space_->bounds().bottom();
+    }
+    else if(type == 1) {
+        tool_bar_bottom_space_->SetBounds(vertical_layout_rect_.x(), top, browser_view_width,
+                                          height);
+        bottom = tool_bar_bottom_space_->bounds().bottom();
+    }
+    return bottom;
 }

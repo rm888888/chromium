@@ -7,6 +7,7 @@
 #include "components/cronet/native/generated/cronet.idl_c.h"
 
 #include "base/check.h"
+#include "base/macros.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
 // Test of Cronet_Buffer interface.

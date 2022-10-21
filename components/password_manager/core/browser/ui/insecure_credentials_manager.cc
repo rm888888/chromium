@@ -228,7 +228,7 @@ InsecureCredentialsManager::InsecureCredentialsManager(
     : presenter_(presenter),
       profile_store_(std::move(profile_store)),
       account_store_(std::move(account_store)) {
-  observed_saved_password_presenter_.Observe(presenter_.get());
+  observed_saved_password_presenter_.Observe(presenter_);
 }
 
 InsecureCredentialsManager::~InsecureCredentialsManager() = default;
@@ -257,8 +257,7 @@ void InsecureCredentialsManager::SaveInsecureCredential(
   for (const PasswordForm& saved_password : presenter_->GetSavedPasswords()) {
     if (saved_password.password_value == credential.password() &&
         CanonicalizeUsername(saved_password.username_value) ==
-            canonicalized_username &&
-        !saved_password.password_issues.contains(InsecureType::kLeaked)) {
+            canonicalized_username) {
       PasswordForm form_to_update = saved_password;
       form_to_update.password_issues.insert_or_assign(
           InsecureType::kLeaked,

@@ -90,7 +90,7 @@ void PasswordReuseManagerImpl::Shutdown() {
     notifier_->UnsubscribeFromSigninEvents();
 
   if (reuse_detector_) {
-    background_task_runner_->DeleteSoon(FROM_HERE, reuse_detector_.get());
+    background_task_runner_->DeleteSoon(FROM_HERE, reuse_detector_);
     reuse_detector_ = nullptr;
   }
 }
@@ -115,13 +115,11 @@ void PasswordReuseManagerImpl::Init(PrefService* prefs,
 
   profile_store_ = profile_store;
   profile_store_->AddObserver(this);
-  profile_store_->GetAutofillableLogins(
-      /*consumer=*/weak_ptr_factory_.GetWeakPtr());
+  profile_store_->GetAutofillableLogins(/*consumer=*/this);
   if (account_store) {
     account_store_ = account_store;
     account_store_->AddObserver(this);
-    account_store_->GetAutofillableLogins(
-        /*consumer=*/weak_ptr_factory_.GetWeakPtr());
+    account_store_->GetAutofillableLogins(/*consumer=*/this);
   }
 }
 
@@ -130,7 +128,7 @@ void PasswordReuseManagerImpl::AccountStoreStateChanged() {
   ScheduleTask(
       base::BindOnce(&PasswordReuseDetector::ClearCachedAccountStorePasswords,
                      base::Unretained(reuse_detector_)));
-  account_store_->GetAutofillableLogins(weak_ptr_factory_.GetWeakPtr());
+  account_store_->GetAutofillableLogins(this);
 }
 
 void PasswordReuseManagerImpl::ReportMetrics(
@@ -355,11 +353,7 @@ void PasswordReuseManagerImpl::OnLoginsChanged(
 
 void PasswordReuseManagerImpl::OnLoginsRetained(
     PasswordStoreInterface* store,
-    const std::vector<PasswordForm>& retained_passwords) {
-  ScheduleTask(base::BindOnce(&PasswordReuseDetector::OnLoginsRetained,
-                              base::Unretained(reuse_detector_),
-                              retained_passwords));
-}
+    const std::vector<PasswordForm>& retained_passwords) {}
 
 bool PasswordReuseManagerImpl::ScheduleTask(base::OnceClosure task) {
   return background_task_runner_ &&

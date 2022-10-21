@@ -5,6 +5,7 @@
 #ifndef CHROME_BROWSER_UI_VIEWS_TRY_CHROME_DIALOG_WIN_ARROW_BORDER_H_
 #define CHROME_BROWSER_UI_VIEWS_TRY_CHROME_DIALOG_WIN_ARROW_BORDER_H_
 
+#include "base/macros.h"
 #include "ui/gfx/geometry/insets.h"
 #include "ui/gfx/geometry/rect.h"
 #include "ui/gfx/geometry/size.h"

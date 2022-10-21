@@ -13,6 +13,7 @@
 
 #include "base/compiler_specific.h"
 #include "base/logging.h"
+#include "base/macros.h"
 #include "base/posix/eintr_wrapper.h"
 
 class MultiProcessLockLinux : public MultiProcessLock {

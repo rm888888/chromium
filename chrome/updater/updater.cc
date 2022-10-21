@@ -36,10 +36,10 @@
 #include "chrome/updater/app/server/win/server.h"
 #include "chrome/updater/app/server/win/service_main.h"
 #include "chrome/updater/win/win_util.h"
-#elif defined(OS_MAC)
+#endif
+
+#if defined(OS_MAC)
 #include "chrome/updater/app/server/mac/server.h"
-#elif defined(OS_LINUX)
-#include "chrome/updater/app/server/linux/server.h"
 #endif
 
 // Instructions For Windows.
@@ -58,7 +58,7 @@
 namespace updater {
 namespace {
 
-// The log file is created in DIR_LOCAL_APP_DATA or DIR_ROAMING_APP_DATA.
+// The log file is created in DIR_LOCAL_APP_DATA or DIR_APP_DATA.
 void InitLogging(UpdaterScope updater_scope) {
   logging::LoggingSettings settings;
   const absl::optional<base::FilePath> log_dir =
@@ -213,8 +213,8 @@ int UpdaterMain(int argc, const char* const* argv) {
   VLOG(1) << "Version " << kUpdaterVersion
           << ", command line: " << command_line->GetCommandLineString();
   const int retval = HandleUpdaterCommands(updater_scope, command_line);
-  VLOG(1) << __func__ << " (--" << GetUpdaterCommand(command_line) << ")"
-          << " returned " << retval << ".";
+  DVLOG(1) << __func__ << " (--" << GetUpdaterCommand(command_line) << ")"
+           << " returned " << retval << ".";
   return retval;
 }
 

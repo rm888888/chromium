@@ -11,6 +11,7 @@
 #include "base/containers/fixed_flat_map.h"
 #include "base/logging.h"
 #include "base/metrics/histogram_macros.h"
+#include "base/no_destructor.h"
 #include "build/build_config.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/base/ui_base_switches.h"
@@ -113,17 +114,14 @@ void NativeTheme::NotifyOnCaptionStyleUpdated() {
 
 float NativeTheme::AdjustBorderWidthByZoom(float border_width,
                                            float zoom_level) const {
-  float zoomed = floorf(border_width * zoom_level);
-  return std::max(1.0f, zoomed);
+  return border_width;
 }
 
 float NativeTheme::AdjustBorderRadiusByZoom(Part part,
                                             float border_radius,
                                             float zoom) const {
-  if (part == kCheckbox || part == kTextField || part == kPushButton) {
-    float zoomed = floorf(border_radius * zoom);
-    return std::max(1.0f, zoomed);
-  }
+  if (part == kCheckbox)
+    return border_radius * zoom;
   return border_radius;
 }
 

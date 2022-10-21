@@ -53,7 +53,4 @@ message LocalTrustedVaultPerUser {
 
 message LocalTrustedVault {
   repeated LocalTrustedVaultPerUser user = 1;
-
-  // Version of the stored data, used to perform data migrations.
-  optional int32 data_version = 2;
 }

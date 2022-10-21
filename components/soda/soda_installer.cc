@@ -24,14 +24,6 @@ namespace {
 
 constexpr int kSodaCleanUpDelayInDays = 30;
 
-#if BUILDFLAG(IS_CHROMEOS_ASH)
-
-inline std::string GetProjectorLanguageCode(PrefService* pref_service) {
-  return pref_service->GetString(ash::prefs::kProjectorCreationFlowLanguage);
-}
-
-#endif  // IS_CHROMEOS_ASH
-
 }  // namespace
 
 namespace speech {
@@ -81,10 +73,10 @@ void SodaInstaller::Init(PrefService* profile_prefs,
 #if BUILDFLAG(IS_CHROMEOS_ASH)
   if (!base::FeatureList::IsEnabled(
           ash::features::kOnDeviceSpeechRecognition) ||
-      soda_installer_initialized_) {
 #else  // !BUILDFLAG(IS_CHROMEOS_ASH)
-  if (soda_installer_initialized_) {
+  if (!base::FeatureList::IsEnabled(media::kUseSodaForLiveCaption) ||
 #endif
+      soda_installer_initialized_) {
     return;
   }
 
@@ -100,11 +92,8 @@ void SodaInstaller::Init(PrefService* profile_prefs,
             .empty()) {
       // TODO(crbug.com/1200667): Register the default language used by
       // Dictation on ChromeOS.
-
-#if BUILDFLAG(IS_CHROMEOS_ASH)
-      RegisterLanguage(GetProjectorLanguageCode(profile_prefs), global_prefs);
-#endif  // BUILDFLAG(IS_CHROMEOS_ASH)
-
+      // TODO(crbug.com/1165437): Register the default language used by
+      // Projector on ChromeOS.
       RegisterLanguage(prefs::GetLiveCaptionLanguageCode(profile_prefs),
                        global_prefs);
     }
@@ -261,16 +250,14 @@ void SodaInstaller::NotifyOnSodaLanguagePackProgress(
 
 void SodaInstaller::RegisterLanguage(const std::string& language,
                                      PrefService* global_prefs) {
-  ListPrefUpdateDeprecated update(global_prefs,
-                                  prefs::kSodaRegisteredLanguagePacks);
+  ListPrefUpdate update(global_prefs, prefs::kSodaRegisteredLanguagePacks);
   if (!base::Contains(update->GetList(), base::Value(language))) {
     update->Append(language);
   }
 }
 
 void SodaInstaller::UnregisterLanguages(PrefService* global_prefs) {
-  ListPrefUpdateDeprecated update(global_prefs,
-                                  prefs::kSodaRegisteredLanguagePacks);
+  ListPrefUpdate update(global_prefs, prefs::kSodaRegisteredLanguagePacks);
   update->ClearList();
 }
 

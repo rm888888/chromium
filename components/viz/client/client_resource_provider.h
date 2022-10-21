@@ -19,6 +19,7 @@
 #include "components/viz/common/resources/transferable_resource.h"
 #include "third_party/khronos/GLES2/gl2.h"
 #include "third_party/skia/include/core/SkSurface.h"
+#include "third_party/skia/include/gpu/GrBackendSurface.h"
 
 namespace gpu {
 namespace gles2 {

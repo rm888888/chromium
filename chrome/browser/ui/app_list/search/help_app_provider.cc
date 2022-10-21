@@ -16,6 +16,7 @@
 #include "ash/webui/help_app_ui/url_constants.h"
 #include "base/bind.h"
 #include "base/feature_list.h"
+#include "base/macros.h"
 #include "base/metrics/histogram_functions.h"
 #include "base/metrics/user_metrics.h"
 #include "base/time/time.h"
@@ -34,7 +35,6 @@
 #include "chromeos/strings/grit/chromeos_strings.h"
 #include "components/prefs/pref_service.h"
 #include "components/services/app_service/public/cpp/app_registry_cache.h"
-#include "components/services/app_service/public/cpp/app_types.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/gfx/image/image_skia.h"
 #include "url/gurl.h"
@@ -217,58 +217,57 @@ HelpAppProvider::~HelpAppProvider() = default;
 
 void HelpAppProvider::Start(const std::u16string& query) {
   ClearResultsSilently();
+  if (query.empty()) {
+    // Zero state suggestion chip.
+    SearchProvider::Results search_results;
 
-  if (query.size() < kMinQueryLength) {
-    // Do not do a list search for queries that are too short because the
-    // results generally aren't meaningful. This isn't worth logging as a list
-    // search result case because it happens frequently when entering a new
-    // search query.
-    return;
+    if (ShouldShowDiscoverTabSuggestionChip(profile_)) {
+      search_results.emplace_back(std::make_unique<HelpAppResult>(
+          profile_, kHelpAppDiscoverResult,
+          l10n_util::GetStringUTF16(IDS_HELP_APP_DISCOVER_TAB_SUGGESTION_CHIP),
+          icon_));
+    } else if (ash::ReleaseNotesStorage(profile_).ShouldShowSuggestionChip()) {
+      search_results.emplace_back(std::make_unique<HelpAppResult>(
+          profile_, kHelpAppUpdatesResult,
+          l10n_util::GetStringUTF16(IDS_HELP_APP_WHATS_NEW_SUGGESTION_CHIP),
+          icon_));
+    }
+    SwapResults(&search_results);
+  } else {
+    if (query.size() < kMinQueryLength) {
+      // Do not do a list search for queries that are too short because the
+      // results generally aren't meaningful. This isn't worth logging as a list
+      // search result case because it happens frequently when entering a new
+      // search query.
+      return;
+    }
+
+    // Start a search for list results.
+    const base::TimeTicks start_time = base::TimeTicks::Now();
+    last_query_ = query;
+
+    // Stop the search if:
+    //  - the search backend isn't available (or the feature is disabled)
+    //  - we don't have an icon to display with results.
+    if (!search_handler_) {
+      LogListSearchResultState(
+          ListSearchResultState::kSearchHandlerUnavailable);
+      return;
+    } else if (icon_.isNull()) {
+      LogListSearchResultState(ListSearchResultState::kNoHelpAppIcon);
+      // This prevents a timeout in the test, but it does not change the user
+      // experience because the results were already cleared at the start.
+      ClearResults();
+      return;
+    }
+
+    // Invalidate weak pointers to cancel existing searches.
+    weak_factory_.InvalidateWeakPtrs();
+    search_handler_->Search(
+        query, kNumRequestedResults,
+        base::BindOnce(&HelpAppProvider::OnSearchReturned,
+                       weak_factory_.GetWeakPtr(), query, start_time));
   }
-
-  // Start a search for list results.
-  const base::TimeTicks start_time = base::TimeTicks::Now();
-  last_query_ = query;
-
-  // Stop the search if:
-  //  - the search backend isn't available (or the feature is disabled)
-  //  - we don't have an icon to display with results.
-  if (!search_handler_) {
-    LogListSearchResultState(ListSearchResultState::kSearchHandlerUnavailable);
-    return;
-  } else if (icon_.isNull()) {
-    LogListSearchResultState(ListSearchResultState::kNoHelpAppIcon);
-    // This prevents a timeout in the test, but it does not change the user
-    // experience because the results were already cleared at the start.
-    ClearResults();
-    return;
-  }
-
-  // Invalidate weak pointers to cancel existing searches.
-  weak_factory_.InvalidateWeakPtrs();
-  search_handler_->Search(
-      query, kNumRequestedResults,
-      base::BindOnce(&HelpAppProvider::OnSearchReturned,
-                     weak_factory_.GetWeakPtr(), query, start_time));
-}
-
-void HelpAppProvider::StartZeroState() {
-  SearchProvider::Results search_results;
-  ClearResultsSilently();
-  last_query_.clear();
-
-  if (ShouldShowDiscoverTabSuggestionChip(profile_)) {
-    search_results.emplace_back(std::make_unique<HelpAppResult>(
-        profile_, kHelpAppDiscoverResult,
-        l10n_util::GetStringUTF16(IDS_HELP_APP_DISCOVER_TAB_SUGGESTION_CHIP),
-        icon_));
-  } else if (ash::ReleaseNotesStorage(profile_).ShouldShowSuggestionChip()) {
-    search_results.emplace_back(std::make_unique<HelpAppResult>(
-        profile_, kHelpAppUpdatesResult,
-        l10n_util::GetStringUTF16(IDS_HELP_APP_WHATS_NEW_SUGGESTION_CHIP),
-        icon_));
-  }
-  SwapResults(&search_results);
 }
 
 void HelpAppProvider::ViewClosing() {
@@ -315,12 +314,8 @@ void HelpAppProvider::AppListShown() {
   }
 }
 
-ash::AppListSearchResultType HelpAppProvider::ResultType() const {
+ash::AppListSearchResultType HelpAppProvider::ResultType() {
   return ash::AppListSearchResultType::kHelpApp;
-}
-
-bool HelpAppProvider::ShouldBlockZeroState() const {
-  return true;
 }
 
 void HelpAppProvider::OnAppUpdate(const apps::AppUpdate& update) {
@@ -342,32 +337,22 @@ void HelpAppProvider::OnSearchResultAvailabilityChanged() {
   Start(last_query_);
 }
 
-void HelpAppProvider::OnLoadIcon(apps::IconValuePtr icon_value) {
-  if (icon_value && icon_value->icon_type == apps::IconType::kStandard) {
+void HelpAppProvider::OnLoadIcon(apps::mojom::IconValuePtr icon_value) {
+  auto icon_type = apps::mojom::IconType::kStandard;
+  if (icon_value->icon_type == icon_type) {
     icon_ = icon_value->uncompressed;
   }
 }
 
 void HelpAppProvider::LoadIcon() {
+  auto icon_type = apps::mojom::IconType::kStandard;
   apps::mojom::AppType app_type =
       app_service_proxy_->AppRegistryCache().GetAppType(web_app::kHelpAppId);
-
-  if (base::FeatureList::IsEnabled(features::kAppServiceLoadIconWithoutMojom)) {
-    app_service_proxy_->LoadIcon(
-        apps::ConvertMojomAppTypToAppType(app_type), web_app::kHelpAppId,
-        apps::IconType::kStandard,
-        ash::SharedAppListConfig::instance().suggestion_chip_icon_dimension(),
-        /*allow_placeholder_icon=*/false,
-        base::BindOnce(&HelpAppProvider::OnLoadIcon,
-                       weak_factory_.GetWeakPtr()));
-  } else {
-    app_service_proxy_->LoadIcon(
-        app_type, web_app::kHelpAppId, apps::mojom::IconType::kStandard,
-        ash::SharedAppListConfig::instance().suggestion_chip_icon_dimension(),
-        /*allow_placeholder_icon=*/false,
-        apps::MojomIconValueToIconValueCallback(base::BindOnce(
-            &HelpAppProvider::OnLoadIcon, weak_factory_.GetWeakPtr())));
-  }
+  app_service_proxy_->LoadIcon(
+      app_type, web_app::kHelpAppId, icon_type,
+      ash::SharedAppListConfig::instance().suggestion_chip_icon_dimension(),
+      /*allow_placeholder_icon=*/false,
+      base::BindOnce(&HelpAppProvider::OnLoadIcon, weak_factory_.GetWeakPtr()));
 }
 
 }  // namespace app_list

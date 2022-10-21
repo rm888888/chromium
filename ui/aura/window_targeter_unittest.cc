@@ -6,7 +6,7 @@
 
 #include <utility>
 
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "ui/aura/scoped_window_targeter.h"
 #include "ui/aura/test/aura_test_base.h"
 #include "ui/aura/test/test_window_delegate.h"
@@ -36,7 +36,7 @@ class StaticWindowTargeter : public WindowTargeter {
     return window_;
   }
 
-  raw_ptr<Window> window_;
+  Window* window_;
 };
 
 gfx::RectF GetEffectiveVisibleBoundsInRootWindow(Window* window) {

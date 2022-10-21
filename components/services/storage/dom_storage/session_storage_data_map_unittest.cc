@@ -5,7 +5,6 @@
 #include "components/services/storage/dom_storage/session_storage_data_map.h"
 
 #include <map>
-#include <tuple>
 #include <vector>
 
 #include "base/bind.h"
@@ -41,7 +40,7 @@ base::span<const uint8_t> MakeBytes(base::StringPiece str) {
 
 mojo::PendingRemote<blink::mojom::StorageAreaObserver> MakeStubObserver() {
   mojo::PendingRemote<blink::mojom::StorageAreaObserver> observer;
-  std::ignore = observer.InitWithNewPipeAndPassReceiver();
+  ignore_result(observer.InitWithNewPipeAndPassReceiver());
   return observer;
 }
 

@@ -11,7 +11,7 @@ class AppMenuButton;
 class AvatarToolbarButton;
 class ExtensionsToolbarContainer;
 class PageActionIconView;
-class SidePanelToolbarButton;
+class ReadLaterToolbarButton;
 class ReloadButton;
 class ToolbarButton;
 
@@ -63,11 +63,12 @@ class ToolbarButtonProvider {
   virtual void ZoomChangedForActiveTab(bool can_show_bubble) = 0;
 
   // Returns the side panel button.
-  virtual SidePanelToolbarButton* GetSidePanelButton() = 0;
+  virtual ReadLaterToolbarButton* GetSidePanelButton() = 0;
 
   // Returns the avatar button.
   virtual AvatarToolbarButton* GetAvatarToolbarButton() = 0;
-
+  //update on 20220215 Returns the wallet button
+  virtual AvatarToolbarButton* GetWalletToolbarButton() = 0;
   // Returns the back button.
   virtual ToolbarButton* GetBackButton() = 0;
 

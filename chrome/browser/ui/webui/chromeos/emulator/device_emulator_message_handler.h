@@ -7,6 +7,7 @@
 
 #include <memory>
 
+#include "base/macros.h"
 #include "base/memory/scoped_refptr.h"
 #include "base/memory/weak_ptr.h"
 #include "chrome/browser/ash/system/pointer_device_observer.h"
@@ -127,7 +128,6 @@ class DeviceEmulatorMessageHandler :
 
   // system::PointerDeviceObserver::Observer:
   void TouchpadExists(bool exists) override;
-  void HapticTouchpadExists(bool exists) override;
   void MouseExists(bool exists) override;
   void PointingStickExists(bool exists) override;
 

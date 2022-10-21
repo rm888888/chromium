@@ -7,6 +7,7 @@
 
 #include <vector>
 
+#include "base/macros.h"
 #include "ui/aura/aura_export.h"
 #include "ui/aura/window_observer.h"
 

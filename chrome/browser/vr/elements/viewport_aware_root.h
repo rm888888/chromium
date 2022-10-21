@@ -5,6 +5,7 @@
 #ifndef CHROME_BROWSER_VR_ELEMENTS_VIEWPORT_AWARE_ROOT_H_
 #define CHROME_BROWSER_VR_ELEMENTS_VIEWPORT_AWARE_ROOT_H_
 
+#include "base/macros.h"
 #include "chrome/browser/vr/elements/ui_element.h"
 #include "chrome/browser/vr/vr_ui_export.h"
 #include "ui/gfx/geometry/transform.h"

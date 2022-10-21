@@ -7,7 +7,6 @@
 #include "chrome/grit/generated_resources.h"
 #include "components/vector_icons/vector_icons.h"
 #include "ui/base/l10n/l10n_util.h"
-#include "ui/base/metadata/metadata_impl_macros.h"
 #include "ui/gfx/paint_vector_icon.h"
 
 namespace {
@@ -17,7 +16,9 @@ constexpr SkColor kHangUpButtonColor = gfx::kGoogleRed300;
 }  // namespace
 
 HangUpButton::HangUpButton(PressedCallback callback)
-    : OverlayWindowImageButton(std::move(callback)) {
+    : ImageButton(std::move(callback)) {
+  SetImageHorizontalAlignment(views::ImageButton::ALIGN_CENTER);
+  SetImageVerticalAlignment(views::ImageButton::ALIGN_MIDDLE);
   SetTooltipText(
       l10n_util::GetStringUTF16(IDS_PICTURE_IN_PICTURE_HANG_UP_TEXT));
   UpdateImage();
@@ -35,6 +36,3 @@ void HangUpButton::UpdateImage() {
            gfx::CreateVectorIcon(vector_icons::kCallEndIcon, width(),
                                  kHangUpButtonColor));
 }
-
-BEGIN_METADATA(HangUpButton, OverlayWindowImageButton)
-END_METADATA

@@ -5,28 +5,18 @@
 #ifndef COMPONENTS_PASSWORD_MANAGER_CORE_BROWSER_BUILT_IN_BACKEND_TO_ANDROID_BACKEND_MIGRATOR_H_
 #define COMPONENTS_PASSWORD_MANAGER_CORE_BROWSER_BUILT_IN_BACKEND_TO_ANDROID_BACKEND_MIGRATOR_H_
 
-#include "base/memory/raw_ptr.h"
-#include "components/password_manager/core/browser/password_store_backend.h"
+#include "base/callback.h"
+#include "base/callback_forward.h"
 
 class PrefService;
 
 namespace password_manager {
-
-class PasswordStoreBackend;
-
 // Instantiate this object to migrate all password stored in the built-in
 // backend to the Android backend. Migration is potentially an expensive
 // operation and shouldn't start during the hot phase of Chrome start.
 class BuiltInBackendToAndroidBackendMigrator {
  public:
-  // |built_in_backend| and |android_backend| must not be null and must outlive
-  // the migrator.
-  BuiltInBackendToAndroidBackendMigrator(
-      PasswordStoreBackend* built_in_backend,
-      PasswordStoreBackend* android_backend,
-      PrefService* prefs,
-      base::RepeatingCallback<bool()> is_syncing_passwords_callback);
-
+  explicit BuiltInBackendToAndroidBackendMigrator(PrefService* prefs);
   BuiltInBackendToAndroidBackendMigrator(
       const BuiltInBackendToAndroidBackendMigrator&) = delete;
   BuiltInBackendToAndroidBackendMigrator& operator=(
@@ -40,44 +30,10 @@ class BuiltInBackendToAndroidBackendMigrator {
   void StartMigrationIfNecessary();
 
  private:
-  struct BackendAndLoginsResults;
-
-  // Helper methods to {Add,Update,Remove} |form| in |backend|. This is used to
-  // ensure that all the operations are happening inside
-  // BuiltInBackendToAndroidBackendMigrator life-scope.
-  void AddLoginToBackend(PasswordStoreBackend* backend,
-                         const PasswordForm& form,
-                         base::OnceClosure callback);
-  void UpdateLoginInBackend(PasswordStoreBackend* backend,
-                            const PasswordForm& form,
-                            base::OnceClosure callback);
-  void RemoveLoginFromBackend(PasswordStoreBackend* backend,
-                              const PasswordForm& form,
-                              base::OnceClosure callback);
-
-  // Saves current migration version in |prefs_|.
+  // Saves current migration version in 'pref_'.
   void UpdateMigrationVersionInPref();
 
-  // Schedules async calls to read of all passwords from both backends.
-  void PrepareForMigration();
-
-  // Migrates password between |built_in_backend_| and |android_backend_|.
-  // |result| consists of passwords from the |built_in_backend_| let's call them
-  // |A| and passwords from the |android_backend_| - |B|. If initial migration
-  // needed this function will update both backends with |A|U|B| otherwise it
-  // will replace passwords from the |built_in_backend_| with |B|.
-  void MigratePasswordsBetweenAndroidAndBuiltInBackends(
-      std::vector<BackendAndLoginsResults> result);
-
-  const raw_ptr<PasswordStoreBackend> built_in_backend_;
-  const raw_ptr<PasswordStoreBackend> android_backend_;
-
-  const raw_ptr<PrefService> prefs_ = nullptr;
-
-  base::RepeatingCallback<bool()> is_syncing_passwords_callback_;
-
-  base::WeakPtrFactory<BuiltInBackendToAndroidBackendMigrator>
-      weak_ptr_factory_{this};
+  PrefService* prefs_ = nullptr;
 };
 
 }  // namespace password_manager

@@ -10,6 +10,7 @@
 
 #include "base/callback_forward.h"
 #include "base/containers/flat_set.h"
+#include "base/macros.h"
 #include "components/performance_manager/public/freezing/freezing.h"
 #include "components/performance_manager/public/graph/node.h"
 #include "components/performance_manager/public/mojom/coordination_unit.mojom.h"
@@ -256,8 +257,7 @@ class PageNodeObserver {
   virtual void OnIsAudibleChanged(const PageNode* page_node) = 0;
 
   // Invoked when the GetLoadingState property changes.
-  virtual void OnLoadingStateChanged(const PageNode* page_node,
-                                     PageNode::LoadingState previous_state) = 0;
+  virtual void OnLoadingStateChanged(const PageNode* page_node) = 0;
 
   // Invoked when the UkmSourceId property changes.
   virtual void OnUkmSourceIdChanged(const PageNode* page_node) = 0;
@@ -329,8 +329,7 @@ class PageNode::ObserverDefaultImpl : public PageNodeObserver {
       EmbeddingType previous_embedding_type) override {}
   void OnIsVisibleChanged(const PageNode* page_node) override {}
   void OnIsAudibleChanged(const PageNode* page_node) override {}
-  void OnLoadingStateChanged(const PageNode* page_node,
-                             PageNode::LoadingState previous_state) override {}
+  void OnLoadingStateChanged(const PageNode* page_node) override {}
   void OnUkmSourceIdChanged(const PageNode* page_node) override {}
   void OnPageLifecycleStateChanged(const PageNode* page_node) override {}
   void OnPageIsHoldingWebLockChanged(const PageNode* page_node) override {}

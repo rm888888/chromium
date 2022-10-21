@@ -9,6 +9,8 @@
 
 #include <memory>
 
+#include "base/macros.h"
+
 // A container for a registry key, its values, and its subkeys.  We don't use
 // more obvious methods for various reasons:
 // - RegCopyTree isn't supported pre-Vista, so we'd have to do something

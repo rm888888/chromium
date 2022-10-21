@@ -8,6 +8,7 @@
 
 #include "base/bind.h"
 #include "base/lazy_instance.h"
+#include "base/macros.h"
 #include "components/guest_view/common/guest_view_constants.h"
 #include "components/guest_view/common/guest_view_messages.h"
 #include "components/guest_view/renderer/guest_view_request.h"
@@ -178,8 +179,8 @@ void GuestViewContainer::RunDestructionCallback(bool embedder_frame_destroyed) {
     v8::HandleScope handle_scope(destruction_isolate_);
     v8::Local<v8::Function> callback = v8::Local<v8::Function>::New(
         destruction_isolate_, destruction_callback_);
-    v8::Local<v8::Context> context;
-    if (!callback->GetCreationContext().ToLocal(&context))
+    v8::Local<v8::Context> context = callback->CreationContext();
+    if (context.IsEmpty())
       return;
 
     v8::Context::Scope context_scope(context);
@@ -249,8 +250,8 @@ void GuestViewContainer::CallElementResizeCallback(
   v8::HandleScope handle_scope(element_resize_isolate_);
   v8::Local<v8::Function> callback = v8::Local<v8::Function>::New(
       element_resize_isolate_, element_resize_callback_);
-  v8::Local<v8::Context> context;
-  if (!callback->GetCreationContext().ToLocal(&context))
+  v8::Local<v8::Context> context = callback->CreationContext();
+  if (context.IsEmpty())
     return;
 
   const int argc = 2;

@@ -114,7 +114,6 @@ PageSpecificContentSettings::WebContentsHandler::WebContentsHandler(
     content::WebContents* web_contents,
     std::unique_ptr<Delegate> delegate)
     : WebContentsObserver(web_contents),
-      content::WebContentsUserData<WebContentsHandler>(*web_contents),
       delegate_(std::move(delegate)),
       map_(delegate_->GetSettingsMap()) {
   DCHECK(!PageSpecificContentSettings::GetForCurrentDocument(
@@ -298,7 +297,7 @@ PageSpecificContentSettings::PageSpecificContentSettings(
           delegate_->GetIsDeletionDisabledCallback()),
       microphone_camera_state_(MICROPHONE_CAMERA_NOT_ACCESSED) {
   DCHECK(!render_frame_host().GetParent());
-  observation_.Observe(map_.get());
+  observation_.Observe(map_);
   if (render_frame_host().GetLifecycleState() ==
       content::RenderFrameHost::LifecycleState::kPrerendering) {
     updates_queued_during_prerender_ = std::make_unique<PendingUpdates>();
@@ -827,7 +826,7 @@ void PageSpecificContentSettings::OnContentSettingChanged(
           map_->GetContentSetting(current_url, current_url, content_type);
       if (geolocation_setting == CONTENT_SETTING_ALLOW)
         geolocation_was_just_granted_on_site_level_ = true;
-      [[fallthrough]];
+      FALLTHROUGH;
     }
     case ContentSettingsType::IMAGES:
     case ContentSettingsType::JAVASCRIPT:

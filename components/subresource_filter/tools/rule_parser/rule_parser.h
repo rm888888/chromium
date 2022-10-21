@@ -9,6 +9,7 @@
 #include <ostream>
 #include <string>
 
+#include "base/macros.h"
 #include "base/strings/string_piece.h"
 #include "components/subresource_filter/tools/rule_parser/rule.h"
 

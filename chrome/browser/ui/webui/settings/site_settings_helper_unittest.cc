@@ -50,17 +50,16 @@ class SiteSettingsHelperTest : public testing::Test {
                      const std::string& pattern,
                      const std::string& pattern_display_name,
                      const ContentSetting setting) {
-    const base::Value& value = exceptions.GetList()[index];
-    EXPECT_TRUE(value.is_dict());
-    const base::DictionaryValue& dict = base::Value::AsDictionaryValue(value);
+    const base::DictionaryValue* dict;
+    exceptions.GetDictionary(index, &dict);
     std::string actual_pattern;
-    dict.GetString("origin", &actual_pattern);
+    dict->GetString("origin", &actual_pattern);
     EXPECT_EQ(pattern, actual_pattern);
     std::string actual_display_name;
-    dict.GetString(kDisplayName, &actual_display_name);
+    dict->GetString(kDisplayName, &actual_display_name);
     EXPECT_EQ(pattern_display_name, actual_display_name);
     std::string actual_setting;
-    dict.GetString(kSetting, &actual_setting);
+    dict->GetString(kSetting, &actual_setting);
     EXPECT_EQ(content_settings::ContentSettingToString(setting),
               actual_setting);
   }
@@ -271,9 +270,7 @@ TEST_F(SiteSettingsHelperTest, ExceptionListShowsEmbargoed) {
     // Fetch and check the first origin.
     const base::DictionaryValue* dictionary;
     std::string primary_pattern, display_name;
-    const base::Value* value = &exceptions.GetList()[0];
-    ASSERT_TRUE(value->is_dict());
-    dictionary = &base::Value::AsDictionaryValue(*value);
+    ASSERT_TRUE(exceptions.GetDictionary(0, &dictionary));
     ASSERT_TRUE(
         dictionary->GetString(site_settings::kOrigin, &primary_pattern));
     ASSERT_TRUE(
@@ -283,9 +280,7 @@ TEST_F(SiteSettingsHelperTest, ExceptionListShowsEmbargoed) {
     EXPECT_EQ(kOriginToBlock, display_name);
 
     // Fetch and check the second origin.
-    value = &exceptions.GetList()[1];
-    ASSERT_TRUE(value->is_dict());
-    dictionary = &base::Value::AsDictionaryValue(*value);
+    ASSERT_TRUE(exceptions.GetDictionary(1, &dictionary));
     ASSERT_TRUE(
         dictionary->GetString(site_settings::kOrigin, &primary_pattern));
     ASSERT_TRUE(
@@ -328,7 +323,7 @@ TEST_F(SiteSettingsHelperTest, CheckExceptionOrder) {
   policy_provider->SetWebsiteSetting(
       ContentSettingsPattern::FromString(star_google_com),
       ContentSettingsPattern::Wildcard(), kContentType,
-      base::Value(CONTENT_SETTING_BLOCK));
+      std::make_unique<base::Value>(CONTENT_SETTING_BLOCK));
   policy_provider->set_read_only(true);
   content_settings::TestUtils::OverrideProvider(
       map, std::move(policy_provider), HostContentSettingsMap::POLICY_PROVIDER);
@@ -346,7 +341,7 @@ TEST_F(SiteSettingsHelperTest, CheckExceptionOrder) {
   extension_provider->SetWebsiteSetting(
       ContentSettingsPattern::FromString(drive_google_com),
       ContentSettingsPattern::Wildcard(), kContentType,
-      base::Value(CONTENT_SETTING_ASK));
+      std::make_unique<base::Value>(CONTENT_SETTING_ASK));
   extension_provider->set_read_only(true);
   content_settings::TestUtils::OverrideProvider(
       map, std::move(extension_provider),
@@ -425,10 +420,10 @@ TEST_F(SiteSettingsHelperTest, ContentSettingSource) {
 
   // Extension.
   auto extension_provider = std::make_unique<content_settings::MockProvider>();
-  extension_provider->SetWebsiteSetting(ContentSettingsPattern::FromURL(origin),
-                                        ContentSettingsPattern::FromURL(origin),
-                                        kContentType,
-                                        base::Value(CONTENT_SETTING_BLOCK));
+  extension_provider->SetWebsiteSetting(
+      ContentSettingsPattern::FromURL(origin),
+      ContentSettingsPattern::FromURL(origin), kContentType,
+      std::make_unique<base::Value>(CONTENT_SETTING_BLOCK));
   extension_provider->set_read_only(true);
   content_settings::TestUtils::OverrideProvider(
       map, std::move(extension_provider),
@@ -441,10 +436,10 @@ TEST_F(SiteSettingsHelperTest, ContentSettingSource) {
 
   // Enterprise policy.
   auto policy_provider = std::make_unique<content_settings::MockProvider>();
-  policy_provider->SetWebsiteSetting(ContentSettingsPattern::FromURL(origin),
-                                     ContentSettingsPattern::FromURL(origin),
-                                     kContentType,
-                                     base::Value(CONTENT_SETTING_ALLOW));
+  policy_provider->SetWebsiteSetting(
+      ContentSettingsPattern::FromURL(origin),
+      ContentSettingsPattern::FromURL(origin), kContentType,
+      std::make_unique<base::Value>(CONTENT_SETTING_ALLOW));
   policy_provider->set_read_only(true);
   content_settings::TestUtils::OverrideProvider(
       map, std::move(policy_provider), HostContentSettingsMap::POLICY_PROVIDER);

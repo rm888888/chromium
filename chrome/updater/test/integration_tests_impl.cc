@@ -66,10 +66,8 @@ constexpr char kDoNothingCRXName[] = "updater_qualification_app_exe.crx";
 constexpr char kDoNothingCRXRun[] = "qualification_app.exe";
 constexpr char kDoNothingCRXHash[] =
     "0705f7eedb0427810db76dfc072c8cbc302fbeb9b2c56fa0de3752ed8d6f9164";
-#elif defined(OS_LINUX)
-constexpr char kDoNothingCRXName[] = "updater_qualification_app.crx";
-constexpr char kDoNothingCRXRun[] = "qualification_app";
-constexpr char kDoNothingCRXHash[] = "";
+#else
+static_assert(false, "Unsupported platform for IntegrationTest.*");
 #endif
 
 std::string GetUpdateResponse(const std::string& app_id,
@@ -201,8 +199,7 @@ void Update(UpdaterScope scope, const std::string& app_id) {
   scoped_refptr<UpdateService> update_service = CreateUpdateServiceProxy(scope);
   base::RunLoop loop;
   update_service->Update(
-      app_id, UpdateService::Priority::kForeground,
-      UpdateService::PolicySameVersionUpdate::kNotAllowed, base::DoNothing(),
+      app_id, UpdateService::Priority::kForeground, base::DoNothing(),
       base::BindOnce(base::BindLambdaForTesting(
           [&loop](UpdateService::Result result_unused) { loop.Quit(); })));
   loop.Run();
@@ -311,6 +308,18 @@ bool Run(UpdaterScope scope, base::CommandLine command_line, int* exit_code) {
 
   // TODO(crbug.com/1096654): Get the timeout from TestTimeouts.
   return process.WaitForExitWithTimeout(base::Seconds(45), exit_code);
+}
+
+void SleepFor(int seconds) {
+  VLOG(2) << "Sleeping " << seconds << " seconds...";
+  base::WaitableEvent sleep(base::WaitableEvent::ResetPolicy::MANUAL,
+                            base::WaitableEvent::InitialState::NOT_SIGNALED);
+  base::ThreadPool::PostDelayedTask(
+      FROM_HERE, {base::MayBlock()},
+      base::BindOnce(&base::WaitableEvent::Signal, base::Unretained(&sleep)),
+      base::Seconds(seconds));
+  sleep.Wait();
+  VLOG(2) << "Sleep complete.";
 }
 
 bool WaitFor(base::RepeatingCallback<bool()> predicate) {
@@ -463,29 +472,6 @@ void StressUpdateService(UpdaterScope scope) {
   };
 
   stress_runner();
-  loop.Run();
-}
-
-void CallServiceUpdate(UpdaterScope updater_scope,
-                       const std::string& app_id,
-                       bool same_version_update_allowed) {
-  UpdateService::PolicySameVersionUpdate policy_same_version_update =
-      same_version_update_allowed
-          ? UpdateService::PolicySameVersionUpdate::kAllowed
-          : UpdateService::PolicySameVersionUpdate::kNotAllowed;
-
-  scoped_refptr<UpdateService> service_proxy =
-      CreateUpdateServiceProxy(updater_scope);
-
-  base::RunLoop loop;
-  service_proxy->Update(
-      app_id, UpdateService::Priority::kForeground, policy_same_version_update,
-      base::BindLambdaForTesting([](const UpdateService::UpdateState&) {}),
-      base::BindLambdaForTesting([&](UpdateService::Result result) {
-        EXPECT_EQ(result, UpdateService::Result::kSuccess);
-        loop.Quit();
-      }));
-
   loop.Run();
 }
 

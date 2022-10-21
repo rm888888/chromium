@@ -10,6 +10,7 @@
 #include <lib/ui/scenic/cpp/view_ref_pair.h>
 
 #include "base/component_export.h"
+#include "base/macros.h"
 #include "ui/base/ime/input_method_base.h"
 #include "ui/base/ime/virtual_keyboard_controller.h"
 

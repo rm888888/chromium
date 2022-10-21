@@ -15,10 +15,6 @@ interface CrDrawerElement extends LegacyElementMixin, HTMLElement {
   cancel(): void;
   close(): void;
   wasCanceled(): boolean;
-
-  $: {
-    dialog: HTMLDialogElement,
-  };
 }
 
 export {CrDrawerElement};

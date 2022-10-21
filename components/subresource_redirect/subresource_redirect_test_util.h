@@ -6,7 +6,6 @@
 #define COMPONENTS_SUBRESOURCE_REDIRECT_SUBRESOURCE_REDIRECT_TEST_UTIL_H_
 
 #include <string>
-#include <vector>
 
 namespace subresource_redirect {
 

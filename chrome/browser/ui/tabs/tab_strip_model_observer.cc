@@ -13,18 +13,6 @@
 
 using content::WebContents;
 
-TabStripModelChange::RemovedTab::RemovedTab(
-    content::WebContents* contents,
-    int index,
-    RemoveReason remove_reason,
-    absl::optional<SessionID> session_id)
-    : contents(contents),
-      index(index),
-      remove_reason(remove_reason),
-      session_id(session_id) {}
-TabStripModelChange::RemovedTab::~RemovedTab() = default;
-TabStripModelChange::RemovedTab::RemovedTab(RemovedTab&& other) = default;
-
 TabStripModelChange::Insert::Insert() = default;
 TabStripModelChange::Insert::Insert(Insert&& other) = default;
 TabStripModelChange::Insert& TabStripModelChange::Insert::operator=(Insert&&) =

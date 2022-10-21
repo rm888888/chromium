@@ -10,7 +10,6 @@
 #include <memory>
 #include <numeric>
 #include <string>
-#include <tuple>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -24,6 +23,7 @@
 #include "base/lazy_instance.h"
 #include "base/location.h"
 #include "base/logging.h"
+#include "base/macros.h"
 #include "base/process/process_handle.h"
 #include "base/strings/string_split.h"
 #include "base/strings/string_util.h"
@@ -32,6 +32,7 @@
 #include "build/build_config.h"
 #include "components/nacl/common/nacl_host_messages.h"
 #include "components/nacl/common/nacl_messages.h"
+#include "components/nacl/common/nacl_nonsfi_util.h"
 #include "components/nacl/common/nacl_switches.h"
 #include "components/nacl/common/nacl_types.h"
 #include "components/nacl/renderer/file_downloader.h"
@@ -246,8 +247,12 @@ class ManifestServiceProxy : public ManifestServiceChannel::Delegate {
             &nacl_plugin_instance->nexe_load_manager;
         std::string full_url;
         PP_PNaClOptions pnacl_options;
+        bool uses_nonsfi_mode;
         JsonManifest::ErrorInfo error_info;
-        if (manifest->GetProgramURL(&full_url, &pnacl_options, &error_info)) {
+        if (manifest->GetProgramURL(&full_url,
+                                    &pnacl_options,
+                                    &uses_nonsfi_mode,
+                                    &error_info)) {
           int64_t exe_size = nacl_plugin_instance->pexe_size;
           if (exe_size == 0)
             exe_size = load_manager->nexe_size();
@@ -394,6 +399,7 @@ void PPBNaClPrivate::LaunchSelLdr(
     PP_Bool main_service_runtime,
     const char* alleged_url,
     const PP_NaClFileInfo* nexe_file_info,
+    PP_Bool uses_nonsfi_mode,
     PP_NaClAppProcessType pp_process_type,
     std::unique_ptr<IPC::SyncChannel>* translator_channel,
     PP_CompletionCallback callback) {
@@ -465,13 +471,15 @@ void PPBNaClPrivate::LaunchSelLdr(
                            nexe_file_info->token_lo, nexe_file_info->token_hi,
                            resource_prefetch_request_list,
                            GetFrameRoutingID(instance), perm_bits,
-                           process_type),
+                           PP_ToBool(uses_nonsfi_mode), process_type),
           &launch_result, &error_message_string))) {
     ppapi::PpapiGlobals::Get()->GetMainThreadMessageLoop()->PostTask(
         FROM_HERE, base::BindOnce(callback.func, callback.user_data,
                                   static_cast<int32_t>(PP_ERROR_FAILED)));
     return;
   }
+
+  load_manager->set_nonsfi(PP_ToBool(uses_nonsfi_mode));
 
   if (!error_message_string.empty()) {
     // Even on error, some FDs/handles may be passed to here.
@@ -798,8 +806,8 @@ PP_FileHandle OpenNaClExecutable(PP_Instance instance,
   *nonce_hi = 0;
   base::FilePath file_path;
   if (!sender->Send(new NaClHostMsg_OpenNaClExecutable(
-          GetFrameRoutingID(instance), GURL(file_url), &out_fd, nonce_lo,
-          nonce_hi))) {
+          GetFrameRoutingID(instance), GURL(file_url), !load_manager->nonsfi(),
+          &out_fd, nonce_lo, nonce_hi))) {
     return PP_kInvalidFileHandle;
   }
 
@@ -1077,7 +1085,7 @@ bool CreateJsonManifest(PP_Instance instance,
     isa_type = GetSandboxArch();
 
   std::unique_ptr<nacl::JsonManifest> j(new nacl::JsonManifest(
-      manifest_url.c_str(), isa_type,
+      manifest_url.c_str(), isa_type, IsNonSFIModeEnabled(),
       PP_ToBool(NaClDebugEnabledForURL(manifest_url.c_str()))));
   JsonManifest::ErrorInfo error_info;
   if (j->Init(manifest_data.c_str(), &error_info)) {
@@ -1117,17 +1125,21 @@ bool ShouldUseSubzero(const PP_PNaClOptions* pnacl_options) {
 // static
 PP_Bool PPBNaClPrivate::GetManifestProgramURL(PP_Instance instance,
                                               PP_Var* pp_full_url,
-                                              PP_PNaClOptions* pnacl_options) {
+                                              PP_PNaClOptions* pnacl_options,
+                                              PP_Bool* pp_uses_nonsfi_mode) {
   nacl::NexeLoadManager* load_manager = GetNexeLoadManager(instance);
 
   JsonManifest* manifest = GetJsonManifest(instance);
   if (manifest == NULL)
     return PP_FALSE;
 
+  bool uses_nonsfi_mode;
   std::string full_url;
   JsonManifest::ErrorInfo error_info;
-  if (manifest->GetProgramURL(&full_url, pnacl_options, &error_info)) {
+  if (manifest->GetProgramURL(&full_url, pnacl_options, &uses_nonsfi_mode,
+                              &error_info)) {
     *pp_full_url = ppapi::StringVar::StringToPPVar(full_url);
+    *pp_uses_nonsfi_mode = PP_FromBool(uses_nonsfi_mode);
     if (ShouldUseSubzero(pnacl_options)) {
       pnacl_options->use_subzero = PP_TRUE;
       // Subzero -O2 is closer to LLC -O0, so indicate -O2.
@@ -1598,8 +1610,8 @@ class PexeDownloader : public blink::WebAssociatedURLLoaderClient {
     std::string last_modified =
         response.HttpHeaderField("last-modified").Utf8();
     base::Time last_modified_time;
-    std::ignore =
-        base::Time::FromString(last_modified.c_str(), &last_modified_time);
+    ignore_result(
+        base::Time::FromString(last_modified.c_str(), &last_modified_time));
 
     bool has_no_store_header = false;
     std::string cache_control =

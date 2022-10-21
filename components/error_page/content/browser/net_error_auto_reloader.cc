@@ -108,7 +108,6 @@ NetErrorAutoReloader::ErrorPageInfo::~ErrorPageInfo() = default;
 
 NetErrorAutoReloader::NetErrorAutoReloader(content::WebContents* web_contents)
     : content::WebContentsObserver(web_contents),
-      content::WebContentsUserData<NetErrorAutoReloader>(*web_contents),
       connection_tracker_(content::GetNetworkConnectionTracker()) {
   connection_tracker_->AddNetworkConnectionObserver(this);
 

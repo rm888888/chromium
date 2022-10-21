@@ -6,7 +6,6 @@
 
 #include <string.h>
 
-#include "ash/components/arc/arc_util.h"
 #include "base/barrier_closure.h"
 #include "base/bind.h"
 #include "base/files/file_enumerator.h"
@@ -26,6 +25,7 @@
 #include "chrome/browser/ui/app_list/arc/arc_app_scoped_pref_update.h"
 #include "chrome/browser/ui/app_list/arc/arc_app_utils.h"
 #include "chrome/common/chrome_paths.h"
+#include "components/arc/arc_util.h"
 #include "components/pref_registry/pref_registry_syncable.h"
 #include "content/public/browser/browser_thread.h"
 #include "extensions/browser/extension_registry.h"
@@ -94,12 +94,13 @@ std::unique_ptr<ArcDefaultAppList::AppInfoMap> ReadAppsFromFileThread(
     std::string package_name;
     std::string activity;
     std::string app_path;
+    bool oem = false;
 
     app_info_dictionary->GetString(kName, &name);
     app_info_dictionary->GetString(kPackageName, &package_name);
     app_info_dictionary->GetString(kActivity, &activity);
     app_info_dictionary->GetString(kAppPath, &app_path);
-    bool oem = app_info_dictionary->FindBoolPath(kOem).value_or(false);
+    app_info_dictionary->GetBoolean(kOem, &oem);
 
     if (name.empty() || package_name.empty() || activity.empty() ||
         app_path.empty()) {
@@ -123,14 +124,12 @@ std::unique_ptr<ArcDefaultAppList::AppInfoMap> ReadAppsFromFileThread(
 
 // Returns true if default app |app_id| is marked as hidden in the prefs.
 bool IsAppHidden(const PrefService* prefs, const std::string& app_id) {
-  const base::Value* apps_dict = prefs->GetDictionary(kDefaultApps);
-  if (!apps_dict)
+  const base::DictionaryValue* apps_dict = prefs->GetDictionary(kDefaultApps);
+  const base::DictionaryValue* app_dict;
+  if (!apps_dict || !apps_dict->GetDictionary(app_id, &app_dict))
     return false;
-
-  const base::Value* app_dict = apps_dict->FindDictKey(app_id);
-  if (!app_dict)
-    return false;
-  return app_dict->FindBoolPath(kHidden).value_or(false);
+  bool hidden = false;
+  return app_dict->GetBoolean(kHidden, &hidden) && hidden;
 }
 
 std::string GetBoardName(const base::FilePath& build_prop_path) {

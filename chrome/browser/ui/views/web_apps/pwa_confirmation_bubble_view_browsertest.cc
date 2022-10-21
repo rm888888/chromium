@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 #include "base/callback_helpers.h"
+#include "base/macros.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/test/bind.h"
 #include "base/test/metrics/histogram_tester.h"
@@ -32,8 +33,8 @@ class PWAConfirmationBubbleViewBrowserTest : public InProcessBrowserTest {
   }
   ~PWAConfirmationBubbleViewBrowserTest() override = default;
 
-  std::unique_ptr<WebAppInstallInfo> GetAppInfo() {
-    auto app_info = std::make_unique<WebAppInstallInfo>();
+  std::unique_ptr<WebApplicationInfo> GetAppInfo() {
+    auto app_info = std::make_unique<WebApplicationInfo>();
     app_info->title = u"Test app 2";
     app_info->start_url = GURL("https://example2.com");
     app_info->user_display_mode = blink::mojom::DisplayMode::kStandalone;
@@ -46,7 +47,7 @@ class PWAConfirmationBubbleViewBrowserTest : public InProcessBrowserTest {
 
 IN_PROC_BROWSER_TEST_F(PWAConfirmationBubbleViewBrowserTest,
                        ShowBubbleInPWAWindow) {
-  auto app_info = std::make_unique<WebAppInstallInfo>();
+  auto app_info = std::make_unique<WebApplicationInfo>();
   app_info->title = u"Test app";
   app_info->start_url = GURL("https://example.com");
   Profile* profile = browser()->profile();
@@ -62,7 +63,7 @@ IN_PROC_BROWSER_TEST_F(PWAConfirmationBubbleViewBrowserTest,
 
   // Tests that we don't crash when attempting to show bubble when it's already
   // shown.
-  app_info = std::make_unique<WebAppInstallInfo>();
+  app_info = std::make_unique<WebApplicationInfo>();
   app_info->title = u"Test app 3";
   app_info->start_url = GURL("https://example3.com");
   app_info->user_display_mode = blink::mojom::DisplayMode::kStandalone;
@@ -80,7 +81,7 @@ IN_PROC_BROWSER_TEST_F(PWAConfirmationBubbleViewBrowserTest,
       browser()->tab_strip_model()->GetActiveWebContents(), std::move(app_info),
       base::BindLambdaForTesting(
           [&](bool accepted,
-              std::unique_ptr<WebAppInstallInfo> app_info_callback) {
+              std::unique_ptr<WebApplicationInfo> app_info_callback) {
             loop.Quit();
           }));
 
@@ -106,7 +107,7 @@ IN_PROC_BROWSER_TEST_F(PWAConfirmationBubbleViewBrowserTest,
       browser()->tab_strip_model()->GetActiveWebContents(), std::move(app_info),
       base::BindLambdaForTesting(
           [&](bool accepted,
-              std::unique_ptr<WebAppInstallInfo> app_info_callback) {
+              std::unique_ptr<WebApplicationInfo> app_info_callback) {
             loop.Quit();
           }),
       chrome::PwaInProductHelpState::kShown);
@@ -164,7 +165,7 @@ IN_PROC_BROWSER_TEST_F(PWAConfirmationBubbleViewBrowserTest,
       browser()->tab_strip_model()->GetActiveWebContents(), std::move(app_info),
       base::BindLambdaForTesting(
           [&](bool accepted,
-              std::unique_ptr<WebAppInstallInfo> app_info_callback) {
+              std::unique_ptr<WebApplicationInfo> app_info_callback) {
             loop.Quit();
           }),
       chrome::PwaInProductHelpState::kShown);

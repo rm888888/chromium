@@ -8,6 +8,7 @@
 #include <map>
 #include <string>
 
+#include "base/macros.h"
 #include "components/gcm_driver/common/gcm_driver_export.h"
 
 namespace gcm {

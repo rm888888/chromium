@@ -13,10 +13,6 @@ class DictionaryValue;
 class Time;
 }
 
-namespace enterprise_management {
-class PolicyData;
-}
-
 namespace policy {
 class CloudPolicyClient;
 class CloudPolicyCore;
@@ -41,9 +37,6 @@ class POLICY_EXPORT PolicyStatusProvider {
 
   static void GetStatusFromCore(const CloudPolicyCore* core,
                                 base::DictionaryValue* dict);
-  static void GetStatusFromPolicyData(
-      const enterprise_management::PolicyData* policy,
-      base::DictionaryValue* dict);
 
  protected:
   void NotifyStatusChange();

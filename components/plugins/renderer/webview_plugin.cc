@@ -272,7 +272,6 @@ WebViewPlugin::WebViewHelper::WebViewHelper(
                       /*is_hidden=*/false,
                       /*is_prerendering=*/false,
                       /*is_inside_portal=*/false,
-                      /*is_fenced_frame=*/false,
                       /*compositing_enabled=*/false,
                       /*widgets_never_composited=*/false,
                       /*opener=*/nullptr, mojo::NullAssociatedReceiver(),
@@ -438,6 +437,7 @@ void WebViewPlugin::UpdatePluginForNewGeometry(
   // The delegate may instantiate a new plugin.
   delegate_->OnUnobscuredRectUpdate(gfx::Rect(unobscured_rect));
   // The delegate may have dirtied style and layout of the WebView.
+  // See for example the resizePoster function in plugin_poster.html.
   // Run the lifecycle now so that it is clean.
   DCHECK(web_view()->MainFrameWidget());
   web_view()->MainFrameWidget()->UpdateAllLifecyclePhases(

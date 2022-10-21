@@ -5,6 +5,8 @@
 #ifndef UI_OZONE_PLATFORM_DRM_GPU_INTER_THREAD_MESSAGING_PROXY_H_
 #define UI_OZONE_PLATFORM_DRM_GPU_INTER_THREAD_MESSAGING_PROXY_H_
 
+#include "base/macros.h"
+
 namespace ui {
 
 class DrmThread;

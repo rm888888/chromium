@@ -108,7 +108,10 @@ void ExtensionsMenuButton::ButtonPressed() {
       base::UserMetricsAction("Extensions.Toolbar.ExtensionActivatedFromMenu"));
   controller_->ExecuteAction(
       true, ToolbarActionViewController::InvocationSource::kMenuEntry);
+    printf("ExtensionsMenuButton::ButtonPressed:--%s\r\n", "SUC");
 }
-
+void ExtensionsMenuButton::OnClickButton(){
+  ButtonPressed();
+}
 BEGIN_METADATA(ExtensionsMenuButton, views::LabelButton)
 END_METADATA

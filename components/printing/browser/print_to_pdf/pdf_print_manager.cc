@@ -39,8 +39,7 @@ constexpr char kInvalidSetAccessibilityTreeCall[] =
 }  // namespace
 
 PdfPrintManager::PdfPrintManager(content::WebContents* web_contents)
-    : printing::PrintManager(web_contents),
-      content::WebContentsUserData<PdfPrintManager>(*web_contents) {}
+    : printing::PrintManager(web_contents) {}
 
 PdfPrintManager::~PdfPrintManager() = default;
 
@@ -134,13 +133,7 @@ void PdfPrintManager::ScriptedPrint(
     std::move(callback).Run(std::move(default_param));
     return;
   }
-  if (params->is_scripted &&
-      GetCurrentTargetFrame()->IsNestedWithinFencedFrame()) {
-    DLOG(ERROR) << "Unexpected message received. Script Print is not allowed"
-                   " in a fenced frame.";
-    std::move(callback).Run(std::move(default_param));
-    return;
-  }
+
   absl::variant<printing::PageRanges, PageRangeError> page_ranges =
       TextPageRangesToPageRanges(page_ranges_, ignore_invalid_page_ranges_,
                                  params->expected_pages_count);

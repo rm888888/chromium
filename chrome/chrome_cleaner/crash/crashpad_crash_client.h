@@ -9,6 +9,7 @@
 #include <memory>
 #include <string>
 
+#include "base/macros.h"
 #include "base/memory/singleton.h"
 #include "base/sequence_checker.h"
 #include "chrome/chrome_cleaner/crash/crash_client.h"

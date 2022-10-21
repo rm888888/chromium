@@ -193,7 +193,7 @@ WARN_UNUSED_RESULT ::testing::AssertionResult ReadCompleteLogFile(
   // 640 rather than 644.
   int expected_permissions = base::FILE_PERMISSION_READ_BY_USER |
                              base::FILE_PERMISSION_WRITE_BY_USER
-#if defined(OS_CHROMEOS)
+#if BUILDFLAG(IS_CHROMEOS_ASH)
                              | base::FILE_PERMISSION_READ_BY_GROUP |
                              base::FILE_PERMISSION_READ_BY_OTHERS
 #endif

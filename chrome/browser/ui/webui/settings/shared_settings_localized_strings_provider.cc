@@ -40,10 +40,6 @@
 #include "chromeos/lacros/lacros_service.h"
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS_ASH) || BUILDFLAG(IS_CHROMEOS_LACROS)
-#include "chrome/browser/ui/webui/settings/chromeos/constants/routes.mojom.h"
-#endif
-
 namespace settings {
 #if BUILDFLAG(IS_CHROMEOS_ASH)
 namespace {
@@ -125,7 +121,8 @@ void AddLiveCaptionSectionStrings(content::WebUIDataSource* html_source) {
       IDS_SETTINGS_CAPTIONS_ENABLE_LIVE_CAPTION_TITLE);
 
   const bool liveCaptionMultiLanguageEnabled =
-      base::FeatureList::IsEnabled(media::kLiveCaptionMultiLanguage);
+      base::FeatureList::IsEnabled(media::kLiveCaptionMultiLanguage) &&
+      base::FeatureList::IsEnabled(media::kUseSodaForLiveCaption);
   const int live_caption_subtitle_message =
       liveCaptionMultiLanguageEnabled
           ? IDS_SETTINGS_CAPTIONS_ENABLE_LIVE_CAPTION_SUBTITLE
@@ -316,9 +313,6 @@ void AddSyncPageStrings(content::WebUIDataSource* html_source) {
                                 base::ASCIIToUTF16(sync_dashboard_url)));
   html_source->AddString("activityControlsUrl",
                          chrome::kGoogleAccountActivityControlsURL);
-  html_source->AddString(
-      "activityControlsUrlInPrivacyReview",
-      chrome::kGoogleAccountActivityControlsURLInPrivacyReview);
   html_source->AddString("syncDashboardUrl", sync_dashboard_url);
   html_source->AddString(
       "passphraseExplanationText",
@@ -340,13 +334,6 @@ void AddSyncPageStrings(content::WebUIDataSource* html_source) {
   html_source->AddBoolean("shouldShowLacrosSideBySideWarning",
                           ShouldShowLacrosSideBySideWarningInLacros());
 #endif
-
-#if BUILDFLAG(IS_CHROMEOS_ASH) || BUILDFLAG(IS_CHROMEOS_LACROS)
-  // TODO(https://crbug.com/1275542): Un-deprecate kSyncDeprecatedSubpagePath.
-  html_source->AddString("chromeOSSyncSettingsPath",
-                         chromeos::settings::mojom::kSyncDeprecatedSubpagePath);
-#endif
-
   html_source->AddString("syncErrorsHelpUrl", chrome::kSyncErrorsHelpURL);
 }
 
@@ -367,8 +354,6 @@ void AddNearbyShareData(content::WebUIDataSource* html_source) {
        IDS_SETTINGS_NEARBY_SHARE_FAST_INITIATION_NOTIFICATION_TOGGLE_TITLE},
       {"fastInitiationNotificationToggleDescription",
        IDS_SETTINGS_NEARBY_SHARE_FAST_INITIATION_NOTIFICATION_TOGGLE_DESCRIPTION},
-      {"fastInitiationNotificationToggleAriaLabel",
-       IDS_SETTINGS_NEARBY_SHARE_FAST_INITIATION_NOTIFICATION_TOGGLE_ARIA_LABEL},
       {"nearbyShareDeviceNameAriaDescription",
        IDS_SETTINGS_NEARBY_SHARE_DEVICE_NAME_ARIA_DESCRIPTION},
       {"nearbyShareConfirmDeviceName",

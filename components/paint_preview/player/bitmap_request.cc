@@ -10,20 +10,16 @@ BitmapRequest::BitmapRequest(
     const absl::optional<base::UnguessableToken>& frame_guid,
     const gfx::Rect& clip_rect,
     float scale_factor,
-    BitmapRequestCallback callback,
-    bool run_callback_on_default_task_runner)
+    BitmapRequestCallback callback)
     : frame_guid(frame_guid),
       clip_rect(clip_rect),
       scale_factor(scale_factor),
-      callback(std::move(callback)),
-      run_callback_on_default_task_runner(run_callback_on_default_task_runner) {
-}
+      callback(std::move(callback)) {}
 
 BitmapRequest::~BitmapRequest() = default;
 
-BitmapRequest& BitmapRequest::operator=(BitmapRequest&& other) noexcept =
-    default;
+BitmapRequest& BitmapRequest::operator=(BitmapRequest&& other) = default;
 
-BitmapRequest::BitmapRequest(BitmapRequest&& other) noexcept = default;
+BitmapRequest::BitmapRequest(BitmapRequest&& other) = default;
 
 }  // namespace paint_preview

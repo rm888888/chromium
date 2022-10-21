@@ -7,7 +7,7 @@
 
 #include <memory>
 
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "ui/aura/scoped_enable_unadjusted_mouse_events.h"
 
 namespace views {
@@ -34,7 +34,7 @@ class ScopedEnableUnadjustedMouseEventsWin
   static std::unique_ptr<ScopedEnableUnadjustedMouseEventsWin> StartMonitor(
       HWNDMessageHandler* owner);
 
-  raw_ptr<HWNDMessageHandler> owner_;
+  HWNDMessageHandler* owner_;
 };
 }  // namespace views
 

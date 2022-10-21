@@ -109,26 +109,20 @@ std::string GetModelInput(const SkBitmap& bitmap, int width, int height) {
 }  // namespace
 
 #if BUILDFLAG(BUILD_WITH_TFLITE_LIB)
-Scorer::VisualTfliteModelHelperResult Scorer::ApplyVisualTfLiteModelHelper(
+std::vector<double> Scorer::ApplyVisualTfLiteModelHelper(
     const SkBitmap& bitmap,
     int input_width,
     int input_height,
-    std::unique_ptr<base::MemoryMappedFile> visual_tflite_model) {
-  VisualTfliteModelHelperResult result;
-  result.visual_tflite_model = std::move(visual_tflite_model);
-
+    const std::string& model_data) {
   TRACE_EVENT0("safe_browsing", "ApplyVisualTfLiteModel");
-  std::string model_data = std::string(
-      reinterpret_cast<const char*>(result.visual_tflite_model->data()),
-      result.visual_tflite_model->length());
   std::unique_ptr<tflite::task::vision::ImageClassifier> classifier =
-      CreateClassifier(std::move(model_data));
+      CreateClassifier(model_data);
   if (!classifier)
-    return result;
+    return std::vector<double>();
 
   std::string model_input = GetModelInput(bitmap, input_width, input_height);
   if (model_input.empty())
-    return result;
+    return std::vector<double>();
 
   tflite::task::vision::FrameBuffer::Plane plane{
       reinterpret_cast<const tflite::uint8*>(model_input.data()),
@@ -140,7 +134,7 @@ Scorer::VisualTfliteModelHelperResult Scorer::ApplyVisualTfLiteModelHelper(
   auto statusor_result = classifier->Classify(*frame_buffer);
   if (!statusor_result.ok()) {
     VLOG(1) << statusor_result.status().ToString();
-    return result;
+    return std::vector<double>();
   } else {
     std::vector<double> scores(
         statusor_result->classifications(0).classes().size());
@@ -148,16 +142,8 @@ Scorer::VisualTfliteModelHelperResult Scorer::ApplyVisualTfLiteModelHelper(
          statusor_result->classifications(0).classes()) {
       scores[clas.index()] = clas.score();
     }
-    result.scores = std::move(scores);
-    return result;
+    return scores;
   }
-}
-
-void Scorer::OnVisualTfLiteModelComplete(
-    base::OnceCallback<void(std::vector<double>)> callback,
-    VisualTfliteModelHelperResult result) {
-  visual_tflite_model_ = std::move(result.visual_tflite_model);
-  std::move(callback).Run(result.scores);
 }
 #endif
 
@@ -174,15 +160,5 @@ double Scorer::LogOdds2Prob(double log_odds) {
 
 Scorer::Scorer() = default;
 Scorer::~Scorer() = default;
-
-Scorer::VisualTfliteModelHelperResult::VisualTfliteModelHelperResult() =
-    default;
-Scorer::VisualTfliteModelHelperResult::~VisualTfliteModelHelperResult() =
-    default;
-Scorer::VisualTfliteModelHelperResult::VisualTfliteModelHelperResult(
-    VisualTfliteModelHelperResult&&) = default;
-Scorer::VisualTfliteModelHelperResult&
-Scorer::VisualTfliteModelHelperResult::operator=(
-    VisualTfliteModelHelperResult&&) = default;
 
 }  // namespace safe_browsing

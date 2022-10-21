@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include "base/macros.h"
 #include "base/test/metrics/histogram_tester.h"
 #include "base/test/scoped_feature_list.h"
 #include "chrome/browser/content_settings/host_content_settings_map_factory.h"
@@ -40,7 +41,14 @@ class PaymentRequestPaymentAppTest : public PaymentRequestBrowserTestBase {
       : alicepay_(net::EmbeddedTestServer::TYPE_HTTPS),
         bobpay_(net::EmbeddedTestServer::TYPE_HTTPS),
         frankpay_(net::EmbeddedTestServer::TYPE_HTTPS),
-        kylepay_(net::EmbeddedTestServer::TYPE_HTTPS) {}
+        kylepay_(net::EmbeddedTestServer::TYPE_HTTPS) {
+    scoped_feature_list_.InitWithFeatures(
+        // enabled features
+        {::features::kServiceWorkerPaymentApps,
+         features::kAlwaysAllowJustInTimePaymentApp},
+        // disabled features
+        {});
+  }
 
   permissions::PermissionRequestManager* GetPermissionRequestManager() {
     return permissions::PermissionRequestManager::FromWebContents(
@@ -167,6 +175,8 @@ class PaymentRequestPaymentAppTest : public PaymentRequestBrowserTestBase {
 
   // https://kylepay.com/webpay hosts a just-in-time installable payment app.
   net::EmbeddedTestServer kylepay_;
+
+  base::test::ScopedFeatureList scoped_feature_list_;
 };
 
 // Test payment request methods are not supported by the payment app.
@@ -590,6 +600,29 @@ IN_PROC_BROWSER_TEST_F(PaymentRequestPaymentAppTestWithPaymentHandlersAndUiSkip,
 
     ExpectBodyContains({"bobpay.com"});
   }
+}
+
+IN_PROC_BROWSER_TEST_F(PaymentRequestPaymentAppTest,
+                       AlwaysAllowJustInTimeInstall) {
+  // Add a complete card to ensure that autofill payment app is available.
+  const autofill::CreditCard card = autofill::test::GetCreditCard();
+  AddCreditCard(card);
+
+  // Trigger a request that specifies both kylepay.com and basic-card.
+  NavigateTo("/payment_request_bobpay_and_cards_test.html");
+  SetDownloaderAndIgnorePortInOriginComparisonForTesting();
+
+  ResetEventWaiterForDialogOpened();
+  ASSERT_TRUE(content::ExecuteScript(GetActiveWebContents(),
+                                     "testInstallableAppAndCard();"));
+  WaitForObservedEvent();
+
+  ResetEventWaiterForSequence(
+      {DialogEvent::PROCESSING_SPINNER_SHOWN, DialogEvent::DIALOG_CLOSED});
+  ClickOnDialogViewAndWait(DialogViewID::PAY_BUTTON, dialog_view());
+
+  // kylepay should be installed just-in-time and used for testing.
+  ExpectBodyContains({"kylepay.com/webpay"});
 }
 
 IN_PROC_BROWSER_TEST_F(PaymentRequestPaymentAppTest,

@@ -119,6 +119,12 @@ std::unique_ptr<KeyedService> BuildHistoryService(
   return nullptr;
 }
 
+class SearchControllerFake : public SearchControllerImpl {
+ public:
+  explicit SearchControllerFake(Profile* profile)
+      : SearchControllerImpl(nullptr, nullptr, nullptr, profile) {}
+};
+
 }  // namespace
 
 class SearchResultRankerTest : public testing::Test {
@@ -175,6 +181,10 @@ class SearchResultRankerTest : public testing::Test {
     return results;
   }
 
+  SearchController* MakeSearchController() {
+    return new SearchControllerFake(profile_.get());
+  }
+
   void Wait() { task_environment_.RunUntilIdle(); }
 
   // This is used only to make the ownership clear for the TestSearchResult
@@ -203,7 +213,7 @@ class SearchResultRankerTest : public testing::Test {
 TEST_F(SearchResultRankerTest, MixedTypesRankersAreDisabledWithFlag) {
   DisableAllFeatures();
   auto ranker = MakeRanker();
-  ranker->InitializeRankers();
+  ranker->InitializeRankers(MakeSearchController());
   Wait();
 
   LaunchData launch_data;
@@ -243,7 +253,7 @@ TEST_F(SearchResultRankerTest, AppModelImprovesScores) {
   EnableOneFeature(app_list_features::kEnableAppRanker,
                    {{"use_recurrence_ranker", "true"}, {"config", json}});
   auto ranker = MakeRanker();
-  ranker->InitializeRankers();
+  ranker->InitializeRankers(MakeSearchController());
   Wait();
 
   LaunchData app_A;
@@ -277,7 +287,7 @@ TEST_F(SearchResultRankerTest, AppModelImprovesScores) {
 TEST_F(SearchResultRankerTest, ZeroStateGroupModelDisabledWithFlag) {
   DisableAllFeatures();
   auto ranker = MakeRanker();
-  ranker->InitializeRankers();
+  ranker->InitializeRankers(MakeSearchController());
   Wait();
 
   // TODO(959679): Update the types used in this test once zero-state-related
@@ -313,7 +323,7 @@ TEST_F(SearchResultRankerTest, ZeroStateGroupTrainingImprovesScores) {
                        {"paired_coeff", "0.0"},
                    });
   auto ranker = MakeRanker();
-  ranker->InitializeRankers();
+  ranker->InitializeRankers(MakeSearchController());
   Wait();
 
   LaunchData launch;
@@ -348,7 +358,7 @@ TEST_F(SearchResultRankerTest, ZeroStateColdStart) {
                        {"paired_coeff", "0.0"},
                    });
   auto ranker = MakeRanker();
-  ranker->InitializeRankers();
+  ranker->InitializeRankers(MakeSearchController());
   Wait();
 
   ranker->FetchRankings(std::u16string());
@@ -373,7 +383,7 @@ TEST_F(SearchResultRankerTest, ZeroStateAllGroupsPresent) {
                        {"paired_coeff", "0.0"},
                    });
   auto ranker = MakeRanker();
-  ranker->InitializeRankers();
+  ranker->InitializeRankers(MakeSearchController());
   Wait();
 
   auto results = MakeSearchResults(
@@ -400,7 +410,7 @@ TEST_F(SearchResultRankerTest, ZeroStateMissingGroupAdded) {
                        {"paired_coeff", "0.0"},
                    });
   auto ranker = MakeRanker();
-  ranker->InitializeRankers();
+  ranker->InitializeRankers(MakeSearchController());
   Wait();
 
   // Train on files enough that they should dominate the zero state results.
@@ -440,7 +450,7 @@ TEST_F(SearchResultRankerTest, ZeroStateTwoMissingGroupsAdded) {
                        {"paired_coeff", "0.0"},
                    });
   auto ranker = MakeRanker();
-  ranker->InitializeRankers();
+  ranker->InitializeRankers(MakeSearchController());
   Wait();
 
   // Train on files enough that they should dominate the zero state results.
@@ -477,7 +487,7 @@ TEST_F(SearchResultRankerTest, ZeroStateStaleResultIgnored) {
                        {"paired_coeff", "0.0"},
                    });
   auto ranker = MakeRanker();
-  ranker->InitializeRankers();
+  ranker->InitializeRankers(MakeSearchController());
   Wait();
 
   // Train on files enough that they should dominate the zero state results.
@@ -529,7 +539,7 @@ TEST_F(SearchResultRankerTest, ZeroStateCacheResetWhenTopResultChanges) {
                        {"paired_coeff", "0.0"},
                    });
   auto ranker = MakeRanker();
-  ranker->InitializeRankers();
+  ranker->InitializeRankers(MakeSearchController());
   Wait();
 
   // Train on files enough that they should dominate the zero state results.
@@ -610,7 +620,7 @@ TEST_F(SearchResultRankerTest, ZeroStateGroupRankerUsesFinchConfig) {
                    {{"config", json}});
 
   auto ranker = MakeRanker();
-  ranker->InitializeRankers();
+  ranker->InitializeRankers(MakeSearchController());
   Wait();
 
   // We expect a FakePredictor to have been loaded because predictor_type is set
@@ -630,7 +640,7 @@ TEST_F(SearchResultRankerTest, ZeroStateClickedTypeMetrics) {
                        {"default_group_score", "0.1"},
                    });
   auto ranker = MakeRanker();
-  ranker->InitializeRankers();
+  ranker->InitializeRankers(MakeSearchController());
   Wait();
 
   // Zero state types should be logged during training.

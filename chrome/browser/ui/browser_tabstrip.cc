@@ -33,6 +33,10 @@ void AddTabAt(Browser* browser,
   base::TimeTicks new_tab_start_time = base::TimeTicks::Now();
   NavigateParams params(browser, url.is_empty() ? browser->GetNewTabURL() : url,
                         ui::PAGE_TRANSITION_TYPED);
+//update on 20220623
+//    NavigateParams params(browser, url.is_empty() ? browser->GetNewTabURLPundix() : url,
+//                          ui::PAGE_TRANSITION_TYPED);
+//
   params.disposition = foreground ? WindowOpenDisposition::NEW_FOREGROUND_TAB
                                   : WindowOpenDisposition::NEW_BACKGROUND_TAB;
   params.tabstrip_index = idx;

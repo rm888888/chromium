@@ -7,6 +7,7 @@
 
 #include <memory>
 
+#include "base/macros.h"
 #include "base/profiler/stack_sampling_profiler.h"
 
 class ThreadProfiler;

@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "base/feature_list.h"
+#include "base/macros.h"
 #include "base/strings/string_piece.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
@@ -209,7 +210,6 @@ class MockPasswordManagerClient : public StubPasswordManagerClient {
               GetProfileType,
               (),
               (const, override));
-  MOCK_METHOD(version_info::Channel, GetChannel, (), (const override));
 
   // Workaround for std::unique_ptr<> lacking a copy constructor.
   bool PromptUserToSaveOrUpdatePassword(
@@ -1930,7 +1930,7 @@ TEST_P(PasswordManagerTest, SaveFormFetchedAfterSubmit) {
 
   // GetLogins calls remain unanswered to emulate that PasswordStore did not
   // fetch a form in time before submission.
-  base::WeakPtr<PasswordStoreConsumer> store_consumer;
+  PasswordStoreConsumer* store_consumer = nullptr;
   EXPECT_CALL(*store_, GetLogins(_, _)).WillOnce(SaveArg<1>(&store_consumer));
   manager()->OnPasswordFormsParsed(&driver_, observed);
   manager()->OnPasswordFormsRendered(&driver_, observed, true);
@@ -2534,7 +2534,7 @@ TEST_P(PasswordManagerTest, ManualFallbackForSaving_SlowBackend) {
   std::vector<FormData> observed;
   FormData form_data(MakeSimpleFormData());
   observed.push_back(form_data);
-  base::WeakPtr<PasswordStoreConsumer> store_consumer;
+  PasswordStoreConsumer* store_consumer = nullptr;
   EXPECT_CALL(client_, IsSavingAndFillingEnabled(form_data.url))
       .WillRepeatedly(Return(true));
   // TODO(https://crbug.com/949519): replace WillRepeatedly with WillOnce when

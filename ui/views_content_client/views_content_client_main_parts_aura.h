@@ -7,6 +7,7 @@
 
 #include <memory>
 
+#include "base/macros.h"
 #include "ui/views_content_client/views_content_client_main_parts.h"
 
 namespace wm {
@@ -23,8 +24,9 @@ class ViewsContentClientMainPartsAura : public ViewsContentClientMainParts {
       const ViewsContentClientMainPartsAura&) = delete;
 
  protected:
-  ViewsContentClientMainPartsAura(content::MainFunctionParams content_params,
-                                  ViewsContentClient* views_content_client);
+  ViewsContentClientMainPartsAura(
+      const content::MainFunctionParams& content_params,
+      ViewsContentClient* views_content_client);
   ~ViewsContentClientMainPartsAura() override;
 
   // content::BrowserMainParts:

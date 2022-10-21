@@ -32,10 +32,10 @@ void LogErrors(std::unique_ptr<PolicyErrorMap> errors,
     DLOG(WARNING) << "Policy " << policy << ": " << pair.second;
   }
   for (const auto& policy : deprecated_policies) {
-    VLOG(1) << "Policy " << policy << " has been deprecated.";
+    DLOG(WARNING) << "Policy " << policy << " has been deprecated.";
   }
   for (const auto& policy : future_policies) {
-    VLOG(1) << "Policy " << policy << " has not been released yet.";
+    DLOG(WARNING) << "Policy " << policy << " has not been released yet.";
   }
 }
 
@@ -94,9 +94,10 @@ std::unique_ptr<base::DictionaryValue> ConfigurationPolicyPrefStore::GetValues()
   return prefs_->AsDictionaryValue();
 }
 
-void ConfigurationPolicyPrefStore::OnPolicyUpdated(const PolicyNamespace& ns,
-                                                   const PolicyMap& previous,
-                                                   const PolicyMap& current) {
+void ConfigurationPolicyPrefStore::OnPolicyUpdated(
+    const PolicyNamespace& ns,
+    const PolicyMap& previous,
+    const PolicyMap& current) {
   DCHECK_EQ(POLICY_DOMAIN_CHROME, ns.domain);
   DCHECK(ns.component_id.empty());
   Refresh();
@@ -122,7 +123,8 @@ void ConfigurationPolicyPrefStore::Refresh() {
 
   // Send out change notifications.
   for (std::vector<std::string>::const_iterator pref(changed_prefs.begin());
-       pref != changed_prefs.end(); ++pref) {
+       pref != changed_prefs.end();
+       ++pref) {
     for (auto& observer : observers_)
       observer.OnPrefValueChanged(*pref);
   }

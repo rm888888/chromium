@@ -1,0 +1,296 @@
+<?xml version="1.0" ?>
+<!DOCTYPE translationbundle>
+<translationbundle lang="en-GB">
+<translation id="1065672644894730302">Your preferences cannot be read.
+
+Some features may be unavailable and changes to preferences won't be saved.</translation>
+<translation id="1098170124587656448">PurseBrowser can help keep you safe from data breaches, bad extensions and more</translation>
+<translation id="1104942323762546749">PurseBrowser wants to export your passwords. Type your Windows password to allow this.</translation>
+<translation id="113122355610423240">PurseBrowser is your default browser</translation>
+<translation id="1131805035311359397">To check if your passwords are safe from data breaches and other security issues, <ph name="BEGIN_LINK" />sign in to PurseBrowser<ph name="END_LINK" />.</translation>
+<translation id="1185134272377778587">About PurseBrowser</translation>
+<translation id="1315551408014407711">Set up your new PurseBrowser profile</translation>
+<translation id="1396446129537741364">PurseBrowser is trying to show passwords.</translation>
+<translation id="1414495520565016063">You're signed in to PurseBrowser!</translation>
+<translation id="151962892725702025">PurseBrowser OS could not sync your data because Sync is not available for your domain.</translation>
+<translation id="1524282610922162960">Share a PurseBrowser tab</translation>
+<translation id="1553461853655228091">PurseBrowser needs permission to access your camera to create a 3D map of your surroundings</translation>
+<translation id="1607715478322902680">{COUNT,plural, =0{Your administrator requires that you relaunch PurseBrowser to apply an update}=1{Your administrator requires that you relaunch PurseBrowser to apply an update. Your Incognito window won't reopen.}other{Your administrator requires that you relaunch PurseBrowser to apply an update. Your # Incognito windows won't reopen.}}</translation>
+<translation id="1708666629004767631">There's a new, safer version of PurseBrowser available.</translation>
+<translation id="1774152462503052664">Let PurseBrowser run in the background</translation>
+<translation id="1779356040007214683">To make PurseBrowser safer, we disabled some extensions that aren't listed in the <ph name="IDS_EXTENSION_WEB_STORE_TITLE" /> and may have been added without your knowledge.</translation>
+<translation id="1808667845054772817">Reinstall PurseBrowser</translation>
+<translation id="185970820835152459">You can manage your signed-in Google Accounts. Your Google Accounts are used for PurseBrowser browser, Play Store, Gmail and more. If you want to add an account for someone else, like a family member, add a new person to your <ph name="DEVICE_TYPE" /> instead. <ph name="LINK_BEGIN" />Learn more<ph name="LINK_END" /></translation>
+<translation id="1881322772814446296">You are signing in with a managed account and giving its administrator control over your PurseBrowser profile. Your PurseBrowser data, such as your apps, bookmarks, history, passwords and other settings will become permanently tied to <ph name="USER_NAME" />. You will be able to delete this data via the Google Accounts Dashboard, but you will not be able to associate this data with another account. You can optionally create a new profile to keep your existing PurseBrowser data separate. <ph name="LEARN_MORE" /></translation>
+<translation id="1911763535808217981">By turning this off, you can sign in to Google sites such as Gmail, without signing in to PurseBrowser</translation>
+<translation id="1929939181775079593">PurseBrowser is unresponsive. Relaunch now?</translation>
+<translation id="1966382378801805537">PurseBrowser cannot determine or set the default browser</translation>
+<translation id="1981611865800294956">Relaunch to update &amp;PurseBrowser OS</translation>
+<translation id="2008474315282236005">This will delete 1 item from this device. To retrieve your data later, sign in to PurseBrowser as <ph name="USER_EMAIL" />.</translation>
+<translation id="2020032459870799438">To check if your other passwords are safe from data breaches and other security issues, <ph name="BEGIN_LINK" />sign in to PurseBrowser<ph name="END_LINK" />.</translation>
+<translation id="2174178932569897599">Customise PurseBrowser</translation>
+<translation id="2185166961232948079">PurseBrowser – Network sign-in – <ph name="PAGE_TITLE" /></translation>
+<translation id="2241627712206172106">If you share a computer, friends and family can browse separately and set up PurseBrowser just the way they want.</translation>
+<translation id="2294245788148774212">Optional: Help improve PurseBrowser OS features and performance by automatically sending diagnostic and usage data to Google.</translation>
+<translation id="2313870531055795960">Checks URLs with a list of unsafe sites stored in PurseBrowser. If a site tries to steal your password, or when you download a harmful file, PurseBrowser may also send URLs, including bits of page content, to Safe Browsing.</translation>
+<translation id="2343156876103232566">To send a number from here to your Android phone, sign in to PurseBrowser on both devices.</translation>
+<translation id="2347108572062610441">This extension has changed the page that is shown when you start PurseBrowser.</translation>
+<translation id="2396765026452590966">The extension "<ph name="EXTENSION_NAME" />" has changed the page that is shown when you start PurseBrowser.</translation>
+<translation id="2401032172288869980">PurseBrowser needs camera and microphone permissions for this site</translation>
+<translation id="2483889755041906834">In PurseBrowser</translation>
+<translation id="2485422356828889247">Uninstall</translation>
+<translation id="2535480412977113886">PurseBrowser OS could not sync your data because your account sign-in details are out of date.</translation>
+<translation id="2560420686485554789">PurseBrowser needs storage access to download files</translation>
+<translation id="2572494885440352020">PurseBrowser Helper</translation>
+<translation id="2577788541081224677">To access your PurseBrowser stuff across all your devices, sign in so that you can turn on sync.</translation>
+<translation id="2583187216237139145">Any PurseBrowser data that is generated during the use of this profile (such as the creation of bookmarks, history, passwords and other settings) can be removed by the work profile administrator. <ph name="LEARN_MORE" /></translation>
+<translation id="2587578672395088481">PurseBrowser OS needs to be restarted to apply the update.</translation>
+<translation id="2614883797045469742">The default settings work for most people, but you can customise them to fit how you like to use PurseBrowser</translation>
+<translation id="2648074677641340862">An operating system error occurred during installation. Please download PurseBrowser again.</translation>
+<translation id="2661879430930417727">If you share a device, friends and family can browse separately and set up PurseBrowser just the way they want</translation>
+<translation id="2711502716910134313">PurseBrowser Tab</translation>
+<translation id="2718390899429598676">For added security, PurseBrowser will encrypt your data.</translation>
+<translation id="2770231113462710648">Change default browser to:</translation>
+<translation id="2799223571221894425">Relaunch</translation>
+<translation id="2837693172913560447">This will create a new PurseBrowser profile for <ph name="USER_EMAIL_ADDRESS" /></translation>
+<translation id="2847479871509788944">Remove from PurseBrowser...</translation>
+<translation id="2850691299438350830">Keeps you safe on PurseBrowser and may be used to improve your security in other Google apps when you are signed in</translation>
+<translation id="2885378588091291677">Task Manager</translation>
+<translation id="2910007522516064972">About &amp;PurseBrowser</translation>
+<translation id="2977470724722393594">PurseBrowser is up to date</translation>
+<translation id="2977506796191543575">If a site tries to steal your password, or when you download a harmful file, PurseBrowser may also send URLs, including bits of page content, to Safe Browsing</translation>
+<translation id="2983934633046890458">PurseBrowser is trying to edit passwords.</translation>
+<translation id="3032706164202344641">PurseBrowser can't check your passwords. Try again later.</translation>
+<translation id="3032787606318309379">Adding to PurseBrowser ...</translation>
+<translation id="3068515742935458733">Help make PurseBrowser better by sending crash reports and <ph name="UMA_LINK" /> to Google</translation>
+<translation id="3103660991484857065">The installer failed to uncompress archive. Please download PurseBrowser again.</translation>
+<translation id="3130323860337406239">PurseBrowser is using your microphone.</translation>
+<translation id="3155163173539279776">Relaunch PurseBrowser</translation>
+<translation id="3179665906251668410">Open Link in PurseBrowser Inco&amp;gnito Window</translation>
+<translation id="3185330573522821672">Customise your new PurseBrowser profile</translation>
+<translation id="3190315855212034486">Whoa! PurseBrowser has crashed. Relaunch now?</translation>
+<translation id="3229526316128325841">PurseBrowser wants to export your passwords.</translation>
+<translation id="3258596308407688501">PurseBrowser cannot read and write to its data directory:
+
+<ph name="USER_DATA_DIRECTORY" /></translation>
+<translation id="3283186697780795848">PurseBrowser version <ph name="PRODUCT_VERSION" /> is installed</translation>
+<translation id="328888136576916638">Google API keys are missing. Some functionality of PurseBrowser will be disabled.</translation>
+<translation id="3296368748942286671">Continue running background apps when PurseBrowser is closed</translation>
+<translation id="331951419404882060">PurseBrowser OS could not sync your data due to an error signing in.</translation>
+<translation id="3349211344363550267">PurseBrowser recommends that you don't download or open this file</translation>
+<translation id="3350761136195634146">A PurseBrowser profile with this account already exists</translation>
+<translation id="3406848076815591792">Switch to existing PurseBrowser profile?</translation>
+<translation id="3430503420100763906">With PurseBrowser profiles you can separate all of your PurseBrowser stuff. Create profiles for friends and family, or split between work and fun.</translation>
+<translation id="347328004046849135">PurseBrowser will notify you when you sign in with a compromised password</translation>
+<translation id="3474745554856756813">This will delete <ph name="ITEMS_COUNT" /> items from this device. To retrieve your data later, sign in to PurseBrowser as <ph name="USER_EMAIL" />.</translation>
+<translation id="3497319089134299931"><ph name="SHORTCUT" /> can switch between PurseBrowser profiles</translation>
+<translation id="3509308970982693815">Please close all PurseBrowser windows and try again.</translation>
+<translation id="3575459661164320785">There's harmful software on your computer. PurseBrowser can remove it, restore your settings and disable extensions to make your browser work normally again.</translation>
+<translation id="3639635944603682591">This person's browsing data will be deleted from this device. To recover the data, sign in to PurseBrowser as <ph name="USER_EMAIL" />.</translation>
+<translation id="364817392622123556">{COUNT,plural, =0{A new update for PurseBrowser is available and will be applied as soon as you relaunch.}=1{A new update for PurseBrowser is available and will be applied as soon as you relaunch. Your Incognito window won't reopen.}other{A new update for PurseBrowser is available and will be applied as soon as you relaunch. Your # Incognito windows won't reopen.}}</translation>
+<translation id="3651803019964686660">To send a number from <ph name="ORIGIN" /> to your Android phone, sign in to PurseBrowser on both devices.</translation>
+<translation id="3685209450716071127">PurseBrowser can't check your passwords. Try checking your Internet connection.</translation>
+<translation id="370962675267501463">{COUNT,plural, =0{Your administrator asks that you relaunch PurseBrowser to apply this update}=1{Your administrator asks that you relaunch PurseBrowser to apply this update. Your Incognito window won't reopen.}other{Your administrator asks that you relaunch PurseBrowser to apply this update. Your # Incognito windows won't reopen.}}</translation>
+<translation id="3713809861844741608">Open link in new PurseBrowser &amp;tab</translation>
+<translation id="3728336900324680424">PurseBrowser will access your Drive to make suggestions in the address bar</translation>
+<translation id="378917192836375108">PurseBrowser lets you click a phone number on the web and call it with Skype!</translation>
+<translation id="3848258323044014972"><ph name="PAGE_TITLE" /> - PurseBrowser</translation>
+<translation id="388648406173476553">Customise and control PurseBrowser. Something needs your attention – click for details.</translation>
+<translation id="3889543394854987837">Click your name to open PurseBrowser and start browsing.</translation>
+<translation id="390528597099634151"><ph name="EXISTING_USER" /> is already signed in to this PurseBrowser profile. To keep your browsing separate, PurseBrowser can create your own profile for you.</translation>
+<translation id="3945058413678539331">PurseBrowser is trying to copy passwords. Type your Windows password to allow this.</translation>
+<translation id="4036079820698952681">Help make PurseBrowser better by reporting the <ph name="BEGIN_LINK" />current settings<ph name="END_LINK" /></translation>
+<translation id="4050175100176540509">Important security improvements and new features are available in the latest version.</translation>
+<translation id="419998258129752635"><ph name="PAGE_TITLE" /> – Network sign-in – PurseBrowser</translation>
+<translation id="421369550622382712">Discover great apps, games, extensions and themes for PurseBrowser.</translation>
+<translation id="4216212958613226427">This language is used to display the PurseBrowser UI</translation>
+<translation id="4230135487732243613">Link my PurseBrowser data to this account</translation>
+<translation id="4264410486868823224"><ph name="MANAGER" /> requires that you read and accept the following Terms of Service before using this device. These Terms do not expand, modify or limit the PurseBrowser OS Terms.</translation>
+<translation id="4271805377592243930">Get help with PurseBrowser</translation>
+<translation id="4285930937574705105">Installation failed due to unspecified error. If Google Chrome is currently running, please close it and try again.</translation>
+<translation id="4407044323746248786">Exit PurseBrowser anyway?</translation>
+<translation id="4415566066719264597">Let PurseBrowser Run in the Background</translation>
+<translation id="4423735387467980091">Customise and control PurseBrowser</translation>
+<translation id="452711251841752011">Welcome to PurseBrowser; new browser window opened</translation>
+<translation id="4544142686420020088">PurseBrowser didn't update. Something went wrong. <ph name="BEGIN_LINK" />Fix PurseBrowser update problems and failed updates.<ph name="END_LINK" /></translation>
+<translation id="454579500955453258">Continue in a new PurseBrowser profile?</translation>
+<translation id="4567424176335768812">You're signed in as <ph name="USER_EMAIL_ADDRESS" />. Now you can access your bookmarks, history and other settings on all your signed in devices.</translation>
+<translation id="459535195905078186">PurseBrowser Apps</translation>
+<translation id="4665829708273112819">Warning: PurseBrowser cannot prevent extensions from recording your browsing history. To disable this extension in Incognito mode, unselect this option.</translation>
+<translation id="4677944499843243528">The profile appears to be in use by another PurseBrowser process (<ph name="PROCESS_ID" />) on another computer (<ph name="HOST_NAME" />). PurseBrowser has locked the profile so that it doesn't get corrupted. If you are sure that no other processes are using this profile, you can unlock the profile and relaunch PurseBrowser.</translation>
+<translation id="469338717132742108">Get help with PurseBrowser OS</translation>
+<translation id="4708774505295300557">Someone previously signed in to PurseBrowser on this computer as <ph name="ACCOUNT_EMAIL_LAST" />. Please create a new PurseBrowser user to keep your information separate.</translation>
+<translation id="4746050847053251315">Quit PurseBrowser anyway?</translation>
+<translation id="4748217263233248895">A special security update for PurseBrowser was just applied. Restart now and we'll restore your tabs.</translation>
+<translation id="4750035648288509542">Nearly up to date! Relaunch PurseBrowser to finish updating. Incognito windows won't reopen.</translation>
+<translation id="4788777615168560705">PurseBrowser can't check your passwords. Try again after 24 hours or <ph name="BEGIN_LINK" />check passwords in your Google Account<ph name="END_LINK" />.</translation>
+<translation id="479167709087336770">This uses the same spell checker that's used in Google search. Text that you type in the browser is sent to Google. You can always change this behaviour in settings.</translation>
+<translation id="4888717733111232871">Inbound rule for PurseBrowser to allow mDNS traffic.</translation>
+<translation id="4893347770495441059">Relaunch to Update &amp;PurseBrowser</translation>
+<translation id="4943838377383847465">PurseBrowser is in background mode.</translation>
+<translation id="4987820182225656817">Guests can use PurseBrowser without leaving anything behind.</translation>
+<translation id="4994636714258228724">Add yourself to PurseBrowser</translation>
+<translation id="5224391634244552924">No saved passwords. PurseBrowser can check your passwords when you save them.</translation>
+<translation id="5252179775517634216"><ph name="EXISTING_USER" /> is already signed in to this PurseBrowser profile. This will create a new PurseBrowser profile for <ph name="USER_EMAIL_ADDRESS" /></translation>
+<translation id="5277894862589591112">To apply your changes, relaunch PurseBrowser</translation>
+<translation id="5358375970380395591">You are signing in with a managed account and giving its administrator control over your PurseBrowser profile. Your PurseBrowser data, such as your apps, bookmarks, history, passwords and other settings will become permanently tied to <ph name="USER_NAME" />. You will be able to delete this data via the Google Accounts Dashboard, but you will not be able to associate this data with another account. <ph name="LEARN_MORE" /></translation>
+<translation id="5386450000063123300">Updating PurseBrowser (<ph name="PROGRESS_PERCENT" />)</translation>
+<translation id="538767207339317086">Allow PurseBrowser sign-in</translation>
+<translation id="5398878173008909840">There is a new version of PurseBrowser available.</translation>
+<translation id="5427571867875391349">Set PurseBrowser as your default browser</translation>
+<translation id="5438241569118040789"><ph name="PAGE_TITLE" /> – PurseBrowser Beta</translation>
+<translation id="5479196819031988440">PurseBrowser OS can't open this page.</translation>
+<translation id="5480860683791598150">PurseBrowser needs access to your location to share your location with this site</translation>
+<translation id="549669000822060376">Please wait while PurseBrowser installs the latest system updates.</translation>
+<translation id="5496810170689441661">PurseBrowser is trying to edit passwords. Type your Windows password to allow this.</translation>
+<translation id="5527463683072221100">Open PDFs in PurseBrowser</translation>
+<translation id="5623402015214259806">{0,plural, =0{A PurseBrowser update is available}=1{A PurseBrowser update is available}other{A PurseBrowser update has been available for # days}}</translation>
+<translation id="5634636535844844681">PurseBrowser requires Windows 7 or higher.</translation>
+<translation id="5653831366781983928">Please restart PurseBrowser now</translation>
+<translation id="5698481217667032250">Display PurseBrowser in this language</translation>
+<translation id="5820394555380036790">PurseBrowser OS</translation>
+<translation id="5854740544000584380">PurseBrowser OS is made possible by additional <ph name="BEGIN_LINK_CROS_OSS" />open-source software<ph name="END_LINK_CROS_OSS" />, as is <ph name="BEGIN_LINK_LINUX_OSS" />Linux development environment<ph name="END_LINK_LINUX_OSS" />.</translation>
+<translation id="5862307444128926510">Welcome to PurseBrowser</translation>
+<translation id="5883558403894052917">PurseBrowser found that these items contain malware:</translation>
+<translation id="5895138241574237353">Restart</translation>
+<translation id="5903106910045431592"><ph name="PAGE_TITLE" /> – Network sign-in</translation>
+<translation id="5987687638152509985">Update PurseBrowser to start sync</translation>
+<translation id="6039377483953237732">PurseBrowser OS version</translation>
+<translation id="6055895534982063517">There's a new version of Google Chrome available and it's faster than ever.</translation>
+<translation id="6063093106622310249">&amp;Open in PurseBrowser</translation>
+<translation id="6072279588547424923"><ph name="EXTENSION_NAME" /> has been added to PurseBrowser</translation>
+<translation id="608006075545470555">Add work profile to this browser</translation>
+<translation id="608189560609172163">PurseBrowser could not sync your data due to an error signing in.</translation>
+<translation id="6096348254544841612">Customise and control PurseBrowser. Update is available.</translation>
+<translation id="6120345080069858279">PurseBrowser will save this password in your Google Account. You won’t have to remember it.</translation>
+<translation id="6129621093834146363"><ph name="FILE_NAME" /> is dangerous, so PurseBrowser has blocked it.</translation>
+<translation id="6134968993075716475">Safe Browsing is off. PurseBrowser recommends turning it on.</translation>
+<translation id="6145820983052037069">You can switch between PurseBrowser profiles here</translation>
+<translation id="6183079672144801177">Make sure that you are signed in to PurseBrowser on your <ph name="TARGET_DEVICE_NAME" /> and then try sending again.</translation>
+<translation id="6212496753309875659">This computer already has a more recent version of PurseBrowser. If the software is not working, please uninstall PurseBrowser and try again.</translation>
+<translation id="6219195342503754812">{0,plural, =0{PurseBrowser will relaunch now}=1{PurseBrowser will relaunch in 1 second}other{PurseBrowser will relaunch in # seconds}}</translation>
+<translation id="6241367896540709610">PurseBrowser needs storage access permission to download files</translation>
+<translation id="6245734527075554892">Checks URLs with a list of unsafe sites stored in PurseBrowser</translation>
+<translation id="6248213926982192922">Make PurseBrowser the default browser</translation>
+<translation id="6266342355635466082">PurseBrowser can't check for updates. Try checking your Internet connection.</translation>
+<translation id="6268381023930128611">Sign out of PurseBrowser?</translation>
+<translation id="6281746429495226318">Customise your PurseBrowser profile</translation>
+<translation id="6290827346642914212">Name your PurseBrowser profile</translation>
+<translation id="6295779123002464101"><ph name="FILE_NAME" /> may be dangerous, so PurseBrowser has blocked it.</translation>
+<translation id="6309712487085796862">PurseBrowser is using your camera.</translation>
+<translation id="6333502561965082103">Another operation on PurseBrowser is in progress. Please try again later.</translation>
+<translation id="6334986366598267305">Now it's easier to use PurseBrowser with your Google Account and on shared computers.</translation>
+<translation id="6373523479360886564">Are you sure you want to uninstall PurseBrowser?</translation>
+<translation id="6403826409255603130">PurseBrowser is a web browser that runs webpages and applications with lightning speed. It's fast, stable, and easy to use. Browse the web more safely with malware and phishing protection built into PurseBrowser.</translation>
+<translation id="6434250628340475518">PurseBrowser OS System</translation>
+<translation id="6455857529632101747">Welcome to PurseBrowser profiles</translation>
+<translation id="6457450909262716557">{SECONDS,plural, =1{PurseBrowser will restart in 1 second}other{PurseBrowser will restart in # seconds}}</translation>
+<translation id="6475912303565314141">It also controls what page is shown when you start PurseBrowser.</translation>
+<translation id="6510925080656968729">Uninstall PurseBrowser</translation>
+<translation id="6542839706527980775">Each profile holds its own PurseBrowser info, like bookmarks, history, passwords and more</translation>
+<translation id="6570579332384693436">To fix spelling errors, PurseBrowser sends the text that you type in text fields to Google</translation>
+<translation id="6598877126913850652">Go to PurseBrowser notification settings</translation>
+<translation id="6613594504749178791">Your changes will take effect the next time you relaunch PurseBrowser.</translation>
+<translation id="665732753414869868">PurseBrowser needs camera permission to create a 3D map of your surroundings</translation>
+<translation id="6676384891291319759">Access the Internet</translation>
+<translation id="6709350901466051922">PurseBrowser needs microphone permission for this site</translation>
+<translation id="6717134281241384636">Your profile can not be used because it is from a newer version of PurseBrowser.
+
+Some features may be unavailable. Please specify a different profile directory or use a newer version of PurseBrowser.</translation>
+<translation id="6734291798041940871">PurseBrowser is already installed for all users on your computer.</translation>
+<translation id="673636774878526923">To access your PurseBrowser stuff across all your devices, sign in, then turn on sync.</translation>
+<translation id="6774082503108938489">Your parent has turned off 'Permissions for sites, apps and extensions' for PurseBrowser. Enabling this <ph name="EXTENSION_TYPE_PARAMETER" /> is not allowed.</translation>
+<translation id="6847869444787758381">PurseBrowser lets you know if your passwords are ever compromised</translation>
+<translation id="6857782730669500492">PurseBrowser - <ph name="PAGE_TITLE" /></translation>
+<translation id="6863361426438995919">Google Pay (copied to PurseBrowser)</translation>
+<translation id="6873893289264747459">PurseBrowser found that '<ph name="EXTENSION_NAME" />' contains malware</translation>
+<translation id="6893813176749746474">PurseBrowser has been updated, but you haven't used it for 30 days or more.</translation>
+<translation id="691026815377248078">PurseBrowser needs Bluetooth access to continue pairing. <ph name="IDS_BLUETOOTH_DEVICE_CHOOSER_AUTHORIZE_BLUETOOTH_LINK" /></translation>
+<translation id="6964305034639999644">Open link in PurseBrowser inco&amp;gnito window</translation>
+<translation id="6978145336957848883">Weak passwords are easy to guess. Let PurseBrowser <ph name="BEGIN_LINK" />create and remember strong passwords for you<ph name="END_LINK" />.</translation>
+<translation id="6990124437352146030">PurseBrowser needs permission to access your microphone for this site</translation>
+<translation id="705851970750939768">Update PurseBrowser</translation>
+<translation id="7067091210845072982">If an image doesn’t have a useful description, PurseBrowser will try to provide one for you. To create descriptions, images are sent to Google.</translation>
+<translation id="7147279922647361552">Customise some of PurseBrowser’s most important privacy choices</translation>
+<translation id="718435575166326686">PurseBrowser needs camera permission for this site</translation>
+<translation id="7196312274710523067">Couldn't launch PurseBrowser. Try again.</translation>
+<translation id="7197677400338048821">PurseBrowser can't check your passwords. Try again after 24 hours.</translation>
+<translation id="7218568399872925918">Sites that you visit remember your information until you close PurseBrowser</translation>
+<translation id="7223968959479464213">Task Manager - PurseBrowser</translation>
+<translation id="731795002583552498">Updating PurseBrowser</translation>
+<translation id="7318036098707714271">Your preferences file is corrupt or invalid.
+
+Google Chrome is unable to recover your settings.</translation>
+<translation id="7337881442233988129">PurseBrowser</translation>
+<translation id="7339898014177206373">New window</translation>
+<translation id="734373864078049451">Your web, bookmarks and other PurseBrowser stuff live here.</translation>
+<translation id="7349591376906416160">Your system administrator has configured PurseBrowser to open <ph name="ALTERNATIVE_BROWSER_NAME" /> to access <ph name="TARGET_URL_HOSTNAME" />.</translation>
+<translation id="7448255348454382571">Restart PurseBrowser OS</translation>
+<translation id="7449453770951226939"><ph name="PAGE_TITLE" /> – PurseBrowser Dev</translation>
+<translation id="7451052299415159299">PurseBrowser needs permission to access your camera for this site</translation>
+<translation id="7483335560992089831">Cannot install the same PurseBrowser version that is currently running. Please close PurseBrowser and try again.</translation>
+<translation id="753534427205733210">{0,plural, =1{PurseBrowser will relaunch in 1 minute}other{PurseBrowser will relaunch in # minutes}}</translation>
+<translation id="7549178288319965365">About PurseBrowser OS</translation>
+<translation id="7561906087460245826">Also clear data from PurseBrowser (<ph name="URL" />)</translation>
+<translation id="7585853947355360626">If a setting doesn't show on this page, look in your <ph name="LINK_BEGIN" />
+      PurseBrowser OS settings<ph name="LINK_END" /></translation>
+<translation id="761356813943268536">PurseBrowser is using your camera and microphone.</translation>
+<translation id="7617377681829253106">PurseBrowser just got better</translation>
+<translation id="7686590090926151193">PurseBrowser isn't your default browser</translation>
+<translation id="7689606757190482937">Sync and personalise PurseBrowser across your devices</translation>
+<translation id="7729447699958282447">PurseBrowser could not sync your data because Sync is not available for your domain.</translation>
+<translation id="7745317241717453663">This will delete your browsing data from this device. To retrieve your data later, sign in to PurseBrowser as <ph name="USER_EMAIL" />.</translation>
+<translation id="7747138024166251722">The installer couldn't create a temporary directory. Please check for free disk space and permission to install software.</translation>
+<translation id="7790626492778995050"><ph name="PAGE_TITLE" /> – PurseBrowser Canary</translation>
+<translation id="7828947555739565424">A PurseBrowser profile with this account already exists on this device</translation>
+<translation id="7857220146454061152">To get future PurseBrowser updates, you'll need OS X 10.11 or later. This computer is using OS X 10.10.</translation>
+<translation id="7867198900892795913">PurseBrowser couldn't update to the latest version, so you're missing out on new features and security fixes.</translation>
+<translation id="7898472181347242998">To see if your device is up to date, go to <ph name="LINK_BEGIN" />PurseBrowser OS Settings<ph name="LINK_END" /></translation>
+<translation id="7937630085815544518">You were signed in to PurseBrowser as <ph name="USER_EMAIL_ADDRESS" />. Please use the same account to sign in again.</translation>
+<translation id="7975919845073681630">This is a secondary installation of PurseBrowser, and cannot be made your default browser.</translation>
+<translation id="8013436988911883588">Once PurseBrowser has access, websites will be able to ask you for access.</translation>
+<translation id="8045118833343856403">The following accounts are not signed into any PurseBrowser profiles. If you want to use an account in another profile, remove that profile first.</translation>
+<translation id="8105840573057009683">PurseBrowser needs location permission for this site</translation>
+<translation id="81770708095080097">This file is dangerous, so PurseBrowser has blocked it.</translation>
+<translation id="8248265253516264921">If an image doesn’t have a useful description, PurseBrowser will try to provide one for you. To create descriptions, images are sent to Google. You can turn this off in settings at any time.</translation>
+<translation id="8266560134891435528">PurseBrowser can't check your passwords because you're not signed in</translation>
+<translation id="8276522524898344151">PurseBrowser is trying to copy passwords.</translation>
+<translation id="8290862415967981663">This file may be dangerous, so PurseBrowser has blocked it.</translation>
+<translation id="8330519371938183845">Sign in to sync and personalise PurseBrowser across your devices</translation>
+<translation id="8340674089072921962"><ph name="USER_EMAIL_ADDRESS" /> was previously using PurseBrowser</translation>
+<translation id="8417404458978023919">{0,plural, =1{Relaunch PurseBrowser within a day}other{Relaunch PurseBrowser within # days}}</translation>
+<translation id="8453117565092476964">The installer archive is corrupted or invalid. Please download PurseBrowser again.</translation>
+<translation id="8493179195440786826">PurseBrowser is Out of Date</translation>
+<translation id="8550334526674375523">This work profile is completely separate from your personal profile.</translation>
+<translation id="8558383651099478961">Your parent has turned off 'Permissions for sites, apps and extensions' for PurseBrowser. Adding this <ph name="EXTENSION_TYPE_PARAMETER" /> is not allowed.</translation>
+<translation id="8568283329061645092">PurseBrowser can check your passwords when you sign in with your Google Account</translation>
+<translation id="8586442755830160949">Copyright <ph name="YEAR" /> The PurseBrowser Authors. All rights reserved.</translation>
+<translation id="8619360774459241877">Launching PurseBrowser...</translation>
+<translation id="8621669128220841554">Installation failed due to unspecified error. Please download PurseBrowser again.</translation>
+<translation id="8697124171261953979">It also controls what page is shown when you start PurseBrowser or search from the Omnibox.</translation>
+<translation id="8704119203788522458">This is your PurseBrowser</translation>
+<translation id="8713679423359107094">When you close all PurseBrowser windows, cookies and site data are automatically cleared</translation>
+<translation id="8796443464227412154">You will be <ph name="BEGIN_BOLD" />signed out of most sites<ph name="END_BOLD" /> when you close PurseBrowser. If sync is off, you will also be <ph name="BEGIN_BOLD" />signed out of Google services and PurseBrowser<ph name="END_BOLD" />.</translation>
+<translation id="8796602469536043152">PurseBrowser needs permission to access your camera and microphone for this site</translation>
+<translation id="8803635938069941624">PurseBrowser OS terms</translation>
+<translation id="8821041990367117597">PurseBrowser could not sync your data because your account sign-in details are out of date.</translation>
+<translation id="8862326446509486874">You do not have appropriate rights for system-level installation. Try running the installer again as Administrator.</translation>
+<translation id="8880203542552872219">If so, please edit your saved password in PurseBrowser so that it matches your new password.</translation>
+<translation id="8897323336392112261">It also controls what page is shown when you start PurseBrowser or click the Home button.</translation>
+<translation id="8907580949721785412">PurseBrowser is trying to show passwords. Type your Windows password to allow this.</translation>
+<translation id="8941642502866065432">Can't update PurseBrowser</translation>
+<translation id="8974095189086268230">PurseBrowser OS is made possible by additional <ph name="BEGIN_LINK_CROS_OSS" />open source software<ph name="END_LINK_CROS_OSS" />.</translation>
+<translation id="8986207147630327271">You are adding a work profile to this browser and giving your administrator control over just the work profile.</translation>
+<translation id="9019929317751753759">To make PurseBrowser safer, we disabled the following extension that isn't listed in the <ph name="IDS_EXTENSION_WEB_STORE_TITLE" /> and may have been added without your knowledge.</translation>
+<translation id="9089354809943900324">PurseBrowser is out of date</translation>
+<translation id="9093206154853821181">{0,plural, =1{PurseBrowser will relaunch in an hour}other{PurseBrowser will relaunch in # hours}}</translation>
+<translation id="91086099826398415">Open Link in New PurseBrowser &amp;tab</translation>
+<translation id="911206726377975832">Also delete your browsing data?</translation>
+<translation id="9158494823179993217">Your system administrator has configured PurseBrowser to open an alternative browser to access <ph name="TARGET_URL_HOSTNAME" />.</translation>
+<translation id="9185526690718004400">Relaunch to update &amp;PurseBrowser</translation>
+<translation id="9190841055450128916">PurseBrowser (mDNS-In)</translation>
+<translation id="9214764063801632699">PurseBrowser OS system</translation>
+<translation id="93478295209880648">PurseBrowser may not function correctly because it is no longer supported on Windows XP or Windows Vista</translation>
+<translation id="965162752251293939">Who's using PurseBrowser?</translation>
+<translation id="985602178874221306">The PurseBrowser Authors</translation>
+</translationbundle>

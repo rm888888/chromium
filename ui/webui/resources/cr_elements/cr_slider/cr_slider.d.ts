@@ -21,7 +21,6 @@ interface CrSliderElement extends LegacyElementMixin, HTMLElement {
   snaps: boolean;
   ticks: Array<SliderTick>|Array<number>;
   value: number;
-  getRatio(): number;
 }
 
 export {CrSliderElement};

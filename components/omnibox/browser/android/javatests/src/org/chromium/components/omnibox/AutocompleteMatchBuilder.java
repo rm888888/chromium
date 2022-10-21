@@ -8,7 +8,6 @@ import androidx.collection.ArraySet;
 
 import org.chromium.chrome.browser.omnibox.MatchClassificationStyle;
 import org.chromium.chrome.browser.omnibox.OmniboxSuggestionType;
-import org.chromium.components.omnibox.action.OmniboxPedal;
 import org.chromium.components.query_tiles.QueryTile;
 import org.chromium.url.GURL;
 
@@ -44,7 +43,6 @@ public class AutocompleteMatchBuilder {
     private byte[] mClipboardImageData;
     private boolean mHasTabMatch;
     private List<AutocompleteMatch.NavsuggestTile> mNavsuggestTiles;
-    private OmniboxPedal mOmniboxPedal;
 
     /**
      * Create a suggestion builder for a search suggestion.
@@ -94,7 +92,6 @@ public class AutocompleteMatchBuilder {
         mClipboardImageData = null;
         mHasTabMatch = false;
         mNavsuggestTiles = null;
-        mOmniboxPedal = null;
 
         mDisplayTextClassifications.add(
                 new AutocompleteMatch.MatchClassification(0, MatchClassificationStyle.NONE));
@@ -113,7 +110,7 @@ public class AutocompleteMatchBuilder {
                 mDisplayText, mDisplayTextClassifications, mDescription,
                 mDescriptionClassifications, mAnswer, mFillIntoEdit, mUrl, mImageUrl,
                 mImageDominantColor, mIsDeletable, mPostContentType, mPostData, mGroupId,
-                mQueryTiles, mClipboardImageData, mHasTabMatch, mNavsuggestTiles, mOmniboxPedal);
+                mQueryTiles, mClipboardImageData, mHasTabMatch, mNavsuggestTiles);
     }
 
     /**
@@ -258,15 +255,6 @@ public class AutocompleteMatchBuilder {
     public AutocompleteMatchBuilder setNavsuggestTiles(
             List<AutocompleteMatch.NavsuggestTile> tiles) {
         mNavsuggestTiles = tiles;
-        return this;
-    }
-
-    /**
-     * @param omniboxPedal Omnibox pedal.
-     * @return Omnibox suggestion builder.
-     */
-    public AutocompleteMatchBuilder setOmniboxPedal(OmniboxPedal omniboxPedal) {
-        mOmniboxPedal = omniboxPedal;
         return this;
     }
 }

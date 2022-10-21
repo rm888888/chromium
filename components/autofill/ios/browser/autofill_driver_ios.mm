@@ -97,18 +97,17 @@ bool AutofillDriverIOS::RendererIsAvailable() {
   return true;
 }
 
-base::flat_map<FieldGlobalId, ServerFieldType>
-AutofillDriverIOS::FillOrPreviewForm(
+void AutofillDriverIOS::FillOrPreviewForm(
     int query_id,
     mojom::RendererFormDataAction action,
     const FormData& data,
     const url::Origin& triggered_origin,
     const base::flat_map<FieldGlobalId, ServerFieldType>& field_type_map) {
   web::WebFrame* web_frame = web::GetWebFrameWithId(web_state_, web_frame_id_);
-  if (web_frame) {
-    [bridge_ fillFormData:data inFrame:web_frame];
+  if (!web_frame) {
+    return;
   }
-  return field_type_map;
+  [bridge_ fillFormData:data inFrame:web_frame];
 }
 
 void AutofillDriverIOS::PropagateAutofillPredictions(

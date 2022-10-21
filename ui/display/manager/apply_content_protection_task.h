@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <vector>
 
+#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "ui/display/manager/content_protection_manager.h"
 #include "ui/display/types/display_constants.h"

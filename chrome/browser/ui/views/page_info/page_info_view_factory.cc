@@ -4,7 +4,6 @@
 
 #include "chrome/browser/ui/views/page_info/page_info_view_factory.h"
 
-#include "base/memory/raw_ptr.h"
 #include "build/build_config.h"
 #include "build/chromeos_buildflags.h"
 #include "chrome/browser/ui/layout_constants.h"
@@ -16,8 +15,8 @@
 #include "chrome/browser/ui/views/page_info/page_info_navigation_handler.h"
 #include "chrome/browser/ui/views/page_info/page_info_permission_content_view.h"
 #include "chrome/browser/ui/views/page_info/page_info_security_content_view.h"
-#include "components/page_info/core/proto/about_this_site_metadata.pb.h"
 #include "components/page_info/page_info.h"
+#include "components/page_info/proto/about_this_site_metadata.pb.h"
 #include "components/permissions/permission_util.h"
 #include "components/strings/grit/components_strings.h"
 #include "components/vector_icons/vector_icons.h"
@@ -60,7 +59,7 @@ class PageInfoSubpageView : public views::View {
     PreferredSizeChanged();
   }
 
-  raw_ptr<views::View> content_ = nullptr;
+  views::View* content_ = nullptr;
 };
 
 int GetIconSize() {
@@ -104,18 +103,16 @@ std::unique_ptr<views::View> PageInfoViewFactory::CreateLabelWrapper() {
 PageInfoViewFactory::PageInfoViewFactory(
     PageInfo* presenter,
     ChromePageInfoUiDelegate* ui_delegate,
-    PageInfoNavigationHandler* navigation_handler,
-    PageInfoHistoryController* history_controller)
+    PageInfoNavigationHandler* navigation_handler)
     : presenter_(presenter),
       ui_delegate_(ui_delegate),
-      navigation_handler_(navigation_handler),
-      history_controller_(history_controller) {}
+      navigation_handler_(navigation_handler) {}
 
 std::unique_ptr<views::View> PageInfoViewFactory::CreateMainPageView(
     base::OnceClosure initialized_callback) {
-  return std::make_unique<PageInfoMainView>(
-      presenter_, ui_delegate_, navigation_handler_, history_controller_,
-      std::move(initialized_callback));
+  return std::make_unique<PageInfoMainView>(presenter_, ui_delegate_,
+                                            navigation_handler_,
+                                            std::move(initialized_callback));
 }
 
 std::unique_ptr<views::View> PageInfoViewFactory::CreateSecurityPageView() {
@@ -293,6 +290,9 @@ const ui::ImageModel PageInfoViewFactory::GetPermissionIcon(
       break;
     case ContentSettingsType::IDLE_DETECTION:
       icon = &vector_icons::kDevicesIcon;
+      break;
+    case ContentSettingsType::FILE_HANDLING:
+      icon = &vector_icons::kDescriptionIcon;
       break;
     default:
       // All other |ContentSettingsType|s do not have icons on desktop or are

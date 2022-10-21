@@ -11,7 +11,6 @@
 #include "base/json/json_reader.h"
 #include "base/json/json_writer.h"
 #include "base/logging.h"
-#include "base/memory/raw_ptr.h"
 #include "base/strings/stringprintf.h"
 #include "base/values.h"
 #include "chrome/test/chromedriver/chrome/devtools_event_listener.h"
@@ -37,8 +36,6 @@ const char kInspectorOpaqueOrigins[] =
     "Permission can't be granted to opaque origins.";
 const char kInspectorPushPermissionError[] =
     "Push Permission without userVisibleOnly:true isn't supported";
-const char kInspectorNoSuchFrameError[] =
-    "Frame with the given id was not found.";
 static constexpr int kInvalidParamsInspectorCode = -32602;
 
 class ScopedIncrementer {
@@ -51,7 +48,7 @@ class ScopedIncrementer {
   }
 
  private:
-  raw_ptr<int> count_;
+  int* count_;
 };
 
 Status ConditionIsMet(bool* is_condition_met) {
@@ -214,7 +211,7 @@ Status DevToolsClientImpl::SetUpDevTools() {
     if (status.IsError())
       return status;
 
-    params.DictClear();
+    params.Clear();
     params.SetString("expression", script);
     status = SendCommandAndIgnoreResponse("Runtime.evaluate", params);
     if (status.IsError())
@@ -245,21 +242,21 @@ Status DevToolsClientImpl::SendCommandWithTimeout(
     const std::string& method,
     const base::DictionaryValue& params,
     const Timeout* timeout) {
-  base::Value result;
+  std::unique_ptr<base::DictionaryValue> result;
   return SendCommandInternal(method, params, &result, true, true, 0, timeout);
 }
 
 Status DevToolsClientImpl::SendAsyncCommand(
     const std::string& method,
     const base::DictionaryValue& params) {
-  base::Value result;
+  std::unique_ptr<base::DictionaryValue> result;
   return SendCommandInternal(method, params, &result, false, false, 0, nullptr);
 }
 
 Status DevToolsClientImpl::SendCommandAndGetResult(
     const std::string& method,
     const base::DictionaryValue& params,
-    base::Value* result) {
+    std::unique_ptr<base::DictionaryValue>* result) {
   return SendCommandAndGetResultWithTimeout(method, params, nullptr, result);
 }
 
@@ -267,13 +264,13 @@ Status DevToolsClientImpl::SendCommandAndGetResultWithTimeout(
     const std::string& method,
     const base::DictionaryValue& params,
     const Timeout* timeout,
-    base::Value* result) {
-  base::Value intermediate_result;
+    std::unique_ptr<base::DictionaryValue>* result) {
+  std::unique_ptr<base::DictionaryValue> intermediate_result;
   Status status = SendCommandInternal(method, params, &intermediate_result,
                                       true, true, 0, timeout);
   if (status.IsError())
     return status;
-  if (!intermediate_result.is_dict())
+  if (!intermediate_result)
     return Status(kUnknownError, "inspector response missing result");
   *result = std::move(intermediate_result);
   return Status(kOk);
@@ -349,13 +346,13 @@ DevToolsClientImpl::ResponseInfo::ResponseInfo(const std::string& method)
 DevToolsClientImpl::ResponseInfo::~ResponseInfo() {}
 
 DevToolsClient* DevToolsClientImpl::GetRootClient() {
-  return parent_ ? parent_.get() : this;
+  return parent_ ? parent_ : this;
 }
 
 Status DevToolsClientImpl::SendCommandInternal(
     const std::string& method,
     const base::DictionaryValue& params,
-    base::Value* result,
+    std::unique_ptr<base::DictionaryValue>* result,
     bool expect_response,
     bool wait_for_response,
     const int client_command_id,
@@ -422,12 +419,10 @@ Status DevToolsClientImpl::SendCommandInternal(
       if (!response.result) {
         return internal::ParseInspectorError(response.error);
       }
-      *result = std::move(*response.result);
+      *result = std::move(response.result);
     }
   } else {
     CHECK(!wait_for_response);
-    if (result)
-      *result = base::Value(base::Value::Type::DICTIONARY);
   }
   return Status(kOk);
 }
@@ -667,9 +662,8 @@ bool ParseInspectorMessage(const std::string& message,
   session_id->clear();
   if (message_dict->HasKey("sessionId"))
     message_dict->GetString("sessionId", session_id);
-
-  base::Value* id_value = message_dict->FindKey("id");
-  if (!id_value) {
+  int id;
+  if (!message_dict->HasKey("id")) {
     std::string method;
     if (!message_dict->GetString("method", &method))
       return false;
@@ -683,11 +677,11 @@ bool ParseInspectorMessage(const std::string& message,
     else
       event->params = std::make_unique<base::DictionaryValue>();
     return true;
-  } else if (id_value->is_int()) {
+  } else if (message_dict->GetInteger("id", &id)) {
     base::DictionaryValue* unscoped_error = nullptr;
     base::DictionaryValue* unscoped_result = nullptr;
     *type = kCommandResponseMessageType;
-    command_response->id = id_value->GetInt();
+    command_response->id = id;
     // As per Chromium issue 392577, DevTools does not necessarily return a
     // "result" dictionary for every valid response. In particular,
     // Tracing.start and Tracing.end command responses do not contain one.
@@ -734,10 +728,6 @@ Status ParseInspectorError(const std::string& error_json) {
     } else if (error_message == kInspectorPushPermissionError ||
                error_message == kInspectorOpaqueOrigins) {
       return Status(kInvalidArgument, error_message);
-    } else if (error_message == kInspectorNoSuchFrameError) {
-      // As the server returns the generic error code: SERVER_ERROR = -32000
-      // we have to rely on the error message content.
-      return Status(kNoSuchFrame, error_message);
     }
     absl::optional<int> error_code = error_dict->FindIntPath("code");
     if (error_code == kInvalidParamsInspectorCode)

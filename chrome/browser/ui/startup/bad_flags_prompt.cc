@@ -25,6 +25,8 @@
 #include "components/data_reduction_proxy/core/common/data_reduction_proxy_switches.h"
 #include "components/infobars/content/content_infobar_manager.h"
 #include "components/infobars/core/infobar_delegate.h"
+#include "components/nacl/common/buildflags.h"
+#include "components/nacl/common/nacl_switches.h"
 #include "components/network_session_configurator/common/network_switches.h"
 #include "components/startup_metric_utils/browser/startup_metric_utils.h"
 #include "components/translate/core/common/translate_switches.h"
@@ -66,6 +68,9 @@ static const char* kBadFlags[] = {
 #endif
     switches::kDisableSiteIsolation,
     switches::kDisableWebSecurity,
+#if BUILDFLAG(ENABLE_NACL)
+    switches::kNaClDangerousNoSandboxNonSfi,
+#endif
     switches::kSingleProcess,
 
     // These flags disable or undermine the Same Origin Policy.
@@ -141,11 +146,6 @@ static const char* kBadFlags[] = {
 
     // A flag to bypass the WebHID blocklist for testing purposes.
     switches::kDisableHidBlocklist,
-
-    // This flag enables restricted APIs (which unlock capabilities
-    // with a high potential for security / privacy abuse) for specified
-    // origins.
-    switches::kRestrictedApiOrigins,
 };
 #endif  // OS_ANDROID
 

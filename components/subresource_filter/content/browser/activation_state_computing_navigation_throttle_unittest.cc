@@ -10,7 +10,7 @@
 
 #include "base/callback.h"
 #include "base/callback_helpers.h"
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/memory/scoped_refptr.h"
 #include "base/run_loop.h"
 #include "base/task/sequenced_task_runner.h"
@@ -243,12 +243,12 @@ class ActivationStateComputingNavigationThrottleTest
   scoped_refptr<base::TestSimpleTaskRunner> simple_task_runner_;
 
   // Owned by the current navigation.
-  raw_ptr<ActivationStateComputingNavigationThrottle> test_throttle_;
+  ActivationStateComputingNavigationThrottle* test_throttle_;
   absl::optional<mojom::ActivationState> last_activation_state_;
   absl::optional<mojom::ActivationState> parent_activation_state_;
 
   // Needed for potential cross process navigations which swap hosts.
-  raw_ptr<content::RenderFrameHost> last_committed_frame_host_ = nullptr;
+  content::RenderFrameHost* last_committed_frame_host_ = nullptr;
 
   bool dryrun_speculation_;
 };

@@ -9,6 +9,7 @@
 
 #include "base/feature_list.h"
 #include "base/i18n/number_formatting.h"
+#include "base/macros.h"
 #include "base/strings/string_util.h"
 #include "build/build_config.h"
 #include "chrome/app/vector_icons/vector_icons.h"
@@ -336,7 +337,7 @@ gfx::Size FindBarView::CalculatePreferredSize() const {
 void FindBarView::FocusAndSelectAll() {
   find_text_->RequestFocus();
 #if !defined(OS_WIN)
-  GetWidget()->GetInputMethod()->SetVirtualKeyboardVisibilityIfEnabled(true);
+  GetWidget()->GetInputMethod()->ShowVirtualKeyboardIfEnabled();
 #endif
   if (!find_text_->GetText().empty())
     find_text_->SelectAll(true);

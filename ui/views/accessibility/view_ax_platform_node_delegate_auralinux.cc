@@ -220,8 +220,7 @@ ViewAXPlatformNodeDelegateAuraLinux::~ViewAXPlatformNodeDelegateAuraLinux() {
   view_observation_.Reset();
 }
 
-gfx::NativeViewAccessible ViewAXPlatformNodeDelegateAuraLinux::GetParent()
-    const {
+gfx::NativeViewAccessible ViewAXPlatformNodeDelegateAuraLinux::GetParent() {
   if (gfx::NativeViewAccessible parent =
           ViewAXPlatformNodeDelegate::GetParent()) {
     return parent;

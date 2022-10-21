@@ -11,10 +11,12 @@
 #include "base/containers/contains.h"
 #include "base/feature_list.h"
 #include "base/i18n/char_iterator.h"
+#include "base/macros.h"
 #include "base/memory/scoped_refptr.h"
 #include "base/memory/singleton.h"
 #include "base/metrics/field_trial_params.h"
 #include "base/metrics/histogram_macros.h"
+#include "base/no_destructor.h"
 #include "base/strings/strcat.h"
 #include "base/strings/string_piece.h"
 #include "base/strings/string_split.h"
@@ -91,11 +93,6 @@ Top500DomainsParams* GetTopDomainParams() {
       top500_domains::kNumTop500EditDistanceSkeletons};
   return &params;
 }
-
-// Minimum length of the eTLD+1 without registry needed to show the punycode
-// interstitial. IDN whose eTLD+1 without registry is shorter than this are
-// still displayed in punycode, but don't show an interstitial.
-const size_t kMinimumE2LDLengthToShowPunycodeInterstitial = 2;
 
 bool SkeletonsMatch(const url_formatter::Skeletons& skeletons1,
                     const url_formatter::Skeletons& skeletons2) {
@@ -1025,16 +1022,6 @@ bool IsASCIIAndEmojiOnly(const base::StringPiece16& text) {
   return true;
 }
 
-// Returns true if the e2LD of domain is long enough to display a punycode
-// interstitial.
-bool IsPunycodeInterstitialCandidate(const DomainInfo& domain) {
-  const url_formatter::IDNConversionResult idn_result =
-      url_formatter::UnsafeIDNToUnicodeWithDetails(
-          domain.domain_without_registry);
-  return idn_result.result.size() >=
-         kMinimumE2LDLengthToShowPunycodeInterstitial;
-}
-
 bool ShouldBlockBySpoofCheckResult(const DomainInfo& navigated_domain) {
   // Here, only a subset of spoof checks that cause an IDN to fallback to
   // punycode are configured to show an interstitial.
@@ -1045,8 +1032,7 @@ bool ShouldBlockBySpoofCheckResult(const DomainInfo& navigated_domain) {
 
     case url_formatter::IDNSpoofChecker::Result::kICUSpoofChecks:
       // If the eTLD+1 contains only a mix of ASCII + Emoji, allow.
-      return !IsASCIIAndEmojiOnly(navigated_domain.idn_result.result) &&
-             IsPunycodeInterstitialCandidate(navigated_domain);
+      return !IsASCIIAndEmojiOnly(navigated_domain.idn_result.result);
 
     case url_formatter::IDNSpoofChecker::Result::kDeviationCharacters:
       // Failures because of deviation characters, especially ß, is common.
@@ -1059,7 +1045,7 @@ bool ShouldBlockBySpoofCheckResult(const DomainInfo& navigated_domain) {
     case url_formatter::IDNSpoofChecker::Result::
         kNonAsciiLatinCharMixedWithNonLatin:
     case url_formatter::IDNSpoofChecker::Result::kDangerousPattern:
-      return IsPunycodeInterstitialCandidate(navigated_domain);
+      return true;
   }
 }
 

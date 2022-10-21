@@ -15,8 +15,6 @@ const char kCredentialsEnableService[] = "credentials_enable_service";
 #if defined(OS_ANDROID)
 const char kCurrentMigrationVersionToGoogleMobileServices[] =
     "current_migration_version_to_google_mobile_services";
-
-const char kTimeOfLastMigrationAttempt[] = "time_of_last_migration_attempt";
 #endif
 
 #if defined(OS_WIN)

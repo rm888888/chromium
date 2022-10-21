@@ -12,6 +12,7 @@
 #include "base/bind.h"
 #include "base/callback.h"
 #include "base/guid.h"
+#include "base/macros.h"
 #include "base/strings/stringprintf.h"
 #include "base/threading/sequenced_task_runner_handle.h"
 #include "base/values.h"
@@ -38,8 +39,9 @@ const base::Value* PersistedData::GetAppKey(const std::string& id) const {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   if (!pref_service_)
     return nullptr;
-  const base::Value* dict = pref_service_->Get(kPersistedDataPreference);
-  if (!dict || dict->type() != base::Value::Type::DICTIONARY)
+  const base::DictionaryValue* dict =
+      pref_service_->GetDictionary(kPersistedDataPreference);
+  if (!dict)
     return nullptr;
   const base::Value* apps = dict->FindDictKey("apps");
   if (!apps)
@@ -112,8 +114,7 @@ void PersistedData::SetDateLastDataHelper(
     base::OnceClosure callback,
     const std::set<std::string>& active_ids) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-  DictionaryPrefUpdateDeprecated update(pref_service_,
-                                        kPersistedDataPreference);
+  DictionaryPrefUpdate update(pref_service_, kPersistedDataPreference);
   for (const auto& id : ids) {
     base::Value* app_key = GetOrCreateAppKey(id, update.Get());
     app_key->SetIntKey("dlrc", datenum);
@@ -150,8 +151,7 @@ void PersistedData::SetString(const std::string& id,
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   if (!pref_service_)
     return;
-  DictionaryPrefUpdateDeprecated update(pref_service_,
-                                        kPersistedDataPreference);
+  DictionaryPrefUpdate update(pref_service_, kPersistedDataPreference);
   GetOrCreateAppKey(id, update.Get())->SetStringKey(key, value);
 }
 

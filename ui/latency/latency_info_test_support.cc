@@ -4,8 +4,6 @@
 
 #include "ui/latency/latency_info.h"
 
-#include <ostream>
-
 namespace ui {
 
 void PrintTo(const LatencyInfo& latency, ::std::ostream* os) {

@@ -12,8 +12,9 @@
 #include <string>
 #include <vector>
 
+#include "base/compiler_specific.h"
 #include "base/gtest_prod_util.h"
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/scoped_observation.h"
 #include "build/build_config.h"
 #include "chrome/app/vector_icons/vector_icons.h"
@@ -30,12 +31,9 @@
 
 class ContentSettingBubbleModelDelegate;
 class Profile;
-namespace custom_handlers {
 class ProtocolHandlerRegistry;
-}
 
 namespace content {
-class Page;
 class WebContents;
 }
 
@@ -84,7 +82,7 @@ class ContentSettingBubbleModel {
              int32_t item_id);
     ListItem(const ListItem& other);
     ListItem& operator=(const ListItem& other);
-    raw_ptr<const gfx::VectorIcon> image;
+    const gfx::VectorIcon* image;
     std::u16string title;
     std::u16string description;
     bool has_link;
@@ -245,7 +243,6 @@ class ContentSettingBubbleModel {
   Profile* GetProfile() const;
   Delegate* delegate() const { return delegate_; }
   int selected_item() const { return owner_->GetSelectedRadioOption(); }
-  content::Page& GetPage() const { return web_contents_->GetPrimaryPage(); }
 
   void set_title(const std::u16string& title) { bubble_content_.title = title; }
   void set_message(const std::u16string& message) {
@@ -290,9 +287,9 @@ class ContentSettingBubbleModel {
   }
 
  private:
-  raw_ptr<content::WebContents> web_contents_;
-  raw_ptr<Owner> owner_;
-  raw_ptr<Delegate> delegate_;
+  content::WebContents* web_contents_;
+  Owner* owner_;
+  Delegate* delegate_;
   BubbleContent bubble_content_;
 };
 
@@ -330,10 +327,9 @@ class ContentSettingSimpleBubbleModel : public ContentSettingBubbleModel {
 // RPH stands for Register Protocol Handler.
 class ContentSettingRPHBubbleModel : public ContentSettingSimpleBubbleModel {
  public:
-  ContentSettingRPHBubbleModel(
-      Delegate* delegate,
-      content::WebContents* web_contents,
-      custom_handlers::ProtocolHandlerRegistry* registry);
+  ContentSettingRPHBubbleModel(Delegate* delegate,
+                               content::WebContents* web_contents,
+                               ProtocolHandlerRegistry* registry);
 
   ContentSettingRPHBubbleModel(const ContentSettingRPHBubbleModel&) = delete;
   ContentSettingRPHBubbleModel& operator=(const ContentSettingRPHBubbleModel&) =
@@ -351,7 +347,7 @@ class ContentSettingRPHBubbleModel : public ContentSettingSimpleBubbleModel {
   void ClearOrSetPreviousHandler();
   void PerformActionForSelectedItem();
 
-  raw_ptr<custom_handlers::ProtocolHandlerRegistry> registry_;
+  ProtocolHandlerRegistry* registry_;
   ProtocolHandler pending_handler_;
   ProtocolHandler previous_handler_;
 };

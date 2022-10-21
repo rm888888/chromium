@@ -485,7 +485,7 @@ void Textfield::SetHorizontalAlignment(gfx::HorizontalAlignment alignment) {
 void Textfield::ShowVirtualKeyboardIfEnabled() {
   // GetInputMethod() may return nullptr in tests.
   if (GetEnabled() && !GetReadOnly() && GetInputMethod())
-    GetInputMethod()->SetVirtualKeyboardVisibilityIfEnabled(true);
+    GetInputMethod()->ShowVirtualKeyboardIfEnabled();
 }
 
 bool Textfield::IsIMEComposing() const {
@@ -1866,7 +1866,7 @@ Textfield::EditCommandResult Textfield::DoExecuteTextEditCommand(
     case ui::TextEditCommand::DELETE_TO_END_OF_LINE:
     case ui::TextEditCommand::DELETE_TO_END_OF_PARAGRAPH:
       add_to_kill_buffer = text_input_type_ != ui::TEXT_INPUT_TYPE_PASSWORD;
-      [[fallthrough]];
+      FALLTHROUGH;
     case ui::TextEditCommand::DELETE_WORD_BACKWARD:
     case ui::TextEditCommand::DELETE_WORD_FORWARD:
       if (HasSelection())
@@ -2538,12 +2538,6 @@ void Textfield::UpdateContextMenu() {
   context_menu_runner_ = std::make_unique<MenuRunner>(
       context_menu_contents_.get(),
       MenuRunner::HAS_MNEMONICS | MenuRunner::CONTEXT_MENU);
-}
-
-void Textfield::InvalidateContextMenu() {
-  // Ensure that the Runner doesn't outlive the Model.
-  context_menu_runner_.reset();
-  context_menu_contents_.reset();
 }
 
 bool Textfield::ImeEditingAllowed() const {

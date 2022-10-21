@@ -8,6 +8,7 @@
 
 #include <math.h>
 
+#include "base/macros.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
 class CronetStructTest : public ::testing::Test {

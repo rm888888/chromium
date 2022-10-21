@@ -10,7 +10,7 @@
       {
         "id": "Color",
         "type": "string",
-        "enum": ["grey", "blue", "red", "yellow", "green", "pink", "purple", "cyan", "orange"],
+        "enum": ["grey", "blue", "red", "yellow", "green", "pink", "purple", "cyan"],
         "description": "The group's color."
       },
       {

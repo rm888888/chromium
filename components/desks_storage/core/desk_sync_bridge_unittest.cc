@@ -87,8 +87,7 @@ const std::string kPolicyWithTwoTemplates =
     "[{\"version\":1,\"uuid\":\"" + base::StringPrintf(kUuidFormat, 8) +
     "\",\"name\":\""
     "Example Template"
-    "\",\"created_time_usec\":\"1633535632\",\"updated_time_usec\": "
-    "\"1633535632\",\"desk\":{\"apps\":[{\"window_"
+    "\",\"created_time_usec\":\"1633535632\",\"desk\":{\"apps\":[{\"window_"
     "bound\":{\"left\":0,\"top\":1,\"height\":121,\"width\":120},\"window_"
     "state\":\"NORMAL\",\"z_index\":1,\"app_type\":\"BROWSER\",\"tabs\":[{"
     "\"url\":\"https://example.com\",\"title\":\"Example\"},{\"url\":\"https://"
@@ -99,8 +98,7 @@ const std::string kPolicyWithTwoTemplates =
     base::StringPrintf(kUuidFormat, 9) +
     "\",\"name\":\""
     "Example Template 2"
-    "\",\"created_time_usec\":\"1633535632\",\"updated_time_usec\": "
-    "\"1633535632\",\"desk\":{\"apps\":[{\"window_"
+    "\",\"created_time_usec\":\"1633535632\",\"desk\":{\"apps\":[{\"window_"
     "bound\":{\"left\":0,\"top\":1,\"height\":121,\"width\":120},\"window_"
     "state\":\"NORMAL\",\"z_index\":1,\"app_type\":\"BROWSER\",\"tabs\":[{"
     "\"url\":\"https://google.com\",\"title\":\"Example "
@@ -109,17 +107,16 @@ const std::string kPolicyWithTwoTemplates =
     "2\",\"title\":\"Example2\"}],\"active_tab_index\":1,\"window_id\":0,"
     "\"display_id\":\"100\",\"pre_minimized_window_state\":\"NORMAL\"}]}}]";
 
-void FillExampleBrowserAppWindow(WorkspaceDeskSpecifics_App* app,
-                                 int number_of_tabs = 2) {
+void FillExampleBrowserAppWindow(WorkspaceDeskSpecifics_App* app) {
   BrowserAppWindow* app_window =
       app->mutable_app()->mutable_browser_app_window();
+  BrowserAppTab* tab1 = app_window->add_tabs();
+  tab1->set_url(base::StringPrintf(kTestUrlFormat, 1));
 
-  for (int i = 0; i < number_of_tabs; ++i) {
-    BrowserAppTab* tab = app_window->add_tabs();
-    tab->set_url(base::StringPrintf(kTestUrlFormat, i));
-  }
+  BrowserAppTab* tab2 = app_window->add_tabs();
+  tab2->set_url(base::StringPrintf(kTestUrlFormat, 2));
 
-  app_window->set_active_tab_index(number_of_tabs - 1);
+  app_window->set_active_tab_index(1);
 
   WindowBound* window_bound = app->mutable_window_bound();
   window_bound->set_left(110);
@@ -170,8 +167,7 @@ void FillExampleChromeAppWindow(WorkspaceDeskSpecifics_App* app) {
 WorkspaceDeskSpecifics ExampleWorkspaceDeskSpecifics(
     const std::string uuid,
     const std::string template_name,
-    base::Time created_time = base::Time::Now(),
-    int number_of_tabs = 2) {
+    base::Time created_time = base::Time::Now()) {
   WorkspaceDeskSpecifics specifics;
   specifics.set_uuid(uuid);
   specifics.set_name(template_name);
@@ -182,7 +178,7 @@ WorkspaceDeskSpecifics ExampleWorkspaceDeskSpecifics(
           .ToDeltaSinceWindowsEpoch()
           .InMicroseconds());
   Desk* desk = specifics.mutable_desk();
-  FillExampleBrowserAppWindow(desk->add_apps(), number_of_tabs);
+  FillExampleBrowserAppWindow(desk->add_apps());
   FillExampleChromeAppWindow(desk->add_apps());
   FillExampleProgressiveWebAppWindow(desk->add_apps());
   return specifics;
@@ -332,9 +328,9 @@ class DeskSyncBridgeTest : public testing::Test {
         MakeApp(kTestPwaAppId, "Test PWA App", apps::mojom::AppType::kWeb));
     // chromeAppId returns kExtension in the real Apps cache.
     deltas.push_back(MakeApp(extension_misc::kChromeAppId, "Chrome Browser",
-                             apps::mojom::AppType::kChromeApp));
+                             apps::mojom::AppType::kExtension));
     deltas.push_back(MakeApp(kTestChromeAppId, "Test Chrome App",
-                             apps::mojom::AppType::kChromeApp));
+                             apps::mojom::AppType::kExtension));
 
     cache_->OnApps(std::move(deltas), apps::mojom::AppType::kUnknown,
                    false /* should_notify_initialized */);
@@ -554,9 +550,9 @@ TEST_F(DeskSyncBridgeTest, GetAllEntriesIncludesPolicyEntries) {
   EXPECT_EQ(4ul, bridge()->GetAllEntryUuids().size());
 
   base::RunLoop loop;
-  bridge()->GetAllEntries(base::BindLambdaForTesting(
-      [&](DeskModel::GetAllEntriesStatus status,
-          const std::vector<ash::DeskTemplate*>& entries) {
+  bridge()->GetAllEntries(
+      base::BindLambdaForTesting([&](DeskModel::GetAllEntriesStatus status,
+                                     std::vector<ash::DeskTemplate*> entries) {
         EXPECT_EQ(status, DeskModel::GetAllEntriesStatus::kOk);
         EXPECT_EQ(entries.size(), 4ul);
 
@@ -619,31 +615,6 @@ TEST_F(DeskSyncBridgeTest, AddEntriesLocally) {
                 ->ToSyncProto(bridge()->GetEntryByUUID(kTestUuid2))
                 .SerializeAsString(),
             specifics2.SerializeAsString());
-}
-
-TEST_F(DeskSyncBridgeTest, AddEntryShouldFailWhenEntryIsTooLarge) {
-  InitializeBridge();
-
-  EXPECT_CALL(*mock_observer(), EntriesAddedOrUpdatedRemotely(_)).Times(0);
-  EXPECT_CALL(*mock_observer(), EntriesRemovedRemotely(_)).Times(0);
-
-  EXPECT_EQ(0ul, bridge()->GetAllEntryUuids().size());
-
-  // Create a large entry with 500 tabs. This entry should be too large for
-  // Sync.
-  constexpr int number_of_tabs = 500;
-  auto specifics = ExampleWorkspaceDeskSpecifics(
-      kTestUuid1.AsLowercaseString(), "template 1", AdvanceAndGetTime(),
-      number_of_tabs);
-
-  base::RunLoop loop;
-  bridge()->AddOrUpdateEntry(
-      DeskSyncBridge::FromSyncProto(specifics),
-      base::BindLambdaForTesting([&](DeskModel::AddOrUpdateEntryStatus status) {
-        EXPECT_EQ(status, DeskModel::AddOrUpdateEntryStatus::kEntryTooLarge);
-        loop.Quit();
-      }));
-  loop.Run();
 }
 
 TEST_F(DeskSyncBridgeTest, AddEntryShouldSucceedWheSyncIsDisabled) {

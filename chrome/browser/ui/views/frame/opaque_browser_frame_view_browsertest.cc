@@ -4,10 +4,7 @@
 
 #include "chrome/browser/ui/views/frame/opaque_browser_frame_view.h"
 
-#include <tuple>
-
 #include "base/files/file_util.h"
-#include "base/memory/raw_ptr.h"
 #include "base/test/bind.h"
 #include "build/build_config.h"
 #include "build/chromeos_buildflags.h"
@@ -54,7 +51,7 @@ class WebAppOpaqueBrowserFrameViewTest : public InProcessBrowserTest {
 
   bool InstallAndLaunchWebApp(
       absl::optional<SkColor> theme_color = absl::nullopt) {
-    auto web_app_info = std::make_unique<WebAppInstallInfo>();
+    auto web_app_info = std::make_unique<WebApplicationInfo>();
     web_app_info->start_url = GetAppURL();
     web_app_info->scope = GetAppURL().GetWithoutFilename();
     web_app_info->theme_color = theme_color;
@@ -110,9 +107,9 @@ class WebAppOpaqueBrowserFrameViewTest : public InProcessBrowserTest {
               theme_mode == ThemeMode::kDefault);
   }
 
-  raw_ptr<BrowserView> browser_view_ = nullptr;
-  raw_ptr<OpaqueBrowserFrameView> opaque_browser_frame_view_ = nullptr;
-  raw_ptr<WebAppFrameToolbarView> web_app_frame_toolbar_ = nullptr;
+  BrowserView* browser_view_ = nullptr;
+  OpaqueBrowserFrameView* opaque_browser_frame_view_ = nullptr;
+  WebAppFrameToolbarView* web_app_frame_toolbar_ = nullptr;
 
   // Disable animations.
   ui::ScopedAnimationDurationScaleMode scoped_animation_duration_scale_mode_{
@@ -309,7 +306,7 @@ class WebAppOpaqueBrowserFrameViewWindowControlsOverlayTest
                          .LoadWindowControlsOverlayTestPageWithDataAndGetURL(
                              embedded_test_server(), &temp_dir_);
 
-    auto web_app_info = std::make_unique<WebAppInstallInfo>();
+    auto web_app_info = std::make_unique<WebApplicationInfo>();
     web_app_info->start_url = start_url;
     web_app_info->scope = start_url.GetWithoutFilename();
     web_app_info->display_mode = blink::mojom::DisplayMode::kStandalone;
@@ -353,11 +350,11 @@ class WebAppOpaqueBrowserFrameViewWindowControlsOverlayTest
     web_app_frame_toolbar_helper_.SetupGeometryChangeCallback(web_contents);
     browser_view_->ToggleWindowControlsOverlayEnabled();
     content::TitleWatcher title_watcher(web_contents, u"ongeometrychange");
-    std::ignore = title_watcher.WaitAndGetTitle();
+    ignore_result(title_watcher.WaitAndGetTitle());
   }
 
-  raw_ptr<BrowserView> browser_view_ = nullptr;
-  raw_ptr<OpaqueBrowserFrameView> opaque_browser_frame_view_ = nullptr;
+  BrowserView* browser_view_ = nullptr;
+  OpaqueBrowserFrameView* opaque_browser_frame_view_ = nullptr;
   WebAppFrameToolbarTestHelper web_app_frame_toolbar_helper_;
 
  private:

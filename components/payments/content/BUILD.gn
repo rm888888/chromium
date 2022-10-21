@@ -32,6 +32,8 @@ static_library("content") {
     "payment_credential.h",
     "payment_credential_factory.cc",
     "payment_credential_factory.h",
+    "payment_credential_manager.cc",
+    "payment_credential_manager.h",
     "payment_details_converter.cc",
     "payment_details_converter.h",
     "payment_event_response_util.cc",
@@ -95,8 +97,9 @@ static_library("content") {
     sources += [ "android_app_communication_chrome_os.cc" ]
 
     deps += [
-      "//ash/components/arc",
       "//ash/public/cpp/external_arc",
+      "//components/arc",
+      "//components/arc/mojom",
     ]
   }
 
@@ -265,11 +268,10 @@ source_set("unit_tests") {
     sources += [ "android_app_communication_test_support_chrome_os.cc" ]
 
     deps += [
-      "//ash/components/arc",
-      "//ash/components/arc:arc_test_support",
-      "//ash/components/arc/mojom",
       "//ash/public/cpp/external_arc:test_support",
       "//components/arc",
+      "//components/arc:arc_test_support",
+      "//components/arc/mojom",
     ]
   }
 

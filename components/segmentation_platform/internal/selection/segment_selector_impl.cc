@@ -42,12 +42,6 @@ SegmentSelectorImpl::SegmentSelectorImpl(
   if (selected_segment.has_value()) {
     selected_segment_last_session_.segment = selected_segment->segment_id;
     selected_segment_last_session_.is_ready = true;
-    stats::RecordSegmentSelectionFailure(
-        stats::SegmentationSelectionFailureReason::kSelectionAvailableInPrefs);
-  } else {
-    stats::RecordSegmentSelectionFailure(
-        stats::SegmentationSelectionFailureReason::
-            kInvalidSelectionResultInPrefs);
   }
 }
 
@@ -58,10 +52,6 @@ void SegmentSelectorImpl::GetSelectedSegment(
   base::ThreadTaskRunnerHandle::Get()->PostTask(
       FROM_HERE,
       base::BindOnce(std::move(callback), selected_segment_last_session_));
-}
-
-SegmentSelectionResult SegmentSelectorImpl::GetCachedSegmentResult() {
-  return selected_segment_last_session_;
 }
 
 void SegmentSelectorImpl::OnModelExecutionCompleted(
@@ -100,9 +90,6 @@ bool SegmentSelectorImpl::CanComputeSegmentSelection(
       VLOG(1) << __func__ << ": segment="
               << OptimizationTarget_Name(segment_info.segment_id())
               << " does not meet signal collection requirements.";
-      stats::RecordSegmentSelectionFailure(
-          stats::SegmentationSelectionFailureReason::
-              kAtLeastOneSegmentSignalsNotCollected);
       return false;
     }
 
@@ -111,9 +98,6 @@ bool SegmentSelectorImpl::CanComputeSegmentSelection(
       VLOG(1) << __func__ << ": segment="
               << OptimizationTarget_Name(segment_info.segment_id())
               << " has expired or unavailable result.";
-      stats::RecordSegmentSelectionFailure(
-          stats::SegmentationSelectionFailureReason::
-              kAtLeastOneSegmentNotReady);
       return false;
     }
   }
@@ -129,8 +113,6 @@ bool SegmentSelectorImpl::CanComputeSegmentSelection(
                                      : config_->segment_selection_ttl;
     if (!platform_options_.force_refresh_results &&
         previous_selection->selection_time + ttl_to_use > clock_->Now()) {
-      stats::RecordSegmentSelectionFailure(
-          stats::SegmentationSelectionFailureReason::kSelectionTtlNotExpired);
       VLOG(1) << __func__ << ": previous selection of segment="
               << OptimizationTarget_Name(previous_selection->segment_id)
               << " has not yet expired.";

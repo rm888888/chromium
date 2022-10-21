@@ -8,8 +8,6 @@
 #include "chrome/browser/profiles/profile_manager.h"
 #include "chrome/browser/ui/app_list/app_list_model_updater.h"
 #include "chrome/browser/ui/app_list/chrome_app_list_item.h"
-#include "chrome/browser/ui/app_list/chrome_app_list_model_updater.h"
-#include "chrome/browser/ui/app_list/page_break_constants.h"
 #include "chrome/test/base/testing_browser_process.h"
 #include "chrome/test/base/testing_profile.h"
 
@@ -27,6 +25,7 @@ void AppListSyncableServiceTestBase::SetUp() {
   TestingBrowserProcess::GetGlobal()->SetProfileManager(
       std::make_unique<ProfileManagerWithoutInit>(temp_dir_.GetPath()));
 
+  SetUpFakeModelUpdaterFactoryIfNecessary();
   app_list_syncable_service_ =
       std::make_unique<app_list::AppListSyncableService>(profile_.get());
   content::RunAllTasksUntilIdle();
@@ -37,17 +36,9 @@ void AppListSyncableServiceTestBase::RemoveAllExistingItems() {
   for (const auto& pair : app_list_syncable_service()->sync_items()) {
     existing_item_ids.emplace_back(pair.first);
   }
-
-  AppListModelUpdater* model_updater = GetModelUpdater();
   for (std::string& id : existing_item_ids) {
-    app_list_syncable_service()->RemoveItem(id, /*is_uninstall=*/true);
+    app_list_syncable_service()->RemoveItem(id);
   }
-
-  // Delete all default page breaks.
-  for (size_t i = 0; i < app_list::kDefaultPageBreakAppIdsLength; ++i)
-    model_updater->RemoveItem(app_list::kDefaultPageBreakAppIds[i],
-                              /*is_uninstall=*/true);
-
   content::RunAllTasksUntilIdle();
 }
 
@@ -57,14 +48,6 @@ void AppListSyncableServiceTestBase::InstallExtension(
       syncer::StringOrdinal::CreateInitialOrdinal();
   service()->OnExtensionInstalled(extension, page_ordinal,
                                   extensions::kInstallFlagNone);
-  // Allow async callbacks to run.
-  base::RunLoop().RunUntilIdle();
-}
-
-void AppListSyncableServiceTestBase::RemoveExtension(const std::string& id) {
-  service()->UninstallExtension(id, extensions::UNINSTALL_REASON_FOR_TESTING,
-                                nullptr);
-
   // Allow async callbacks to run.
   base::RunLoop().RunUntilIdle();
 }
@@ -88,16 +71,6 @@ AppListSyncableServiceTestBase::GetOrderedItemIdsFromModelUpdater() {
 }
 
 std::vector<std::string>
-AppListSyncableServiceTestBase::GetOrderedNamesFromModelUpdater() {
-  const std::vector<std::string> ids = GetOrderedItemIdsFromModelUpdater();
-  std::vector<std::string> names;
-  for (const auto& id : ids) {
-    names.push_back(GetModelUpdater()->FindItem(id)->name());
-  }
-  return names;
-}
-
-std::vector<std::string>
 AppListSyncableServiceTestBase::GetOrderedItemIdsFromSyncableService() {
   std::vector<std::string> ids;
   app_list::AppListSyncableService* service = app_list_syncable_service();
@@ -116,7 +89,7 @@ AppListSyncableServiceTestBase::GetOrderedItemIdsFromSyncableService() {
 }
 
 std::vector<std::string>
-AppListSyncableServiceTestBase::GetOrderedNamesFromSyncableService() {
+AppListSyncableServiceTestBase::GetNamesOfSortedItemsFromSyncableService() {
   const std::vector<std::string> ids = GetOrderedItemIdsFromSyncableService();
   std::vector<std::string> names;
   for (const auto& id : ids) {
@@ -125,35 +98,8 @@ AppListSyncableServiceTestBase::GetOrderedNamesFromSyncableService() {
   return names;
 }
 
-std::vector<std::vector<std::string>> AppListSyncableServiceTestBase::
-    GetNamesOfSortedItemsPerPageFromSyncableService() {
-  std::vector<std::vector<std::string>> pages;
-  pages.emplace_back();
-
-  const std::vector<std::string> ids = GetOrderedItemIdsFromSyncableService();
-  for (const auto& id : ids) {
-    const app_list::AppListSyncableService::SyncItem* item =
-        app_list_syncable_service()->GetSyncItem(id);
-    if (!item->parent_id.empty())
-      continue;
-    if (item->item_type == sync_pb::AppListSpecifics::TYPE_PAGE_BREAK) {
-      pages.emplace_back();
-      continue;
-    }
-    pages.back().push_back(
-        app_list_syncable_service()->GetSyncItem(id)->item_name);
-  }
-  return pages;
-}
-
-syncer::StringOrdinal AppListSyncableServiceTestBase::GetPositionFromSyncData(
-    const std::string& id) const {
-  return app_list_syncable_service_->GetSyncItem(id)->item_ordinal;
-}
-
-ChromeAppListModelUpdater* AppListSyncableServiceTestBase::GetModelUpdater() {
-  return static_cast<ChromeAppListModelUpdater*>(
-      app_list_syncable_service_->GetModelUpdater());
+AppListModelUpdater* AppListSyncableServiceTestBase::GetModelUpdater() {
+  return app_list_syncable_service_->GetModelUpdater();
 }
 
 const app_list::AppListSyncableService::SyncItem*

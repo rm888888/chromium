@@ -102,17 +102,16 @@ void ChooserDialogView::OnSelectionChanged() {
 BEGIN_METADATA(ChooserDialogView, views::DialogDelegateView)
 END_METADATA
 
-void ShowConstrainedDeviceChooserDialog(
-    content::WebContents* web_contents,
-    std::unique_ptr<permissions::ChooserController> controller) {
+void ChromeExtensionChooserDialog::ShowDialogImpl(
+    std::unique_ptr<permissions::ChooserController> chooser_controller) const {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
-  DCHECK(controller);
+  DCHECK(chooser_controller);
 
   web_modal::WebContentsModalDialogManager* manager =
-      web_modal::WebContentsModalDialogManager::FromWebContents(web_contents);
+      web_modal::WebContentsModalDialogManager::FromWebContents(web_contents_);
   if (manager) {
     constrained_window::ShowWebModalDialogViews(
-        new ChooserDialogView(std::move(controller)), web_contents);
+        new ChooserDialogView(std::move(chooser_controller)), web_contents_);
   }
 }
 

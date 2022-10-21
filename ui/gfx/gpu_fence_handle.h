@@ -5,6 +5,7 @@
 #ifndef UI_GFX_GPU_FENCE_HANDLE_H_
 #define UI_GFX_GPU_FENCE_HANDLE_H_
 
+#include "base/macros.h"
 #include "build/build_config.h"
 #include "ui/gfx/gfx_export.h"
 

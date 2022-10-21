@@ -9,7 +9,6 @@
 #include <string>
 
 #include "base/callback_forward.h"
-#include "base/memory/raw_ptr.h"
 #include "components/feed/core/proto/v2/store.pb.h"
 #include "components/feed/core/v2/public/web_feed_subscriptions.h"
 #include "components/feed/core/v2/web_feed_subscriptions/fetch_recommended_web_feeds_task.h"
@@ -72,8 +71,7 @@ class WebFeedSubscriptionCoordinator : public WebFeedSubscriptions {
   void IsWebFeedSubscriber(base::OnceCallback<void(bool)> callback) override;
   void SubscribedWebFeedCount(base::OnceCallback<void(int)> callback) override;
   void DumpStateForDebugging(std::ostream& ss) override;
-  void RefreshRecommendedFeeds(
-      base::OnceCallback<void(RefreshResult)> callback) override;
+  void RefreshRecommendedFeeds() override;
 
   // Types / functions exposed for task implementations.
 
@@ -161,18 +159,17 @@ class WebFeedSubscriptionCoordinator : public WebFeedSubscriptions {
   void FetchRecommendedWebFeedsStart();
   void FetchRecommendedWebFeedsComplete(
       FetchRecommendedWebFeedsTask::Result result);
-  void CallRefreshRecommendedFeedsCompleteCallbacks(RefreshResult result);
 
   void FetchSubscribedWebFeedsIfStale(base::OnceClosure callback);
   void FetchSubscribedWebFeedsStart();
   void FetchSubscribedWebFeedsComplete(
       FetchSubscribedWebFeedsTask::Result result);
-  void CallRefreshCompleteCallbacks(RefreshResult result);
+  void CallRefreshCompleteCallbacks(RefreshResult);
   void IsWebFeedSubscriberDone(base::OnceCallback<void(bool)> callback);
   void SubscribedWebFeedCountDone(base::OnceCallback<void(int)> callback);
 
-  raw_ptr<Delegate> delegate_;       // Always non-null.
-  raw_ptr<FeedStream> feed_stream_;  // Always non-null, it owns this.
+  Delegate* delegate_;       // Always non-null.
+  FeedStream* feed_stream_;  // Always non-null, it owns this.
   WebFeedIndex index_;
   // Whether `Populate()` has been called.
   bool populated_ = false;
@@ -193,8 +190,6 @@ class WebFeedSubscriptionCoordinator : public WebFeedSubscriptions {
   std::vector<base::OnceClosure> when_model_loads_;
   std::vector<base::OnceCallback<void(RefreshResult)>>
       on_refresh_subscriptions_;
-  std::vector<base::OnceCallback<void(RefreshResult)>>
-      on_refresh_recommended_feeds_;
   bool fetching_recommended_web_feeds_ = false;
   bool fetching_subscribed_web_feeds_ = false;
   bool fetching_subscribed_web_feeds_because_stale_ = false;

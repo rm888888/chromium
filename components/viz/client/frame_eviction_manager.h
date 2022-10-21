@@ -10,6 +10,7 @@
 #include <list>
 #include <map>
 
+#include "base/macros.h"
 #include "base/memory/memory_pressure_listener.h"
 #include "base/memory/singleton.h"
 #include "components/viz/client/viz_client_export.h"

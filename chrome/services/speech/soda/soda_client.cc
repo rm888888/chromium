@@ -4,9 +4,8 @@
 
 #include "chrome/services/speech/soda/soda_client.h"
 
-#include <tuple>
-
 #include "base/logging.h"
+#include "base/macros.h"
 #include "base/metrics/histogram_functions.h"
 #include "build/build_config.h"
 
@@ -76,7 +75,7 @@ SodaClient::~SodaClient() {
   // there have been no crashes on 10.15+, likely due to a change in the
   // __cxa_atexit implementation.
   if (base::mac::IsAtMostOS10_14())
-    std::ignore = lib_.release();
+    ignore_result(lib_.release());
 #endif  // defined(OS_MAC)
 }
 

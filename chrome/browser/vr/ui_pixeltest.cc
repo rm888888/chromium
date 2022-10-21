@@ -10,7 +10,7 @@
 #include "components/vector_icons/vector_icons.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
-#if BUILDFLAG(IS_WIN)
+#if defined(OS_WIN)
 #include "base/win/windows_version.h"
 #endif
 
@@ -23,7 +23,7 @@ constexpr gfx::Transform kIdentity;
 }  // namespace
 
 TEST_F(UiPixelTest, DrawVrBrowsingMode) {
-#if BUILDFLAG(IS_WIN)
+#if defined(OS_WIN)
   // VR is not supported on Windows 7.
   if (base::win::GetVersion() <= base::win::Version::WIN7)
     return;

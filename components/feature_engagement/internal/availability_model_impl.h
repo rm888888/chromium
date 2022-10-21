@@ -12,6 +12,7 @@
 #include <string>
 
 #include "base/callback.h"
+#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "components/feature_engagement/internal/availability_model.h"
 #include "components/feature_engagement/internal/persistent_availability_store.h"

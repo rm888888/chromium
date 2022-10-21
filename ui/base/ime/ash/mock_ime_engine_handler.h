@@ -23,7 +23,6 @@ class COMPONENT_EXPORT(UI_BASE_IME_ASH) MockIMEEngineHandler
 
   // ui::IMEEngineHandlerInterface:
   void FocusIn(const InputContext& input_context) override;
-  void OnTouch(ui::EventPointerType pointerType) override;
   void FocusOut() override;
   void Enable(const std::string& component_id) override;
   void Disable() override;

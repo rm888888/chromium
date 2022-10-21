@@ -11,7 +11,7 @@
 
 #include "base/callback_forward.h"
 #include "base/files/file_path.h"
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/memory/scoped_refptr.h"
 #include "base/time/time.h"
 #include "components/signin/public/identity_manager/account_info.h"
@@ -31,7 +31,6 @@ namespace syncer {
 
 class EngineComponentsFactory;
 class HttpPostProviderFactory;
-class Nigori;
 class SyncEngineHost;
 struct SyncStatus;
 
@@ -57,7 +56,7 @@ class SyncEngine : public ModelTypeConfigurer {
 
     ~InitParams();
 
-    raw_ptr<SyncEngineHost> host = nullptr;
+    SyncEngineHost* host = nullptr;
     std::unique_ptr<SyncEncryptionHandler::Observer> encryption_observer_proxy;
     scoped_refptr<ExtensionsActivity> extensions_activity;
     GURL service_url;
@@ -68,6 +67,7 @@ class SyncEngine : public ModelTypeConfigurer {
     bool enable_local_sync_backend = false;
     base::FilePath local_sync_backend_folder;
     std::unique_ptr<EngineComponentsFactory> engine_components_factory;
+    std::string encryption_bootstrap_token;
   };
 
   SyncEngine();
@@ -119,14 +119,13 @@ class SyncEngine : public ModelTypeConfigurer {
   // - We have pending keys.
   virtual void SetEncryptionPassphrase(const std::string& passphrase) = 0;
 
-  // Use the provided decryption key to asynchronously attempt decryption. If
-  // new encrypted keys arrive during the asynchronous call,
-  // OnPassphraseRequired may be triggered at a later time. It is an error to
-  // call this when there are no pending keys.
-  virtual void SetExplicitPassphraseDecryptionKey(
-      std::unique_ptr<Nigori> key) = 0;
+  // Use the provided passphrase to asynchronously attempt decryption. If new
+  // encrypted keys arrive during the asynchronous call, OnPassphraseRequired
+  // may be triggered at a later time. It is an error to call this when there
+  // are no pending keys.
+  virtual void SetDecryptionPassphrase(const std::string& passphrase) = 0;
 
-  // Analogous to SetExplicitPassphraseDecryptionKey() but specifically for
+  // Analogous to SetDecryptionPassphrase but specifically for
   // TRUSTED_VAULT_PASSPHRASE: it provides new decryption keys that could
   // allow decrypting pending Nigori keys. Notifies observers of the result of
   // the operation via OnTrustedVaultKeyAccepted if the provided keys

@@ -4,12 +4,11 @@
 
 #include "chrome/browser/ui/views/profiles/profile_picker_signed_in_flow_controller.h"
 
-#include "base/trace_event/trace_event.h"
 #include "chrome/browser/browser_process.h"
-#include "chrome/browser/profiles/keep_alive/profile_keep_alive_types.h"
 #include "chrome/browser/profiles/profile.h"
 #include "chrome/browser/profiles/profile_attributes_entry.h"
 #include "chrome/browser/profiles/profile_attributes_storage.h"
+#include "chrome/browser/profiles/profile_keep_alive_types.h"
 #include "chrome/browser/profiles/profile_window.h"
 #include "chrome/browser/profiles/profiles_state.h"
 #include "chrome/browser/signin/identity_manager_factory.h"
@@ -110,9 +109,10 @@ ProfilePickerSignedInFlowController::~ProfilePickerSignedInFlowController() {
 
   // Record unfinished signed-in profile creation.
   if (!is_finished_) {
-    // Schedule the profile for deletion, it's not needed any more.
-    g_browser_process->profile_manager()->ScheduleEphemeralProfileForDeletion(
-        profile_->GetPath());
+    // TODO(crbug.com/1227699): Schedule the profile for deletion here, it's not
+    // needed any more. This triggers a crash if the browser is shutting down
+    // completely. Figure a way how to delete the profile only if that does not
+    // compete with a shutdown.
 
     ProfileMetrics::LogProfileAddSignInFlowOutcome(
         ProfileMetrics::ProfileAddSignInFlowOutcome::kAbortedAfterSignIn);
@@ -126,9 +126,10 @@ void ProfilePickerSignedInFlowController::Cancel() {
 
   is_finished_ = true;
 
-  // Schedule the profile for deletion, it's not needed any more.
-  g_browser_process->profile_manager()->ScheduleEphemeralProfileForDeletion(
-      profile_->GetPath());
+  // TODO(crbug.com/1227699): Consider moving this into the destructor so that
+  // unfinished (and unaborted) flows also get the profile deleted right away.
+  g_browser_process->profile_manager()->ScheduleProfileForDeletion(
+      profile_->GetPath(), base::DoNothing());
 }
 
 void ProfilePickerSignedInFlowController::FinishAndOpenBrowser(
@@ -185,7 +186,7 @@ void ProfilePickerSignedInFlowController::SwitchToProfileSwitch(
   Cancel();
 
   switch_profile_path_ = profile_path;
-  host_->ShowScreenInPickerContents(
+  host_->ShowScreenInSystemContents(
       GURL(chrome::kChromeUIProfilePickerUrl).Resolve("profile-switch"));
 }
 
@@ -325,9 +326,6 @@ absl::optional<SkColor> ProfilePickerSignedInFlowController::GetProfileColor()
 
 void ProfilePickerSignedInFlowController::FinishAndOpenBrowserImpl(
     BrowserOpenedCallback callback) {
-  TRACE_EVENT1("browser",
-               "ProfilePickerSignedInFlowController::FinishAndOpenBrowserImpl",
-               "profile_path", profile_->GetPath().AsUTF8Unsafe());
   DCHECK(IsInitialized());
   DCHECK(!name_for_signed_in_profile_.empty());
 
@@ -395,7 +393,7 @@ void ProfilePickerSignedInFlowController::FinishAndOpenBrowserImpl(
 void ProfilePickerSignedInFlowController::FinishAndOpenBrowserForSAML() {
   DCHECK(IsInitialized());
   // First, free up `contents()` to be moved to a new browser window.
-  host_->ShowScreenInPickerContents(
+  host_->ShowScreenInSystemContents(
       GURL(url::kAboutBlankURL),
       /*navigation_finished_closure=*/
       base::BindOnce(
@@ -420,10 +418,8 @@ void ProfilePickerSignedInFlowController::OnSignInContentsFreedUp() {
 
 void ProfilePickerSignedInFlowController::OnBrowserOpened(
     BrowserOpenedCallback finish_flow_callback,
-    Profile* profile) {
-  TRACE_EVENT1("browser",
-               "ProfilePickerSignedInFlowController::OnBrowserOpened",
-               "profile_path", profile_->GetPath().AsUTF8Unsafe());
+    Profile* profile,
+    Profile::CreateStatus profile_create_status) {
   DCHECK(IsInitialized());
   CHECK_EQ(profile, profile_);
 

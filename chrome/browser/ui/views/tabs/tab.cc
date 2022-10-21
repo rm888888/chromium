@@ -14,7 +14,6 @@
 #include "base/bind.h"
 #include "base/debug/alias.h"
 #include "base/i18n/rtl.h"
-#include "base/memory/raw_ptr.h"
 #include "base/metrics/user_metrics.h"
 #include "base/numerics/safe_conversions.h"
 #include "base/scoped_observation.h"
@@ -135,7 +134,7 @@ class TabStyleHighlightPathGenerator : public views::HighlightPathGenerator {
   }
 
  private:
-  const raw_ptr<TabStyle> tab_style_;
+  TabStyle* const tab_style_;
 };
 
 }  // namespace
@@ -148,7 +147,7 @@ class Tab::TabCloseButtonObserver : public views::ViewObserver {
                                   TabController* controller)
       : tab_(tab), close_button_(close_button), controller_(controller) {
     DCHECK(close_button_);
-    tab_close_button_observation_.Observe(close_button_.get());
+    tab_close_button_observation_.Observe(close_button_);
   }
   TabCloseButtonObserver(const TabCloseButtonObserver&) = delete;
   TabCloseButtonObserver& operator=(const TabCloseButtonObserver&) = delete;
@@ -175,9 +174,9 @@ class Tab::TabCloseButtonObserver : public views::ViewObserver {
   base::ScopedObservation<views::View, views::ViewObserver>
       tab_close_button_observation_{this};
 
-  raw_ptr<Tab> tab_;
-  raw_ptr<views::View> close_button_;
-  raw_ptr<TabController> controller_;
+  Tab* tab_;
+  views::View* close_button_;
+  TabController* controller_;
 };
 
 // Tab -------------------------------------------------------------------------
@@ -218,7 +217,7 @@ Tab::Tab(TabController* controller)
   // need a manual suppression by detecting cases where the text is painted onto
   // onto opaque parts of a not-entirely-opaque layer.
   title_->SetSkipSubpixelRenderingOpacityCheck(true);
-  AddChildView(title_.get());
+  AddChildView(title_);
 
   SetEventTargeter(std::make_unique<views::ViewTargeter>(this));
 
@@ -244,6 +243,10 @@ Tab::Tab(TabController* controller)
   views::FocusRing::Install(this);
   views::HighlightPathGenerator::Install(
       this, std::make_unique<TabStyleHighlightPathGenerator>(tab_style_.get()));
+
+  //update on 20220518
+  //  SetBackground(views::CreateSolidBackground(SkColorSetARGB(255,235,226,238)));
+  //
 }
 
 Tab::~Tab() {
@@ -667,7 +670,6 @@ void Tab::PaintChildren(const views::PaintInfo& info) {
   ui::ClipRecorder clip_recorder(info.context());
   // The paint recording scale for tabs is consistent along the x and y axis.
   const float paint_recording_scale = info.paint_recording_scale_x();
-
   const SkPath clip_path = tab_style()->GetPath(
       TabStyle::PathType::kInteriorClip, paint_recording_scale);
 
@@ -751,7 +753,7 @@ SkColor Tab::GetAlertIndicatorColor(TabAlertState state) const {
     case TabAlertState::PIP_PLAYING:
       if (color_utils::IsDark(foreground_color_))
         return gfx::kGoogleBlue600;
-      [[fallthrough]];
+      FALLTHROUGH;
     case TabAlertState::AUDIO_PLAYING:
     case TabAlertState::AUDIO_MUTING:
     case TabAlertState::BLUETOOTH_CONNECTED:

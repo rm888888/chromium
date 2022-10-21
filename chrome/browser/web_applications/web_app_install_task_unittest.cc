@@ -12,7 +12,6 @@
 #include "base/bind.h"
 #include "base/callback.h"
 #include "base/files/file_path.h"
-#include "base/memory/raw_ptr.h"
 #include "base/memory/scoped_refptr.h"
 #include "base/run_loop.h"
 #include "base/strings/stringprintf.h"
@@ -22,6 +21,7 @@
 #include "base/test/scoped_feature_list.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "build/chromeos_buildflags.h"
+#include "chrome/browser/content_settings/host_content_settings_map_factory.h"
 #include "chrome/browser/web_applications/policy/web_app_policy_manager.h"
 #include "chrome/browser/web_applications/test/fake_data_retriever.h"
 #include "chrome/browser/web_applications/test/fake_install_finalizer.h"
@@ -48,8 +48,10 @@
 #include "chrome/browser/web_applications/web_application_info.h"
 #include "chrome/common/chrome_features.h"
 #include "chrome/test/base/testing_browser_process.h"
-#include "chrome/test/base/testing_profile.h"
 #include "chrome/test/base/testing_profile_manager.h"
+#include "components/content_settings/core/browser/host_content_settings_map.h"
+#include "components/content_settings/core/common/content_settings.h"
+#include "components/content_settings/core/common/content_settings_pattern.h"
 #include "components/webapps/browser/installable/installable_data.h"
 #include "components/webapps/browser/installable/installable_metrics.h"
 #include "net/http/http_status_code.h"
@@ -62,13 +64,13 @@
 #include "url/gurl.h"
 
 #if BUILDFLAG(IS_CHROMEOS_ASH)
-#include "ash/components/arc/mojom/intent_helper.mojom.h"
-#include "ash/components/arc/session/arc_bridge_service.h"
-#include "ash/components/arc/session/arc_service_manager.h"
-#include "ash/components/arc/test/connection_holder_util.h"
-#include "ash/components/arc/test/fake_app_instance.h"
 #include "chrome/browser/ui/app_list/arc/arc_app_test.h"
 #include "components/arc/intent_helper/arc_intent_helper_bridge.h"
+#include "components/arc/mojom/intent_helper.mojom.h"
+#include "components/arc/session/arc_bridge_service.h"
+#include "components/arc/session/arc_service_manager.h"
+#include "components/arc/test/connection_holder_util.h"
+#include "components/arc/test/fake_app_instance.h"
 #include "components/arc/test/fake_intent_helper_instance.h"
 #endif
 
@@ -164,7 +166,7 @@ class WebAppInstallTaskTest : public WebAppTest {
                              const GURL& scope,
                              absl::optional<SkColor> theme_color,
                              DisplayMode user_display_mode) {
-    auto web_app_info = std::make_unique<WebAppInstallInfo>();
+    auto web_app_info = std::make_unique<WebApplicationInfo>();
 
     web_app_info->start_url = url;
     web_app_info->title = base::UTF8ToUTF16(name);
@@ -173,7 +175,7 @@ class WebAppInstallTaskTest : public WebAppTest {
     web_app_info->theme_color = theme_color;
     web_app_info->user_display_mode = user_display_mode;
 
-    data_retriever_->SetRendererWebAppInstallInfo(std::move(web_app_info));
+    data_retriever_->SetRendererWebApplicationInfo(std::move(web_app_info));
   }
 
   void CreateRendererAppInfo(const GURL& url,
@@ -211,9 +213,9 @@ class WebAppInstallTaskTest : public WebAppTest {
   void CreateDataToRetrieve(const GURL& url, DisplayMode user_display_mode) {
     DCHECK(data_retriever_);
 
-    auto renderer_web_app_info = std::make_unique<WebAppInstallInfo>();
+    auto renderer_web_app_info = std::make_unique<WebApplicationInfo>();
     renderer_web_app_info->user_display_mode = user_display_mode;
-    data_retriever_->SetRendererWebAppInstallInfo(
+    data_retriever_->SetRendererWebApplicationInfo(
         std::move(renderer_web_app_info));
 
     auto manifest = blink::mojom::Manifest::New();
@@ -229,22 +231,20 @@ class WebAppInstallTaskTest : public WebAppTest {
     return *fake_install_finalizer_;
   }
 
-  // Sets IconsMap, IconsDownloadedResult and corresponding `http_status_codes`
-  // to populate DownloadedIconsHttpResults.
-  void SetIconsMapToRetrieve(IconsMap icons_map,
-                             IconsDownloadedResult result,
-                             const std::vector<int>& http_status_codes) {
-    DCHECK_EQ(icons_map.size(), http_status_codes.size());
+  // Sets IconsMap, IconsDownloadedResult and corresponding HTTP_OK
+  // DownloadedIconsHttpResults.
+  void SetIconsMapToRetrieve(IconsMap icons_map) {
     DCHECK(data_retriever_);
 
-    data_retriever_->SetIconsDownloadedResult(result);
+    data_retriever_->SetIconsDownloadedResult(
+        icons_map.empty() ? IconsDownloadedResult::kPrimaryPageChanged
+                          : IconsDownloadedResult::kCompleted);
 
-    int icon_index = 0;
+    // Uses `icons_map` to infer HTTP_OK for each icon.
     DownloadedIconsHttpResults http_results;
-    for (const auto& url_and_bitmap : icons_map) {
-      http_results[url_and_bitmap.first] = http_status_codes[icon_index];
-      ++icon_index;
-    }
+    for (const auto& url_and_bitmap : icons_map)
+      http_results[url_and_bitmap.first] = net::HttpStatusCode::HTTP_OK;
+
     data_retriever_->SetDownloadedIconsHttpResults(std::move(http_results));
 
     // Moves `icons_map` last.
@@ -289,14 +289,14 @@ class WebAppInstallTaskTest : public WebAppTest {
     return result;
   }
 
-  std::unique_ptr<WebAppInstallInfo> LoadAndRetrieveWebAppInstallInfoWithIcons(
-      const GURL& url) {
-    std::unique_ptr<WebAppInstallInfo> result;
+  std::unique_ptr<WebApplicationInfo>
+  LoadAndRetrieveWebApplicationInfoWithIcons(const GURL& url) {
+    std::unique_ptr<WebApplicationInfo> result;
     base::RunLoop run_loop;
-    install_task_->LoadAndRetrieveWebAppInstallInfoWithIcons(
+    install_task_->LoadAndRetrieveWebApplicationInfoWithIcons(
         url, &url_loader(),
         base::BindLambdaForTesting(
-            [&](std::unique_ptr<WebAppInstallInfo> web_app_info) {
+            [&](std::unique_ptr<WebApplicationInfo> web_app_info) {
               result = std::move(web_app_info);
               run_loop.Quit();
             }));
@@ -332,11 +332,8 @@ class WebAppInstallTaskTest : public WebAppTest {
 
     SetInstallFinalizerForTesting();
 
-    data_retriever_->SetIconsDownloadedResult(
-        IconsDownloadedResult::kPrimaryPageChanged);
-    data_retriever_->SetDownloadedIconsHttpResults(
-        DownloadedIconsHttpResults{});
-    data_retriever_->SetIcons(IconsMap{});
+    IconsMap icons_map;
+    SetIconsMapToRetrieve(std::move(icons_map));
   }
 
  protected:
@@ -363,7 +360,7 @@ class WebAppInstallTaskTest : public WebAppTest {
   scoped_refptr<TestFileUtils> file_utils_;
 
   // Owned by install_task_:
-  raw_ptr<FakeDataRetriever> data_retriever_ = nullptr;
+  FakeDataRetriever* data_retriever_ = nullptr;
 
 #if BUILDFLAG(IS_CHROMEOS_ASH)
   ArcAppTest arc_test_;
@@ -378,7 +375,7 @@ class WebAppInstallTaskTest : public WebAppTest {
  private:
   std::unique_ptr<FakeWebAppRegistryController> fake_registry_controller_;
   std::unique_ptr<TestWebAppUrlLoader> url_loader_;
-  raw_ptr<FakeInstallFinalizer> fake_install_finalizer_ = nullptr;
+  FakeInstallFinalizer* fake_install_finalizer_ = nullptr;
   base::HistogramTester histogram_tester_;
 };
 
@@ -398,7 +395,7 @@ class WebAppInstallTaskWithRunOnOsLoginTest : public WebAppInstallTaskTest {
                              absl::optional<SkColor> theme_color,
                              DisplayMode user_display_mode,
                              bool run_on_os_login) {
-    auto web_app_info = std::make_unique<WebAppInstallInfo>();
+    auto web_app_info = std::make_unique<WebApplicationInfo>();
 
     web_app_info->start_url = url;
     web_app_info->title = base::UTF8ToUTF16(name);
@@ -408,7 +405,7 @@ class WebAppInstallTaskWithRunOnOsLoginTest : public WebAppInstallTaskTest {
     web_app_info->user_display_mode = user_display_mode;
     web_app_info->run_on_os_login = run_on_os_login;
 
-    data_retriever_->SetRendererWebAppInstallInfo(std::move(web_app_info));
+    data_retriever_->SetRendererWebApplicationInfo(std::move(web_app_info));
   }
 
  private:
@@ -514,7 +511,7 @@ TEST_F(WebAppInstallTaskTest, ForceReinstall) {
   EXPECT_TRUE(callback_called);
 }
 
-TEST_F(WebAppInstallTaskTest, GetWebAppInstallInfoFailed) {
+TEST_F(WebAppInstallTaskTest, GetWebApplicationInfoFailed) {
   // data_retriever_ with empty info means an error.
 
   base::RunLoop run_loop;
@@ -527,7 +524,7 @@ TEST_F(WebAppInstallTaskTest, GetWebAppInstallInfoFailed) {
       base::BindOnce(test::TestAcceptDialogCallback),
       base::BindLambdaForTesting(
           [&](const AppId& installed_app_id, InstallResultCode code) {
-            EXPECT_EQ(InstallResultCode::kGetWebAppInstallInfoFailed, code);
+            EXPECT_EQ(InstallResultCode::kGetWebApplicationInfoFailed, code);
             EXPECT_EQ(AppId(), installed_app_id);
             callback_called = true;
             run_loop.Quit();
@@ -671,12 +668,11 @@ TEST_F(WebAppInstallTaskTest, GetIcons) {
   IconsMap icons_map;
   AddIconToIconsMap(icon_url, icon_size::k128, color, &icons_map);
 
-  SetIconsMapToRetrieve(std::move(icons_map), IconsDownloadedResult::kCompleted,
-                        {net::HttpStatusCode::HTTP_OK});
+  SetIconsMapToRetrieve(std::move(icons_map));
 
   InstallWebAppFromManifestWithFallback();
 
-  std::unique_ptr<WebAppInstallInfo> web_app_info =
+  std::unique_ptr<WebApplicationInfo> web_app_info =
       fake_install_finalizer().web_app_info();
 
   // Make sure that icons have been generated for all sub sizes.
@@ -693,16 +689,9 @@ TEST_F(WebAppInstallTaskTest, GetIcons) {
       "WebApp.Icon.HttpStatusCodeClassOnCreate", http_code_class_ok, 1);
   histogram_tester().ExpectTotalCount("WebApp.Icon.HttpStatusCodeClassOnSync",
                                       0);
-
-  histogram_tester().ExpectBucketCount("WebApp.Icon.DownloadedResultOnCreate",
-                                       IconsDownloadedResult::kCompleted, 1);
-
-  histogram_tester().ExpectBucketCount(
-      "WebApp.Icon.DownloadedHttpStatusCodeOnCreate",
-      net::HttpStatusCode::HTTP_OK, 1);
 }
 
-TEST_F(WebAppInstallTaskTest, GetIcons_PrimaryPageChanged) {
+TEST_F(WebAppInstallTaskTest, GetIcons_NoIconsProvided) {
   const GURL url = GURL("https://example.com/path");
   CreateDefaultDataToRetrieve(url);
   CreateRendererAppInfo(url, "Name", "Description");
@@ -710,13 +699,11 @@ TEST_F(WebAppInstallTaskTest, GetIcons_PrimaryPageChanged) {
   SetInstallFinalizerForTesting();
 
   IconsMap icons_map;
-  SetIconsMapToRetrieve(std::move(icons_map),
-                        IconsDownloadedResult::kPrimaryPageChanged,
-                        /*http_status_codes=*/{});
+  SetIconsMapToRetrieve(std::move(icons_map));
 
   InstallWebAppFromManifestWithFallback();
 
-  std::unique_ptr<WebAppInstallInfo> web_app_info =
+  std::unique_ptr<WebApplicationInfo> web_app_info =
       fake_install_finalizer().web_app_info();
 
   // Make sure that icons have been generated for all sizes.
@@ -732,47 +719,6 @@ TEST_F(WebAppInstallTaskTest, GetIcons_PrimaryPageChanged) {
                                       0);
   histogram_tester().ExpectTotalCount("WebApp.Icon.HttpStatusCodeClassOnSync",
                                       0);
-
-  histogram_tester().ExpectBucketCount(
-      "WebApp.Icon.DownloadedResultOnCreate",
-      IconsDownloadedResult::kPrimaryPageChanged, 1);
-  histogram_tester().ExpectTotalCount("WebApp.Icon.DownloadedResultOnSync", 0);
-
-  histogram_tester().ExpectTotalCount(
-      "WebApp.Icon.DownloadedHttpStatusCodeOnCreate", 0);
-  histogram_tester().ExpectTotalCount(
-      "WebApp.Icon.DownloadedHttpStatusCodeOnSync", 0);
-}
-
-TEST_F(WebAppInstallTaskTest, GetIcons_IconNotFound) {
-  const GURL url = GURL("https://example.com/path");
-  CreateDefaultDataToRetrieve(url);
-  CreateRendererAppInfo(url, "Name", "Description");
-
-  SetInstallFinalizerForTesting();
-
-  IconsMap icons_map;
-  AddEmptyIconToIconsMap(GURL("https://example.com/app.ico"), &icons_map);
-  SetIconsMapToRetrieve(std::move(icons_map), IconsDownloadedResult::kCompleted,
-                        {net::HttpStatusCode::HTTP_NOT_FOUND});
-
-  InstallWebAppFromManifestWithFallback();
-
-  std::unique_ptr<WebAppInstallInfo> web_app_info =
-      fake_install_finalizer().web_app_info();
-  EXPECT_TRUE(ContainsOneIconOfEachSize(web_app_info->icon_bitmaps.any));
-  EXPECT_TRUE(web_app_info->manifest_icons.empty());
-  EXPECT_TRUE(web_app_info->shortcuts_menu_item_infos.empty());
-
-  histogram_tester().ExpectBucketCount("WebApp.Icon.DownloadedResultOnCreate",
-                                       IconsDownloadedResult::kCompleted, 1);
-  histogram_tester().ExpectTotalCount("WebApp.Icon.DownloadedResultOnSync", 0);
-
-  histogram_tester().ExpectBucketCount(
-      "WebApp.Icon.DownloadedHttpStatusCodeOnCreate",
-      net::HttpStatusCode::HTTP_NOT_FOUND, 1);
-  histogram_tester().ExpectTotalCount(
-      "WebApp.Icon.DownloadedHttpStatusCodeOnSync", 0);
 }
 
 TEST_F(WebAppInstallTaskTest, WriteDataToDisk) {
@@ -829,7 +775,7 @@ TEST_F(WebAppInstallTaskTest, WriteDataToDisk) {
       }
     }
 
-    data_retriever().SetEmptyRendererWebAppInstallInfo();
+    data_retriever().SetEmptyRendererWebApplicationInfo();
     data_retriever().SetManifest(std::move(manifest), /*is_installable=*/true);
     data_retriever().SetIcons(std::move(icons_map));
   }
@@ -898,8 +844,7 @@ TEST_F(WebAppInstallTaskTest, WriteDataToDiskFailed) {
   IconsMap icons_map;
   AddIconToIconsMap(GURL("https://example.com/app.ico"), icon_size::k512,
                     SK_ColorBLUE, &icons_map);
-  SetIconsMapToRetrieve(std::move(icons_map), IconsDownloadedResult::kCompleted,
-                        {net::HttpStatusCode::HTTP_OK});
+  SetIconsMapToRetrieve(std::move(icons_map));
 
   const base::FilePath web_apps_dir = GetWebAppsRootDirectory(profile());
   const base::FilePath manifest_resources_directory =
@@ -1036,7 +981,7 @@ TEST_F(WebAppInstallTaskTest, InstallWebAppFromInfo_Success) {
   const GURL url = GURL("https://example.com/path");
   const AppId app_id = GenerateAppId(/*manifest_id=*/absl::nullopt, url);
 
-  auto web_app_info = std::make_unique<WebAppInstallInfo>();
+  auto web_app_info = std::make_unique<WebApplicationInfo>();
   web_app_info->start_url = url;
   web_app_info->user_display_mode = DisplayMode::kStandalone;
   web_app_info->title = u"App Name";
@@ -1051,7 +996,7 @@ TEST_F(WebAppInstallTaskTest, InstallWebAppFromInfo_Success) {
             EXPECT_EQ(InstallResultCode::kSuccessNewInstall, code);
             EXPECT_EQ(app_id, installed_app_id);
 
-            std::unique_ptr<WebAppInstallInfo> final_web_app_info =
+            std::unique_ptr<WebApplicationInfo> final_web_app_info =
                 fake_install_finalizer().web_app_info();
             EXPECT_EQ(final_web_app_info->user_display_mode,
                       DisplayMode::kStandalone);
@@ -1065,7 +1010,7 @@ TEST_F(WebAppInstallTaskTest, InstallWebAppFromInfo_Success) {
 TEST_F(WebAppInstallTaskTest, InstallWebAppFromInfo_GenerateIcons) {
   SetInstallFinalizerForTesting();
 
-  auto web_app_info = std::make_unique<WebAppInstallInfo>();
+  auto web_app_info = std::make_unique<WebApplicationInfo>();
   web_app_info->start_url = GURL("https://example.com/path");
   web_app_info->user_display_mode = DisplayMode::kBrowser;
   web_app_info->title = u"App Name";
@@ -1081,7 +1026,7 @@ TEST_F(WebAppInstallTaskTest, InstallWebAppFromInfo_GenerateIcons) {
       ForInstallableSite::kYes, webapps::WebappInstallSource::ARC,
       base::BindLambdaForTesting([&](const AppId& installed_app_id,
                                      InstallResultCode code) {
-        std::unique_ptr<WebAppInstallInfo> final_web_app_info =
+        std::unique_ptr<WebApplicationInfo> final_web_app_info =
             fake_install_finalizer().web_app_info();
 
         // Make sure that icons have been generated for all sub sizes.
@@ -1119,7 +1064,7 @@ TEST_F(WebAppInstallTaskTest, InstallWebAppFromManifestWithFallback_NoIcons) {
                                      InstallResultCode code) {
         EXPECT_EQ(InstallResultCode::kSuccessNewInstall, code);
 
-        std::unique_ptr<WebAppInstallInfo> final_web_app_info =
+        std::unique_ptr<WebApplicationInfo> final_web_app_info =
             fake_install_finalizer().web_app_info();
         // Make sure that icons have been generated for all sub sizes.
         EXPECT_TRUE(
@@ -1320,7 +1265,7 @@ TEST_F(WebAppInstallTaskTest, LoadAndInstallWebAppFromManifestWithFallback) {
   }
 }
 
-TEST_F(WebAppInstallTaskTest, LoadAndRetrieveWebAppInstallInfoWithIcons) {
+TEST_F(WebAppInstallTaskTest, LoadAndRetrieveWebApplicationInfoWithIcons) {
   const GURL url = GURL("https://example.com/path");
   const GURL start_url = GURL("https://example.com/start");
   const std::string name = "Name";
@@ -1331,8 +1276,8 @@ TEST_F(WebAppInstallTaskTest, LoadAndRetrieveWebAppInstallInfoWithIcons) {
     url_loader().SetNextLoadUrlResult(
         url, WebAppUrlLoader::Result::kRedirectedUrlLoaded);
 
-    std::unique_ptr<WebAppInstallInfo> result =
-        LoadAndRetrieveWebAppInstallInfoWithIcons(url);
+    std::unique_ptr<WebApplicationInfo> result =
+        LoadAndRetrieveWebApplicationInfoWithIcons(url);
     EXPECT_FALSE(result);
   }
   ResetInstallTask();
@@ -1341,8 +1286,8 @@ TEST_F(WebAppInstallTaskTest, LoadAndRetrieveWebAppInstallInfoWithIcons) {
     url_loader().SetNextLoadUrlResult(
         url, WebAppUrlLoader::Result::kFailedPageTookTooLong);
 
-    std::unique_ptr<WebAppInstallInfo> result =
-        LoadAndRetrieveWebAppInstallInfoWithIcons(url);
+    std::unique_ptr<WebApplicationInfo> result =
+        LoadAndRetrieveWebApplicationInfoWithIcons(url);
     EXPECT_FALSE(result);
   }
   ResetInstallTask();
@@ -1351,8 +1296,8 @@ TEST_F(WebAppInstallTaskTest, LoadAndRetrieveWebAppInstallInfoWithIcons) {
     CreateRendererAppInfo(url, name, description);
     url_loader().SetNextLoadUrlResult(url, WebAppUrlLoader::Result::kUrlLoaded);
 
-    std::unique_ptr<WebAppInstallInfo> result =
-        LoadAndRetrieveWebAppInstallInfoWithIcons(url);
+    std::unique_ptr<WebApplicationInfo> result =
+        LoadAndRetrieveWebApplicationInfoWithIcons(url);
     EXPECT_TRUE(result);
     EXPECT_EQ(result->start_url, start_url);
     EXPECT_TRUE(result->manifest_icons.empty());
@@ -1370,11 +1315,11 @@ TEST_F(WebAppInstallTaskTest, LoadAndRetrieveWebAppInstallInfoWithIcons) {
         profile(), &fake_os_integration_manager(), install_finalizer_.get(),
         std::move(data_retriever), &registrar());
 
-    std::unique_ptr<WebAppInstallInfo> info;
-    task->LoadAndRetrieveWebAppInstallInfoWithIcons(
+    std::unique_ptr<WebApplicationInfo> info;
+    task->LoadAndRetrieveWebApplicationInfoWithIcons(
         url, &url_loader(),
         base::BindLambdaForTesting(
-            [&](std::unique_ptr<WebAppInstallInfo> app_info) {
+            [&](std::unique_ptr<WebApplicationInfo> app_info) {
               info = std::move(app_info);
               run_loop.Quit();
             }));
@@ -1394,12 +1339,12 @@ TEST_F(WebAppInstallTaskTest, StorageIsolationFlagSaved) {
   manifest->start_url = GURL("https://example.com/start");
   manifest->isolated_storage = true;
 
-  auto web_app_info = std::make_unique<WebAppInstallInfo>();
+  auto web_app_info = std::make_unique<WebApplicationInfo>();
   UpdateWebAppInfoFromManifest(*manifest, manifest_start_url,
                                web_app_info.get());
 
   data_retriever_->SetManifest(std::move(manifest), /*is_installable=*/true);
-  data_retriever_->SetRendererWebAppInstallInfo(std::move(web_app_info));
+  data_retriever_->SetRendererWebApplicationInfo(std::move(web_app_info));
 
   base::RunLoop run_loop;
   bool callback_called = false;
@@ -1572,7 +1517,7 @@ class WebAppInstallTaskTestWithShortcutsMenu : public WebAppInstallTaskTest {
                                        InstallResultCode code) {
           result.app_id = installed_app_id;
           result.code = code;
-          std::unique_ptr<WebAppInstallInfo> final_web_app_info =
+          std::unique_ptr<WebApplicationInfo> final_web_app_info =
               fake_install_finalizer().web_app_info();
           EXPECT_EQ(theme_color, final_web_app_info->theme_color);
           EXPECT_EQ(1u, final_web_app_info->shortcuts_menu_item_infos.size());
@@ -1619,14 +1564,14 @@ class WebAppInstallTaskTestWithShortcutsMenu : public WebAppInstallTaskTest {
     InstallResult result;
     const AppId app_id = GenerateAppId(/*manifest_id=*/absl::nullopt, url);
 
-    auto web_app_info = std::make_unique<WebAppInstallInfo>();
+    auto web_app_info = std::make_unique<WebApplicationInfo>();
     web_app_info->start_url = url;
     web_app_info->user_display_mode = DisplayMode::kStandalone;
     web_app_info->theme_color = theme_color;
     web_app_info->title = u"App Name";
 
-    WebAppShortcutsMenuItemInfo shortcut_item;
-    WebAppShortcutsMenuItemInfo::Icon icon;
+    WebApplicationShortcutsMenuItemInfo shortcut_item;
+    WebApplicationShortcutsMenuItemInfo::Icon icon;
     shortcut_item.name = base::UTF8ToUTF16(shortcut_name);
     shortcut_item.url = shortcut_url;
 
@@ -1648,7 +1593,7 @@ class WebAppInstallTaskTestWithShortcutsMenu : public WebAppInstallTaskTest {
                                        InstallResultCode code) {
           result.app_id = installed_app_id;
           result.code = code;
-          std::unique_ptr<WebAppInstallInfo> final_web_app_info =
+          std::unique_ptr<WebApplicationInfo> final_web_app_info =
               fake_install_finalizer().web_app_info();
           EXPECT_EQ(theme_color, final_web_app_info->theme_color);
           EXPECT_EQ(1u, final_web_app_info->shortcuts_menu_item_infos.size());
@@ -1792,6 +1737,16 @@ class WebAppInstallTaskTestWithFileHandlers : public WebAppInstallTaskTest {
                                           {});
   }
 
+  void SetUp() override {
+    WebAppInstallTaskTest::SetUp();
+
+    HostContentSettingsMapFactory::GetForProfile(profile())
+        ->SetContentSettingCustomScope(ContentSettingsPattern::Wildcard(),
+                                       ContentSettingsPattern::Wildcard(),
+                                       ContentSettingsType::FILE_HANDLING,
+                                       ContentSetting::CONTENT_SETTING_ALLOW);
+  }
+
   blink::mojom::ManifestPtr CreateManifest(const GURL& url) {
     auto manifest = blink::mojom::Manifest::New();
     manifest->start_url = url;
@@ -1799,8 +1754,9 @@ class WebAppInstallTaskTestWithFileHandlers : public WebAppInstallTaskTest {
     return manifest;
   }
 
-  std::unique_ptr<WebAppInstallInfo> CreateWebAppInstallInfo(const GURL& url) {
-    auto app_info = std::make_unique<WebAppInstallInfo>();
+  std::unique_ptr<WebApplicationInfo> CreateWebApplicationInfo(
+      const GURL& url) {
+    auto app_info = std::make_unique<WebApplicationInfo>();
     app_info->title = u"Test App";
     app_info->start_url = url;
     app_info->scope = url;
@@ -1843,7 +1799,7 @@ class WebAppInstallTaskTestWithFileHandlers : public WebAppInstallTaskTest {
 
   InstallResult UpdateWebAppFromInfo(
       const AppId& app_id,
-      std::unique_ptr<WebAppInstallInfo> app_info) {
+      std::unique_ptr<WebApplicationInfo> app_info) {
     base::RunLoop run_loop;
     bool callback_called = false;
     InstallResult result;
@@ -1917,7 +1873,7 @@ TEST_F(WebAppInstallTaskTestWithFileHandlers,
   ResetInstallTask();
 
   // Update the app, adding a file handler.
-  auto app_info = CreateWebAppInstallInfo(url);
+  auto app_info = CreateWebApplicationInfo(url);
   std::vector<blink::mojom::ManifestFileHandlerPtr> file_handlers;
   AddFileHandler(&file_handlers);
   app_info->file_handlers = CreateFileHandlersFromManifest(file_handlers, url);
@@ -1949,7 +1905,7 @@ TEST_F(WebAppInstallTaskTestWithFileHandlers,
   ResetInstallTask();
 
   // Update the app, adding a file handler.
-  auto app_info = CreateWebAppInstallInfo(url);
+  auto app_info = CreateWebApplicationInfo(url);
   std::vector<blink::mojom::ManifestFileHandlerPtr> file_handlers;
   AddFileHandler(&file_handlers);
   app_info->file_handlers = CreateFileHandlersFromManifest(file_handlers, url);

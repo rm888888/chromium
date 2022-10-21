@@ -89,12 +89,10 @@ bool DrmNativeDisplayDelegate::SetGammaCorrection(
   return true;
 }
 
-void DrmNativeDisplayDelegate::SetPrivacyScreen(
-    int64_t display_id,
-    bool enabled,
-    display::SetPrivacyScreenCallback callback) {
+void DrmNativeDisplayDelegate::SetPrivacyScreen(int64_t display_id,
+                                                bool enabled) {
   DrmDisplayHost* display = display_manager_->GetDisplay(display_id);
-  display->SetPrivacyScreen(enabled, std::move(callback));
+  display->SetPrivacyScreen(enabled);
 }
 
 void DrmNativeDisplayDelegate::AddObserver(

@@ -4,6 +4,7 @@
 
 #include "chrome/browser/ui/android/tab_model/tab_model_list.h"
 
+#include "base/no_destructor.h"
 #include "chrome/browser/android/tab_android.h"
 #include "chrome/browser/profiles/profile.h"
 #include "chrome/browser/ui/android/tab_model/tab_model.h"

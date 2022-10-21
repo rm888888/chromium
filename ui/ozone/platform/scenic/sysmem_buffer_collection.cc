@@ -4,8 +4,6 @@
 
 #include "ui/ozone/platform/scenic/sysmem_buffer_collection.h"
 
-#include <tuple>
-
 #include "base/bits.h"
 #include "base/fuchsia/fuchsia_logging.h"
 #include "build/build_config.h"
@@ -430,7 +428,7 @@ bool SysmemBufferCollection::InitializeInternal(
   }
 
   // vkCreateBufferCollectionFUCHSIA() takes ownership of the token on success.
-  std::ignore = token_channel.release();
+  ignore_result(token_channel.release());
 
   VkImageCreateInfo image_create_info;
   InitializeImageCreateInfo(&image_create_info, min_size_);

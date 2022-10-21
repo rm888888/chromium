@@ -10,7 +10,7 @@
 #include <vector>
 
 #include "base/gtest_prod_util.h"
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "base/time/time.h"
 #include "build/build_config.h"
@@ -40,6 +40,7 @@ class Image;
 
 class GURL;
 class InstantService;
+class NTPUserDataLogger;
 class Profile;
 class SearchIPCRouterTest;
 class SkBitmap;
@@ -79,6 +80,8 @@ class SearchTabHelper : public content::WebContentsObserver,
   // Overridden from contents::WebContentsObserver:
   void DidStartNavigation(
       content::NavigationHandle* navigation_handle) override;
+  void DidFinishNavigation(
+      content::NavigationHandle* navigation_handle) override {}
   void TitleWasSet(content::NavigationEntry* entry) override;
   void DidFinishLoad(content::RenderFrameHost* render_frame_host,
                      const GURL& validated_url) override;
@@ -122,11 +125,15 @@ class SearchTabHelper : public content::WebContentsObserver,
       uint8_t line,
       bool accepted);
 
+  content::WebContents* web_contents_;
+
   SearchIPCRouter ipc_router_;
 
-  raw_ptr<InstantService> instant_service_;
+  InstantService* instant_service_;
 
   bool is_setting_title_ = false;
+
+  std::unique_ptr<NTPUserDataLogger> logger_;
 
   WEB_CONTENTS_USER_DATA_KEY_DECL();
 

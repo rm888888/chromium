@@ -16,6 +16,7 @@
 #include "chrome/browser/apps/app_service/app_service_proxy_factory.h"
 #include "chrome/browser/extensions/extension_service.h"
 #include "chrome/browser/profiles/profile.h"
+#include "chrome/browser/ui/webui/app_management/app_management.mojom.h"
 #include "components/services/app_service/public/cpp/app_registry_cache.h"
 #include "components/services/app_service/public/cpp/intent_constants.h"
 #include "components/services/app_service/public/cpp/intent_filter_util.h"
@@ -31,11 +32,10 @@
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "mojo/public/cpp/bindings/receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
-#include "ui/webui/resources/cr_components/app_management/app_management.mojom.h"
 
 #if BUILDFLAG(IS_CHROMEOS_ASH)
-#include "ash/components/arc/session/connection_holder.h"
 #include "chrome/browser/ui/app_list/arc/arc_app_utils.h"
+#include "components/arc/session/connection_holder.h"
 #endif
 
 using apps::mojom::OptionalBool;
@@ -260,17 +260,6 @@ void AppManagementPageHandler::GetOverlappingPreferredApps(
   // apps that overlap.
   app_ids.erase(apps::kUseBrowserForLink);
   std::move(callback).Run(std::move(app_ids).extract());
-}
-
-void AppManagementPageHandler::SetWindowMode(
-    const std::string& app_id,
-    apps::mojom::WindowMode window_mode) {
-#if defined(OS_CHROMEOS)
-  NOTREACHED();
-#else
-  apps::AppServiceProxyFactory::GetForProfile(profile_)->SetWindowMode(
-      app_id, std::move(window_mode));
-#endif
 }
 
 app_management::mojom::AppPtr AppManagementPageHandler::CreateUIAppPtr(

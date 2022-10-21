@@ -6,7 +6,6 @@
 #define CHROME_BROWSER_UI_PASSWORDS_PASSWORD_GENERATION_POPUP_VIEW_H_
 
 #include "base/compiler_specific.h"
-#include "base/memory/weak_ptr.h"
 #include "third_party/skia/include/core/SkColor.h"
 
 class PasswordGenerationPopupController;
@@ -41,7 +40,7 @@ class PasswordGenerationPopupView {
   // Note that PasswordGenerationPopupView owns itself, and will only be deleted
   // when Hide() is called.
   static PasswordGenerationPopupView* Create(
-      base::WeakPtr<PasswordGenerationPopupController> controller);
+      PasswordGenerationPopupController* controller);
 };
 
 #endif  // CHROME_BROWSER_UI_PASSWORDS_PASSWORD_GENERATION_POPUP_VIEW_H_

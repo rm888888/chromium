@@ -10,6 +10,7 @@
 
 #include <string>
 
+#include "base/macros.h"
 #include "components/storage_monitor/portable_device_watcher_win.h"
 
 namespace storage_monitor {

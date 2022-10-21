@@ -8,6 +8,7 @@
 #include <memory>
 
 #include "base/files/scoped_file.h"
+#include "base/macros.h"
 
 namespace sandbox {
 class SetuidSandboxClient;
@@ -57,10 +58,11 @@ class NaClSandbox {
   // setuid sandbox or was started by the namespace sandbox.
   void InitializeLayerOneSandbox();
   // Will attempt to initialize the layer-2 sandbox, depending on flags and the
-  // environment.
+  // environment. |uses_nonsfi_mode| describes which seccomp-bpf policy is
+  // appropriate.
   // This layer will also add a limit to how much of the address space can be
   // used.
-  void InitializeLayerTwoSandbox();
+  void InitializeLayerTwoSandbox(bool uses_nonsfi_mode);
   // Seal the layer-1 sandbox, making it enforcing.
   void SealLayerOneSandbox();
   // Check that the current sandboxing state matches the level of sandboxing
@@ -76,6 +78,7 @@ class NaClSandbox {
   bool layer_one_enabled_;
   bool layer_one_sealed_;
   bool layer_two_enabled_;
+  bool layer_two_is_nonsfi_;
   // |proc_fd_| must be released before the layer-1 sandbox is considered
   // enforcing.
   base::ScopedFD proc_fd_;

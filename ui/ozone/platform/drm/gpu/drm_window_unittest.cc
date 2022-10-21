@@ -14,6 +14,7 @@
 
 #include "base/bind.h"
 #include "base/files/platform_file.h"
+#include "base/macros.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/test/task_environment.h"
 #include "base/time/time.h"
@@ -39,7 +40,8 @@
 namespace {
 
 // Mode of size 6x4.
-const drmModeModeInfo kDefaultMode = {.hdisplay = 6, .vdisplay = 4};
+const drmModeModeInfo kDefaultMode = {0, 6, 0, 0, 0, 0, 4,     0,
+                                      0, 0, 0, 0, 0, 0, {'\0'}};
 
 const gfx::AcceleratedWidget kDefaultWidgetHandle = 1;
 const uint32_t kDefaultCrtc = 1;
@@ -157,8 +159,15 @@ void DrmWindowTest::TearDown() {
 void DrmWindowTest::InitializeDrmState(ui::MockDrmDevice* drm, bool is_atomic) {
   // A Sample of CRTC states.
   std::vector<CrtcState> crtc_states = {
-      {.planes = {{.formats = {DRM_FORMAT_XRGB8888}}}},
-      {.planes = {{.formats = {DRM_FORMAT_XRGB8888}}}}};
+      {
+          /* .planes = */
+          {{/* .formats = */ {DRM_FORMAT_XRGB8888}}},
+      },
+      {
+          /* .planes = */
+          {{/* .formats = */ {DRM_FORMAT_XRGB8888}}},
+      },
+  };
 
   constexpr uint32_t kPlaneIdBase = 300;
   constexpr uint32_t kInFormatsBlobPropIdBase = 400;
@@ -178,7 +187,7 @@ void DrmWindowTest::InitializeDrmState(ui::MockDrmDevice* drm, bool is_atomic) {
     connector_properties[i].id = kDefaultConnector + i;
     for (const auto& pair : connector_property_names) {
       connector_properties[i].properties.push_back(
-          {.id = pair.first, .value = 0});
+          {/* .id = */ pair.first, /* .value = */ 0});
     }
   }
 
@@ -207,7 +216,7 @@ void DrmWindowTest::InitializeDrmState(ui::MockDrmDevice* drm, bool is_atomic) {
     crtc_properties[crtc_idx].id = kDefaultCrtc + crtc_idx;
     for (const auto& pair : crtc_property_names) {
       crtc_properties[crtc_idx].properties.push_back(
-          {.id = pair.first, .value = 0});
+          {/* .id = */ pair.first, /* .value = */ 0});
     }
 
     std::vector<ui::MockDrmDevice::PlaneProperties> crtc_plane_properties(
@@ -232,7 +241,7 @@ void DrmWindowTest::InitializeDrmState(ui::MockDrmDevice* drm, bool is_atomic) {
         }
 
         crtc_plane_properties[plane_idx].properties.push_back(
-            {.id = pair.first, .value = value});
+            {/* .id = */ pair.first, /* .value = */ value});
       }
     }
 

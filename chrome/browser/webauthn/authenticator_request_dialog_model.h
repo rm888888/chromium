@@ -11,7 +11,6 @@
 
 #include "base/callback_forward.h"
 #include "base/containers/span.h"
-#include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "base/strings/string_piece.h"
@@ -158,9 +157,9 @@ class AuthenticatorRequestDialogModel {
     using WindowsAPI = base::StrongAlias<class WindowsAPITag,
                                          bool /* unused, but cannot be void */>;
     using Phone = base::StrongAlias<class PhoneTag, std::string>;
-    using AddPhone = base::StrongAlias<class AddPhoneTag,
-                                       bool /* unused, but cannot be void */>;
-    using Type = absl::variant<Transport, WindowsAPI, Phone, AddPhone>;
+    using OtherPhone = base::StrongAlias<class OtherPhoneTag,
+                                         bool /* unused, but cannot be void */>;
+    using Type = absl::variant<Transport, WindowsAPI, Phone, OtherPhone>;
 
     Mechanism(Type type,
               std::u16string name,
@@ -175,7 +174,7 @@ class AuthenticatorRequestDialogModel {
 
     const std::u16string name;
     const std::u16string short_name;
-    const raw_ptr<const gfx::VectorIcon> icon;
+    const gfx::VectorIcon* const icon;
     const base::RepeatingClosure callback;
     // priority is true if this mechanism should be activated immediately.
     // Only a single Mechanism in a list should have priority.
@@ -577,7 +576,7 @@ class AuthenticatorRequestDialogModel {
                                    size_t mechanism_index);
 
   // Starts the flow for adding an unlisted phone by showing a QR code.
-  void StartGuidedFlowForAddPhone(size_t mechanism_index);
+  void StartGuidedFlowForOtherPhone(size_t mechanism_index);
 
   // Displays a resident-key warning if needed and then calls
   // |HideDialogAndDispatchToNativeWindowsApi|.
@@ -586,7 +585,6 @@ class AuthenticatorRequestDialogModel {
   // Contacts a paired phone. The phone is specified by name.
   void ContactPhone(const std::string& name, size_t mechanism_index);
   void ContactPhoneAfterOffTheRecordInterstitial(std::string name);
-  void ContactPhoneAfterBleIsPowered(std::string name);
 
   void StartLocationBarBubbleRequest();
 
@@ -617,14 +615,15 @@ class AuthenticatorRequestDialogModel {
   // may request, e.g., PIN entry prior to that.
   absl::optional<Step> pending_step_;
 
+  // Determines which step to continue with once the Blueooth adapter is
+  // powered. Only set while the |current_step_| is either kBlePowerOnManual,
+  // kBlePowerOnAutomatic.
+  absl::optional<Step> next_step_once_ble_powered_;
+
   // after_off_the_record_interstitial_ contains the closure to run if the user
   // accepts the interstitial that warns that platform/caBLE authenticators may
   // record information even in incognito mode.
   base::OnceClosure after_off_the_record_interstitial_;
-
-  // after_ble_adapter_powered_ contains the closure to run if the user
-  // accepts the interstitial that requests to turn on the BLE adapter.
-  base::OnceClosure after_ble_adapter_powered_;
 
   base::ObserverList<Observer>::Unchecked observers_;
 

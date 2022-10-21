@@ -23,7 +23,6 @@
 #include "components/signin/public/base/signin_metrics.h"
 #include "components/signin/public/identity_manager/account_info.h"
 #include "components/signin/public/identity_manager/identity_manager.h"
-#include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_ui_controller.h"
 #include "content/public/browser/web_ui_data_source.h"
 #include "google_apis/gaia/core_account_id.h"
@@ -56,41 +55,10 @@ std::string GetAccountImageURL(Profile* profile) {
              : profiles::GetPlaceholderAvatarIconUrl();
 }
 
-bool WasPasswordSavedLocally(signin_metrics::ReauthAccessPoint access_point) {
-  switch (access_point) {
-    case signin_metrics::ReauthAccessPoint::kUnknown:
-    case signin_metrics::ReauthAccessPoint::kAutofillDropdown:
-    case signin_metrics::ReauthAccessPoint::kPasswordSaveBubble:
-    case signin_metrics::ReauthAccessPoint::kPasswordSettings:
-    case signin_metrics::ReauthAccessPoint::kGeneratePasswordDropdown:
-    case signin_metrics::ReauthAccessPoint::kGeneratePasswordContextMenu:
-    case signin_metrics::ReauthAccessPoint::kPasswordMoveBubble:
-      return false;
-    case signin_metrics::ReauthAccessPoint::kPasswordSaveLocallyBubble:
-      return true;
-  }
-}
-
-int GetReauthDescriptionStringId(
-    signin_metrics::ReauthAccessPoint access_point) {
-  if (WasPasswordSavedLocally(access_point)) {
-    return IDS_ACCOUNT_PASSWORDS_REAUTH_DESC_ALREADY_SAVED_LOCALLY;
-  }
-  return IDS_ACCOUNT_PASSWORDS_REAUTH_DESC;
-}
-
-int GetReauthCloseButtonLabelStringId(
-    signin_metrics::ReauthAccessPoint access_point) {
-  if (WasPasswordSavedLocally(access_point)) {
-    return IDS_ACCOUNT_PASSWORDS_REAUTH_CLOSE_BUTTON_LABEL_ALREADY_SAVED_LOCALLY;
-  }
-  return IDS_ACCOUNT_PASSWORDS_REAUTH_CLOSE_BUTTON_LABEL;
-}
-
 }  // namespace
 
 SigninReauthUI::SigninReauthUI(content::WebUI* web_ui)
-    : content::WebUIController(web_ui) {
+    : SigninWebDialogUI(web_ui) {
   Profile* profile = Profile::FromWebUI(web_ui);
   content::WebUIDataSource* source =
       content::WebUIDataSource::Create(chrome::kChromeUISigninReauthHost);
@@ -113,18 +81,14 @@ SigninReauthUI::SigninReauthUI(content::WebUI* web_ui)
 
   source->AddString("accountImageUrl", GetAccountImageURL(profile));
 
-  signin_metrics::ReauthAccessPoint access_point =
-      signin::GetReauthAccessPointForReauthConfirmationURL(
-          web_ui->GetWebContents()->GetVisibleURL());
-
   AddStringResource(source, "signinReauthTitle",
                     IDS_ACCOUNT_PASSWORDS_REAUTH_TITLE);
   AddStringResource(source, "signinReauthDesc",
-                    GetReauthDescriptionStringId(access_point));
+                    IDS_ACCOUNT_PASSWORDS_REAUTH_DESC);
   AddStringResource(source, "signinReauthConfirmLabel",
                     IDS_ACCOUNT_PASSWORDS_REAUTH_CONFIRM_BUTTON_LABEL);
   AddStringResource(source, "signinReauthCloseLabel",
-                    GetReauthCloseButtonLabelStringId(access_point));
+                    IDS_ACCOUNT_PASSWORDS_REAUTH_CLOSE_BUTTON_LABEL);
 
   content::WebUIDataSource::Add(profile, source);
 }
@@ -137,6 +101,8 @@ void SigninReauthUI::InitializeMessageHandlerWithReauthController(
       controller,
       base::flat_map<std::string, int>(js_localized_string_to_ids_)));
 }
+
+void SigninReauthUI::InitializeMessageHandlerWithBrowser(Browser* browser) {}
 
 void SigninReauthUI::AddStringResource(content::WebUIDataSource* source,
                                        base::StringPiece name,

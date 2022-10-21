@@ -4,7 +4,6 @@
 
 // clang-format off
 import {flush} from 'chrome://resources/polymer/v3_0/polymer/polymer_bundled.min.js';
-import {SettingsSectionElement} from 'chrome://settings/settings.js';
 import {assertTrue} from 'chrome://webui-test/chai_assert.js';
 // clang-format on
 
@@ -39,8 +38,7 @@ export function getPage(type: string): Promise<HTMLElement> {
  * @param section The settings page section, e.g. 'appearance'.
  * @return The DOM node for the section.
  */
-export function getSection(
-    page: HTMLElement, section: string): SettingsSectionElement|undefined {
+export function getSection(page: HTMLElement, section: string): Node|undefined {
   const sections = page.shadowRoot!.querySelectorAll('settings-section');
   assertTrue(!!sections);
   for (const s of sections) {

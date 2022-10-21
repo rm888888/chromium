@@ -5,7 +5,8 @@
 #ifndef CHROME_BROWSER_UI_ANDROID_TAB_CONTENTS_CHROME_WEB_CONTENTS_VIEW_DELEGATE_ANDROID_H_
 #define CHROME_BROWSER_UI_ANDROID_TAB_CONTENTS_CHROME_WEB_CONTENTS_VIEW_DELEGATE_ANDROID_H_
 
-#include "base/memory/raw_ptr.h"
+#include "base/compiler_specific.h"
+#include "base/macros.h"
 #include "content/public/browser/web_contents_view_delegate.h"
 
 namespace content {
@@ -36,7 +37,7 @@ class ChromeWebContentsViewDelegateAndroid
 
  private:
   // The WebContents that owns the view and this delegate transitively.
-  raw_ptr<content::WebContents> web_contents_;
+  content::WebContents* web_contents_;
 };
 
 #endif  // CHROME_BROWSER_UI_ANDROID_TAB_CONTENTS_CHROME_WEB_CONTENTS_VIEW_DELEGATE_ANDROID_H_

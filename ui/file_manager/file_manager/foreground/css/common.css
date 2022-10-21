@@ -114,19 +114,10 @@ cr-menu.chrome-menu > hr:first-child {
   display: none;
 }
 
-cr-menu.chrome-menu > cr-menu-item[checked]::after {
-  -webkit-mask-image: url(../images/common/ic_selected.svg);
-  -webkit-mask-position: center;
-  -webkit-mask-repeat: no-repeat;
-  background-color: var(--cros-icon-color-prominent);
-  content: '';
-  float: right;
-  height: 32px;
-  width: 20px;
-}
-
-html[dir='rtl'] cr-menu.chrome-menu > cr-menu-item[checked]::after {
-  float: left;
+cr-menu.chrome-menu > cr-menu-item[checked] {
+  background-image: -webkit-image-set(
+    url(../images/common/check_no_box.png) 1x,
+    url(../images/common/2x/check_no_box.png) 2x);
 }
 
 cr-menu.chrome-menu > [checked]::before {
@@ -187,7 +178,8 @@ cr-menu.chrome-menu > [checked]::before {
 }
 
 .cr-dialog-container.files-ng .cr-dialog-buttons > button.cr-dialog-ok:hover {
-  background: var(--cros-button-background-color-primary-hover-preblended);
+  background: linear-gradient(rgba(0 0 0 / 8%), rgba(0 0 0 / 8%)),
+                              var(--cros-button-background-color-primary);
 }
 
 .cr-dialog-container.files-ng .cr-dialog-buttons > button.cr-dialog-ok:active {
@@ -225,7 +217,7 @@ cr-menu.chrome-menu > [checked]::before {
 
 :root.focus-outline-visible .cr-dialog-container.files-ng .cr-dialog-buttons > button:not(:active):focus,
 :host-context(:root.focus-outline-visible) .cr-dialog-container.files-ng .cr-dialog-buttons > button:not(:active):focus {
-  outline: 2px solid var(--cros-focus-ring-color);
+  outline: 2px auto var(--cros-focus-ring-color);
   outline-offset: 2px;
 }
 
@@ -233,7 +225,7 @@ cr-menu.chrome-menu > [checked]::before {
    rather than the 'OK' button. The dialog buttons should have focus rings in
    this case (regardless of mouse, pointer, keyboard interaction). */
 .cr-dialog-container.files-ng .cr-dialog-frame.files-confirm-dialog-cancel-default .cr-dialog-buttons > button:not(:active):focus {
-  outline: 2px solid var(--cros-focus-ring-color);
+  outline: 2px auto var(--cros-focus-ring-color);
   outline-offset: 2px;
 }
 
@@ -371,10 +363,9 @@ html[dir='rtl'] .entry-name {
 
 .cr-dialog-container.files-ng #suggest-app-dialog .cr-dialog-close,
 .cr-dialog-container.files-ng #default-task-dialog .cr-dialog-close {
-  -webkit-mask-image: url(../images/common/ic_close.svg);
-  -webkit-mask-position: center;
-  -webkit-mask-repeat: no-repeat;
-  background-color: var(--cros-icon-color-primary);
+  background: url(../images/common/ic_close.svg);
+  background-position: center;
+  background-repeat: no-repeat;
   cursor: pointer;
   display: inline-block;
   height: 32px;

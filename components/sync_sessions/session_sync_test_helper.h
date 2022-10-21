@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+#include "base/macros.h"
 #include "components/sessions/core/session_id.h"
 
 namespace sync_pb {

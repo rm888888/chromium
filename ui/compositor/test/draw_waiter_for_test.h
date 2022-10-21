@@ -7,6 +7,7 @@
 
 #include <memory>
 
+#include "base/macros.h"
 #include "base/run_loop.h"
 #include "ui/compositor/compositor_observer.h"
 

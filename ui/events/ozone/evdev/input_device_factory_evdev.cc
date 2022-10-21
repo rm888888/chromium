@@ -466,26 +466,6 @@ void InputDeviceFactoryEvdev::StopVibration(int id) {
   }
 }
 
-void InputDeviceFactoryEvdev::PlayHapticTouchpadEffect(
-    ui::HapticTouchpadEffect effect,
-    ui::HapticTouchpadEffectStrength strength) {
-  for (const auto& it : converters_) {
-    if (it.second->HasHapticTouchpad()) {
-      it.second->PlayHapticTouchpadEffect(effect, strength);
-    }
-  }
-}
-
-void InputDeviceFactoryEvdev::SetHapticTouchpadEffectForNextButtonRelease(
-    ui::HapticTouchpadEffect effect,
-    ui::HapticTouchpadEffectStrength strength) {
-  for (const auto& it : converters_) {
-    if (it.second->HasHapticTouchpad()) {
-      it.second->SetHapticTouchpadEffectForNextButtonRelease(effect, strength);
-    }
-  }
-}
-
 bool InputDeviceFactoryEvdev::IsDeviceEnabled(
     const EventConverterEvdev* converter) {
   if (!input_device_settings_.enable_internal_touchpad &&
@@ -611,16 +591,13 @@ void InputDeviceFactoryEvdev::NotifyMouseDevicesUpdated() {
 
 void InputDeviceFactoryEvdev::NotifyTouchpadDevicesUpdated() {
   std::vector<InputDevice> touchpads;
-  bool has_haptic_touchpad = false;
-  for (const auto& it : converters_) {
-    if (it.second->HasTouchpad()) {
-      if (it.second->HasHapticTouchpad())
-        has_haptic_touchpad = true;
-      touchpads.push_back(it.second->input_device());
+  for (auto it = converters_.begin(); it != converters_.end(); ++it) {
+    if (it->second->HasTouchpad()) {
+      touchpads.push_back(it->second->input_device());
     }
   }
 
-  dispatcher_->DispatchTouchpadDevicesUpdated(touchpads, has_haptic_touchpad);
+  dispatcher_->DispatchTouchpadDevicesUpdated(touchpads);
 }
 
 void InputDeviceFactoryEvdev::NotifyGamepadDevicesUpdated() {

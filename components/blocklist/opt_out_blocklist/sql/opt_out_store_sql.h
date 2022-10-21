@@ -11,6 +11,7 @@
 #include <string>
 
 #include "base/files/file_path.h"
+#include "base/macros.h"
 #include "base/threading/thread_checker.h"
 #include "base/time/time.h"
 #include "components/blocklist/opt_out_blocklist/opt_out_store.h"

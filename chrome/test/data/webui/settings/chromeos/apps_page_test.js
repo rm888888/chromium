@@ -75,9 +75,6 @@ class FakeAppNotificationHandler {
      */
     this.apps_ = [];
 
-    /** @private {boolean} */
-    this.isDndEnabled_ = false;
-
     this.resetForTest();
   }
 
@@ -87,9 +84,9 @@ class FakeAppNotificationHandler {
     }
 
     this.resolverMap_.set('addObserver', new PromiseResolver());
-    this.resolverMap_.set('getQuietMode', new PromiseResolver());
     this.resolverMap_.set('setQuietMode', new PromiseResolver());
     this.resolverMap_.set('setNotificationPermission', new PromiseResolver());
+    this.resolverMap_.set('notifyPageReady', new PromiseResolver());
     this.resolverMap_.set('getApps', new PromiseResolver());
   }
 
@@ -156,14 +153,6 @@ class FakeAppNotificationHandler {
     });
   }
 
-  /** @return {!Promise<{success: boolean}>} */
-  getQuietMode() {
-    return new Promise(resolve => {
-      this.methodCalled('getQuietMode');
-      resolve({success: this.isDndEnabled_});
-    });
-  }
-
   /**
    * @param {string} id
    * @param {!apps.mojom.Permission} permission
@@ -172,6 +161,14 @@ class FakeAppNotificationHandler {
     return new Promise(resolve => {
       this.methodCalled('setNotificationPermission');
       resolve({success: true});
+    });
+  }
+
+  /** @return {!Promise} */
+  notifyPageReady() {
+    return new Promise(resolve => {
+      this.methodCalled('notifyPageReady');
+      resolve();
     });
   }
 
@@ -558,18 +555,6 @@ suite('AppsPageTests', function() {
       assertEquals(
           deepLinkElement, getDeepActiveElement(),
           'Remove play store button should be focused for settingId=701.');
-    });
-
-    test('ManageUsbDevice', function() {
-      // ARCVM is not enabled
-      subpage.showArcvmManageUsb = false;
-      Polymer.dom.flush();
-      assertFalse(!!subpage.$$('#manageArcvmShareUsbDevices'));
-
-      // ARCMV is enabled
-      subpage.showArcvmManageUsb = true;
-      Polymer.dom.flush();
-      assertTrue(!!subpage.$$('#manageArcvmShareUsbDevices'));
     });
   });
 });

@@ -169,7 +169,6 @@ extern const char kTrustedDownloadSources[];
 extern const char kTryChromeAgain[];
 extern const char kUnlimitedStorage[];
 extern const char kUserDataDir[];
-extern const char kUseSystemProxyResolver[];
 extern const char kValidateCrx[];
 extern const char kVersion[];
 extern const char kWebRtcRemoteEventLogProactivePruningDelta[];
@@ -252,11 +251,6 @@ extern const char kAllowNaClSocketAPI[];
     defined(OS_WIN) || defined(OS_FUCHSIA)
 extern const char kEnableNewAppMenuIcon[];
 extern const char kGuest[];
-#endif
-
-#if defined(OS_LINUX) || defined(OS_MAC) || defined(OS_WIN)
-extern const char kListApps[];
-extern const char kProfileBaseName[];
 #endif
 
 #if BUILDFLAG(IS_CHROMEOS_ASH) || defined(OS_ANDROID)

@@ -65,11 +65,11 @@ void RecordMemoryMetricsImpl(
       // renderer process, as it originated from WebView, where there are no
       // other processes.
       case memory_instrumentation::mojom::ProcessType::ARC:
-        [[fallthrough]];
+        FALLTHROUGH;
       case memory_instrumentation::mojom::ProcessType::UTILITY:
-        [[fallthrough]];
+        FALLTHROUGH;
       case memory_instrumentation::mojom::ProcessType::PLUGIN:
-        [[fallthrough]];
+        FALLTHROUGH;
       case memory_instrumentation::mojom::ProcessType::OTHER:
         break;
     }

@@ -9,7 +9,6 @@
 #include <utility>
 
 #include "base/bind.h"
-#include "base/dcheck_is_on.h"
 #include "base/location.h"
 #include "base/task/single_thread_task_runner.h"
 #include "base/threading/thread_task_runner_handle.h"
@@ -36,11 +35,6 @@
 #include "ui/views/bubble/bubble_border.h"
 #include "ui/views/focus/focus_manager.h"
 #include "ui/views/layout/fill_layout.h"
-
-#if DCHECK_IS_ON()
-#include "base/containers/fixed_flat_set.h"
-#include "base/strings/string_piece.h"
-#endif
 
 namespace autofill {
 
@@ -78,7 +72,7 @@ SkColor AutofillPopupBaseView::GetWarningColor() const {
 }
 
 AutofillPopupBaseView::AutofillPopupBaseView(
-    base::WeakPtr<AutofillPopupViewDelegate> delegate,
+    AutofillPopupViewDelegate* delegate,
     views::Widget* parent_widget)
     : delegate_(delegate), parent_widget_(parent_widget) {}
 
@@ -165,16 +159,6 @@ void AutofillPopupBaseView::VisibilityChanged(View* starting_from,
       // the form control itself.
       NotifyAccessibilityEvent(ax::mojom::Event::kMenuEnd, true);
       GetViewAccessibility().EndPopupFocusOverride();
-
-      // Also fire an accessible focus event on what currently has focus,
-      // typically the widget associated with this popup.
-      if (parent_widget_) {
-        if (views::FocusManager* focus_manager =
-                parent_widget_->GetFocusManager()) {
-          if (View* focused_view = focus_manager->GetFocusedView())
-            focused_view->GetViewAccessibility().FireFocusAfterMenuClose();
-        }
-      }
     }
     is_ax_menu_start_event_fired_ = false;
   }
@@ -192,19 +176,6 @@ void AutofillPopupBaseView::NotifyAXSelection(View* selected_view) {
     is_ax_menu_start_event_fired_ = true;
   }
   selected_view->GetViewAccessibility().SetPopupFocusOverride();
-#if DCHECK_IS_ON()
-  constexpr auto kDerivedClasses = base::MakeFixedFlatSet<base::StringPiece>(
-      {"AutofillPopupSuggestionView", "PasswordPopupSuggestionView",
-       "AutofillPopupFooterView", "AutofillPopupSeparatorView",
-       "AutofillPopupWarningView", "AutofillPopupBaseView"});
-  DCHECK(kDerivedClasses.contains(selected_view->GetClassName()))
-      << "If you add a new derived class from AutofillPopupRowView, add it "
-         "here and to onSelection(evt) in "
-         "chrome/browser/resources/chromeos/accessibility/chromevox/background/"
-         "desktop_automation_handler.js to ensure that ChromeVox announces "
-         "the item when selected. Missing class: "
-      << selected_view->GetClassName();
-#endif
   selected_view->NotifyAccessibilityEvent(ax::mojom::Event::kSelection, true);
 }
 
@@ -252,7 +223,7 @@ void AutofillPopupBaseView::UpdateClipPath() {
 }
 
 gfx::Rect AutofillPopupBaseView::GetContentAreaBounds() const {
-  content::WebContents* web_contents = delegate_->GetWebContents();
+  content::WebContents* web_contents = delegate()->GetWebContents();
   if (web_contents)
     return web_contents->GetContainerBounds();
 
@@ -265,7 +236,7 @@ gfx::Rect AutofillPopupBaseView::GetContentAreaBounds() const {
 
 gfx::Rect AutofillPopupBaseView::GetTopWindowBounds() const {
   views::Widget* widget = views::Widget::GetTopLevelWidgetForNativeView(
-      delegate_->container_view());
+      delegate()->container_view());
   // Find root in window tree.
   while (widget && widget->parent()) {
     widget = widget->parent();
@@ -295,7 +266,7 @@ gfx::Rect AutofillPopupBaseView::GetOptionalPositionAndPlaceArrowOnBubble(
       /*content_area_bounds=*/max_bounds_for_popup,
       /*element_bounds=*/element_bounds,
       /*bubble_preferred_size=*/preferred_size,
-      /*right_to_left=*/delegate_->IsRTL(),
+      /*right_to_left=*/delegate()->IsRTL(),
       /*scrollbar_width=*/gfx::scrollbar_size(),
       /*maximum_pixel_offset_to_center=*/
       autofill::features::kAutofillMaximumPixelsToMoveSuggestionopupToCenter
@@ -329,7 +300,7 @@ bool AutofillPopupBaseView::DoUpdateBoundsAndRedrawPopup() {
           ? top_window_bounds
           : content_area_bounds;
 
-  gfx::Rect element_bounds = gfx::ToEnclosingRect(delegate_->element_bounds());
+  gfx::Rect element_bounds = gfx::ToEnclosingRect(delegate()->element_bounds());
 
   // If the element exceeds the content area, ensure that the popup is still
   // visually attached to the input element.
@@ -359,7 +330,7 @@ bool AutofillPopupBaseView::DoUpdateBoundsAndRedrawPopup() {
           ? GetOptionalPositionAndPlaceArrowOnBubble(
                 element_bounds, max_bounds_for_popup, preferred_size)
           : CalculatePopupBounds(preferred_size, max_bounds_for_popup,
-                                 element_bounds, delegate_->IsRTL(),
+                                 element_bounds, delegate()->IsRTL(),
                                  /*horizontally_centered=*/false);
 
   // Account for the scroll view's border so that the content has enough space.

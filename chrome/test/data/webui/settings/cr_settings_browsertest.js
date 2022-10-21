@@ -76,10 +76,35 @@ var CrSettingsBasicPageTest = class extends CrSettingsBrowserTest {
   get browsePreload() {
     return 'chrome://settings/test_loader.html?module=settings/basic_page_test.js&host=webui-test';
   }
+
+  /** @override */
+  get featureListInternal() {
+    return {
+      disabled: ['features::kSettingsLandingPageRedesign'],
+    };
+  }
 };
 
 TEST_F('CrSettingsBasicPageTest', 'All', function() {
   runMochaSuite('SettingsBasicPage');
+});
+
+var CrSettingsBasicPageRedesignTest = class extends CrSettingsBrowserTest {
+  /** @override */
+  get browsePreload() {
+    return 'chrome://settings/test_loader.html?module=settings/basic_page_test.js&host=webui-test';
+  }
+
+  /** @override */
+  get featureListInternal() {
+    return {
+      enabled: ['features::kSettingsLandingPageRedesign'],
+    };
+  }
+};
+
+TEST_F('CrSettingsBasicPageRedesignTest', 'All', function() {
+  runMochaSuite('SettingsBasicPageRedesign');
 });
 
 GEN('#if !BUILDFLAG(IS_CHROMEOS_ASH)');
@@ -485,17 +510,9 @@ var CrSettingsPrivacyReviewPageTest = class extends CrSettingsBrowserTest {
   }
 };
 
-// TODO(crbug.com/1281967): Flaky on debug Linux builds.
-GEN('#if defined(OS_LINUX) && !defined(NDEBUG)');
-GEN('#define MAYBE_PrivacyReviewPageTests DISABLED_PrivacyReviewPageTests');
-GEN('#else');
-GEN('#define MAYBE_PrivacyReviewPageTests PrivacyReviewPageTests');
-GEN('#endif');
-TEST_F(
-    'CrSettingsPrivacyReviewPageTest', 'MAYBE_PrivacyReviewPageTests',
-    function() {
-      runMochaSuite('PrivacyReviewPage');
-    });
+TEST_F('CrSettingsPrivacyReviewPageTest', 'PrivacyReviewPageTests', function() {
+  runMochaSuite('PrivacyReviewPage');
+});
 
 
 TEST_F(
@@ -636,7 +653,7 @@ GEN('#if !defined(OS_MAC) && !BUILDFLAG(IS_CHROMEOS_ASH)');
 GEN('#endif  // !defined(OS_MAC) && !BUILDFLAG(IS_CHROMEOS_ASH)');
 
 GEN('#if !BUILDFLAG(IS_CHROMEOS_ASH) && !BUILDFLAG(IS_CHROMEOS_LACROS)');
-[['DefaultBrowser', 'default_browser_test.js'],
+[['DefaultBrowser', 'default_browser_browsertest.js'],
  ['ImportDataDialog', 'import_data_dialog_test.js'],
  ['SystemPage', 'system_page_tests.js'],
 ].forEach(test => registerTest(...test));
@@ -645,7 +662,6 @@ GEN('#endif  // !BUILDFLAG(IS_CHROMEOS_ASH) && !BUILDFLAG(IS_CHROMEOS_LACROS)');
 GEN('#if !BUILDFLAG(IS_CHROMEOS_ASH)');
 [['PeoplePageManageProfile', 'people_page_manage_profile_test.js'],
  ['Languages', 'languages_tests.js'],
- ['RelaunchConfirmationDialog', 'relaunch_confirmation_dialog_test.js'],
 ].forEach(test => registerTest(...test));
 GEN('#endif  // !BUILDFLAG(IS_CHROMEOS_ASH)');
 

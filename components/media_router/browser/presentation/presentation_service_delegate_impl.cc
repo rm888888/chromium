@@ -15,7 +15,6 @@
 #include "base/containers/contains.h"
 #include "base/containers/small_map.h"
 #include "base/memory/ptr_util.h"
-#include "base/memory/raw_ptr.h"
 #include "base/strings/string_util.h"
 #include "components/media_router/browser/media_router.h"
 #include "components/media_router/browser/media_router_dialog_controller.h"
@@ -137,8 +136,8 @@ class PresentationFrame {
   content::GlobalRenderFrameHostId render_frame_host_id_;
 
   // References to the owning WebContents, and the corresponding MediaRouter.
-  raw_ptr<content::WebContents> web_contents_;
-  raw_ptr<MediaRouter> router_;
+  content::WebContents* web_contents_;
+  MediaRouter* router_;
 };
 
 PresentationFrame::PresentationFrame(
@@ -308,10 +307,10 @@ PresentationServiceDelegateImpl::GetOrCreateForWebContents(
 
 PresentationServiceDelegateImpl::PresentationServiceDelegateImpl(
     content::WebContents* web_contents)
-    : content::WebContentsUserData<PresentationServiceDelegateImpl>(
-          *web_contents),
+    : web_contents_(web_contents),
       router_(MediaRouterFactory::GetApiForBrowserContext(
-          web_contents->GetBrowserContext())) {
+          web_contents_->GetBrowserContext())) {
+  DCHECK(web_contents_);
   DCHECK(router_);
 }
 
@@ -374,7 +373,7 @@ PresentationFrame* PresentationServiceDelegateImpl::GetOrAddPresentationFrame(
   auto& presentation_frame = presentation_frames_[render_frame_host_id];
   if (!presentation_frame) {
     presentation_frame = std::make_unique<PresentationFrame>(
-        render_frame_host_id, &GetWebContents(), router_);
+        render_frame_host_id, web_contents_, router_);
   }
   return presentation_frame.get();
 }
@@ -482,7 +481,7 @@ void PresentationServiceDelegateImpl::StartPresentation(
     return;
   }
   MediaRouterDialogController* controller =
-      MediaRouterDialogController::GetOrCreateForWebContents(&GetWebContents());
+      MediaRouterDialogController::GetOrCreateForWebContents(web_contents_);
   controller->ShowMediaRouterDialogForPresentation(
       std::move(presentation_context));
 }
@@ -512,8 +511,7 @@ void PresentationServiceDelegateImpl::ReconnectPresentation(
 #endif  // !defined(OS_ANDROID)
 
   auto* local_presentation_manager =
-      LocalPresentationManagerFactory::GetOrCreateForWebContents(
-          &GetWebContents());
+      LocalPresentationManagerFactory::GetOrCreateForWebContents(web_contents_);
   // Check local presentation across frames.
   if (local_presentation_manager->IsLocalPresentation(presentation_id)) {
     auto* route = local_presentation_manager->GetRoute(presentation_id);
@@ -531,10 +529,10 @@ void PresentationServiceDelegateImpl::ReconnectPresentation(
   } else {
     // TODO(crbug.com/627655): Handle multiple URLs.
     const GURL& presentation_url = presentation_urls[0];
-    bool incognito = GetWebContents().GetBrowserContext()->IsOffTheRecord();
+    bool incognito = web_contents_->GetBrowserContext()->IsOffTheRecord();
     router_->JoinRoute(
         MediaSource::ForPresentationUrl(presentation_url).id(), presentation_id,
-        request.frame_origin, &GetWebContents(),
+        request.frame_origin, web_contents_,
         base::BindOnce(&PresentationServiceDelegateImpl::OnJoinRouteResponse,
                        weak_factory_.GetWeakPtr(), render_frame_host_id,
                        presentation_url, presentation_id, std::move(success_cb),
@@ -555,8 +553,7 @@ void PresentationServiceDelegateImpl::CloseConnection(
   }
 
   auto* local_presentation_manager =
-      LocalPresentationManagerFactory::GetOrCreateForWebContents(
-          &GetWebContents());
+      LocalPresentationManagerFactory::GetOrCreateForWebContents(web_contents_);
 
   if (local_presentation_manager->IsLocalPresentation(presentation_id)) {
     local_presentation_manager->UnregisterLocalPresentationController(
@@ -710,9 +707,9 @@ MediaRoute::Id PresentationServiceDelegateImpl::GetRouteId(
 
 #if !defined(OS_ANDROID)
 bool PresentationServiceDelegateImpl::ShouldCancelAutoJoinForOrigin(
-    const url::Origin& origin) {
-  const base::Value* origins =
-      user_prefs::UserPrefs::Get(GetWebContents().GetBrowserContext())
+    const url::Origin& origin) const {
+  const base::ListValue* origins =
+      user_prefs::UserPrefs::Get(web_contents_->GetBrowserContext())
           ->GetList(prefs::kMediaRouterTabMirroringSources);
   return origins &&
          base::Contains(origins->GetList(), base::Value(origin.Serialize()));

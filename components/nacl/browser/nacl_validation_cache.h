@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "base/containers/lru_cache.h"
+#include "base/macros.h"
 
 namespace base {
 class Pickle;

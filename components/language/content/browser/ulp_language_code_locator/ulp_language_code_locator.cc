@@ -54,17 +54,14 @@ std::vector<std::string> UlpLanguageCodeLocator::GetLanguageCodes(
   S2CellId cell(S2LatLng::FromDegrees(latitude, longitude));
   std::vector<std::string> languages;
 
-  ListPrefUpdateDeprecated update(prefs_, kCachedGeoLanguagesPref);
+  ListPrefUpdate update(prefs_, kCachedGeoLanguagesPref);
   base::ListValue* celllangs_cached = update.Get();
   for (size_t index = 0; index < serialized_langtrees_.size(); index++) {
     std::string language;
 
-    bool is_cached = false;
-    const base::Value* celllang_cached = nullptr;
-    if (index < celllangs_cached->GetList().size()) {
-      celllang_cached = &celllangs_cached->GetList()[index];
-      is_cached = celllang_cached->is_dict();
-    }
+    const base::DictionaryValue* celllang_cached;
+    const bool is_cached =
+        celllangs_cached->GetDictionary(index, &celllang_cached);
 
     const std::string* token_cached =
         is_cached ? celllang_cached->FindStringKey(kCellTokenKey) : nullptr;

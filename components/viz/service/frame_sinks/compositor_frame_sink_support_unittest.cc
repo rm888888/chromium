@@ -50,9 +50,13 @@ constexpr FrameSinkId kArbitraryFrameSinkId(1, 1);
 constexpr FrameSinkId kAnotherArbitraryFrameSinkId(2, 2);
 
 const base::UnguessableToken kArbitraryToken =
-    base::UnguessableToken::CreateForTesting(1, 2);
+    base::UnguessableToken::Deserialize(1, 2);
 const base::UnguessableToken kAnotherArbitraryToken =
-    base::UnguessableToken::CreateForTesting(2, 2);
+    base::UnguessableToken::Deserialize(2, 2);
+const base::UnguessableToken kArbitrarySourceId1 =
+    base::UnguessableToken::Deserialize(0xdead, 0xbeef);
+const base::UnguessableToken kArbitrarySourceId2 =
+    base::UnguessableToken::Deserialize(0xdead, 0xbee0);
 
 // Matches a SurfaceInfo for |surface_id|.
 MATCHER_P(SurfaceInfoWithId, surface_id, "") {
@@ -97,7 +101,7 @@ class MockFrameSinkManagerClient : public mojom::FrameSinkManagerClient {
 class CompositorFrameSinkSupportTest : public testing::Test {
  public:
   CompositorFrameSinkSupportTest()
-      : manager_(FrameSinkManagerImpl::InitParams(&shared_bitmap_manager_)),
+      : manager_(&shared_bitmap_manager_),
         begin_frame_source_(0.f, false),
         local_surface_id_(3, kArbitraryToken),
         frame_sync_token_(GenTestSyncToken(4)),
@@ -861,9 +865,6 @@ TEST_F(CompositorFrameSinkSupportTest, CopyRequestOnSubtree) {
 }
 
 TEST_F(CompositorFrameSinkSupportTest, DuplicateCopyRequest) {
-  const base::UnguessableToken source_id1 = base::UnguessableToken::Create();
-  const base::UnguessableToken source_id2 = base::UnguessableToken::Create();
-
   const SurfaceId surface_id(support_->frame_sink_id(), local_surface_id_);
 
   {
@@ -883,7 +884,7 @@ TEST_F(CompositorFrameSinkSupportTest, DuplicateCopyRequest) {
       CopyOutputRequest::ResultDestination::kSystemMemory,
       base::BindOnce(&CopyRequestTestCallback, &called1,
                      called1_run_loop.QuitClosure()));
-  request->set_source(source_id1);
+  request->set_source(kArbitrarySourceId1);
 
   support_->RequestCopyOfOutput(
       {local_surface_id_, SubtreeCaptureId(), std::move(request)});
@@ -897,7 +898,7 @@ TEST_F(CompositorFrameSinkSupportTest, DuplicateCopyRequest) {
       CopyOutputRequest::ResultDestination::kSystemMemory,
       base::BindOnce(&CopyRequestTestCallback, &called2,
                      called2_run_loop.QuitClosure()));
-  request->set_source(source_id2);
+  request->set_source(kArbitrarySourceId2);
 
   support_->RequestCopyOfOutput(
       {local_surface_id_, SubtreeCaptureId(), std::move(request)});
@@ -913,7 +914,7 @@ TEST_F(CompositorFrameSinkSupportTest, DuplicateCopyRequest) {
       CopyOutputRequest::ResultDestination::kSystemMemory,
       base::BindOnce(&CopyRequestTestCallback, &called3,
                      called3_run_loop.QuitClosure()));
-  request->set_source(source_id1);
+  request->set_source(kArbitrarySourceId1);
 
   support_->RequestCopyOfOutput(
       {local_surface_id_, SubtreeCaptureId(), std::move(request)});
@@ -1632,8 +1633,8 @@ TEST_F(CompositorFrameSinkSupportTest, ForceFullFrameToActivateSurface) {
 
 TEST_F(CompositorFrameSinkSupportTest, GetCopyOutputRequestRegion) {
   // No surface with active frame.
-  EXPECT_EQ((gfx::Rect{}),
-            support_->GetCopyOutputRequestRegion(VideoCaptureSubTarget()));
+  EXPECT_EQ((gfx::Rect{}), support_->GetCopyOutputRequestRegion(
+                               CapturableFrameSink::RegionSpecifier()));
 
   // Surface with active frame but no capture identifier.
   ResourceId first_frame_ids[] = {ResourceId(1), ResourceId(2), ResourceId(3),
@@ -1641,7 +1642,8 @@ TEST_F(CompositorFrameSinkSupportTest, GetCopyOutputRequestRegion) {
   SubmitCompositorFrameWithResources(first_frame_ids,
                                      base::size(first_frame_ids));
   EXPECT_EQ((gfx::Rect{0, 0, 20, 20}),
-            (support_->GetCopyOutputRequestRegion(VideoCaptureSubTarget())));
+            (support_->GetCopyOutputRequestRegion(
+                CapturableFrameSink::RegionSpecifier())));
 
   // Render pass with subtree size.
   const SurfaceId surface_id(support_->frame_sink_id(), local_surface_id_);

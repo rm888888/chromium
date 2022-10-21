@@ -3,12 +3,8 @@
 # found in the LICENSE file.
 
 devtools_domains = [
-  "debugger",
   "dom",
-  "emulation",
   "input",
-  "network",
-  "page",
   "runtime",
   "target",
 ]

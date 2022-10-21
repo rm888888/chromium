@@ -13,6 +13,7 @@
 
 #include "base/callback.h"
 #include "base/files/file_path.h"
+#include "base/macros.h"
 #include "base/memory/ref_counted.h"
 #include "components/update_client/update_client_errors.h"
 

@@ -17,13 +17,11 @@ class WM_CORE_EXPORT TransientWindowObserver {
  public:
   // Called when a transient child is added to |window|.
   virtual void OnTransientChildAdded(aura::Window* window,
-                                     aura::Window* transient) {}
+                                     aura::Window* transient) = 0;
 
   // Called when a transient child is removed from |window|.
   virtual void OnTransientChildRemoved(aura::Window* window,
-                                       aura::Window* transient) {}
-
-  virtual void OnTransientParentChanged(aura::Window* new_parent) {}
+                                       aura::Window* transient) = 0;
 
  protected:
   virtual ~TransientWindowObserver() {}

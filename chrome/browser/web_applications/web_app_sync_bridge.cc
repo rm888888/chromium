@@ -423,15 +423,6 @@ void WebAppSyncBridge::RemoveDisallowedLaunchProtocol(
   registrar_->NotifyWebAppProtocolSettingsChanged();
 }
 
-void WebAppSyncBridge::SetAppFileHandlerApprovalState(const AppId& app_id,
-                                                      ApiApprovalState state) {
-  {
-    ScopedRegistryUpdate(this)->UpdateApp(app_id)->SetFileHandlerApprovalState(
-        state);
-  }
-  registrar_->NotifyWebAppFileHandlerApprovalStateChanged(app_id);
-}
-
 void WebAppSyncBridge::CheckRegistryUpdateData(
     const RegistryUpdateData& update_data) const {
 #if DCHECK_IS_ON()
@@ -780,10 +771,8 @@ std::string WebAppSyncBridge::GetClientTag(
 
   const sync_pb::WebAppSpecifics& specifics = entity_data.specifics.web_app();
   const GURL start_url(specifics.start_url());
-  if (start_url.is_empty() || !start_url.is_valid()) {
-    DLOG(ERROR) << "GetClientTag: start_url parse error.";
-    return std::string();
-  }
+  DCHECK(!start_url.is_empty());
+  DCHECK(start_url.is_valid());
 
   absl::optional<std::string> manifest_id = absl::nullopt;
   if (specifics.has_manifest_id())

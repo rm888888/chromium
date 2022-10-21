@@ -112,7 +112,7 @@ using ShortcutsMenuIconBitmaps = std::vector<IconBitmaps>;
 
 // Structure used when creating app icon shortcuts menu and for downloading
 // associated shortcut icons when supported by OS platform (eg. Windows).
-struct WebAppShortcutsMenuItemInfo {
+struct WebApplicationShortcutsMenuItemInfo {
   struct Icon {
     Icon();
     Icon(const Icon&);
@@ -126,13 +126,16 @@ struct WebAppShortcutsMenuItemInfo {
     SquareSizePx square_size_px = 0;
   };
 
-  WebAppShortcutsMenuItemInfo();
-  WebAppShortcutsMenuItemInfo(const WebAppShortcutsMenuItemInfo&);
-  WebAppShortcutsMenuItemInfo(WebAppShortcutsMenuItemInfo&&) noexcept;
-  ~WebAppShortcutsMenuItemInfo();
-  WebAppShortcutsMenuItemInfo& operator=(const WebAppShortcutsMenuItemInfo&);
-  WebAppShortcutsMenuItemInfo& operator=(
-      WebAppShortcutsMenuItemInfo&&) noexcept;
+  WebApplicationShortcutsMenuItemInfo();
+  WebApplicationShortcutsMenuItemInfo(
+      const WebApplicationShortcutsMenuItemInfo&);
+  WebApplicationShortcutsMenuItemInfo(
+      WebApplicationShortcutsMenuItemInfo&&) noexcept;
+  ~WebApplicationShortcutsMenuItemInfo();
+  WebApplicationShortcutsMenuItemInfo& operator=(
+      const WebApplicationShortcutsMenuItemInfo&);
+  WebApplicationShortcutsMenuItemInfo& operator=(
+      WebApplicationShortcutsMenuItemInfo&&) noexcept;
 
   const std::vector<Icon>& GetShortcutIconInfosForPurpose(
       IconPurpose purpose) const;
@@ -165,17 +168,17 @@ struct WebAppShortcutsMenuItemInfo {
 };
 
 // Structure used when installing a web page as an app.
-struct WebAppInstallInfo {
+struct WebApplicationInfo {
   enum MobileCapable {
     MOBILE_CAPABLE_UNSPECIFIED,
     MOBILE_CAPABLE,
     MOBILE_CAPABLE_APPLE
   };
 
-  WebAppInstallInfo();
-  WebAppInstallInfo(const WebAppInstallInfo& other);
-  explicit WebAppInstallInfo(const webapps::mojom::WebPageMetadata& metadata);
-  ~WebAppInstallInfo();
+  WebApplicationInfo();
+  WebApplicationInfo(const WebApplicationInfo& other);
+  explicit WebApplicationInfo(const webapps::mojom::WebPageMetadata& metadata);
+  ~WebApplicationInfo();
 
   // Id specified in the manifest.
   absl::optional<std::string> manifest_id;
@@ -267,7 +270,7 @@ struct WebAppInstallInfo {
 
   // Set of shortcuts menu item infos populated using shortcuts specified in the
   // manifest.
-  std::vector<WebAppShortcutsMenuItemInfo> shortcuts_menu_item_infos;
+  std::vector<WebApplicationShortcutsMenuItemInfo> shortcuts_menu_item_infos;
 
   // Vector of shortcut icon bitmaps keyed by their square size. The index of a
   // given |IconBitmaps| matches that of the shortcut in
@@ -299,17 +302,14 @@ struct WebAppInstallInfo {
 
   // The window selection behaviour of app launches.
   absl::optional<blink::Manifest::LaunchHandler> launch_handler;
-
-  // A mapping from locales to translated fields.
-  base::flat_map<std::u16string, blink::Manifest::TranslationItem> translations;
 };
 
 bool operator==(const IconSizes& icon_sizes1, const IconSizes& icon_sizes2);
 
-bool operator==(const WebAppShortcutsMenuItemInfo::Icon& icon1,
-                const WebAppShortcutsMenuItemInfo::Icon& icon2);
+bool operator==(const WebApplicationShortcutsMenuItemInfo::Icon& icon1,
+                const WebApplicationShortcutsMenuItemInfo::Icon& icon2);
 
-bool operator==(const WebAppShortcutsMenuItemInfo& shortcut_info1,
-                const WebAppShortcutsMenuItemInfo& shortcut_info2);
+bool operator==(const WebApplicationShortcutsMenuItemInfo& shortcut_info1,
+                const WebApplicationShortcutsMenuItemInfo& shortcut_info2);
 
 #endif  // CHROME_BROWSER_WEB_APPLICATIONS_WEB_APPLICATION_INFO_H_

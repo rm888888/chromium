@@ -50,7 +50,7 @@ namespace ui {
 
 // static
 AXPlatformNode* AXPlatformNode::Create(AXPlatformNodeDelegate* delegate) {
-  AXPlatformNode* node = new AXPlatformNodeMac();
+  AXPlatformNodeBase* node = new AXPlatformNodeMac();
   node->Init(delegate);
   return node;
 }

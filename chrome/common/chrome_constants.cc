@@ -15,7 +15,10 @@
 #if BUILDFLAG(GOOGLE_CHROME_BRANDING)
 #define PRODUCT_STRING "Google Chrome"
 #elif BUILDFLAG(CHROMIUM_BRANDING)
-#define PRODUCT_STRING "Chromium"
+//#define PRODUCT_STRING "Chromium"
+//update on 20220531
+#define PRODUCT_STRING "PurseBrowser"
+//
 #else
 #error Unknown branding
 #endif
@@ -139,8 +142,6 @@ const base::FilePath::CharType kPreviewsOptOutDBFilename[] =
     FPL("previews_opt_out.db");
 const base::FilePath::CharType kQueryTileStorageDirname[] = FPL("Query Tiles");
 const base::FilePath::CharType kReadmeFilename[] = FPL("README");
-const base::FilePath::CharType kSCTAuditingPendingReportsFileName[] =
-    FPL("SCT Auditing Pending Reports");
 const base::FilePath::CharType kSecurePreferencesFilename[] =
     FPL("Secure Preferences");
 const base::FilePath::CharType kServiceStateFileName[] = FPL("Service State");

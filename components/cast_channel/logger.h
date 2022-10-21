@@ -10,6 +10,7 @@
 #include <map>
 #include <memory>
 
+#include "base/macros.h"
 #include "base/memory/ref_counted.h"
 #include "base/threading/thread_checker.h"
 #include "components/cast_channel/cast_channel_enum.h"

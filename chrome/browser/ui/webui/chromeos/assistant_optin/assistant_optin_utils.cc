@@ -6,7 +6,6 @@
 
 #include <utility>
 
-#include "ash/components/arc/arc_prefs.h"
 #include "ash/components/audio/cras_audio_handler.h"
 #include "base/metrics/histogram_macros.h"
 #include "chrome/browser/consent_auditor/consent_auditor_factory.h"
@@ -16,6 +15,7 @@
 #include "chromeos/services/assistant/public/cpp/assistant_prefs.h"
 #include "chromeos/services/assistant/public/cpp/features.h"
 #include "chromeos/services/assistant/public/proto/activity_control_settings_common.pb.h"
+#include "components/arc/arc_prefs.h"
 #include "components/consent_auditor/consent_auditor.h"
 #include "components/prefs/pref_service.h"
 #include "components/signin/public/base/consent_level.h"

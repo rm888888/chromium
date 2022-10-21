@@ -11,7 +11,6 @@
 // #import {assertTrue} from '../../../chai_assert.js';
 // #import {FakeBluetoothConfig} from 'chrome://test/cr_components/chromeos/bluetooth/fake_bluetooth_config.js';
 // #import {setBluetoothConfigForTesting} from 'chrome://resources/cr_components/chromeos/bluetooth/cros_bluetooth_config.js';
-// #import {Router, routes} from 'chrome://os-settings/chromeos/os_settings.js';
 // clang-format on
 
 suite('OsBluetoothPageTest', function() {
@@ -39,8 +38,6 @@ suite('OsBluetoothPageTest', function() {
         bluetoothPage.$$('os-settings-bluetooth-pairing-dialog');
     const bluetoothSummary = bluetoothPage.$$('os-settings-bluetooth-summary');
 
-    const getPairNewDevice = () => bluetoothPage.$$('#pairNewDevice');
-
     assertTrue(!!bluetoothSummary);
     assertFalse(!!getBluetoothPairingUi());
 
@@ -53,30 +50,5 @@ suite('OsBluetoothPageTest', function() {
 
     await flushAsync();
     assertFalse(!!getBluetoothPairingUi());
-
-    settings.Router.getInstance().navigateTo(
-        settings.routes.BLUETOOTH_DEVICES, null);
-
-    bluetoothConfig.setSystemState(
-        chromeos.bluetoothConfig.mojom.BluetoothSystemState.kEnabled);
-    await flushAsync();
-    assertTrue(!!getPairNewDevice());
-
-    // Simulate Bluetooth disabled
-    bluetoothConfig.setSystemState(
-        chromeos.bluetoothConfig.mojom.BluetoothSystemState.kUnavailable);
-    await flushAsync();
-    assertFalse(!!getPairNewDevice());
-
-    // Simulate Bluetooth enabled
-    bluetoothConfig.setSystemState(
-        chromeos.bluetoothConfig.mojom.BluetoothSystemState.kEnabled);
-    await flushAsync();
-    assertTrue(!!getPairNewDevice());
-    getPairNewDevice().click();
-
-    await flushAsync();
-    assertTrue(!!getBluetoothPairingUi());
-
   });
 });

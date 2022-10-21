@@ -5,7 +5,8 @@
 #ifndef CHROME_BROWSER_UI_WEBUI_SYNC_FILE_SYSTEM_INTERNALS_DUMP_DATABASE_HANDLER_H_
 #define CHROME_BROWSER_UI_WEBUI_SYNC_FILE_SYSTEM_INTERNALS_DUMP_DATABASE_HANDLER_H_
 
-#include "base/memory/raw_ptr.h"
+#include "base/compiler_specific.h"
+#include "base/macros.h"
 #include "content/public/browser/web_ui_message_handler.h"
 
 class Profile;
@@ -28,7 +29,7 @@ class DumpDatabaseHandler : public content::WebUIMessageHandler {
   void HandleGetDatabaseDump(const base::ListValue* args);
   void DidGetDatabaseDump(std::string callback_id, const base::ListValue& list);
 
-  raw_ptr<Profile> profile_;
+  Profile* profile_;
 };
 
 }  // namespace syncfs_internals

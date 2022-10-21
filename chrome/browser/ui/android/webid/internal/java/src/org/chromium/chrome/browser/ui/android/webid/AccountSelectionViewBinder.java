@@ -237,26 +237,14 @@ class AccountSelectionViewBinder {
                     }
                     button.setTextColor(textColor);
                 }
-
-                Bitmap brandIcon = idpMetadata.getBrandIcon();
-                if (brandIcon != null) {
-                    Resources resources = context.getResources();
-                    int avatarSize = resources.getDimensionPixelSize(
-                            R.dimen.account_selection_continue_icon_size);
-                    Drawable croppedBrandIcon =
-                            AvatarGenerator.makeRoundAvatar(resources, brandIcon, avatarSize);
-                    button.setCompoundDrawablesWithIntrinsicBounds(
-                            croppedBrandIcon, null, null, null);
-                }
             }
         } else if (key == ContinueButtonProperties.ACCOUNT) {
             Account account = model.get(ContinueButtonProperties.ACCOUNT);
             // Prefers to use given name if it is provided otherwise falls back to using the name.
-            String givenName = account.getGivenName();
-            String displayedName =
-                    givenName != null && !givenName.isEmpty() ? givenName : account.getName();
-            String btnText = String.format(
-                    context.getString(R.string.account_selection_continue), displayedName);
+            String name =
+                    account.getGivenName() != null ? account.getGivenName() : account.getName();
+            String btnText =
+                    String.format(context.getString(R.string.account_selection_continue), name);
             Button button = view.findViewById(R.id.account_selection_continue_btn);
             button.setText(btnText);
         } else if (key == ContinueButtonProperties.ON_CLICK_LISTENER) {
@@ -309,9 +297,6 @@ class AccountSelectionViewBinder {
                 case SIGN_IN:
                     titleStringId = R.string.sign_in_sheet_title;
                     break;
-                case VERIFY:
-                    titleStringId = R.string.verify_sheet_title;
-                    break;
             }
 
             String title = String.format(view.getContext().getString(titleStringId),
@@ -323,12 +308,6 @@ class AccountSelectionViewBinder {
                     model.get(HeaderProperties.FORMATTED_IDP_URL));
             TextView headerIdpUrlText = view.findViewById(R.id.header_idp_url);
             headerIdpUrlText.setText(subheadingText);
-        } else if (key == HeaderProperties.CLOSE_ON_CLICK_LISTENER) {
-            final Runnable closeOnClickRunnable =
-                    (Runnable) model.get(HeaderProperties.CLOSE_ON_CLICK_LISTENER);
-            view.findViewById(R.id.close_button).setOnClickListener(clickedView -> {
-                closeOnClickRunnable.run();
-            });
         } else {
             assert false : "Unhandled update to property:" + key;
         }

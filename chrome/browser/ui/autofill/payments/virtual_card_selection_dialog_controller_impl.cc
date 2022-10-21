@@ -13,8 +13,7 @@ namespace autofill {
 
 VirtualCardSelectionDialogControllerImpl::
     VirtualCardSelectionDialogControllerImpl(content::WebContents* web_contents)
-    : content::WebContentsUserData<VirtualCardSelectionDialogControllerImpl>(
-          *web_contents) {}
+    : content::WebContentsObserver(web_contents) {}
 
 VirtualCardSelectionDialogControllerImpl::
     ~VirtualCardSelectionDialogControllerImpl() {
@@ -41,7 +40,7 @@ void VirtualCardSelectionDialogControllerImpl::ShowDialog(
 
   callback_ = std::move(callback);
   dialog_view_ =
-      VirtualCardSelectionDialogView::CreateAndShow(this, &GetWebContents());
+      VirtualCardSelectionDialogView::CreateAndShow(this, web_contents());
 }
 
 bool VirtualCardSelectionDialogControllerImpl::IsOkButtonEnabled() {

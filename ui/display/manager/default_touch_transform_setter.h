@@ -5,6 +5,7 @@
 #ifndef UI_DISPLAY_MANAGER_DEFAULT_TOUCH_TRANSFORM_SETTER_H_
 #define UI_DISPLAY_MANAGER_DEFAULT_TOUCH_TRANSFORM_SETTER_H_
 
+#include "base/macros.h"
 #include "ui/display/manager/touch_transform_setter.h"
 
 namespace display {

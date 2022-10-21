@@ -8,6 +8,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "base/macros.h"
 #include "third_party/skia/include/core/SkRefCnt.h"
 #include "ui/ozone/platform/drm/gpu/drm_framebuffer.h"
 

@@ -10,7 +10,6 @@
 #include <memory>
 #include <random>
 #include <string>
-#include <tuple>
 #include <utility>
 
 #include "base/base_switches.h"
@@ -20,7 +19,6 @@
 #include "base/compiler_specific.h"
 #include "base/debug/leak_annotations.h"
 #include "base/guid.h"
-#include "base/memory/raw_ptr.h"
 #include "base/metrics/histogram_functions.h"
 #include "base/metrics/histogram_macros.h"
 #include "base/numerics/safe_conversions.h"
@@ -210,7 +208,7 @@ class MetricsStateMetricsProvider : public MetricsProvider {
   }
 
  private:
-  const raw_ptr<PrefService> local_state_;
+  PrefService* const local_state_;
   const bool metrics_ids_were_reset_;
   // |previous_client_id_| is set only (if known) when
   // |metrics_ids_were_reset_|
@@ -350,7 +348,7 @@ void MetricsStateManager::InstantiateFieldTrialList(
     base::FieldTrialList* leaked_field_trial_list =
         new base::FieldTrialList(std::move(entropy_provider));
     ANNOTATE_LEAKING_OBJECT_PTR(leaked_field_trial_list);
-    std::ignore = leaked_field_trial_list;
+    ignore_result(leaked_field_trial_list);
   }
 
   // TODO(crbug/1257204): Some FieldTrial-setup-related code is here and some is

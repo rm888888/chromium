@@ -7,7 +7,7 @@
 #include <memory>
 
 #include "base/callback.h"
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/memory/scoped_refptr.h"
 #include "base/run_loop.h"
 #include "base/strings/string_number_conversions.h"
@@ -90,7 +90,7 @@ class HintsFetcherTest : public testing::Test,
   // expire at |host_invalid_time|.
   void SeedCoveredHosts(const std::vector<std::string>& hosts,
                         base::Time host_invalid_time) {
-    DictionaryPrefUpdateDeprecated hosts_fetched(
+    DictionaryPrefUpdate hosts_fetched(
         pref_service(), prefs::kHintsFetcherHostsSuccessfullyFetched);
 
     for (const std::string& host : hosts) {
@@ -177,7 +177,7 @@ class HintsFetcherTest : public testing::Test,
   std::unique_ptr<TestingPrefServiceSimple> pref_service_;
   scoped_refptr<network::SharedURLLoaderFactory> shared_url_loader_factory_;
   network::TestURLLoaderFactory test_url_loader_factory_;
-  raw_ptr<network::TestNetworkConnectionTracker> network_tracker_;
+  network::TestNetworkConnectionTracker* network_tracker_;
 
   std::string last_request_body_;
 };
@@ -520,7 +520,7 @@ TEST_P(HintsFetcherTest, HintsFetcherCoveredHostExpired) {
 
   // The first pair of hosts should be removed from the dictionary
   // pref as they have expired.
-  DictionaryPrefUpdateDeprecated hosts_fetched(
+  DictionaryPrefUpdate hosts_fetched(
       pref_service(), prefs::kHintsFetcherHostsSuccessfullyFetched);
   EXPECT_EQ(2u, hosts_fetched->DictSize());
 
@@ -535,7 +535,7 @@ TEST_P(HintsFetcherTest, HintsFetcherHostNotCovered) {
   base::Time host_invalid_time = base::Time::Now() + base::Hours(1);
 
   SeedCoveredHosts(hosts, host_invalid_time);
-  DictionaryPrefUpdateDeprecated hosts_fetched(
+  DictionaryPrefUpdate hosts_fetched(
       pref_service(), prefs::kHintsFetcherHostsSuccessfullyFetched);
   EXPECT_EQ(2u, hosts_fetched->DictSize());
 
@@ -563,7 +563,7 @@ TEST_P(HintsFetcherTest, HintsFetcherRemoveExpiredOnSuccessfullyFetched) {
 
   // The two expired hosts should be removed from the dictionary pref as they
   // have expired.
-  DictionaryPrefUpdateDeprecated hosts_fetched(
+  DictionaryPrefUpdate hosts_fetched(
       pref_service(), prefs::kHintsFetcherHostsSuccessfullyFetched);
   EXPECT_EQ(2u, hosts_fetched->DictSize());
 
@@ -597,7 +597,7 @@ TEST_P(HintsFetcherTest, HintsFetcherSuccessfullyFetchedHostsFull) {
   EXPECT_TRUE(hints_fetched());
 
   // Navigations to both the extra hosts should be recorded.
-  DictionaryPrefUpdateDeprecated hosts_fetched(
+  DictionaryPrefUpdate hosts_fetched(
       pref_service(), prefs::kHintsFetcherHostsSuccessfullyFetched);
   EXPECT_EQ(200u, hosts_fetched->DictSize());
 
@@ -606,8 +606,6 @@ TEST_P(HintsFetcherTest, HintsFetcherSuccessfullyFetchedHostsFull) {
 }
 
 TEST_P(HintsFetcherTest, MaxHostsForOptimizationGuideServiceHintsFetch) {
-  base::HistogramTester histogram_tester;
-
   std::string response_content;
   std::vector<std::string> all_hosts;
 
@@ -633,7 +631,7 @@ TEST_P(HintsFetcherTest, MaxHostsForOptimizationGuideServiceHintsFetch) {
   if (!ShouldPersistHintsToDisk())
     return;
 
-  DictionaryPrefUpdateDeprecated hosts_fetched(
+  DictionaryPrefUpdate hosts_fetched(
       pref_service(), prefs::kHintsFetcherHostsSuccessfullyFetched);
   EXPECT_EQ(max_hosts_in_fetch_request, hosts_fetched->DictSize());
   EXPECT_EQ(all_hosts.size(), max_hosts_in_fetch_request + 5);
@@ -642,12 +640,6 @@ TEST_P(HintsFetcherTest, MaxHostsForOptimizationGuideServiceHintsFetch) {
     EXPECT_TRUE(
         WasHostCoveredByFetch("host" + base::NumberToString(i) + ".com"));
   }
-
-  // extra1.com and extra2.com should have been considered "dropped".
-  histogram_tester.ExpectUniqueSample(
-      "OptimizationGuide.HintsFetcher.GetHintsRequest.DroppedHosts."
-      "BatchUpdateActiveTabs",
-      2, 1);
 }
 
 TEST_P(HintsFetcherTest, MaxUrlsForOptimizationGuideServiceHintsFetch) {
@@ -685,12 +677,6 @@ TEST_P(HintsFetcherTest, MaxUrlsForOptimizationGuideServiceHintsFetch) {
     EXPECT_EQ(last_request.urls(i).url(),
               "https://url" + base::NumberToString(i) + ".com/");
   }
-
-  // notfetched.com and notfetched-2.com should have been considered "dropped".
-  histogram_tester.ExpectUniqueSample(
-      "OptimizationGuide.HintsFetcher.GetHintsRequest.DroppedUrls."
-      "BatchUpdateActiveTabs",
-      2, 1);
 }
 
 TEST_P(HintsFetcherTest, OnlyURLsToFetch) {
@@ -711,11 +697,6 @@ TEST_P(HintsFetcherTest, OnlyURLsToFetch) {
   histogram_tester.ExpectUniqueSample(
       "OptimizationGuide.HintsFetcher.RequestStatus.BatchUpdateActiveTabs",
       static_cast<int>(HintsFetcherRequestStatus::kSuccess), 1);
-  // Nothing was dropped so this shouldn't be recorded.
-  histogram_tester.ExpectTotalCount(
-      "OptimizationGuide.HintsFetcher.GetHintsRequest.DroppedHosts", 0);
-  histogram_tester.ExpectTotalCount(
-      "OptimizationGuide.HintsFetcher.GetHintsRequest.DroppedUrls", 0);
 }
 
 TEST_P(HintsFetcherTest, NoHostsOrURLsToFetch) {

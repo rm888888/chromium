@@ -9,6 +9,7 @@
 #include <string>
 
 #include "base/containers/flat_map.h"
+#include "base/macros.h"
 #include "components/optimization_guide/core/prediction_model.h"
 #include "components/optimization_guide/proto/models.pb.h"
 

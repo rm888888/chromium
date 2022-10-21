@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "components/download/internal/background_service/store.h"
 #include "components/leveldb_proto/public/proto_database.h"

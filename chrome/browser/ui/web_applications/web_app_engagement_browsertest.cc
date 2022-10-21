@@ -16,7 +16,6 @@
 #include "chrome/browser/ui/browser_finder.h"
 #include "chrome/browser/ui/browser_list.h"
 #include "chrome/browser/ui/startup/startup_browser_creator.h"
-#include "chrome/browser/ui/startup/startup_types.h"
 #include "chrome/browser/ui/tabs/tab_strip_model.h"
 #include "chrome/browser/ui/web_applications/app_browser_controller.h"
 #include "chrome/browser/ui/web_applications/test/web_app_browsertest_util.h"
@@ -209,7 +208,7 @@ class WebAppEngagementBrowserTest : public WebAppControllerBrowserTest {
   }
 
   AppId InstallWebAppAndCountApps(
-      std::unique_ptr<WebAppInstallInfo> web_app_info) {
+      std::unique_ptr<WebApplicationInfo> web_app_info) {
     AppId app_id = InstallWebApp(std::move(web_app_info));
     CountUserInstalledApps();
     return app_id;
@@ -229,7 +228,7 @@ IN_PROC_BROWSER_TEST_F(WebAppEngagementBrowserTest, AppInWindow) {
 
   const GURL example_url = GURL("http://example.org/");
 
-  auto web_app_info = std::make_unique<WebAppInstallInfo>();
+  auto web_app_info = std::make_unique<WebApplicationInfo>();
   web_app_info->start_url = example_url;
   web_app_info->scope = example_url;
   web_app_info->user_display_mode = DisplayMode::kStandalone;
@@ -255,7 +254,7 @@ IN_PROC_BROWSER_TEST_F(WebAppEngagementBrowserTest, AppInTab) {
 
   const GURL example_url = GURL("http://example.org/");
 
-  auto web_app_info = std::make_unique<WebAppInstallInfo>();
+  auto web_app_info = std::make_unique<WebApplicationInfo>();
   web_app_info->start_url = example_url;
   web_app_info->scope = example_url;
   web_app_info->user_display_mode = DisplayMode::kBrowser;
@@ -280,7 +279,7 @@ IN_PROC_BROWSER_TEST_F(WebAppEngagementBrowserTest, AppWithoutScope) {
 
   const GURL example_url = GURL("http://example.org/");
 
-  auto web_app_info = std::make_unique<WebAppInstallInfo>();
+  auto web_app_info = std::make_unique<WebApplicationInfo>();
   web_app_info->start_url = example_url;
   // If app has no scope then UrlHandlers::GetUrlHandlers are empty. Therefore,
   // the app is counted as installed via the Create Shortcut button.
@@ -314,13 +313,13 @@ IN_PROC_BROWSER_TEST_F(WebAppEngagementBrowserTest, TwoApps) {
 
   // Install two apps.
   {
-    auto web_app_info = std::make_unique<WebAppInstallInfo>();
+    auto web_app_info = std::make_unique<WebApplicationInfo>();
     web_app_info->start_url = example_url1;
     web_app_info->scope = example_url1;
     app_id1 = InstallWebAppAndCountApps(std::move(web_app_info));
   }
   {
-    auto web_app_info = std::make_unique<WebAppInstallInfo>();
+    auto web_app_info = std::make_unique<WebApplicationInfo>();
     web_app_info->start_url = example_url2;
     web_app_info->scope = example_url2;
     app_id2 = InstallWebAppAndCountApps(std::move(web_app_info));
@@ -365,7 +364,7 @@ IN_PROC_BROWSER_TEST_F(WebAppEngagementBrowserTest, ManyUserApps) {
   for (int i = 0; i < num_user_apps; ++i) {
     const GURL url = GetUrlForSuffix(base_url, i);
 
-    auto web_app_info = std::make_unique<WebAppInstallInfo>();
+    auto web_app_info = std::make_unique<WebApplicationInfo>();
     web_app_info->start_url = url;
     web_app_info->scope = url;
     AppId app_id = InstallWebAppAndCountApps(std::move(web_app_info));
@@ -425,7 +424,7 @@ IN_PROC_BROWSER_TEST_F(WebAppEngagementBrowserTest, NavigateAwayFromAppTab) {
   const GURL start_url = GURL("http://example.org/app/");
   const GURL outer_url = GURL("http://example.org/");
 
-  auto web_app_info = std::make_unique<WebAppInstallInfo>();
+  auto web_app_info = std::make_unique<WebApplicationInfo>();
   web_app_info->start_url = start_url;
   web_app_info->scope = start_url;
   web_app_info->user_display_mode = DisplayMode::kBrowser;
@@ -499,7 +498,7 @@ IN_PROC_BROWSER_TEST_F(WebAppEngagementBrowserTest, CommandLineWindowByUrl) {
 
   // The app should open as a window.
   EXPECT_TRUE(StartupBrowserCreator().ProcessCmdLineImpl(
-      command_line, base::FilePath(), chrome::startup::IsProcessStartup::kNo,
+      command_line, base::FilePath(), /*process_startup=*/false,
       browser()->profile(), {}));
   app_loaded_observer.Wait();
 
@@ -550,7 +549,7 @@ IN_PROC_BROWSER_TEST_F(WebAppEngagementBrowserTest, CommandLineWindowByAppId) {
 
   // The app should open as a window.
   EXPECT_TRUE(StartupBrowserCreator().ProcessCmdLineImpl(
-      command_line, base::FilePath(), chrome::startup::IsProcessStartup::kNo,
+      command_line, base::FilePath(), /*process_startup=*/false,
       browser()->profile(), {}));
   app_loaded_observer.Wait();
 
@@ -605,7 +604,7 @@ IN_PROC_BROWSER_TEST_F(WebAppEngagementBrowserTest, CommandLineTab) {
 
   // The app should open as a tab.
   EXPECT_TRUE(StartupBrowserCreator().ProcessCmdLineImpl(
-      command_line, base::FilePath(), chrome::startup::IsProcessStartup::kNo,
+      command_line, base::FilePath(), /*process_startup=*/false,
       browser()->profile(), {}));
   app_loaded_observer.Wait();
 

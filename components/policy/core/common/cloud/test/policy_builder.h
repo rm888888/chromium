@@ -13,6 +13,7 @@
 
 #include "base/check.h"
 #include "base/compiler_specific.h"
+#include "base/macros.h"
 #include "build/build_config.h"
 #include "build/chromeos_buildflags.h"
 #include "components/account_id/account_id.h"

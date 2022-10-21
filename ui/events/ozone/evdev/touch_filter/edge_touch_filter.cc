@@ -8,6 +8,7 @@
 
 #include <cmath>
 
+#include "base/macros.h"
 #include "base/metrics/histogram_macros.h"
 #include "ui/gfx/geometry/insets.h"
 

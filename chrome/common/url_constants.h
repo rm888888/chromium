@@ -160,10 +160,6 @@ extern const char kGoogleAccountLanguagesURL[];
 // URL of the 'Activity controls' section of the privacy settings page.
 extern const char kGoogleAccountActivityControlsURL[];
 
-// URL of the 'Activity controls' section of the privacy settings page, with
-// privacy review parameters and a link for users to manage data.
-extern const char kGoogleAccountActivityControlsURLInPrivacyReview[];
-
 // URL of the Google Account.
 extern const char kGoogleAccountURL[];
 
@@ -256,9 +252,6 @@ extern const char kSyncLearnMoreURL[];
 extern const char kSyncTrustedVaultOptInURL[];
 #endif
 
-// The URL for the "Learn more" link for the trusted vault sync passphrase.
-extern const char kSyncTrustedVaultLearnMoreURL[];
-
 extern const char kUpgradeHelpCenterBaseURL[];
 
 // The URL for the "Learn more" link for nearby share.
@@ -335,6 +328,9 @@ extern const char kAutoUpdatePolicyURL[];
 
 // The URL for providing more information about Google nameservers.
 extern const char kGoogleNameserversLearnMoreURL[];
+
+// The URL for G Suite for Education Privacy Notice.
+extern const char kGsuiteTermsEducationPrivacyURL[];
 
 // The URL for the "learn more" link for Instant Tethering.
 extern const char kInstantTetheringLearnMoreURL[];

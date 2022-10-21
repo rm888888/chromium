@@ -7,6 +7,8 @@
 
 #include <string>
 
+#include "base/macros.h"
+
 namespace password_manager {
 
 // Abstract class to define a communication interface for the http-auth UI and

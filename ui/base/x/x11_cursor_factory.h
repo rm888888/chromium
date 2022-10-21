@@ -15,7 +15,7 @@
 #include "ui/base/cursor/cursor_factory.h"
 #include "ui/base/cursor/cursor_theme_manager.h"
 #include "ui/base/cursor/cursor_theme_manager_observer.h"
-#include "ui/base/cursor/mojom/cursor_type.mojom-shared.h"
+#include "ui/base/cursor/mojom/cursor_type.mojom-forward.h"
 
 namespace ui {
 class X11Cursor;

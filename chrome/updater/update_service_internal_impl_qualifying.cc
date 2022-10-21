@@ -78,8 +78,7 @@ class UpdateServiceInternalQualifyingImpl : public UpdateServiceInternal {
             base::BindOnce(&UpdateServiceImpl::Update,
                            base::MakeRefCounted<UpdateServiceImpl>(config_),
                            kQualificationAppId,
-                           UpdateService::Priority::kBackground,
-                           UpdateService::PolicySameVersionUpdate::kNotAllowed,
+                           updater::UpdateService::Priority::kBackground,
                            base::DoNothing()),
             base::BindOnce(
                 &UpdateServiceInternalQualifyingImpl::QualificationDone, this,

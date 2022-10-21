@@ -7,7 +7,6 @@
 
 #include "base/time/time.h"
 #include "components/viz/common/surfaces/region_capture_bounds.h"
-#include "components/viz/common/surfaces/video_capture_target.h"
 #include "components/viz/service/surfaces/pending_copy_output_request.h"
 #include "third_party/abseil-cpp/absl/types/variant.h"
 #include "ui/gfx/geometry/size.h"
@@ -65,8 +64,10 @@ class CapturableFrameSink {
   // its associated bounds are set to empty or could not be found.
   // NOTE: only one of |subtree_id| or |crop_id| should be set and valid, not
   // both.
+  using RegionSpecifier =
+      absl::variant<absl::monostate, SubtreeCaptureId, RegionCaptureCropId>;
   virtual gfx::Rect GetCopyOutputRequestRegion(
-      const VideoCaptureSubTarget& sub_target) const = 0;
+      const RegionSpecifier& specifier) const = 0;
 
   // Called when a video capture client starts or stops capturing.
   virtual void OnClientCaptureStarted() = 0;

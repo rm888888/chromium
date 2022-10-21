@@ -143,7 +143,6 @@ suite('InternetDetailPage', function() {
 
   setup(function() {
     loadTimeData.overrideValues({
-      esimPolicyEnabled: true,
       internetAddConnection: 'internetAddConnection',
       internetAddConnectionExpandA11yLabel:
           'internetAddConnectionExpandA11yLabel',

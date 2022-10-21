@@ -4,14 +4,6 @@
 
 #include "chrome/browser/ui/app_list/arc/arc_app_test.h"
 
-#include "ash/components/arc/arc_util.h"
-#include "ash/components/arc/session/arc_bridge_service.h"
-#include "ash/components/arc/session/arc_service_manager.h"
-#include "ash/components/arc/session/arc_session_runner.h"
-#include "ash/components/arc/test/arc_util_test_support.h"
-#include "ash/components/arc/test/connection_holder_util.h"
-#include "ash/components/arc/test/fake_app_instance.h"
-#include "ash/components/arc/test/fake_arc_session.h"
 #include "base/bind.h"
 #include "base/command_line.h"
 #include "base/containers/cxx20_erase.h"
@@ -30,7 +22,15 @@
 #include "chrome/browser/ui/app_list/arc/arc_app_list_prefs_factory.h"
 #include "chromeos/dbus/concierge/concierge_client.h"
 #include "chromeos/dbus/dbus_thread_manager.h"
+#include "components/arc/arc_util.h"
 #include "components/arc/intent_helper/arc_intent_helper_bridge.h"
+#include "components/arc/session/arc_bridge_service.h"
+#include "components/arc/session/arc_service_manager.h"
+#include "components/arc/session/arc_session_runner.h"
+#include "components/arc/test/arc_util_test_support.h"
+#include "components/arc/test/connection_holder_util.h"
+#include "components/arc/test/fake_app_instance.h"
+#include "components/arc/test/fake_arc_session.h"
 #include "components/arc/test/fake_intent_helper_instance.h"
 #include "components/user_manager/scoped_user_manager.h"
 #include "testing/gtest/include/gtest/gtest.h"
@@ -137,10 +137,8 @@ void ArcAppTest::SetUp(Profile* profile) {
       WaitForInstanceReady(arc_service_manager_->arc_bridge_service()->app());
   }
 
-  if (start_app_service_publisher_) {
-    // Ensure that the singleton apps::ArcApps is constructed.
-    apps::ArcAppsFactory::GetForProfile(profile_);
-  }
+  // Ensure that the singleton apps::ArcApps is constructed.
+  apps::ArcAppsFactory::GetForProfile(profile_);
 }
 
 void ArcAppTest::WaitForDefaultApps() {

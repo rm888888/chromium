@@ -14,6 +14,7 @@
 #include "base/callback_helpers.h"
 #include "base/feature_list.h"
 #include "base/location.h"
+#include "base/macros.h"
 #include "base/metrics/histogram_macros.h"
 #include "base/metrics/user_metrics.h"
 #include "base/metrics/user_metrics_action.h"
@@ -346,18 +347,19 @@ void InlineSigninHelper::OnClientOAuthSuccess(const ClientOAuthResult& result) {
     // TODO(https://crbug.com/1205147): In case of reauth, wait until cookies
     // are set before opening a browser window.
     profiles::OpenBrowserWindowForProfile(
-        base::BindOnce(
+        base::BindRepeating(
             &InlineSigninHelper::OnClientOAuthSuccessAndBrowserOpened,
             base::Unretained(this), result),
         true, false, true, profile_, create_status_);
   } else {
-    OnClientOAuthSuccessAndBrowserOpened(result, profile_);
+    OnClientOAuthSuccessAndBrowserOpened(result, profile_, create_status_);
   }
 }
 
 void InlineSigninHelper::OnClientOAuthSuccessAndBrowserOpened(
     const ClientOAuthResult& result,
-    Profile* /*profile*/) {
+    Profile* /*profile*/,
+    Profile::CreateStatus /*status*/) {
   HandlerSigninReason reason = GetHandlerSigninReason(current_url_);
   if (reason == HandlerSigninReason::kFetchLstOnly) {
     // Constants are only available on Windows for the Google Credential
@@ -517,7 +519,7 @@ void InlineLoginHandlerImpl::SetExtraInitParams(base::DictionaryValue& params) {
     params.SetBoolean("dontResizeNonEmbeddedPages", true);
 
   content::WebContents* contents = web_ui()->GetWebContents();
-  const GURL& current_url = contents->GetLastCommittedURL();
+  const GURL& current_url = contents->GetURL();
   HandlerSigninReason reason = GetHandlerSigninReason(current_url);
 
   const GURL& url = GaiaUrls::GetInstance()->embedded_signin_url();
@@ -598,22 +600,30 @@ void InlineLoginHandlerImpl::SetExtraInitParams(base::DictionaryValue& params) {
   LogHistogramValue(signin_metrics::HISTOGRAM_SHOWN);
 }
 
-void InlineLoginHandlerImpl::CompleteLogin(const CompleteLoginParams& params) {
+void InlineLoginHandlerImpl::CompleteLogin(const std::string& email,
+                                           const std::string& password,
+                                           const std::string& gaia_id,
+                                           const std::string& auth_code,
+                                           bool skip_for_now,
+                                           bool trusted,
+                                           bool trusted_found,
+                                           bool choose_what_to_sync,
+                                           base::Value edu_login_params) {
   content::WebContents* contents = web_ui()->GetWebContents();
-  const GURL& current_url = contents->GetLastCommittedURL();
+  const GURL& current_url = contents->GetURL();
 
-  if (params.skip_for_now) {
+  if (skip_for_now) {
     SyncSetupFailed();
     return;
   }
 
   // This value exists only for webview sign in.
-  if (params.trusted_found)
-    confirm_untrusted_signin_ = !params.trusted_value;
+  if (trusted_found)
+    confirm_untrusted_signin_ = !trusted;
 
-  DCHECK(!params.email.empty());
-  DCHECK(!params.gaia_id.empty());
-  DCHECK(!params.auth_code.empty());
+  DCHECK(!email.empty());
+  DCHECK(!gaia_id.empty());
+  DCHECK(!auth_code.empty());
 
   content::StoragePartition* partition =
       signin::GetSigninPartition(contents->GetBrowserContext());
@@ -629,9 +639,8 @@ void InlineLoginHandlerImpl::CompleteLogin(const CompleteLoginParams& params) {
       !profile->IsSystemProfile()) {
     FinishCompleteLogin(FinishCompleteLoginParams(
                             this, partition, current_url, base::FilePath(),
-                            confirm_untrusted_signin_, params.email,
-                            params.gaia_id, params.password, params.auth_code,
-                            params.choose_what_to_sync, false),
+                            confirm_untrusted_signin_, email, gaia_id, password,
+                            auth_code, choose_what_to_sync, false),
                         profile, Profile::CREATE_STATUS_CREATED);
     return;
   }
@@ -641,8 +650,7 @@ void InlineLoginHandlerImpl::CompleteLogin(const CompleteLoginParams& params) {
   DCHECK(signin_util::IsForceSigninEnabled());
 
   ProfileManager* manager = g_browser_process->profile_manager();
-  base::FilePath path =
-      profiles::GetPathOfProfileWithEmail(manager, params.email);
+  base::FilePath path = profiles::GetPathOfProfileWithEmail(manager, email);
   if (path.empty())
     path = ProfilePicker::GetForceSigninProfilePath();
   if (path.empty())
@@ -650,12 +658,11 @@ void InlineLoginHandlerImpl::CompleteLogin(const CompleteLoginParams& params) {
 
   // Switch to the profile and finish the login. Pass the profile path so it can
   // be marked as unlocked.
-  FinishCompleteLoginParams finish_login_params(
-      this, partition, current_url, path, confirm_untrusted_signin_,
-      params.email, params.gaia_id, params.password, params.auth_code,
-      params.choose_what_to_sync, true);
-  ProfileManager::CreateCallback callback = base::BindRepeating(
-      &InlineLoginHandlerImpl::FinishCompleteLogin, finish_login_params);
+  FinishCompleteLoginParams params(
+      this, partition, current_url, path, confirm_untrusted_signin_, email,
+      gaia_id, password, auth_code, choose_what_to_sync, true);
+  ProfileManager::CreateCallback callback =
+      base::BindRepeating(&InlineLoginHandlerImpl::FinishCompleteLogin, params);
   // Browser window will be opened after ClientOAuthSuccess.
   profiles::LoadProfileAsync(path, callback);
 }
@@ -793,7 +800,7 @@ void InlineLoginHandlerImpl::FinishCompleteLogin(
 
 void InlineLoginHandlerImpl::HandleLoginError(const SigninUIError& error) {
   content::WebContents* contents = web_ui()->GetWebContents();
-  const GURL& current_url = contents->GetLastCommittedURL();
+  const GURL& current_url = contents->GetURL();
   HandlerSigninReason reason = GetHandlerSigninReason(current_url);
 
   if (reason == HandlerSigninReason::kFetchLstOnly) {

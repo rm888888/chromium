@@ -11,6 +11,7 @@
 #include <memory>
 #include <string>
 
+#include "base/macros.h"
 #include "components/cast_channel/cast_channel_enum.h"
 #include "net/base/io_buffer.h"
 

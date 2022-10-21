@@ -19,7 +19,6 @@
 #include "chrome/browser/sync/sync_ui_util.h"
 #include "chrome/browser/themes/theme_properties.h"
 #include "chrome/browser/ui/browser.h"
-#include "chrome/browser/ui/browser_element_identifiers.h"
 #include "chrome/browser/ui/browser_window.h"
 #include "chrome/browser/ui/layout_constants.h"
 #include "chrome/browser/ui/ui_features.h"
@@ -43,8 +42,14 @@
 #include "ui/views/accessibility/view_accessibility.h"
 #include "ui/views/controls/button/button_controller.h"
 #include "ui/views/controls/button/label_button_border.h"
-#include "ui/views/view_class_properties.h"
-
+//update on 20220214
+#include "chrome/grit/generated_resources.h"
+#include "chrome/grit/theme_resources.h"
+#include "ui/views/bubble/info_bubble.h"
+#include "base/strings/utf_string_conversions.h"
+#include <memory>
+#include <utility>
+//
 namespace {
 
 // Note that the non-touchable icon size is larger than the default to make the
@@ -57,8 +62,12 @@ constexpr int kIconSizeForNonTouchUi = 22;
 base::TimeDelta AvatarToolbarButton::g_iph_min_delay_after_creation =
     base::Seconds(2);
 
-AvatarToolbarButton::AvatarToolbarButton(BrowserView* browser_view)
-    : AvatarToolbarButton(browser_view, nullptr) {}
+AvatarToolbarButton::AvatarToolbarButton(BrowserView* browser_view,int type)
+    : AvatarToolbarButton(browser_view, nullptr) {
+        //update on 20220214
+        buttontype_ = type;
+        //
+    }
 
 AvatarToolbarButton::AvatarToolbarButton(BrowserView* browser_view,
                                          ToolbarIconContainerView* parent)
@@ -78,7 +87,6 @@ AvatarToolbarButton::AvatarToolbarButton(BrowserView* browser_view,
   SetTriggerableEventFlags(ui::EF_LEFT_MOUSE_BUTTON);
 
   SetID(VIEW_ID_AVATAR_BUTTON);
-  SetProperty(views::kElementIdentifierKey, kAvatarButtonElementId);
 
   // The avatar should not flip with RTL UI. This does not affect text rendering
   // and LabelButton image/label placement is still flipped like usual.
@@ -109,12 +117,22 @@ void AvatarToolbarButton::UpdateIcon() {
   // button is not yet added to the ToolbarView's hierarchy.
   if (!GetWidget())
     return;
-
+  //update on 20220214
+  if(buttontype_ == ButtonType::kPundixWallet)
+  {
+   const ui::ThemeProvider* tp = GetThemeProvider();
+   gfx::ImageSkia* temp = tp->GetImageSkiaNamed(IDR_PUNDIX_WALLET);
+   SetImage(views::Button::STATE_NORMAL, *temp);
+   //ui::ImageModel image = ui::ImageModel::FromImageSkia(*temp);
+   //SetImageModel( ButtonState::STATE_NORMAL,image);
+  }
+  else
+  {
   gfx::Image gaia_account_image = delegate_->GetGaiaAccountImage();
   for (auto state : kButtonStates)
     SetImageModel(state, GetAvatarIcon(state, gaia_account_image));
   delegate_->MaybeShowIdentityAnimation(gaia_account_image);
-
+  }
   SetInsets();
 }
 
@@ -261,10 +279,25 @@ void AvatarToolbarButton::SetIPHMinDelayAfterCreationForTesting(
 }
 
 void AvatarToolbarButton::ButtonPressed() {
+  //update on 20220214
+  if(buttontype_ == ButtonType::kPundixWallet)
+  {
+//      std::u16string text = u"test message57438957493590483509483059843";
+//      views::InfoBubble* infobubble = new views::InfoBubble(this,views::BubbleBorder::Arrow::NONE,text);
+//      infobubble->Show();
+//
+      browser_->window()->ShowWalletBubbleFromWalletButton(
+           BrowserWindow::AVATAR_BUBBLE_MODE_DEFAULT,
+           signin_metrics::AccessPoint::ACCESS_POINT_AVATAR_BUBBLE_SIGN_IN/*ACCESS_POINT_PUNDIX_WALLET*/,
+           /*is_source_accelerator=*/false);
+  }
+  else
+  {
   browser_->window()->ShowAvatarBubbleFromAvatarButton(
       BrowserWindow::AVATAR_BUBBLE_MODE_DEFAULT,
       signin_metrics::AccessPoint::ACCESS_POINT_AVATAR_BUBBLE_SIGN_IN,
       /*is_source_accelerator=*/false);
+  }
 }
 
 void AvatarToolbarButton::AfterPropertyChange(const void* key,

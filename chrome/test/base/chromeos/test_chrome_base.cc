@@ -16,25 +16,23 @@
 
 namespace test {
 
-TestChromeBase::TestChromeBase(content::ContentMainParams params)
-    : params_(std::move(params)) {
+TestChromeBase::TestChromeBase(const content::ContentMainParams& params)
+    : params_(params) {
   auto created_main_parts_closure =
-      base::BindOnce(&TestChromeBase::CreatedBrowserMainPartsImpl,
-                     weak_ptr_factory_.GetWeakPtr());
-  params_.created_main_parts_closure = std::move(created_main_parts_closure);
+      std::make_unique<content::CreatedMainPartsClosure>(
+          base::BindOnce(&TestChromeBase::CreatedBrowserMainPartsImpl,
+                         weak_ptr_factory_.GetWeakPtr()));
+  params_.created_main_parts_closure = created_main_parts_closure.release();
 }
 
 TestChromeBase::~TestChromeBase() = default;
 
 int TestChromeBase::Start() {
-  // Can only Start()'ed once.
-  DCHECK(params_.created_main_parts_closure);
-
   int rv = 0;
   if (base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kHeadless)) {
-    rv = headless::HeadlessShellMain(std::move(params_));
+    rv = headless::HeadlessShellMain(params_);
   } else {
-    rv = content::ContentMain(std::move(params_));
+    rv = content::ContentMain(params_);
   }
   return rv;
 }

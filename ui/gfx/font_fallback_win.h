@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 
+#include "base/macros.h"
 #include "ui/gfx/font.h"
 #include "ui/gfx/font_fallback.h"
 

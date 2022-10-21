@@ -40,7 +40,6 @@ import org.chromium.blink.mojom.CommonCredentialInfo;
 import org.chromium.blink.mojom.GetAssertionAuthenticatorResponse;
 import org.chromium.blink.mojom.MakeCredentialAuthenticatorResponse;
 import org.chromium.blink.mojom.PublicKeyCredentialRequestOptions;
-import org.chromium.blink.mojom.ResidentKeyRequirement;
 import org.chromium.blink.mojom.UvmEntry;
 import org.chromium.mojo_base.mojom.TimeDelta;
 
@@ -340,12 +339,16 @@ public final class Fido2Helper {
 
     private static AuthenticatorSelectionCriteria convertSelectionCriteria(
             org.chromium.blink.mojom.AuthenticatorSelectionCriteria mojoSelection) {
-        if (mojoSelection == null) return null;
-
-        return new AuthenticatorSelectionCriteria.Builder()
-                .setAttachment(convertAttachment(mojoSelection.authenticatorAttachment))
-                .setRequireResidentKey(mojoSelection.residentKey == ResidentKeyRequirement.REQUIRED)
-                .build();
+        AuthenticatorSelectionCriteria selection = null;
+        if (mojoSelection != null) {
+            /* Sets UserVerificationRequirement and RequireResidentKey to default until the FIDO2
+             * API supports the other options. */
+            selection =
+                    new AuthenticatorSelectionCriteria.Builder()
+                            .setAttachment(convertAttachment(mojoSelection.authenticatorAttachment))
+                            .build();
+        }
+        return selection;
     }
 
     private static List<Transport> toTransportList(int[] mojoTransports) {

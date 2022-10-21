@@ -8,6 +8,7 @@
 
 #include "base/allocator/buildflags.h"
 #include "base/check.h"
+#include "base/macros.h"
 #include "base/run_loop.h"
 #include "base/test/task_environment.h"
 #include "build/build_config.h"

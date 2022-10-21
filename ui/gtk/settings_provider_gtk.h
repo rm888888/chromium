@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+#include "base/macros.h"
 #include "ui/base/glib/glib_signal.h"
 #include "ui/gtk/settings_provider.h"
 #include "ui/views/linux_ui/linux_ui.h"

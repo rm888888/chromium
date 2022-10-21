@@ -25,8 +25,8 @@
 using content::NavigationSimulator;
 using content::RenderFrameHost;
 using content::RenderFrameHostTester;
-using LargestContentTextOrImage =
-    page_load_metrics::ContentfulPaintTimingInfo::LargestContentTextOrImage;
+using LargestContentType =
+    page_load_metrics::ContentfulPaintTimingInfo::LargestContentType;
 using UserInteractionLatenciesPtr =
     page_load_metrics::mojom::UserInteractionLatenciesPtr;
 using UserInteractionLatencies =
@@ -72,17 +72,38 @@ class UmaPageLoadMetricsObserverTest
         internal::kHistogramLargestContentfulPaintMainFrame, 0);
     tester()->histogram_tester().ExpectTotalCount(
         internal::kHistogramLargestContentfulPaintMainFrameContentType, 0);
+
+    // Experimental values
+    tester()->histogram_tester().ExpectTotalCount(
+        internal::kDeprecatedHistogramLargestContentfulPaint, 0);
+    tester()->histogram_tester().ExpectTotalCount(
+        internal::kHistogramExperimentalLargestContentfulPaintContentType, 0);
+    tester()->histogram_tester().ExpectTotalCount(
+        internal::kDeprecatedHistogramLargestContentfulPaintMainFrame, 0);
+    tester()->histogram_tester().ExpectTotalCount(
+        internal::
+            kHistogramExperimentalLargestContentfulPaintMainFrameContentType,
+        0);
   }
 
-  void TestAllFramesLCP(int value, LargestContentTextOrImage text_or_image) {
+  void TestAllFramesLCP(int value, LargestContentType type) {
     EXPECT_THAT(tester()->histogram_tester().GetAllSamples(
                     internal::kHistogramLargestContentfulPaint),
                 testing::ElementsAre(base::Bucket(value, 1)));
+    EXPECT_THAT(tester()->histogram_tester().GetAllSamples(
+                    internal::kHistogramLargestContentfulPaintContentType),
+                testing::ElementsAre(base::Bucket(
+                    static_cast<base::HistogramBase::Sample>(type), 1)));
+
+    // Experimental values
+    EXPECT_THAT(tester()->histogram_tester().GetAllSamples(
+                    internal::kDeprecatedHistogramLargestContentfulPaint),
+                testing::ElementsAre(base::Bucket(value, 1)));
     EXPECT_THAT(
         tester()->histogram_tester().GetAllSamples(
-            internal::kHistogramLargestContentfulPaintContentType),
-        testing::ElementsAre(base::Bucket(
-            static_cast<base::HistogramBase::Sample>(text_or_image), 1)));
+            internal::kHistogramExperimentalLargestContentfulPaintContentType),
+        testing::ElementsAre(
+            base::Bucket(static_cast<base::HistogramBase::Sample>(type), 1)));
   }
 
   void TestCrossSiteSubFrameLCP(int value) {
@@ -92,15 +113,27 @@ class UmaPageLoadMetricsObserverTest
         testing::ElementsAre((base::Bucket(value, 1))));
   }
 
-  void TestMainFrameLCP(int value, LargestContentTextOrImage text_or_image) {
+  void TestMainFrameLCP(int value, LargestContentType type) {
     EXPECT_THAT(tester()->histogram_tester().GetAllSamples(
                     internal::kHistogramLargestContentfulPaintMainFrame),
                 testing::ElementsAre(base::Bucket(value, 1)));
     EXPECT_THAT(
         tester()->histogram_tester().GetAllSamples(
             internal::kHistogramLargestContentfulPaintMainFrameContentType),
-        testing::ElementsAre(base::Bucket(
-            static_cast<base::HistogramBase::Sample>(text_or_image), 1)));
+        testing::ElementsAre(
+            base::Bucket(static_cast<base::HistogramBase::Sample>(type), 1)));
+
+    // Experimental values
+    EXPECT_THAT(
+        tester()->histogram_tester().GetAllSamples(
+            internal::kDeprecatedHistogramLargestContentfulPaintMainFrame),
+        testing::ElementsAre(base::Bucket(value, 1)));
+    EXPECT_THAT(
+        tester()->histogram_tester().GetAllSamples(
+            internal::
+                kHistogramExperimentalLargestContentfulPaintMainFrameContentType),
+        testing::ElementsAre(
+            base::Bucket(static_cast<base::HistogramBase::Sample>(type), 1)));
   }
 
   void TestEmptyMainFrameLCP() {
@@ -114,6 +147,21 @@ class UmaPageLoadMetricsObserverTest
             ->histogram_tester()
             .GetAllSamples(
                 internal::kHistogramLargestContentfulPaintMainFrameContentType)
+            .empty());
+
+    // Experimental LCP histograms
+    EXPECT_TRUE(
+        tester()
+            ->histogram_tester()
+            .GetAllSamples(
+                internal::kDeprecatedHistogramLargestContentfulPaintMainFrame)
+            .empty());
+    EXPECT_TRUE(
+        tester()
+            ->histogram_tester()
+            .GetAllSamples(
+                internal::
+                    kHistogramExperimentalLargestContentfulPaintMainFrameContentType)
             .empty());
   }
 
@@ -687,6 +735,12 @@ TEST_F(UmaPageLoadMetricsObserverTest, BytesAndResourcesCounted) {
       internal::kHistogramPageLoadCacheBytes, 1);
   tester()->histogram_tester().ExpectTotalCount(
       internal::kHistogramPageLoadNetworkBytesIncludingHeaders, 1);
+  tester()->histogram_tester().ExpectTotalCount(
+      internal::kHistogramTotalCompletedResources, 1);
+  tester()->histogram_tester().ExpectTotalCount(
+      internal::kHistogramNetworkCompletedResources, 1);
+  tester()->histogram_tester().ExpectTotalCount(
+      internal::kHistogramCacheCompletedResources, 1);
 }
 
 TEST_F(UmaPageLoadMetricsObserverTest, CpuUsageCounted) {
@@ -737,6 +791,7 @@ TEST_F(UmaPageLoadMetricsObserverTest, LargestImageLoading) {
   timing.paint_timing->largest_contentful_paint->largest_text_paint =
       base::Milliseconds(4780);
   timing.paint_timing->largest_contentful_paint->largest_text_paint_size = 70u;
+  PopulateExperimentalLCP(timing.paint_timing);
   PopulateRequiredTimingFields(&timing);
 
   NavigateAndCommit(GURL(kDefaultTestUrl));
@@ -762,6 +817,7 @@ TEST_F(UmaPageLoadMetricsObserverTest, LargestImageLoadingSmallerThanText) {
   timing.paint_timing->largest_contentful_paint->largest_text_paint =
       base::Milliseconds(4780);
   timing.paint_timing->largest_contentful_paint->largest_text_paint_size = 120u;
+  PopulateExperimentalLCP(timing.paint_timing);
   PopulateRequiredTimingFields(&timing);
 
   NavigateAndCommit(GURL(kDefaultTestUrl));
@@ -769,7 +825,7 @@ TEST_F(UmaPageLoadMetricsObserverTest, LargestImageLoadingSmallerThanText) {
   // Navigate again to force histogram recording.
   NavigateAndCommit(GURL(kDefaultTestUrl2));
 
-  TestAllFramesLCP(4780, LargestContentTextOrImage::kText);
+  TestAllFramesLCP(4780, LargestContentType::kText);
 }
 
 TEST_F(UmaPageLoadMetricsObserverTest,
@@ -790,6 +846,7 @@ TEST_F(UmaPageLoadMetricsObserverTest,
       base::Milliseconds(4780);
   subframe_timing.paint_timing->largest_contentful_paint
       ->largest_image_paint_size = 100u;
+  PopulateExperimentalLCP(subframe_timing.paint_timing);
   PopulateRequiredTimingFields(&subframe_timing);
 
   // Commit the main frame and a subframe.
@@ -807,7 +864,7 @@ TEST_F(UmaPageLoadMetricsObserverTest,
   // Navigate again to force histogram recording in the main frame.
   NavigateAndCommit(GURL(kDefaultTestUrl2));
 
-  TestAllFramesLCP(4780, LargestContentTextOrImage::kImage);
+  TestAllFramesLCP(4780, LargestContentType::kImage);
   TestEmptyMainFrameLCP();
 }
 
@@ -833,6 +890,7 @@ TEST_F(UmaPageLoadMetricsObserverTest,
       base::Milliseconds(500);
   subframe_timing.paint_timing->largest_contentful_paint
       ->largest_text_paint_size = 80u;
+  PopulateExperimentalLCP(subframe_timing.paint_timing);
   PopulateRequiredTimingFields(&subframe_timing);
 
   // Commit the main frame and a subframe.
@@ -864,6 +922,7 @@ TEST_F(UmaPageLoadMetricsObserverTest,
   timing.paint_timing->largest_contentful_paint->largest_image_paint =
       base::Milliseconds(4780);
   timing.paint_timing->largest_contentful_paint->largest_image_paint_size = 50u;
+  PopulateExperimentalLCP(timing.paint_timing);
   PopulateRequiredTimingFields(&timing);
 
   page_load_metrics::mojom::PageLoadTiming subframe_timing;
@@ -887,8 +946,8 @@ TEST_F(UmaPageLoadMetricsObserverTest,
   // Navigate again to force histogram recording in the main frame.
   NavigateAndCommit(GURL(kDefaultTestUrl2));
 
-  TestAllFramesLCP(4780, LargestContentTextOrImage::kImage);
-  TestMainFrameLCP(4780, LargestContentTextOrImage::kImage);
+  TestAllFramesLCP(4780, LargestContentType::kImage);
+  TestMainFrameLCP(4780, LargestContentType::kImage);
 }
 
 // This is to test whether LargestContentfulPaintAllFrames could merge
@@ -906,6 +965,7 @@ TEST_F(UmaPageLoadMetricsObserverTest,
   timing.paint_timing->largest_contentful_paint->largest_image_paint =
       base::Milliseconds(9382);
   timing.paint_timing->largest_contentful_paint->largest_image_paint_size = 50u;
+  PopulateExperimentalLCP(timing.paint_timing);
   PopulateRequiredTimingFields(&timing);
 
   // Create a candidate in subframe with a larger size.
@@ -916,6 +976,7 @@ TEST_F(UmaPageLoadMetricsObserverTest,
       base::Milliseconds(4780);
   subframe_timing.paint_timing->largest_contentful_paint
       ->largest_image_paint_size = 100u;
+  PopulateExperimentalLCP(subframe_timing.paint_timing);
   PopulateRequiredTimingFields(&subframe_timing);
 
   // Commit the main frame and a subframe.
@@ -933,8 +994,8 @@ TEST_F(UmaPageLoadMetricsObserverTest,
   // Navigate again to force histogram recording in the main frame.
   NavigateAndCommit(GURL(kDefaultTestUrl2));
 
-  TestAllFramesLCP(4780, LargestContentTextOrImage::kImage);
-  TestMainFrameLCP(9382, LargestContentTextOrImage::kImage);
+  TestAllFramesLCP(4780, LargestContentType::kImage);
+  TestMainFrameLCP(9382, LargestContentType::kImage);
 }
 
 // This is to test whether LargestContentfulPaintAllFrames could merge
@@ -951,6 +1012,7 @@ TEST_F(UmaPageLoadMetricsObserverTest,
   timing.paint_timing->largest_contentful_paint->largest_text_paint =
       base::Milliseconds(4780);
   timing.paint_timing->largest_contentful_paint->largest_text_paint_size = 100u;
+  PopulateExperimentalLCP(timing.paint_timing);
   PopulateRequiredTimingFields(&timing);
 
   // Create a candidate in subframe with a smaller size.
@@ -961,6 +1023,7 @@ TEST_F(UmaPageLoadMetricsObserverTest,
       base::Milliseconds(300);
   subframe_timing.paint_timing->largest_contentful_paint
       ->largest_text_paint_size = 50u;
+  PopulateExperimentalLCP(subframe_timing.paint_timing);
   PopulateRequiredTimingFields(&subframe_timing);
 
   // Commit the main frame and a subframe.
@@ -978,8 +1041,8 @@ TEST_F(UmaPageLoadMetricsObserverTest,
   // Navigate again to force histogram recording in the main frame.
   NavigateAndCommit(GURL(kDefaultTestUrl2));
 
-  TestAllFramesLCP(4780, LargestContentTextOrImage::kText);
-  TestMainFrameLCP(4780, LargestContentTextOrImage::kText);
+  TestAllFramesLCP(4780, LargestContentType::kText);
+  TestMainFrameLCP(4780, LargestContentType::kText);
 }
 
 // This tests a trade-off we have made - aggregating all subframe candidates,
@@ -1002,6 +1065,7 @@ TEST_F(UmaPageLoadMetricsObserverTest,
       base::Milliseconds(4780);
   subframe_timing.paint_timing->largest_contentful_paint
       ->largest_image_paint_size = 50u;
+  PopulateExperimentalLCP(subframe_timing.paint_timing);
   PopulateRequiredTimingFields(&subframe_timing);
 
   // Commit the main frame and a subframe.
@@ -1020,13 +1084,14 @@ TEST_F(UmaPageLoadMetricsObserverTest,
       base::Milliseconds(300);
   subframe_timing.paint_timing->largest_contentful_paint
       ->largest_image_paint_size = 10u;
+  PopulateExperimentalLCP(subframe_timing.paint_timing);
   tester()->SimulateTimingUpdate(subframe_timing, subframe);
 
   // Navigate again to force histogram recording in the main frame.
   NavigateAndCommit(GURL(kDefaultTestUrl2));
 
   // Ensure that the largest_image_paint timing for the main frame is recorded.
-  TestAllFramesLCP(4780, LargestContentTextOrImage::kImage);
+  TestAllFramesLCP(4780, LargestContentType::kImage);
 }
 
 // This tests a trade-off we have made - aggregating all subframe candidates,
@@ -1050,6 +1115,7 @@ TEST_F(
       base::Milliseconds(4780);
   subframe_timing.paint_timing->largest_contentful_paint
       ->largest_image_paint_size = 10u;
+  PopulateExperimentalLCP(subframe_timing.paint_timing);
   PopulateRequiredTimingFields(&subframe_timing);
 
   // Commit the main frame and a subframe.
@@ -1068,13 +1134,14 @@ TEST_F(
       base::Milliseconds(990);
   subframe_timing.paint_timing->largest_contentful_paint
       ->largest_image_paint_size = 50u;
+  PopulateExperimentalLCP(subframe_timing.paint_timing);
   tester()->SimulateTimingUpdate(subframe_timing, subframe);
 
   // Navigate again to force histogram recording in the main frame.
   NavigateAndCommit(GURL(kDefaultTestUrl2));
 
   // Ensure that the largest_image_paint timing for the main frame is recorded.
-  TestAllFramesLCP(990, LargestContentTextOrImage::kImage);
+  TestAllFramesLCP(990, LargestContentType::kImage);
 }
 
 TEST_F(UmaPageLoadMetricsObserverTest, LargestContentfulPaint_NoTextOrImage) {
@@ -1084,6 +1151,7 @@ TEST_F(UmaPageLoadMetricsObserverTest, LargestContentfulPaint_NoTextOrImage) {
   // When the size is 0, the timing is regarded as not set and should be
   // excluded from recording to UMA.
   timing.paint_timing->largest_contentful_paint->largest_text_paint_size = 0u;
+  PopulateExperimentalLCP(timing.paint_timing);
   PopulateRequiredTimingFields(&timing);
 
   NavigateAndCommit(GURL(kDefaultTestUrl));
@@ -1102,6 +1170,7 @@ TEST_F(UmaPageLoadMetricsObserverTest, LargestContentfulPaint_OnlyText) {
   timing.paint_timing->largest_contentful_paint->largest_text_paint =
       base::Milliseconds(4780);
   timing.paint_timing->largest_contentful_paint->largest_text_paint_size = 100;
+  PopulateExperimentalLCP(timing.paint_timing);
   PopulateRequiredTimingFields(&timing);
 
   NavigateAndCommit(GURL(kDefaultTestUrl));
@@ -1109,7 +1178,7 @@ TEST_F(UmaPageLoadMetricsObserverTest, LargestContentfulPaint_OnlyText) {
   // Navigate again to force histogram recording.
   NavigateAndCommit(GURL(kDefaultTestUrl2));
 
-  TestAllFramesLCP(4780, LargestContentTextOrImage::kText);
+  TestAllFramesLCP(4780, LargestContentType::kText);
 }
 
 TEST_F(UmaPageLoadMetricsObserverTest, LargestContentfulPaint_OnlyImage) {
@@ -1120,6 +1189,7 @@ TEST_F(UmaPageLoadMetricsObserverTest, LargestContentfulPaint_OnlyImage) {
   timing.paint_timing->largest_contentful_paint->largest_image_paint =
       base::Milliseconds(4780);
   timing.paint_timing->largest_contentful_paint->largest_image_paint_size = 100;
+  PopulateExperimentalLCP(timing.paint_timing);
   PopulateRequiredTimingFields(&timing);
 
   NavigateAndCommit(GURL(kDefaultTestUrl));
@@ -1127,7 +1197,7 @@ TEST_F(UmaPageLoadMetricsObserverTest, LargestContentfulPaint_OnlyImage) {
   // Navigate again to force histogram recording.
   NavigateAndCommit(GURL(kDefaultTestUrl2));
 
-  TestAllFramesLCP(4780, LargestContentTextOrImage::kImage);
+  TestAllFramesLCP(4780, LargestContentType::kImage);
 }
 
 TEST_F(UmaPageLoadMetricsObserverTest,
@@ -1142,6 +1212,7 @@ TEST_F(UmaPageLoadMetricsObserverTest,
   timing.paint_timing->largest_contentful_paint->largest_text_paint =
       base::Milliseconds(1000);
   timing.paint_timing->largest_contentful_paint->largest_text_paint_size = 10;
+  PopulateExperimentalLCP(timing.paint_timing);
   PopulateRequiredTimingFields(&timing);
 
   NavigateAndCommit(GURL(kDefaultTestUrl));
@@ -1149,7 +1220,7 @@ TEST_F(UmaPageLoadMetricsObserverTest,
   // Navigate again to force histogram recording.
   NavigateAndCommit(GURL(kDefaultTestUrl2));
 
-  TestAllFramesLCP(4780, LargestContentTextOrImage::kImage);
+  TestAllFramesLCP(4780, LargestContentType::kImage);
 }
 
 TEST_F(UmaPageLoadMetricsObserverTest,
@@ -1164,6 +1235,7 @@ TEST_F(UmaPageLoadMetricsObserverTest,
   timing.paint_timing->largest_contentful_paint->largest_text_paint =
       base::Milliseconds(990);
   timing.paint_timing->largest_contentful_paint->largest_text_paint_size = 100;
+  PopulateExperimentalLCP(timing.paint_timing);
   PopulateRequiredTimingFields(&timing);
 
   NavigateAndCommit(GURL(kDefaultTestUrl));
@@ -1171,7 +1243,7 @@ TEST_F(UmaPageLoadMetricsObserverTest,
   // Navigate again to force histogram recording.
   NavigateAndCommit(GURL(kDefaultTestUrl2));
 
-  TestAllFramesLCP(990, LargestContentTextOrImage::kText);
+  TestAllFramesLCP(990, LargestContentType::kText);
 }
 
 TEST_F(UmaPageLoadMetricsObserverTest,
@@ -1564,6 +1636,7 @@ TEST_F(UmaPageLoadMetricsObserverTest,
   timing.paint_timing->largest_contentful_paint->largest_image_paint =
       base::Milliseconds(9382);
   timing.paint_timing->largest_contentful_paint->largest_image_paint_size = 50u;
+  PopulateExperimentalLCP(timing.paint_timing);
   PopulateRequiredTimingFields(&timing);
 
   // Create a candidate in subframe with a larger size.
@@ -1574,6 +1647,7 @@ TEST_F(UmaPageLoadMetricsObserverTest,
       base::Milliseconds(4780);
   subframe_timing.paint_timing->largest_contentful_paint
       ->largest_image_paint_size = 100u;
+  PopulateExperimentalLCP(subframe_timing.paint_timing);
   PopulateRequiredTimingFields(&subframe_timing);
 
   // Commit the main frame and a subframe.
@@ -1607,6 +1681,7 @@ TEST_F(UmaPageLoadMetricsObserverTest,
   timing.paint_timing->largest_contentful_paint->largest_image_paint =
       base::Milliseconds(900);
   timing.paint_timing->largest_contentful_paint->largest_image_paint_size = 50u;
+  PopulateExperimentalLCP(timing.paint_timing);
   PopulateRequiredTimingFields(&timing);
 
   // Create a candidate in subframe with a smaller size.
@@ -1617,6 +1692,7 @@ TEST_F(UmaPageLoadMetricsObserverTest,
       base::Milliseconds(4780);
   subframe_timing.paint_timing->largest_contentful_paint
       ->largest_image_paint_size = 30u;
+  PopulateExperimentalLCP(subframe_timing.paint_timing);
   PopulateRequiredTimingFields(&subframe_timing);
 
   // Commit the main frame and a subframe.
@@ -1652,6 +1728,7 @@ TEST_F(UmaPageLoadMetricsObserverTest,
   timing.paint_timing->largest_contentful_paint->largest_image_paint =
       base::Milliseconds(900);
   timing.paint_timing->largest_contentful_paint->largest_image_paint_size = 50u;
+  PopulateExperimentalLCP(timing.paint_timing);
   PopulateRequiredTimingFields(&timing);
 
   // Create a candidates in subframes from same-site and cross-site
@@ -1662,6 +1739,7 @@ TEST_F(UmaPageLoadMetricsObserverTest,
       base::Milliseconds(3000);
   subframe_timing.paint_timing->largest_contentful_paint
       ->largest_image_paint_size = 100u;
+  PopulateExperimentalLCP(subframe_timing.paint_timing);
   PopulateRequiredTimingFields(&subframe_timing);
 
   page_load_metrics::mojom::PageLoadTiming subframe_timing2;
@@ -1671,6 +1749,7 @@ TEST_F(UmaPageLoadMetricsObserverTest,
       base::Milliseconds(4780);
   subframe_timing2.paint_timing->largest_contentful_paint
       ->largest_image_paint_size = 30u;
+  PopulateExperimentalLCP(subframe_timing2.paint_timing);
   PopulateRequiredTimingFields(&subframe_timing2);
 
   // Commit the main frame and a subframe.

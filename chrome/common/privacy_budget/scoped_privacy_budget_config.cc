@@ -15,10 +15,6 @@
 
 namespace test {
 
-// Are you happy now linker?
-const int ScopedPrivacyBudgetConfig::kDefaultGeneration;
-const int ScopedPrivacyBudgetConfig::kDefaultExpectedSurfaceCount;
-
 ScopedPrivacyBudgetConfig::Parameters::Parameters() = default;
 ScopedPrivacyBudgetConfig::Parameters::Parameters(const Parameters&) = default;
 ScopedPrivacyBudgetConfig::Parameters::Parameters(Parameters&&) = default;

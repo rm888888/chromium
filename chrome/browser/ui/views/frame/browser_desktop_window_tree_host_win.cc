@@ -13,6 +13,7 @@
 #include <utility>
 
 #include "base/bind.h"
+#include "base/macros.h"
 #include "base/memory/ref_counted_delete_on_sequence.h"
 #include "base/process/process_handle.h"
 #include "base/strings/utf_string_conversions.h"
@@ -20,7 +21,6 @@
 #include "base/task/thread_pool.h"
 #include "base/win/windows_version.h"
 #include "chrome/browser/browser_process.h"
-#include "chrome/browser/headless/headless_mode_util.h"
 #include "chrome/browser/lifetime/application_lifetime.h"
 #include "chrome/browser/profiles/profile_avatar_icon_util.h"
 #include "chrome/browser/profiles/profile_manager.h"
@@ -284,10 +284,7 @@ void BrowserDesktopWindowTreeHostWin::Show(ui::WindowShowState show_state,
     else
       OnHostWorkspaceChanged();
   }
-  // Avoid changing desktop window visibility state when browser is running in
-  // native headless mode.
-  if (!headless::IsChromeNativeHeadless())
-    DesktopWindowTreeHostWin::Show(show_state, restore_bounds);
+  DesktopWindowTreeHostWin::Show(show_state, restore_bounds);
 }
 
 std::string BrowserDesktopWindowTreeHostWin::GetWorkspace() const {

@@ -7,6 +7,8 @@
 
 #include <memory>
 
+#include "base/macros.h"
+#include "chrome/browser/ui/app_list/search/ranking/score_normalizer.h"
 #include "chrome/browser/ui/app_list/search/search_provider.h"
 #include "components/omnibox/browser/autocomplete_controller.h"
 #include "components/omnibox/browser/favicon_cache.h"
@@ -33,8 +35,7 @@ class OmniboxProvider : public SearchProvider,
 
   // SearchProvider overrides:
   void Start(const std::u16string& query) override;
-  void StartZeroState() override;
-  ash::AppListSearchResultType ResultType() const override;
+  ash::AppListSearchResultType ResultType() override;
 
  private:
   // Populates result list from AutocompleteResult.
@@ -57,6 +58,9 @@ class OmniboxProvider : public SearchProvider,
   std::unique_ptr<AutocompleteController> controller_;
 
   FaviconCache favicon_cache_;
+
+  // Score normalizer for Finch experiment. Nullopt if experiment disabled.
+  absl::optional<ScoreNormalizer> normalizer_;
 };
 
 }  // namespace app_list

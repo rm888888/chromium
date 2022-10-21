@@ -1227,8 +1227,8 @@ TEST_F(PasswordAutofillManagerTest, PreviewAndFillEmptyUsernameSuggestion) {
   // Check that preview of the empty username works.
   EXPECT_CALL(*client.mock_driver(),
               PreviewSuggestion(std::u16string(), test_password_));
-  password_autofill_manager_->DidSelectSuggestion(
-      no_username_string, 0 /*not used*/, std::string() /*not used*/);
+  password_autofill_manager_->DidSelectSuggestion(no_username_string,
+                                                  0 /*not used*/);
   testing::Mock::VerifyAndClearExpectations(client.mock_driver());
 
   // Check that fill of the empty username works.
@@ -1528,8 +1528,7 @@ TEST_F(PasswordAutofillManagerTest, FillsSuggestionIfAuthNotAvailable) {
                 FillSuggestion(test_username_, test_password_));
 
     // The authenticator exists, but cannot be used for authentication.
-    EXPECT_CALL(*authenticator_.get(),
-                CanAuthenticate(BiometricAuthRequester::kAutofillSuggestion))
+    EXPECT_CALL(*authenticator_.get(), CanAuthenticate())
         .WillOnce(Return(BiometricsAvailability::kNoHardware));
 
     // Accept the suggestion to start the filing process which tries to
@@ -1581,8 +1580,7 @@ TEST_F(PasswordAutofillManagerTest, FillsSuggestionIfAuthSuccessful) {
         HideAutofillPopup(autofill::PopupHidingReason::kAcceptSuggestion));
 
     // The authenticator exists and is available.
-    EXPECT_CALL(*authenticator_.get(),
-                CanAuthenticate(BiometricAuthRequester::kAutofillSuggestion))
+    EXPECT_CALL(*authenticator_.get(), CanAuthenticate())
         .WillOnce(Return(BiometricsAvailability::kAvailable));
     EXPECT_CALL(*authenticator_.get(),
                 Authenticate(BiometricAuthRequester::kAutofillSuggestion, _))
@@ -1637,8 +1635,7 @@ TEST_F(PasswordAutofillManagerTest, DoesntFillSuggestionIfAuthFailed) {
         HideAutofillPopup(autofill::PopupHidingReason::kAcceptSuggestion));
 
     // The authenticator exists and is available.
-    EXPECT_CALL(*authenticator_.get(),
-                CanAuthenticate(BiometricAuthRequester::kAutofillSuggestion))
+    EXPECT_CALL(*authenticator_.get(), CanAuthenticate())
         .WillOnce(Return(BiometricsAvailability::kAvailable));
     EXPECT_CALL(*authenticator_.get(),
                 Authenticate(BiometricAuthRequester::kAutofillSuggestion, _))
@@ -1680,8 +1677,7 @@ TEST_F(PasswordAutofillManagerTest, CancelsOngoingBiometricAuthOnDestroy) {
       .Times(0);
 
   // The authenticator exists and is available.
-  EXPECT_CALL(*authenticator_.get(),
-              CanAuthenticate(BiometricAuthRequester::kAutofillSuggestion))
+  EXPECT_CALL(*authenticator_.get(), CanAuthenticate())
       .WillOnce(Return(BiometricsAvailability::kAvailable));
   EXPECT_CALL(*authenticator_.get(),
               Authenticate(BiometricAuthRequester::kAutofillSuggestion, _));
@@ -1724,8 +1720,7 @@ TEST_F(PasswordAutofillManagerTest,
       .Times(0);
 
   // The authenticator exists and is available.
-  EXPECT_CALL(*authenticator_.get(),
-              CanAuthenticate(BiometricAuthRequester::kAutofillSuggestion))
+  EXPECT_CALL(*authenticator_.get(), CanAuthenticate())
       .WillOnce(Return(BiometricsAvailability::kAvailable));
   EXPECT_CALL(*authenticator_.get(),
               Authenticate(BiometricAuthRequester::kAutofillSuggestion, _));
@@ -1769,8 +1764,7 @@ TEST_F(PasswordAutofillManagerTest,
       .Times(0);
 
   // The authenticator exists and is available.
-  EXPECT_CALL(*authenticator_.get(),
-              CanAuthenticate(BiometricAuthRequester::kAutofillSuggestion))
+  EXPECT_CALL(*authenticator_.get(), CanAuthenticate())
       .WillOnce(Return(BiometricsAvailability::kAvailable));
   EXPECT_CALL(*authenticator_.get(),
               Authenticate(BiometricAuthRequester::kAutofillSuggestion, _));
@@ -1831,8 +1825,7 @@ TEST_F(PasswordAutofillManagerTest, ShowsWebAuthnSuggestions) {
   EXPECT_CALL(*client.mock_driver(),
               PreviewSuggestion(kName, /*password=*/std::u16string(u"")));
   password_autofill_manager_->DidSelectSuggestion(
-      kName, autofill::POPUP_ITEM_ID_WEBAUTHN_CREDENTIAL,
-      std::string() /*not used*/);
+      kName, autofill::POPUP_ITEM_ID_WEBAUTHN_CREDENTIAL);
   testing::Mock::VerifyAndClearExpectations(client.mock_driver());
 
   // Check that selecting the credential reports back to the client.

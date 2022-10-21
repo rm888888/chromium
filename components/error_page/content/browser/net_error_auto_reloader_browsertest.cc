@@ -7,7 +7,6 @@
 #include <memory>
 #include <utility>
 
-#include "base/memory/raw_ptr.h"
 #include "base/test/bind.h"
 #include "content/public/browser/navigation_controller.h"
 #include "content/public/browser/web_contents.h"
@@ -148,7 +147,7 @@ class DeferNextNavigationThrottleInserter
   }
 
   const content::TestNavigationThrottleInserter throttle_inserter_;
-  raw_ptr<DeferringThrottle> throttle_ = nullptr;
+  DeferringThrottle* throttle_ = nullptr;
   base::RunLoop defer_wait_loop_;
   base::RunLoop finish_wait_loop_;
 };
@@ -555,20 +554,19 @@ class NetErrorAutoReloaderFencedFrameBrowserTest
 };
 
 IN_PROC_BROWSER_TEST_F(NetErrorAutoReloaderFencedFrameBrowserTest,
-                       NoAutoReloadOnFencedFrames) {
+                       NoAutoReloadOnFecnedFrames) {
   const GURL main_url = embedded_test_server()->GetURL("/title1.html");
   EXPECT_TRUE(NavigateToURL(shell(), main_url));
 
   const GURL fenced_frame_url = embedded_test_server()->GetURL("/title2.html");
   content::RenderFrameHost* fenced_frame_host =
       fenced_frame_test_helper().CreateFencedFrame(
-          shell()->web_contents()->GetMainFrame(), fenced_frame_url,
-          net::ERR_BLOCKED_BY_RESPONSE);
-
+          shell()->web_contents()->GetMainFrame(), fenced_frame_url);
+  fenced_frame_host = fenced_frame_test_helper().NavigateFrameInFencedFrameTree(
+      fenced_frame_host, fenced_frame_url);
   // The fenced frame navigation failed since it doesn't have the
   // Supports-Loading-Mode HTTP response header "fenced-frame".
   EXPECT_TRUE(fenced_frame_host->GetLastCommittedOrigin().opaque());
-  EXPECT_TRUE(fenced_frame_host->IsErrorDocument());
   EXPECT_EQ(absl::nullopt, GetCurrentAutoReloadDelay());
 }
 

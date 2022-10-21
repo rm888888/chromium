@@ -9,6 +9,7 @@
 
 #import <Cocoa/Cocoa.h>
 
+#include "base/compiler_specific.h"
 #import "base/mac/scoped_nsautorelease_pool.h"
 #import "base/mac/scoped_nsobject.h"
 #import "base/strings/sys_string_conversions.h"

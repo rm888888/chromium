@@ -11,7 +11,6 @@
 #include <vector>
 
 #include "base/format_macros.h"
-#include "base/memory/raw_ptr.h"
 #include "base/strings/stringprintf.h"
 #include "services/metrics/public/cpp/ukm_decode.h"
 #include "services/metrics/public/cpp/ukm_source.h"
@@ -26,7 +25,7 @@ namespace {
 static const uint64_t BIT_FILTER_LAST32 = 0xffffffffULL;
 
 struct SourceData {
-  raw_ptr<UkmSource> source;
+  UkmSource* source;
   std::vector<mojom::UkmEntry*> entries;
 };
 
@@ -95,7 +94,7 @@ base::Value UkmDebugDataExtractor::GetStructuredData(
 
   ukm_data.SetKey(
       "is_sampling_enabled",
-      base::Value(static_cast<bool>(ukm_service->IsSamplingConfigured())));
+      base::Value(static_cast<bool>(ukm_service->IsSamplingEnabled())));
 
   std::map<SourceId, SourceData> source_data;
   for (const auto& kv : ukm_service->recordings_.sources) {
@@ -108,7 +107,7 @@ base::Value UkmDebugDataExtractor::GetStructuredData(
 
   base::ListValue sources_list;
   for (const auto& kv : source_data) {
-    const auto* src = kv.second.source.get();
+    const auto* src = kv.second.source;
 
     base::DictionaryValue source_value;
     if (src) {

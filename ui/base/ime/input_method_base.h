@@ -10,7 +10,7 @@
 
 #include "base/compiler_specific.h"
 #include "base/component_export.h"
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "build/build_config.h"
@@ -43,7 +43,6 @@ class COMPONENT_EXPORT(UI_BASE_IME) InputMethodBase
   // Overriden from InputMethod.
   void SetDelegate(internal::InputMethodDelegate* delegate) override;
   void OnFocus() override;
-  void OnTouch(ui::EventPointerType pointerType) override;
   void OnBlur() override;
 
 #if defined(OS_WIN)
@@ -62,6 +61,7 @@ class COMPONENT_EXPORT(UI_BASE_IME) InputMethodBase
   // implementation.
   void OnTextInputTypeChanged(const TextInputClient* client) override;
   TextInputType GetTextInputType() const override;
+  void ShowVirtualKeyboardIfEnabled() override;
   void SetVirtualKeyboardVisibilityIfEnabled(bool should_show) override;
 
   void AddObserver(InputMethodObserver* observer) override;
@@ -112,11 +112,11 @@ class COMPONENT_EXPORT(UI_BASE_IME) InputMethodBase
   internal::InputMethodDelegate* delegate() const { return delegate_; }
 
  private:
-  raw_ptr<internal::InputMethodDelegate> delegate_;
+  internal::InputMethodDelegate* delegate_;
 
   void SetFocusedTextInputClientInternal(TextInputClient* client);
 
-  raw_ptr<TextInputClient> text_input_client_ = nullptr;
+  TextInputClient* text_input_client_ = nullptr;
 
   base::ObserverList<InputMethodObserver>::Unchecked observer_list_;
 

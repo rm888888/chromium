@@ -12,6 +12,7 @@
 #include "base/callback.h"
 #include "base/containers/enum_set.h"
 #include "base/location.h"
+#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "base/time/time.h"
 #include "components/keyed_service/core/keyed_service.h"

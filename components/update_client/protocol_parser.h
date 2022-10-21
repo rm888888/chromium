@@ -11,6 +11,7 @@
 #include <string>
 #include <vector>
 
+#include "base/macros.h"
 #include "url/gurl.h"
 
 namespace update_client {

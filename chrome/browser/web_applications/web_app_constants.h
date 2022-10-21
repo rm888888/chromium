@@ -72,7 +72,7 @@ enum class InstallResultCode {
 
   // Failure category:
   // An inter-process request to blink renderer failed.
-  kGetWebAppInstallInfoFailed = 3,
+  kGetWebApplicationInfoFailed = 3,
   // A user previously uninstalled the app, user doesn't want to see it again.
   kPreviouslyUninstalled = 4,
   // The blink renderer used to install the app was destroyed.
@@ -120,10 +120,7 @@ enum class InstallResultCode {
   // shutdown.
   kInstallTaskDestroyed = 25,
 
-  // Web App update due to manifest change failed.
-  kUpdateTaskFailed = 26,
-
-  kMaxValue = kUpdateTaskFailed,
+  kMaxValue = kInstallTaskDestroyed,
 };
 
 // Checks if InstallResultCode is not a failure.
@@ -284,28 +281,15 @@ enum class FileHandlerUpdateAction {
   kNoUpdate = 2,
 };
 
-// Reflects the user's decision to allow or disallow an API such as File
-// Handling. APIs should generally start off as kRequiresPrompt.
 enum class ApiApprovalState {
   kRequiresPrompt = 0,
   kAllowed = 1,
   kDisallowed = 2,
 };
 
-// State concerning whether a particular feature has been enabled at the OS
-// level. For example, with File Handling, this indicates whether an app should
-// be/has been registered with the OS to handle opening certain file types.
-enum class OsIntegrationState {
-  kEnabled = 0,
-  kDisabled = 1,
-};
-
 using LaunchHandler = blink::Manifest::LaunchHandler;
 
 // A result how `WebAppIconDownloader` processed the list of icon urls.
-//
-// Entries should not be renumbered and numeric values should never be reused.
-// Update corresponding enums.xml entry when making changes here.
 enum class IconsDownloadedResult {
   // All the requested icon urls have been processed and `icons_map` populated
   // for successful http responses. `icons_http_results` contains success and
@@ -320,7 +304,6 @@ enum class IconsDownloadedResult {
   // `WebAppIconDownloader::FailAllIfAnyFail()` flag was specified.
   // `icons_http_results` contains the failed url and http status code.
   kAbortedDueToFailure,
-  kMaxValue = kAbortedDueToFailure,
 };
 
 const char* IconsDownloadedResultToString(IconsDownloadedResult result);

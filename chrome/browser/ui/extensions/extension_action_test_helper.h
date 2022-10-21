@@ -10,6 +10,7 @@
 #include <memory>
 #include <string>
 
+#include "base/macros.h"
 #include "extensions/common/extension_id.h"
 #include "ui/gfx/native_widget_types.h"
 

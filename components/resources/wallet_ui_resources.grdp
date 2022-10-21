@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<grit-part>
+  <include name="IDR_WALLET_UI_CSS" file="../wallet_ui/resources/wallet_ui.css" type="BINDATA" />
+  <include name="IDR_WALLET_UI_HTML" file="../wallet_ui/resources/wallet_ui.html" preprocess="true" type="BINDATA" />
+  <include name="IDR_WALLET_UI_JS" file="../wallet_ui/resources/wallet_ui.js" preprocess="true" type="BINDATA" />
+</grit-part>

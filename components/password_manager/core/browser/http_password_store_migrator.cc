@@ -52,11 +52,11 @@ HttpPasswordStoreMigrator::HttpPasswordStoreMigrator(
                           http_origin.DeprecatedGetOriginAsURL().spec(),
                           http_origin);
   http_origin_domain_ = url::Origin::Create(http_origin);
-  store_->GetLogins(form, weak_ptr_factory_.GetWeakPtr());
+  store_->GetLogins(form, this);
 
   PostHSTSQueryForHostAndNetworkContext(
       https_origin, network_context,
-      base::BindOnce(&OnHSTSQueryResultHelper, weak_ptr_factory_.GetWeakPtr()));
+      base::BindOnce(&OnHSTSQueryResultHelper, GetWeakPtr()));
 }
 
 HttpPasswordStoreMigrator::~HttpPasswordStoreMigrator() = default;

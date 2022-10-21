@@ -38,7 +38,6 @@ generate_grd("build_grdp") {
     "select.png",
     "throbber_medium.svg",
     "throbber_small.svg",
-    "throbber_small_dark.svg",
     "dark/icon_search.svg",
   ]
 
@@ -66,10 +65,5 @@ generate_grd("build_grdp") {
       "icon_visibility.svg",
     ]
   }
-
-  if (is_chromeos) {
-    input_files += [ "os_flags_app_icon.svg" ]
-  }
-
   resource_path_prefix = "images"
 }

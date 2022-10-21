@@ -64,7 +64,7 @@ class VIZ_COMMON_EXPORT CopyOutputRequest {
   CopyOutputRequest(const CopyOutputRequest&) = delete;
   CopyOutputRequest& operator=(const CopyOutputRequest&) = delete;
 
-  virtual ~CopyOutputRequest();
+  ~CopyOutputRequest();
 
   // Returns the requested result format.
   ResultFormat result_format() const { return result_format_; }

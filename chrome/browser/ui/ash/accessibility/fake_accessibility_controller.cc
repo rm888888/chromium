@@ -98,13 +98,9 @@ void FakeAccessibilityController::
 
 void FakeAccessibilityController::
     UpdateDictationButtonOnSpeechRecognitionDownloadChanged(
-        int download_progress) {}
+        bool download_in_progress) {}
 
 void FakeAccessibilityController::
     ShowSpeechRecognitionDownloadNotificationForDictation(
         bool succeeded,
         const std::u16string& display_language) {}
-
-void FakeAccessibilityController::UpdateDictationBubble(
-    bool visible,
-    const absl::optional<std::u16string>& text) {}

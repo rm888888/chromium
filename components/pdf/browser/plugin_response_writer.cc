@@ -51,16 +51,9 @@ html {
   margin: 0;
   width: 100%;
 }
-
-embed {
-  left: 0;
-  position: fixed;
-  top: 0;
-}
 </style>
-<div id="sizer"></div>
 <embed type="application/x-google-chrome-pdf" src="$1" original-url="$2"
-    background-color="$4" javascript="$5"$6>
+  background-color="$4" javascript="$5"$6>
 <script type="module">
 $3
 </script>
@@ -69,7 +62,7 @@ $3
   // TODO(crbug.com/1252096): We should load the injected scripts as network
   // resources instead. Until then, feel free to raise this limit as necessary.
   if (stream_info.injected_script)
-    DCHECK_LE(stream_info.injected_script->size(), 16'384u);
+    DCHECK_LE(stream_info.injected_script->size(), 8'192u);
 
   return base::ReplaceStringPlaceholders(
       kResponseTemplate,

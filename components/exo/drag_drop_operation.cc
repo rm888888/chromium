@@ -49,7 +49,7 @@ uint32_t DndActionsToDragOperations(const base::flat_set<DndAction>& actions) {
   for (const DndAction action : actions) {
     switch (action) {
       case DndAction::kNone:
-        [[fallthrough]];
+        FALLTHROUGH;
         // We don't support the ask action
       case DndAction::kAsk:
         break;
@@ -296,13 +296,8 @@ void DragDropOperation::OnFileContentsRead(const std::string& mime_type,
 void DragDropOperation::OnWebCustomDataRead(const std::string& mime_type,
                                             const std::vector<uint8_t>& data) {
   DCHECK(os_exchange_data_);
-#if 0
   base::Pickle pickle;
   pickle.WriteBytes(data.data(), data.size());
-#else
-  LOG(WARNING) << "!!!!!" << __FUNCTION__ << " " << mime_type;
-  base::Pickle pickle(reinterpret_cast<const char*>(data.data()), data.size());
-#endif
   os_exchange_data_->SetPickledData(
       ui::ClipboardFormatType::WebCustomDataType(), pickle);
   mime_type_ = mime_type;
@@ -360,12 +355,6 @@ void DragDropOperation::StartDragDropOperation() {
 
   // The instance deleted during StartDragAndDrop's nested RunLoop.
   if (!weak_ptr)
-    return;
-
-  // In tests, drag_drop_controller_ does not create a nested message loop and
-  // so StartDragAndDrop exits before the drag&drop session finishes. In that
-  // case the cleanup process shouldn't be made.
-  if (drag_drop_controller_->IsDragDropInProgress())
     return;
 
   if (op != DragOperation::kNone) {

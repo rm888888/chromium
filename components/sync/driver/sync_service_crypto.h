@@ -9,7 +9,6 @@
 #include <string>
 #include <vector>
 
-#include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/sequence_checker.h"
 #include "components/signin/public/identity_manager/account_info.h"
@@ -35,9 +34,8 @@ class SyncServiceCrypto : public SyncEncryptionHandler::Observer,
     virtual void CryptoStateChanged() = 0;
     virtual void CryptoRequiredUserActionChanged() = 0;
     virtual void ReconfigureDataTypesDueToCrypto() = 0;
-    virtual void SetEncryptionBootstrapToken(
+    virtual void EncryptionBootstrapTokenChanged(
         const std::string& bootstrap_token) = 0;
-    virtual std::string GetEncryptionBootstrapToken() = 0;
   };
 
   // |delegate| must not be null and must outlive this object.
@@ -84,6 +82,7 @@ class SyncServiceCrypto : public SyncEncryptionHandler::Observer,
   void OnPassphraseAccepted() override;
   void OnTrustedVaultKeyRequired() override;
   void OnTrustedVaultKeyAccepted() override;
+  void OnBootstrapTokenUpdated(const std::string& bootstrap_token) override;
   void OnEncryptedTypesChanged(ModelTypeSet encrypted_types,
                                bool encrypt_everything) override;
   void OnCryptographerStateChanged(Cryptographer* cryptographer,
@@ -145,20 +144,10 @@ class SyncServiceCrypto : public SyncEncryptionHandler::Observer,
   // TrustedVaultClient::GetIsRecoverabilityDegraded().
   void GetIsRecoverabilityDegradedCompleted(bool is_recoverability_degraded);
 
-  // Attempts decryption of |cached_pending_keys| with a |nigori| and, if
-  // successful, resolves the kPassphraseRequired state and populates the
-  // |nigori| to engine. Returns true if successful.
-  bool SetDecryptionNigoriKey(std::unique_ptr<Nigori> nigori);
-
-  // Similar to SetDecryptionPassphrase(), but uses bootstrap token instead of
-  // user provided passphrase. Resolves the kPassphraseRequired state on
-  // successful attempt.
-  void MaybeSetDecryptionKeyFromBootstrapToken();
-
-  const raw_ptr<Delegate> delegate_;
+  Delegate* const delegate_;
 
   // Never null and guaranteed to outlive us.
-  const raw_ptr<TrustedVaultClient> trusted_vault_client_;
+  TrustedVaultClient* const trusted_vault_client_;
 
   // All the mutable state is wrapped in a struct so that it can be easily
   // reset to its default values.
@@ -169,7 +158,7 @@ class SyncServiceCrypto : public SyncEncryptionHandler::Observer,
     State& operator=(State&& other) = default;
 
     // Not-null when the engine is initialized.
-    raw_ptr<SyncEngine> engine = nullptr;
+    SyncEngine* engine = nullptr;
 
     // Populated when the engine is initialized.
     CoreAccountInfo account_info;

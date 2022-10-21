@@ -30,8 +30,7 @@ class JavaServiceRequestSender : public ServiceRequestSender {
 
   void SendRequest(const GURL& url,
                    const std::string& request_body,
-                   ResponseCallback callback,
-                   RpcType rpc_type) override;
+                   ResponseCallback callback) override;
 
   void OnResponse(JNIEnv* env,
                   const base::android::JavaParamRef<jobject>& jcaller,

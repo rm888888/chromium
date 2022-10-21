@@ -6,6 +6,7 @@
 #define CHROME_BROWSER_UI_WEBUI_CHROMEOS_CROSTINI_UPGRADER_CROSTINI_UPGRADER_PAGE_HANDLER_H_
 
 #include "base/callback.h"
+#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "chrome/browser/ash/crostini/crostini_upgrader_ui_delegate.h"
 #include "chrome/browser/ui/webui/chromeos/crostini_upgrader/crostini_upgrader.mojom.h"
@@ -67,7 +68,6 @@ class CrostiniUpgraderPageHandler
   void OnRestoreSucceeded() override;
   void OnRestoreFailed() override;
   void OnCanceled() override;
-  void OnLogFileCreated(const base::FilePath& path) override;
 
  private:
   // The chrome://crostini-upgrader WebUI that triggered the upgrade.

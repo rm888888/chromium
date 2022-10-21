@@ -6,6 +6,7 @@
 
 #include "base/bind.h"
 #include "base/callback_helpers.h"
+#include "base/macros.h"
 #include "base/metrics/histogram_macros.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
@@ -176,16 +177,15 @@ void WebAppUninstallDialogDelegateView::Uninstall() {
 }
 
 void WebAppUninstallDialogDelegateView::ClearWebAppSiteData() {
-  content::ClearSiteData(base::BindRepeating(
-                             [](content::BrowserContext* browser_context) {
-                               return browser_context;
-                             },
-                             base::Unretained(profile_)),
-                         url::Origin::Create(app_start_url_),
-                         /*clear_cookies=*/true,
-                         /*clear_storage=*/true, /*clear_cache=*/true,
-                         /*avoid_closing_connections=*/false,
-                         net::CookiePartitionKey::Todo(), base::DoNothing());
+  content::ClearSiteData(
+      base::BindRepeating(
+          [](content::BrowserContext* browser_context) {
+            return browser_context;
+          },
+          base::Unretained(profile_)),
+      url::Origin::Create(app_start_url_), /*clear_cookies=*/true,
+      /*clear_storage=*/true, /*clear_cache=*/true,
+      /*avoid_closing_connections=*/false, base::DoNothing());
 }
 
 void WebAppUninstallDialogDelegateView::ProcessAutoConfirmValue() {

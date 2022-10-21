@@ -5,10 +5,8 @@
 #ifndef CHROME_BROWSER_UI_VIEWS_PAGE_INFO_PAGE_INFO_BUBBLE_VIEW_H_
 #define CHROME_BROWSER_UI_VIEWS_PAGE_INFO_PAGE_INFO_BUBBLE_VIEW_H_
 
-#include "base/memory/raw_ptr.h"
 #include "chrome/browser/ui/page_info/page_info_dialog.h"
 #include "chrome/browser/ui/views/page_info/page_info_bubble_view_base.h"
-#include "chrome/browser/ui/views/page_info/page_info_history_controller.h"
 #include "chrome/browser/ui/views/page_info/page_info_navigation_handler.h"
 
 class ChromePageInfoUiDelegate;
@@ -16,6 +14,10 @@ class PageSwitcherView;
 class PageInfoViewFactory;
 
 enum class ContentSettingsType;
+
+namespace test {
+class PageInfoBubbleViewTestApi;
+}  // namespace test
 
 // The views implementation of the page info UI.
 class PageInfoBubbleView : public PageInfoBubbleViewBase,
@@ -49,9 +51,12 @@ class PageInfoBubbleView : public PageInfoBubbleViewBase,
   // WebContentsObserver:
   void DidChangeVisibleSecurityState() override;
 
-  PageInfo* presenter_for_testing() { return presenter_.get(); }
-
  private:
+  friend class PageInfoBubbleViewBrowserTest;
+  friend class PageInfoBubbleViewDialogBrowserTest;
+  friend class test::PageInfoBubbleViewTestApi;
+  friend class TrustSafetySentimentServiceBrowserTest;
+
   PageInfoBubbleView(views::View* anchor_view,
                      const gfx::Rect& anchor_rect,
                      gfx::NativeView parent_window,
@@ -66,7 +71,7 @@ class PageInfoBubbleView : public PageInfoBubbleViewBase,
   void WebContentsDestroyed() override;
   void ChildPreferredSizeChanged(views::View* child) override;
 
-  raw_ptr<PageSwitcherView> page_container_ = nullptr;
+  PageSwitcherView* page_container_ = nullptr;
 
   // The presenter that controls the Page Info UI.
   std::unique_ptr<PageInfo> presenter_;
@@ -76,8 +81,6 @@ class PageInfoBubbleView : public PageInfoBubbleViewBase,
   std::unique_ptr<ChromePageInfoUiDelegate> ui_delegate_;
 
   std::unique_ptr<PageInfoViewFactory> view_factory_;
-
-  std::unique_ptr<PageInfoHistoryController> history_controller_;
 
   base::WeakPtrFactory<PageInfoBubbleView> weak_factory_{this};
 };

@@ -12,6 +12,7 @@
 #include "base/threading/sequenced_task_runner_handle.h"
 #include "base/time/time.h"
 #include "build/build_config.h"
+#include "build/chromeos_buildflags.h"
 #include "components/prefs/pref_service.h"
 #include "components/safe_browsing/core/browser/referrer_chain_provider.h"
 #include "components/safe_browsing/core/browser/verdict_cache_manager.h"
@@ -93,21 +94,22 @@ void RecordNetworkResultWithAndWithoutSuffix(const std::string& metric,
                                              const std::string& suffix,
                                              int net_error,
                                              int response_code) {
-  RecordHttpResponseOrErrorCode(metric.c_str(), net_error, response_code);
-  RecordHttpResponseOrErrorCode((metric + suffix).c_str(), net_error,
-                                response_code);
+  V4ProtocolManagerUtil::RecordHttpResponseOrErrorCode(
+      metric.c_str(), net_error, response_code);
+  V4ProtocolManagerUtil::RecordHttpResponseOrErrorCode(
+      (metric + suffix).c_str(), net_error, response_code);
 }
 
 RTLookupRequest::OSType GetRTLookupRequestOSType() {
 #if defined(OS_ANDROID)
   return RTLookupRequest::OS_TYPE_ANDROID;
-#elif defined(OS_CHROMEOS)
+#elif BUILDFLAG(IS_CHROMEOS_ASH)
   return RTLookupRequest::OS_TYPE_CHROME_OS;
 #elif defined(OS_FUCHSIA)
   return RTLookupRequest::OS_TYPE_FUCHSIA;
 #elif defined(OS_IOS)
   return RTLookupRequest::OS_TYPE_IOS;
-#elif defined(OS_LINUX)
+#elif defined(OS_LINUX) || BUILDFLAG(IS_CHROMEOS_LACROS)
   return RTLookupRequest::OS_TYPE_LINUX;
 #elif defined(OS_MAC)
   return RTLookupRequest::OS_TYPE_MAC;
@@ -369,7 +371,6 @@ void RealTimeUrlLookupServiceBase::SendRequest(
   RecordCount100WithAndWithoutSuffix(
       "SafeBrowsing.RT.Request.ReferrerChainLength", GetMetricSuffix(),
       request->referrer_chain().size());
-
   std::string req_data;
   request->SerializeToString(&req_data);
 
@@ -386,8 +387,7 @@ void RealTimeUrlLookupServiceBase::SendRequest(
   // just below.
   SendRequestInternal(std::move(resource_request), req_data, url,
                       access_token_string, std::move(response_callback),
-                      callback_task_runner,
-                      request->population().user_population());
+                      callback_task_runner);
 
   callback_task_runner->PostTask(
       FROM_HERE,
@@ -402,8 +402,7 @@ void RealTimeUrlLookupServiceBase::SendRequestInternal(
     const GURL& url,
     absl::optional<std::string> access_token_string,
     RTLookupResponseCallback response_callback,
-    scoped_refptr<base::SequencedTaskRunner> callback_task_runner,
-    ChromeUserPopulation::UserPopulation user_population) {
+    scoped_refptr<base::SequencedTaskRunner> callback_task_runner) {
   std::unique_ptr<network::SimpleURLLoader> owned_loader =
       network::SimpleURLLoader::Create(std::move(resource_request),
                                        GetTrafficAnnotationTag());
@@ -417,8 +416,7 @@ void RealTimeUrlLookupServiceBase::SendRequestInternal(
       url_loader_factory_.get(),
       base::BindOnce(&RealTimeUrlLookupServiceBase::OnURLLoaderComplete,
                      GetWeakPtr(), url, access_token_string, loader,
-                     user_population, base::TimeTicks::Now(),
-                     std::move(callback_task_runner)));
+                     base::TimeTicks::Now(), std::move(callback_task_runner)));
 
   pending_requests_[owned_loader.release()] = std::move(response_callback);
 }
@@ -427,7 +425,6 @@ void RealTimeUrlLookupServiceBase::OnURLLoaderComplete(
     const GURL& url,
     absl::optional<std::string> access_token_string,
     network::SimpleURLLoader* url_loader,
-    ChromeUserPopulation::UserPopulation user_population,
     base::TimeTicks request_start_time,
     scoped_refptr<base::SequencedTaskRunner> response_callback_task_runner,
     std::unique_ptr<std::string> response_body) {
@@ -470,17 +467,6 @@ void RealTimeUrlLookupServiceBase::OnURLLoaderComplete(
     RecordSparseWithAndWithoutSuffix("SafeBrowsing.RT.Response.VerdictType",
                                      GetMetricSuffix(),
                                      response->threat_info(0).verdict_type());
-
-    std::string enhanced_protection_suffix =
-        user_population == ChromeUserPopulation::ENHANCED_PROTECTION
-            ? "EnhancedProtection"
-            : "NotEnhancedProtection";
-
-    // Log histograms with suffix and avoid using
-    // RecordSparseWithAndWithoutSuffix as it (without) has been logged.
-    base::UmaHistogramSparse(
-        "SafeBrowsing.RT.Response.VerdictType." + enhanced_protection_suffix,
-        response->threat_info(0).verdict_type());
   }
 
   response_callback_task_runner->PostTask(
@@ -524,7 +510,7 @@ std::unique_ptr<RTLookupRequest> RealTimeUrlLookupServiceBase::FillRequestProto(
           request->population().user_population() ==
               ChromeUserPopulation::ENHANCED_PROTECTION);
 
-  if (referrer_chain_provider_) {
+  if (CanAttachReferrerChain() && referrer_chain_provider_) {
     referrer_chain_provider_->IdentifyReferrerChainByPendingEventURL(
         SanitizeURL(url), GetReferrerUserGestureLimit(),
         request->mutable_referrer_chain());

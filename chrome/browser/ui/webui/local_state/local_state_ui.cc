@@ -8,6 +8,7 @@
 
 #include "base/bind.h"
 #include "base/json/json_string_value_serializer.h"
+#include "base/macros.h"
 #include "base/strings/string_util.h"
 #include "base/values.h"
 #include "build/build_config.h"
@@ -49,7 +50,7 @@ class LocalStateUIHandler : public content::WebUIMessageHandler {
  private:
   // Called from JS when the page has loaded. Serializes local state prefs and
   // sends them to the page.
-  void HandleRequestJson(base::Value::ConstListView args);
+  void HandleRequestJson(const base::ListValue* args);
 };
 
 LocalStateUIHandler::LocalStateUIHandler() {
@@ -59,13 +60,13 @@ LocalStateUIHandler::~LocalStateUIHandler() {
 }
 
 void LocalStateUIHandler::RegisterMessages() {
-  web_ui()->RegisterMessageCallback(
+  web_ui()->RegisterDeprecatedMessageCallback(
       "requestJson",
       base::BindRepeating(&LocalStateUIHandler::HandleRequestJson,
                           base::Unretained(this)));
 }
 
-void LocalStateUIHandler::HandleRequestJson(base::Value::ConstListView args) {
+void LocalStateUIHandler::HandleRequestJson(const base::ListValue* args) {
   AllowJavascript();
   base::Value local_state_values =
       g_browser_process->local_state()->GetPreferenceValues(
@@ -82,7 +83,7 @@ void LocalStateUIHandler::HandleRequestJson(base::Value::ConstListView args) {
   if (!result)
     json = "Error loading Local State file.";
 
-  const base::Value& callback_id = args[0];
+  const base::Value& callback_id = args->GetList()[0];
   ResolveJavascriptCallback(callback_id, base::Value(json));
 }
 

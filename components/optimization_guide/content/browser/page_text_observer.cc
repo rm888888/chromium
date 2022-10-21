@@ -320,8 +320,7 @@ PageTextObserver::ConsumerTextDumpRequest::ConsumerTextDumpRequest() = default;
 PageTextObserver::ConsumerTextDumpRequest::~ConsumerTextDumpRequest() = default;
 
 PageTextObserver::PageTextObserver(content::WebContents* web_contents)
-    : content::WebContentsObserver(web_contents),
-      content::WebContentsUserData<PageTextObserver>(*web_contents) {}
+    : content::WebContentsObserver(web_contents) {}
 PageTextObserver::~PageTextObserver() = default;
 
 PageTextObserver* PageTextObserver::GetOrCreateForWebContents(

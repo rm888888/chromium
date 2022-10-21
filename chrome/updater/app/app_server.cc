@@ -10,6 +10,7 @@
 
 #include "base/bind.h"
 #include "base/command_line.h"
+#include "base/containers/contains.h"
 #include "base/logging.h"
 #include "base/memory/scoped_refptr.h"
 #include "base/process/launch.h"
@@ -154,16 +155,12 @@ void AppServer::FirstTaskRun() {
 bool AppServer::SwapVersions(GlobalPrefs* global_prefs) {
   global_prefs->SetSwapping(true);
   PrefsCommitPendingWrites(global_prefs->GetPrefService());
-  if (!SwapInNewVersion())
+  if (!SwapRPCInterfaces())
     return false;
-  if (!global_prefs->GetMigratedLegacyUpdaters()) {
-    if (!MigrateLegacyUpdaters(
-            base::BindRepeating(&PersistedData::RegisterApp,
-                                base::MakeRefCounted<PersistedData>(
-                                    global_prefs->GetPrefService())))) {
-      return false;
-    }
-    global_prefs->SetMigratedLegacyUpdaters();
+  if (!ConvertLegacyUpdaters(base::BindRepeating(
+          &PersistedData::RegisterApp, base::MakeRefCounted<PersistedData>(
+                                           global_prefs->GetPrefService())))) {
+    return false;
   }
   global_prefs->SetActiveVersion(kUpdaterVersion);
   global_prefs->SetSwapping(false);

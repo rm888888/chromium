@@ -7,9 +7,8 @@
 #include <memory>
 #include <string>
 
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/strings/utf_string_conversions.h"
-#include "base/test/task_environment.h"
 #include "testing/gtest/include/gtest/gtest.h"
 #include "ui/events/event.h"
 #include "ui/events/event_constants.h"
@@ -64,7 +63,7 @@ class TestSelectionControllerDelegate : public SelectionControllerDelegate {
   void UpdateSelectionClipboard() override {}
 
  private:
-  raw_ptr<gfx::RenderText> render_text_;
+  gfx::RenderText* render_text_;
 };
 
 class SelectionControllerTest : public ::testing::Test {
@@ -76,8 +75,7 @@ class SelectionControllerTest : public ::testing::Test {
     controller_ = std::make_unique<SelectionController>(delegate_.get());
   }
 
-  SelectionControllerTest()
-      : task_environment_(base::test::TaskEnvironment::MainThreadType::UI) {}
+  SelectionControllerTest() = default;
 
   SelectionControllerTest(const SelectionControllerTest&) = delete;
   SelectionControllerTest& operator=(const SelectionControllerTest&) = delete;
@@ -144,8 +142,6 @@ class SelectionControllerTest : public ::testing::Test {
         ui::MouseEvent(ui::ET_MOUSE_RELEASED, mouse_location_, mouse_location_,
                        last_event_time_, mouse_flags_, button));
   }
-
-  base::test::TaskEnvironment task_environment_;
 
   std::unique_ptr<gfx::RenderText> render_text_;
   std::unique_ptr<TestSelectionControllerDelegate> delegate_;

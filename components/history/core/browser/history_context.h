@@ -5,6 +5,8 @@
 #ifndef COMPONENTS_HISTORY_CORE_BROWSER_HISTORY_CONTEXT_H_
 #define COMPONENTS_HISTORY_CORE_BROWSER_HISTORY_CONTEXT_H_
 
+#include "base/macros.h"
+
 namespace history {
 
 // Context is an empty struct that is used to scope the lifetime of

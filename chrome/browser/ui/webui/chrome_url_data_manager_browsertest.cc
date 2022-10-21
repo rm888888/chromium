@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <memory>
 
+#include "base/macros.h"
 #include "base/strings/string_piece.h"
 #include "base/test/scoped_feature_list.h"
 #include "build/build_config.h"
@@ -149,7 +150,7 @@ class ChromeURLDataManagerWebUITrustedTypesTest
  public:
   ChromeURLDataManagerWebUITrustedTypesTest() {
     std::vector<base::Feature> enabled_features;
-#if !BUILDFLAG(IS_CHROMEOS_ASH) && !BUILDFLAG(IS_CHROMEOS_LACROS)
+#if !BUILDFLAG(IS_CHROMEOS_ASH)
     if (GetParam() == std::string("chrome://welcome"))
       enabled_features.push_back(welcome::kForceEnabled);
 #endif
@@ -205,6 +206,9 @@ IN_PROC_BROWSER_TEST_P(ChromeURLDataManagerWebUITrustedTypesTest,
 // This list was derived from chrome://about. :)
 static constexpr const char* const kChromeUrls[] = {
     "chrome://accessibility",
+    // TODO(crbug.com/1114074): DCHECK failure when opening
+    // chrome://appcache-internals.
+    // "chrome://appcache-internals",
     "chrome://autofill-internals",
     "chrome://blob-internals",
     "chrome://bookmarks",
@@ -257,7 +261,6 @@ static constexpr const char* const kChromeUrls[] = {
     "chrome://print",
     "chrome://process-internals",
     "chrome://quota-internals",
-    "chrome://quota-internals-2",
     "chrome://reset-password",
     "chrome://safe-browsing",
     "chrome://serviceworker-internals",
@@ -332,10 +335,10 @@ static constexpr const char* const kChromeUrls[] = {
 #if !defined(OS_CHROMEOS)
     "chrome://apps",
     "chrome://browser-switch",
-    "chrome://welcome",
 #endif
 #if !BUILDFLAG(IS_CHROMEOS_ASH)
     "chrome://signin-email-confirmation",
+    "chrome://welcome",
 #endif
 #if !defined(OS_MAC)
     "chrome://sandbox",

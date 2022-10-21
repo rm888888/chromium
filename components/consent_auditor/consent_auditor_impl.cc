@@ -145,8 +145,8 @@ void ConsentAuditorImpl::RecordLocalConsent(
     const std::string& feature,
     const std::string& description_text,
     const std::string& confirmation_text) {
-  DictionaryPrefUpdateDeprecated consents_update(
-      pref_service_, prefs::kLocalConsentsDictionary);
+  DictionaryPrefUpdate consents_update(pref_service_,
+                                       prefs::kLocalConsentsDictionary);
   base::DictionaryValue* consents = consents_update.Get();
   DCHECK(consents);
 

@@ -88,10 +88,7 @@ const AccountId& GetAccountId(Profile* profile) {
 
 gfx::Size GetDefaultPdfMediaSizeMicrons() {
   PrintingContextDelegate delegate;
-  // The `PrintingContext` for "Save as PDF" does need to make system printing
-  // calls.
-  auto printing_context(
-      PrintingContext::Create(&delegate, /*skip_system_calls=*/false));
+  auto printing_context(PrintingContext::Create(&delegate));
   if (mojom::ResultCode::kSuccess != printing_context->UsePdfSettings() ||
       printing_context->settings().device_units_per_inch() <= 0) {
     return gfx::Size();

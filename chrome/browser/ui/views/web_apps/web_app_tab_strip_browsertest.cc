@@ -2,7 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "base/memory/raw_ptr.h"
 #include "base/test/bind.h"
 #include "base/test/scoped_feature_list.h"
 #include "build/build_config.h"
@@ -57,8 +56,8 @@ class WebAppTabStripBrowserTest : public InProcessBrowserTest {
 
   struct App {
     AppId id;
-    raw_ptr<Browser> browser;
-    raw_ptr<BrowserView> browser_view;
+    Browser* browser;
+    BrowserView* browser_view;
     content::WebContents* web_contents;
   };
 
@@ -66,7 +65,7 @@ class WebAppTabStripBrowserTest : public InProcessBrowserTest {
     Profile* profile = browser()->profile();
     GURL start_url = embedded_test_server()->GetURL(kAppPath);
 
-    auto web_app_info = std::make_unique<WebAppInstallInfo>();
+    auto web_app_info = std::make_unique<WebApplicationInfo>();
     web_app_info->start_url = start_url;
     web_app_info->scope = start_url.GetWithoutFilename();
     web_app_info->title = u"Test app";
@@ -151,7 +150,7 @@ IN_PROC_BROWSER_TEST_F(WebAppTabStripBrowserTest, PopOutTabOnInstall) {
         /*dialog_callback=*/
         base::BindLambdaForTesting(
             [](content::WebContents*,
-               std::unique_ptr<WebAppInstallInfo> web_app_info,
+               std::unique_ptr<WebApplicationInfo> web_app_info,
                ForInstallableSite,
                WebAppInstallationAcceptanceCallback acceptance_callback) {
               web_app_info->user_display_mode = DisplayMode::kTabbed;
@@ -194,8 +193,7 @@ IN_PROC_BROWSER_TEST_F(WebAppTabStripBrowserTest,
 
   // Expect manifest background color prior to page loading.
   {
-    ASSERT_FALSE(
-        app.web_contents->IsDocumentOnLoadCompletedInPrimaryMainFrame());
+    ASSERT_FALSE(app.web_contents->IsDocumentOnLoadCompletedInMainFrame());
     EXPECT_EQ(app.browser->app_controller()->GetBackgroundColor().value(),
               kAppBackgroundColor);
     EXPECT_EQ(GetTabColor(app.browser_view), kAppBackgroundColor);

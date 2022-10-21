@@ -12,13 +12,10 @@
 #include <vector>
 
 #include "base/files/scoped_file.h"
-#include "base/memory/raw_ptr.h"
 #include "base/memory/ref_counted.h"
 #include "base/task/single_thread_task_runner.h"
-#include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/gfx/geometry/rect.h"
 #include "ui/gfx/gfx_export.h"
-#include "ui/gfx/hdr_metadata.h"
 #include "ui/gfx/overlay_transform.h"
 
 extern "C" {
@@ -80,8 +77,8 @@ class GFX_EXPORT SurfaceControl {
     friend class base::RefCounted<Surface>;
     ~Surface();
 
-    raw_ptr<ASurfaceControl> surface_ = nullptr;
-    raw_ptr<ASurfaceControl> owned_surface_ = nullptr;
+    ASurfaceControl* surface_ = nullptr;
+    ASurfaceControl* owned_surface_ = nullptr;
   };
 
   struct GFX_EXPORT SurfaceStats {
@@ -91,7 +88,7 @@ class GFX_EXPORT SurfaceControl {
     SurfaceStats(SurfaceStats&& other);
     SurfaceStats& operator=(SurfaceStats&& other);
 
-    raw_ptr<ASurfaceControl> surface = nullptr;
+    ASurfaceControl* surface = nullptr;
 
     // The fence which is signaled when the reads for the previous buffer for
     // the given |surface| are finished.
@@ -142,8 +139,6 @@ class GFX_EXPORT SurfaceControl {
     void SetDamageRect(const Surface& surface, const gfx::Rect& rect);
     void SetColorSpace(const Surface& surface,
                        const gfx::ColorSpace& color_space);
-    void SetHDRMetadata(const Surface& surface,
-                        const absl::optional<HDRMetadata>& hdr_metadata);
     void SetFrameRate(const Surface& surface, float frame_rate);
     void SetParent(const Surface& surface, Surface* new_parent);
     void SetPosition(const Surface& surface, const gfx::Point& position);

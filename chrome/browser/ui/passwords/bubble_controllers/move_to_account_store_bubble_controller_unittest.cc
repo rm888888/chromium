@@ -5,7 +5,6 @@
 #include "chrome/browser/ui/passwords/bubble_controllers/move_to_account_store_bubble_controller.h"
 
 #include "chrome/browser/signin/identity_manager_factory.h"
-#include "chrome/browser/signin/identity_test_environment_profile_adaptor.h"
 #include "chrome/browser/sync/sync_service_factory.h"
 #include "chrome/browser/ui/passwords/passwords_model_delegate_mock.h"
 #include "chrome/grit/generated_resources.h"
@@ -37,18 +36,13 @@ static std::unique_ptr<KeyedService> BuildTestSyncService(
 class MoveToAccountStoreBubbleControllerTest : public ::testing::Test {
  public:
   MoveToAccountStoreBubbleControllerTest() {
-    TestingProfile::Builder profile_builder;
-    profile_builder.AddTestingFactories(
-        IdentityTestEnvironmentProfileAdaptor::
-            GetIdentityTestEnvironmentFactories());
-    profile_ = profile_builder.Build();
     // Make sure no real SyncService gets created (it's not needed for these
     // tests, and it'd require more setup).
     SyncServiceFactory::GetInstance()->SetTestingFactory(
-        profile(), base::BindRepeating(&BuildTestSyncService));
+        &profile_, base::BindRepeating(&BuildTestSyncService));
 
     web_contents_ =
-        content::WebContentsTester::CreateTestWebContents(profile(), nullptr);
+        content::WebContentsTester::CreateTestWebContents(&profile_, nullptr);
     mock_delegate_ =
         std::make_unique<testing::NiceMock<PasswordsModelDelegateMock>>();
 
@@ -64,7 +58,7 @@ class MoveToAccountStoreBubbleControllerTest : public ::testing::Test {
   ~MoveToAccountStoreBubbleControllerTest() override = default;
 
   PasswordsModelDelegateMock* delegate() { return mock_delegate_.get(); }
-  TestingProfile* profile() { return profile_.get(); }
+  TestingProfile* profile() { return &profile_; }
   MoveToAccountStoreBubbleController* controller() { return controller_.get(); }
   password_manager::MockPasswordFeatureManager* password_feature_manager() {
     return &password_feature_manager_;
@@ -73,7 +67,7 @@ class MoveToAccountStoreBubbleControllerTest : public ::testing::Test {
  private:
   content::BrowserTaskEnvironment task_environment_;
   content::RenderViewHostTestEnabler test_render_host_factories_;
-  std::unique_ptr<TestingProfile> profile_;
+  TestingProfile profile_;
   testing::NiceMock<password_manager::MockPasswordFeatureManager>
       password_feature_manager_;
   std::unique_ptr<content::WebContents> web_contents_;

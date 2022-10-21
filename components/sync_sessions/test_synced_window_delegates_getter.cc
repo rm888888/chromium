@@ -128,12 +128,12 @@ std::string TestSyncedTabDelegate::GetExtensionAppId() const {
   return std::string();
 }
 
-bool TestSyncedTabDelegate::ProfileHasChildAccount() const {
-  return has_child_account_;
+bool TestSyncedTabDelegate::ProfileIsSupervised() const {
+  return is_supervised_;
 }
 
-void TestSyncedTabDelegate::set_has_child_account(bool has_child_account) {
-  has_child_account_ = has_child_account;
+void TestSyncedTabDelegate::set_is_supervised(bool is_supervised) {
+  is_supervised_ = is_supervised;
 }
 
 const std::vector<std::unique_ptr<const sessions::SerializedNavigationEntry>>*
@@ -248,7 +248,7 @@ void PlaceholderTabDelegate::GetSerializedNavigationAtIndex(
   NOTREACHED();
 }
 
-bool PlaceholderTabDelegate::ProfileHasChildAccount() const {
+bool PlaceholderTabDelegate::ProfileIsSupervised() const {
   NOTREACHED();
   return false;
 }

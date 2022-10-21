@@ -3,7 +3,6 @@
 // found in the LICENSE file.
 
 #include <cmath>
-#include <tuple>
 
 #include "base/path_service.h"
 #include "base/run_loop.h"
@@ -448,7 +447,7 @@ class WebAppFrameToolbarBrowserTest_WindowControlsOverlay
     std::vector<blink::mojom::DisplayMode> display_overrides;
     display_overrides.emplace_back(
         web_app::DisplayMode::kWindowControlsOverlay);
-    auto web_app_info = std::make_unique<WebAppInstallInfo>();
+    auto web_app_info = std::make_unique<WebApplicationInfo>();
     web_app_info->start_url = start_url;
     web_app_info->scope = start_url.GetWithoutFilename();
     web_app_info->title = u"A window-controls-overlay app";
@@ -465,7 +464,7 @@ class WebAppFrameToolbarBrowserTest_WindowControlsOverlay
     helper()->SetupGeometryChangeCallback(web_contents);
     content::TitleWatcher title_watcher(web_contents, u"ongeometrychange");
     helper()->browser_view()->ToggleWindowControlsOverlayEnabled();
-    std::ignore = title_watcher.WaitAndGetTitle();
+    ignore_result(title_watcher.WaitAndGetTitle());
   }
 
   bool GetWindowControlOverlayVisibility() {
@@ -490,16 +489,16 @@ class WebAppFrameToolbarBrowserTest_WindowControlsOverlay
                 ->app_browser()
                 ->tab_strip_model()
                 ->GetActiveWebContents()));
-    std::ignore = title_watcher.WaitAndGetTitle();
+    ignore_result(title_watcher.WaitAndGetTitle());
   }
 
   gfx::Rect GetWindowControlOverlayBoundingClientRect() {
     const std::string kRectValueList =
         "var rect = "
-        "[navigator.windowControlsOverlay.getTitlebarAreaRect().x, "
-        "navigator.windowControlsOverlay.getTitlebarAreaRect().y, "
-        "navigator.windowControlsOverlay.getTitlebarAreaRect().width, "
-        "navigator.windowControlsOverlay.getTitlebarAreaRect().height];";
+        "[navigator.windowControlsOverlay.getBoundingClientRect().x, "
+        "navigator.windowControlsOverlay.getBoundingClientRect().y, "
+        "navigator.windowControlsOverlay.getBoundingClientRect().width, "
+        "navigator.windowControlsOverlay.getBoundingClientRect().height];";
     return helper()->GetXYWidthHeightRect(
         helper()->browser_view()->GetActiveWebContents(), kRectValueList,
         "rect");
@@ -532,7 +531,7 @@ class WebAppFrameToolbarBrowserTest_WindowControlsOverlay
     helper()->SetupGeometryChangeCallback(web_contents);
     content::TitleWatcher title_watcher(web_contents, u"ongeometrychange");
     helper()->browser_view()->GetWidget()->SetBounds(new_bounds);
-    std::ignore = title_watcher.WaitAndGetTitle();
+    ignore_result(title_watcher.WaitAndGetTitle());
   }
 
   gfx::Rect GetWindowControlOverlayBoundingClientRectFromEvent() {
@@ -776,16 +775,8 @@ IN_PROC_BROWSER_TEST_F(WebAppFrameToolbarBrowserTest_WindowControlsOverlay,
 }
 #endif  // !BUILDFLAG(IS_CHROMEOS_LACROS)
 
-// TODO(https://crbug.com/1277860): Flaky on Mac builders.
-#if defined(OS_MAC)
-#define MAYBE_WindowControlsOverlayDraggableRegions \
-  DISABLED_WindowControlsOverlayDraggableRegions
-#else
-#define MAYBE_WindowControlsOverlayDraggableRegions \
-  WindowControlsOverlayDraggableRegions
-#endif
 IN_PROC_BROWSER_TEST_F(WebAppFrameToolbarBrowserTest_WindowControlsOverlay,
-                       MAYBE_WindowControlsOverlayDraggableRegions) {
+                       WindowControlsOverlayDraggableRegions) {
   InstallAndLaunchWebApp();
   ToggleWindowControlsOverlayAndWait();
 
@@ -807,7 +798,7 @@ IN_PROC_BROWSER_TEST_F(WebAppFrameToolbarBrowserTest_WindowControlsOverlay,
 
   // Validate that a point marked "app-region: no-drag" within a draggable
   // region is not draggable.
-  gfx::Point non_draggable_point(106, 106);
+  gfx::Point non_draggable_point(105, 105);
   views::View::ConvertPointToTarget(
       helper()->browser_view()->contents_web_view(), frame_view,
       &non_draggable_point);
@@ -824,15 +815,6 @@ IN_PROC_BROWSER_TEST_F(WebAppFrameToolbarBrowserTest_WindowControlsOverlay,
   EXPECT_NE(frame_view->NonClientHitTest(kBorderPoint), HTCAPTION);
   EXPECT_TRUE(helper()->browser_view()->ShouldDescendIntoChildForEventHandling(
       helper()->browser_view()->GetWidget()->GetNativeView(), kBorderPoint));
-
-  // Validate that draggable region does not clear after history.replaceState is
-  // invoked.
-  std::string kHistoryReplaceState =
-      "history.replaceState({ test: 'test' }, null);";
-  EXPECT_TRUE(ExecuteScript(helper()->browser_view()->GetActiveWebContents(),
-                            kHistoryReplaceState));
-  EXPECT_FALSE(helper()->browser_view()->ShouldDescendIntoChildForEventHandling(
-      helper()->browser_view()->GetWidget()->GetNativeView(), draggable_point));
 
   // Validate that the draggable region is reset on navigation and the point is
   // no longer draggable.

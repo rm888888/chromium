@@ -8,7 +8,6 @@
 #include <memory>
 
 #include "base/containers/flat_map.h"
-#include "base/memory/raw_ptr.h"
 #include "base/memory/ref_counted_memory.h"
 #include "base/memory/weak_ptr.h"
 #include "base/sequence_checker.h"
@@ -133,8 +132,7 @@ class DiscardsGraphDumpImpl : public discards::mojom::GraphDump,
       const performance_manager::PageNode* page_node) override {}
   // Ignored.
   void OnLoadingStateChanged(
-      const performance_manager::PageNode* page_node,
-      performance_manager::PageNode::LoadingState previous_state) override {}
+      const performance_manager::PageNode* page_node) override {}
   // Ignored.
   void OnUkmSourceIdChanged(
       const performance_manager::PageNode* page_node) override {}
@@ -242,7 +240,7 @@ class DiscardsGraphDumpImpl : public discards::mojom::GraphDump,
 
   static void OnConnectionError(DiscardsGraphDumpImpl* impl);
 
-  raw_ptr<performance_manager::Graph> graph_ = nullptr;
+  performance_manager::Graph* graph_ = nullptr;
 
   std::unique_ptr<FaviconRequestHelper> favicon_request_helper_;
 

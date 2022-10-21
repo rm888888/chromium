@@ -6,7 +6,6 @@
 
 #include <utility>
 
-#include "base/i18n/number_formatting.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/values.h"
 #include "components/app_restore/app_launch_info.h"
@@ -18,31 +17,38 @@ namespace app_restore {
 RestoreData::RestoreData() = default;
 
 RestoreData::RestoreData(std::unique_ptr<base::Value> restore_data_value) {
-  if (!restore_data_value || !restore_data_value->is_dict()) {
+  base::DictionaryValue* restore_data_dict = nullptr;
+  if (!restore_data_value || !restore_data_value->is_dict() ||
+      !restore_data_value->GetAsDictionary(&restore_data_dict) ||
+      !restore_data_dict) {
     DVLOG(0) << "Fail to parse full restore data. "
              << "Cannot find the full restore data dict.";
     return;
   }
 
-  for (auto iter : restore_data_value->DictItems()) {
-    const std::string& app_id = iter.first;
-    base::Value* value = restore_data_value->FindDictKey(app_id);
-    if (!value || !value->is_dict()) {
+  for (base::DictionaryValue::Iterator iter(*restore_data_dict);
+       !iter.IsAtEnd(); iter.Advance()) {
+    const std::string& app_id = iter.key();
+    base::Value* value = restore_data_dict->FindDictKey(app_id);
+    base::DictionaryValue* data_dict = nullptr;
+    if (!value || !value->is_dict() || !value->GetAsDictionary(&data_dict) ||
+        !data_dict) {
       DVLOG(0) << "Fail to parse full restore data. "
                << "Cannot find the app restore data dict.";
       continue;
     }
 
-    for (auto data_iter : value->DictItems()) {
+    for (base::DictionaryValue::Iterator data_iter(*data_dict);
+         !data_iter.IsAtEnd(); data_iter.Advance()) {
       int window_id = 0;
-      if (!base::StringToInt(data_iter.first, &window_id)) {
+      if (!base::StringToInt(data_iter.key(), &window_id)) {
         DVLOG(0) << "Fail to parse full restore data. "
                  << "Cannot find the valid id.";
         continue;
       }
       app_id_to_launch_list_[app_id][window_id] =
           std::make_unique<AppRestoreData>(
-              std::move(*value->FindDictKey(data_iter.first)));
+              std::move(*data_dict->FindDictKey(data_iter.key())));
     }
   }
 }
@@ -243,19 +249,6 @@ const AppRestoreData* RestoreData::GetAppRestoreData(const std::string& app_id,
     return nullptr;
 
   return data_it->second.get();
-}
-
-std::string RestoreData::ToString() const {
-  if (app_id_to_launch_list_.empty())
-    return "empty";
-
-  std::string result = "( ";
-  for (const auto& entry : app_id_to_launch_list_) {
-    result += base::StringPrintf(
-        "(App ID: %s, Count: %s)", entry.first.c_str(),
-        base::UTF16ToUTF8(base::FormatNumber(entry.second.size())).c_str());
-  }
-  return result + " )";
 }
 
 AppRestoreData* RestoreData::GetAppRestoreDataMutable(const std::string& app_id,

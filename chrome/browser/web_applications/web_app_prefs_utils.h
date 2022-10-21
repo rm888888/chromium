@@ -20,6 +20,10 @@ namespace web_app {
 
 extern const char kWasExternalAppUninstalledByUser[];
 
+extern const char kFileHandlingOriginTrialExpiryTime[];
+
+extern const char kFileHandlersEnabled[];
+
 extern const char kLatestWebAppInstallSource[];
 
 extern const char kIphIgnoreCount[];

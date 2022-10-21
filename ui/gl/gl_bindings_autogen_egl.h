@@ -106,11 +106,6 @@ typedef EGLBoolean(GL_BINDING_CALL* eglExportDMABUFImageQueryMESAProc)(
     int* fourcc,
     int* num_planes,
     EGLuint64KHR* modifiers);
-typedef EGLBoolean(GL_BINDING_CALL* eglExportVkImageANGLEProc)(
-    EGLDisplay dpy,
-    EGLImageKHR image,
-    void* vk_image,
-    void* vk_image_create_info);
 typedef EGLBoolean(GL_BINDING_CALL* eglGetCompositorTimingANDROIDProc)(
     EGLDisplay dpy,
     EGLSurface surface,
@@ -317,7 +312,6 @@ struct ExtensionsEGL {
   bool b_EGL_ANGLE_stream_producer_d3d_texture;
   bool b_EGL_ANGLE_surface_d3d_texture_2d_share_handle;
   bool b_EGL_ANGLE_sync_control_rate;
-  bool b_EGL_ANGLE_vulkan_image;
   bool b_EGL_CHROMIUM_sync_control;
   bool b_EGL_EXT_image_flush_external;
   bool b_EGL_KHR_fence_sync;
@@ -360,7 +354,6 @@ struct ProcsEGL {
   eglDupNativeFenceFDANDROIDProc eglDupNativeFenceFDANDROIDFn;
   eglExportDMABUFImageMESAProc eglExportDMABUFImageMESAFn;
   eglExportDMABUFImageQueryMESAProc eglExportDMABUFImageQueryMESAFn;
-  eglExportVkImageANGLEProc eglExportVkImageANGLEFn;
   eglGetCompositorTimingANDROIDProc eglGetCompositorTimingANDROIDFn;
   eglGetCompositorTimingSupportedANDROIDProc
       eglGetCompositorTimingSupportedANDROIDFn;
@@ -506,10 +499,6 @@ class GL_EXPORT EGLApi {
       int* fourcc,
       int* num_planes,
       EGLuint64KHR* modifiers) = 0;
-  virtual EGLBoolean eglExportVkImageANGLEFn(EGLDisplay dpy,
-                                             EGLImageKHR image,
-                                             void* vk_image,
-                                             void* vk_image_create_info) = 0;
   virtual EGLBoolean eglGetCompositorTimingANDROIDFn(
       EGLDisplay dpy,
       EGLSurface surface,
@@ -713,8 +702,6 @@ class GL_EXPORT EGLApi {
   ::gl::g_current_egl_context->eglExportDMABUFImageMESAFn
 #define eglExportDMABUFImageQueryMESA \
   ::gl::g_current_egl_context->eglExportDMABUFImageQueryMESAFn
-#define eglExportVkImageANGLE \
-  ::gl::g_current_egl_context->eglExportVkImageANGLEFn
 #define eglGetCompositorTimingANDROID \
   ::gl::g_current_egl_context->eglGetCompositorTimingANDROIDFn
 #define eglGetCompositorTimingSupportedANDROID \

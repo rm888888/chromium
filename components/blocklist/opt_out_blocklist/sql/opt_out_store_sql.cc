@@ -6,7 +6,6 @@
 
 #include <map>
 #include <string>
-#include <tuple>
 #include <utility>
 
 #include "base/bind.h"
@@ -108,7 +107,7 @@ void DatabaseErrorCallback(sql::Database* db,
     // or hardware issues, not coding errors at the client level, so displaying
     // the error would probably lead to confusion.  The ignored call signals the
     // test-expectation framework that the error was handled.
-    std::ignore = sql::Database::IsExpectedSqliteError(extended_error);
+    ignore_result(sql::Database::IsExpectedSqliteError(extended_error));
     return;
   }
 }

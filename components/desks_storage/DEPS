@@ -10,5 +10,4 @@ include_rules = [
   "+extensions/common/constants.h",
   "+third_party/re2",
   "+ui/base/ui_base_types.h",
-  "+ui/gfx/geometry"
 ]

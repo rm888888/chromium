@@ -5,6 +5,7 @@
 #include "components/performance_manager/graph/policies/bfcache_policy.h"
 
 #include "base/bind.h"
+#include "base/containers/contains.h"
 #include "base/memory/memory_pressure_listener.h"
 #include "base/task/task_traits.h"
 #include "base/time/time.h"
@@ -72,12 +73,14 @@ void BFCachePolicy::MaybeFlushBFCache(const PageNode* page_node) {
 void BFCachePolicy::MaybeFlushBFCacheLater(const PageNode* page_node) {
   // If |MaybeFlushBFCacheLater| is called while waiting for the timer,
   // |MaybeFlushBFCacheLater| will reset the timer.
-  // The use of base::Unretained(this) is safe here because |this| owns the
-  // timer.
-  page_to_flush_timer_[page_node].Start(
-      FROM_HERE, delay_to_flush_background_tab_,
-      base::BindOnce(&BFCachePolicy::MaybeFlushBFCache, base::Unretained(this),
-                     page_node));
+  if (base::Contains(page_to_flush_timer_, page_node)) {
+    page_to_flush_timer_[page_node].Reset();
+  } else {
+    page_to_flush_timer_[page_node].Start(
+        FROM_HERE, delay_to_flush_background_tab_,
+        base::BindOnce(&BFCachePolicy::MaybeFlushBFCache,
+                       base::Unretained(this), page_node));
+  }
 }
 
 void BFCachePolicy::OnPassedToGraph(Graph* graph) {
@@ -108,9 +111,7 @@ void BFCachePolicy::OnIsVisibleChanged(const PageNode* page_node) {
   }
 }
 
-void BFCachePolicy::OnLoadingStateChanged(
-    const PageNode* page_node,
-    PageNode::LoadingState previous_state) {
+void BFCachePolicy::OnLoadingStateChanged(const PageNode* page_node) {
   if (delay_to_flush_background_tab_.InSeconds() < 0)
     return;
 

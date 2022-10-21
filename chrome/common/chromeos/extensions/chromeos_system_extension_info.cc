@@ -9,18 +9,8 @@
 #include <string>
 
 #include "base/check.h"
-#include "base/command_line.h"
 
 namespace chromeos {
-
-namespace switches {
-
-// Overrides |pwa_origin| field of the ChromeOSSystemExtensionInfo structure.
-// Used for development/testing.
-const char kTelemetryExtensionPwaOriginOverrideForTesting[] =
-    "telemetry-extension-pwa-origin-override-for-testing";
-
-}  // namespace switches
 
 namespace {
 
@@ -53,20 +43,11 @@ size_t GetChromeOSSystemExtensionInfosSize() {
   return getMap().size();
 }
 
-ChromeOSSystemExtensionInfo GetChromeOSExtensionInfoForId(
+const ChromeOSSystemExtensionInfo& GetChromeOSExtensionInfoForId(
     const std::string& id) {
   CHECK(IsChromeOSSystemExtension(id));
 
-  auto info = getMap().at(id);
-
-  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-  if (command_line->HasSwitch(
-          switches::kTelemetryExtensionPwaOriginOverrideForTesting)) {
-    info.pwa_origin = command_line->GetSwitchValueASCII(
-        switches::kTelemetryExtensionPwaOriginOverrideForTesting);
-  }
-
-  return info;
+  return getMap().at(id);
 }
 
 bool IsChromeOSSystemExtension(const std::string& id) {

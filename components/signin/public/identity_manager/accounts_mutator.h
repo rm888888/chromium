@@ -7,6 +7,7 @@
 
 #include <string>
 
+#include "base/macros.h"
 #include "build/chromeos_buildflags.h"
 #include "components/signin/public/base/signin_buildflags.h"
 

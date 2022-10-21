@@ -10,7 +10,7 @@
 #include <memory>
 #include <utility>
 
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "components/bookmarks/browser/bookmark_node_data.h"
 #include "components/bookmarks/browser/bookmark_undo_provider.h"
 #include "components/bookmarks/browser/bookmark_utils.h"
@@ -38,7 +38,7 @@ class BookmarkUndoOperation : public UndoOperation {
   BookmarkModel* bookmark_model() { return bookmark_model_; }
 
  private:
-  raw_ptr<BookmarkModel> bookmark_model_;
+  BookmarkModel* bookmark_model_;
 };
 
 // BookmarkAddOperation -------------------------------------------------------
@@ -114,7 +114,7 @@ class BookmarkRemoveOperation : public BookmarkUndoOperation {
   int GetRedoLabelId() const override;
 
  private:
-  raw_ptr<BookmarkUndoProvider> undo_provider_;
+  BookmarkUndoProvider* undo_provider_;
   const int64_t parent_node_id_;
   const size_t index_;
   std::unique_ptr<BookmarkNode> node_;

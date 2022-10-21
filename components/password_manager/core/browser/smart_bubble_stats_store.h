@@ -6,7 +6,6 @@
 #define COMPONENTS_PASSWORD_MANAGER_CORE_BROWSER_SMART_BUBBLE_STATS_STORE_H_
 
 #include "base/callback_forward.h"
-#include "base/memory/weak_ptr.h"
 #include "base/time/time.h"
 #include "url/gurl.h"
 
@@ -31,7 +30,7 @@ class SmartBubbleStatsStore {
   // Retrieves the statistics for |origin_domain| and notifies |consumer| on
   // completion. The request will be cancelled if the consumer is destroyed.
   virtual void GetSiteStats(const GURL& origin_domain,
-                            base::WeakPtr<PasswordStoreConsumer> consumer) = 0;
+                            PasswordStoreConsumer* consumer) = 0;
 
   // Removes all the stats created in the given date range.
   // If |origin_filter| is not null, only statistics for matching origins are

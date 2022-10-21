@@ -5,6 +5,7 @@
 #ifndef COMPONENTS_SYNC_PREFERENCES_TESTING_PREF_SERVICE_SYNCABLE_H_
 #define COMPONENTS_SYNC_PREFERENCES_TESTING_PREF_SERVICE_SYNCABLE_H_
 
+#include "base/macros.h"
 #include "components/prefs/testing_pref_service.h"
 #include "components/sync_preferences/pref_service_syncable.h"
 
@@ -35,7 +36,6 @@ class TestingPrefServiceSyncable
   TestingPrefServiceSyncable(TestingPrefStore* managed_prefs,
                              TestingPrefStore* supervised_user_prefs,
                              TestingPrefStore* extension_prefs,
-                             TestingPrefStore* standalone_browser_prefs,
                              TestingPrefStore* user_prefs,
                              TestingPrefStore* recommended_prefs,
                              user_prefs::PrefRegistrySyncable* pref_registry,
@@ -61,7 +61,6 @@ TestingPrefServiceBase<sync_preferences::PrefServiceSyncable,
     TestingPrefServiceBase(TestingPrefStore* managed_prefs,
                            TestingPrefStore* supervised_user_prefs,
                            TestingPrefStore* extension_prefs,
-                           TestingPrefStore* standalone_browser_prefs,
                            TestingPrefStore* user_prefs,
                            TestingPrefStore* recommended_prefs,
                            user_prefs::PrefRegistrySyncable* pref_registry,

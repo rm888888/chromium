@@ -9,7 +9,6 @@ import android.content.Context;
 import androidx.annotation.AttrRes;
 import androidx.annotation.ColorInt;
 import androidx.annotation.ColorRes;
-import androidx.annotation.DimenRes;
 
 import com.google.android.material.color.MaterialColors;
 
@@ -32,20 +31,6 @@ public class SemanticColorUtils {
         }
     }
 
-    private static @ColorInt int resolveSurfaceColorElev(
-            @DimenRes int elevationDimen, @ColorRes int colorRes, Context context) {
-        if (IS_FULL_DYNAMIC_COLORS) {
-            return ChromeColors.getSurfaceColor(context, elevationDimen);
-        } else {
-            return context.getResources().getColor(colorRes);
-        }
-    }
-
-    /** Returns the semantic color value that corresponds to default_bg_color. */
-    public static @ColorInt int getDefaultBgColor(Context context) {
-        return resolve(R.attr.colorSurface, R.color.default_bg_color_baseline, context);
-    }
-
     /** Returns the semantic color value that corresponds to default_text_color. */
     public static @ColorInt int getDefaultTextColor(Context context) {
         return resolve(R.attr.colorOnSurface, R.color.default_text_color_baseline, context);
@@ -53,69 +38,11 @@ public class SemanticColorUtils {
 
     /** Returns the semantic color value that corresponds to default_text_color_accent1. */
     public static @ColorInt int getDefaultTextColorAccent1(Context context) {
-        return resolve(R.attr.colorPrimary, R.color.default_text_color_blue_baseline, context);
-    }
-
-    /** Returns the semantic color value that corresponds to default_icon_color. */
-    public static @ColorInt int getDefaultIconColor(Context context) {
-        return resolve(R.attr.colorOnSurface, R.color.default_icon_color_baseline, context);
-    }
-
-    /** Returns the semantic color value that corresponds to default_icon_color_inverse. */
-    public static @ColorInt int getDefaultIconColorInverse(Context context) {
-        return resolve(
-                R.attr.colorOnSurfaceInverse, R.color.default_icon_color_inverse_baseline, context);
+        return resolve(R.attr.colorPrimary, R.color.default_text_color_blue, context);
     }
 
     /** Returns the semantic color value that corresponds to default_icon_color_accent1. */
     public static @ColorInt int getDefaultIconColorAccent1(Context context) {
         return resolve(R.attr.colorPrimary, R.color.default_icon_color_accent1_baseline, context);
-    }
-
-    /** Returns the semantic color value that corresponds to divider_line_bg_color. */
-    public static @ColorInt int getDividerLineBgColor(Context context) {
-        return resolve(R.attr.colorSurfaceVariant, R.color.divider_line_bg_color_baseline, context);
-    }
-
-    /** Returns the semantic color value that corresponds to bottom_system_nav_divider_color. */
-    public static @ColorInt int getBottomSystemNavDividerColor(Context context) {
-        return getDividerLineBgColor(context);
-    }
-
-    /** Returns the semantic color value that corresponds to overlay_panel_separator_line_color. */
-    public static @ColorInt int getOverlayPanelSeparatorLineColor(Context context) {
-        return getDividerLineBgColor(context);
-    }
-
-    /** Returns the semantic color value that corresponds to tab_grid_card_divider_tint_color. */
-    public static @ColorInt int getTabGridCardDividerTintColor(Context context) {
-        return getDividerLineBgColor(context);
-    }
-
-    /** Returns the semantic color value that corresponds to default_control_color_active. */
-    public static @ColorInt int getDefaultControlColorActive(Context context) {
-        return resolve(R.attr.colorPrimary, R.color.default_control_color_active_baseline, context);
-    }
-
-    /** Returns the semantic color value that corresponds to progress_bar_foreground. */
-    public static @ColorInt int getProgressBarForeground(Context context) {
-        return getDefaultControlColorActive(context);
-    }
-
-    /** Returns the semantic color value that corresponds to default_bg_color_elev_2. */
-    public static @ColorInt int getDefaultBgColorElev2(Context context) {
-        return resolveSurfaceColorElev(
-                R.dimen.default_elevation_2, R.color.default_bg_color_elev_2_baseline, context);
-    }
-
-    /** Returns the semantic color value that corresponds to navigation_bubble_background_color. */
-    public static @ColorInt int getNavigationBubbleBackgroundColor(Context context) {
-        return getDefaultBgColorElev2(context);
-    }
-
-    // Colors that will be experimented with. This is independent of |IS_FULL_DYNAMIC_COLORS|.
-    /** Returns the semantic color value that corresponds to default_text_color_link. */
-    public static @ColorInt int getDefaultTextColorLink(Context context) {
-        return context.getColor(R.color.default_text_color_link_baseline);
     }
 }

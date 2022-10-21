@@ -10,7 +10,6 @@
 
 #include "base/callback_forward.h"
 #include "base/component_export.h"
-#include "ui/gfx/native_widget_types.h"
 
 namespace ui {
 
@@ -32,10 +31,6 @@ class COMPONENT_EXPORT(UI_BASE) LinuxUiDelegate {
   virtual bool ExportWindowHandle(
       uint32_t parent_widget,
       base::OnceCallback<void(const std::string&)> callback);
-
-  // Only implemented on X11.
-  virtual void SetTransientWindowForParent(gfx::AcceleratedWidget parent,
-                                           gfx::AcceleratedWidget transient);
 
  private:
   static LinuxUiDelegate* instance_;

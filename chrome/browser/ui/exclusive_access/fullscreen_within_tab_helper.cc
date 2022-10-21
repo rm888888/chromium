@@ -5,8 +5,8 @@
 #include "chrome/browser/ui/exclusive_access/fullscreen_within_tab_helper.h"
 
 FullscreenWithinTabHelper::FullscreenWithinTabHelper(
-    content::WebContents* contents)
-    : content::WebContentsUserData<FullscreenWithinTabHelper>(*contents) {}
+    content::WebContents* ignored)
+    : is_fullscreen_within_tab_(false) {}
 
 FullscreenWithinTabHelper::~FullscreenWithinTabHelper() {}
 

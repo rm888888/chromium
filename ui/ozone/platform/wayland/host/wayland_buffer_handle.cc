@@ -11,7 +11,7 @@ WaylandBufferHandle::WaylandBufferHandle(WaylandBufferBacking* backing)
 
 WaylandBufferHandle::~WaylandBufferHandle() {
   if (!released_callback_.is_null())
-    std::move(released_callback_).Run(wl_buffer());
+    std::move(released_callback_).Run();
 }
 
 void WaylandBufferHandle::OnWlBufferCreated(
@@ -24,23 +24,27 @@ void WaylandBufferHandle::OnWlBufferCreated(
   static struct wl_buffer_listener buffer_listener = {
       &WaylandBufferHandle::BufferRelease,
   };
-  if (!backing_->UseExplicitSyncRelease())
-    wl_buffer_add_listener(wl_buffer_.get(), &buffer_listener, this);
+  wl_buffer_add_listener(wl_buffer_.get(), &buffer_listener, this);
 
   if (!created_callback_.is_null())
     std::move(created_callback_).Run();
 }
 
-void WaylandBufferHandle::OnExplicitRelease() {
-  DCHECK(!released_callback_.is_null());
-  released_callback_.Reset();
+void WaylandBufferHandle::Attached() {
+  expected_wl_buffer_releases_++;
+  released_ = false;
+}
+
+void WaylandBufferHandle::Release(gfx::GpuFenceHandle fence) {
+  released_ = true;
+  release_fence_ = std::move(fence);
 }
 
 void WaylandBufferHandle::OnWlBufferRelease(struct wl_buffer* wl_buff) {
   DCHECK_EQ(wl_buff, wl_buffer_.get());
-  DCHECK(!backing_->UseExplicitSyncRelease());
-  if (!released_callback_.is_null())
-    std::move(released_callback_).Run(wl_buff);
+  expected_wl_buffer_releases_--;
+  if (!released_callback_.is_null() && expected_wl_buffer_releases_ == 0)
+    std::move(released_callback_).Run();
 }
 
 base::WeakPtr<WaylandBufferHandle> WaylandBufferHandle::AsWeakPtr() {

@@ -49,7 +49,6 @@ class SideSearchBrowserController
       content::WebContents* source,
       const content::OpenURLParams& params) override;
   void SidePanelAvailabilityChanged(bool should_close) override;
-  void OpenSidePanel() override;
 
   // content::WebContentsObserver:
   void DidFinishNavigation(
@@ -65,12 +64,11 @@ class SideSearchBrowserController
 
   views::WebView* web_view_for_testing() { return web_view_; }
 
-  bool GetSidePanelToggledOpen() const;
-
  private:
   // Gets and sets the toggled state of the side panel. If called with
   // kSideSearchStatePerTab enabled this determines whether the side panel
   // should be open for the currently active tab.
+  bool GetSidePanelToggledOpen() const;
   void SetSidePanelToggledOpen(bool toggled_open);
 
   // Toggles panel visibility on side panel toolbar button press.
@@ -78,6 +76,8 @@ class SideSearchBrowserController
 
   // Closes side panel on close button press.
   void SidePanelCloseButtonPressed();
+
+  void OpenSidePanel();
 
   void CloseSidePanel(
       absl::optional<SideSearchCloseActionType> action = absl::nullopt);

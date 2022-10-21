@@ -6,7 +6,7 @@
 #define CHROME_TEST_MEDIA_ROUTER_MEDIA_ROUTER_UI_FOR_TEST_BASE_H_
 
 #include "base/callback_forward.h"
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "base/test/scoped_feature_list.h"
 #include "chrome/browser/ui/views/media_router/cast_dialog_view.h"
@@ -49,12 +49,18 @@ class MediaRouterUiForTestBase {
   virtual void WaitForAnyRoute() = 0;
   virtual void WaitForDialogShown() = 0;
   virtual void WaitForDialogHidden() = 0;
+  void WaitUntilNoRoutes();
 
   // These methods require that the dialog is shown, and the sink specified by
   // |sink_name| is in the dialog.
   MediaRoute::Id GetRouteIdForSink(const std::string& sink_name) const;
   std::string GetStatusTextForSink(const std::string& sink_name) const;
   std::string GetIssueTextForSink(const std::string& sink_name) const;
+
+  // Sets up a mock file picker that returns |file_url| as the selected file.
+  virtual void SetLocalFile(const GURL& file_url) = 0;
+  // Sets up a mock file picker that fails with |issue|.
+  virtual void SetLocalFileSelectionIssue(const IssueInfo& issue) = 0;
 
   // Called by MediaRouterDialogControllerViews.
   virtual void OnDialogCreated();
@@ -91,8 +97,8 @@ class MediaRouterUiForTestBase {
       WatchType watch_type,
       absl::optional<std::string> sink_name = absl::nullopt) = 0;
 
-  const raw_ptr<content::WebContents> web_contents_;
-  const raw_ptr<MediaRouterDialogControllerViews> dialog_controller_;
+  content::WebContents* const web_contents_;
+  MediaRouterDialogControllerViews* const dialog_controller_;
   absl::optional<std::string> watch_sink_name_;
   WatchType watch_type_ = WatchType::kNone;
   absl::optional<base::OnceClosure> watch_callback_;

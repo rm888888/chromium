@@ -6,7 +6,6 @@
 
 #include <vector>
 
-#include "base/environment.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/strings/utf_string_conversions.h"

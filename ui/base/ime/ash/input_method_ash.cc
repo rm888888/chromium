@@ -9,7 +9,6 @@
 #include <algorithm>
 #include <cstring>
 #include <set>
-#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -175,8 +174,8 @@ void InputMethodAsh::ProcessKeyEventDone(ui::KeyEvent* event, bool is_handled) {
     }
   }
   if (event->type() == ET_KEY_PRESSED || event->type() == ET_KEY_RELEASED) {
-    std::ignore = ProcessKeyEventPostIME(event, is_handled,
-                                         /* stopped_propagation */ false);
+    ignore_result(ProcessKeyEventPostIME(event, is_handled,
+                                         /* stopped_propagation */ false));
   }
   handling_key_event_ = false;
 }
@@ -306,17 +305,7 @@ void InputMethodAsh::OnFocus() {
   ui::IMEBridge* bridge = ui::IMEBridge::Get();
   if (bridge) {
     bridge->SetInputContextHandler(this);
-  }
-}
-
-void InputMethodAsh::OnTouch(ui::EventPointerType pointerType) {
-  TextInputClient* client = GetTextInputClient();
-  if (!client || !IsTextInputClientFocused(client)) {
-    return;
-  }
-  ui::IMEEngineHandlerInterface* engine = GetEngine();
-  if (engine) {
-    engine->OnTouch(pointerType);
+    bridge->MaybeSwitchEngine();
   }
 }
 
@@ -960,20 +949,6 @@ TextInputClient::FocusReason InputMethodAsh::GetClientFocusReason() const {
 bool InputMethodAsh::HasCompositionText() {
   TextInputClient* client = GetTextInputClient();
   return client && client->HasCompositionText();
-}
-
-std::u16string InputMethodAsh::GetCompositionText() {
-  TextInputClient* client = GetTextInputClient();
-  if (!client) {
-    return u"";
-  }
-
-  gfx::Range composition_range;
-  client->GetCompositionTextRange(&composition_range);
-  std::u16string composition_text;
-  client->GetTextFromRange(composition_range, &composition_text);
-
-  return composition_text;
 }
 
 ukm::SourceId InputMethodAsh::GetClientSourceForMetrics() {

@@ -10,6 +10,7 @@
 #include <memory>
 #include <vector>
 
+#include "base/macros.h"
 #include "base/threading/thread_checker.h"
 #include "gpu/vulkan/buildflags.h"
 #include "ui/gl/gl_implementation.h"

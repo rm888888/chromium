@@ -17,7 +17,6 @@
 namespace password_manager {
 namespace {
 constexpr char kAccessToken[] = "access_token";
-constexpr char kApiKey[] = "api_key";
 constexpr char kUsernameHash[] = "ABC";
 constexpr char kEncryptedPayload[] = "dfughidsgfr56";
 
@@ -49,7 +48,6 @@ TEST_F(LeakDetectionRequestTest, ServerError) {
 
   base::MockCallback<LeakDetectionRequest::LookupSingleLeakCallback> callback;
   request().LookupSingleLeak(test_url_loader_factory(), kAccessToken,
-                             /*api_key=*/absl::nullopt,
                              {kUsernameHash, kEncryptedPayload},
                              callback.Get());
   EXPECT_CALL(callback,
@@ -71,7 +69,6 @@ TEST_F(LeakDetectionRequestTest, QuotaLimit) {
 
   base::MockCallback<LeakDetectionRequest::LookupSingleLeakCallback> callback;
   request().LookupSingleLeak(test_url_loader_factory(), kAccessToken,
-                             /*api_key=*/absl::nullopt,
                              {kUsernameHash, kEncryptedPayload},
                              callback.Get());
   EXPECT_CALL(callback, Run(IsNull(), Eq(LeakDetectionError::kQuotaLimit)));
@@ -93,7 +90,6 @@ TEST_F(LeakDetectionRequestTest, MalformedServerResponse) {
 
   base::MockCallback<LeakDetectionRequest::LookupSingleLeakCallback> callback;
   request().LookupSingleLeak(test_url_loader_factory(), kAccessToken,
-                             /*api_key=*/absl::nullopt,
                              {kUsernameHash, kEncryptedPayload},
                              callback.Get());
   EXPECT_CALL(callback,
@@ -117,7 +113,6 @@ TEST_F(LeakDetectionRequestTest, WellformedServerResponse) {
 
   base::MockCallback<LeakDetectionRequest::LookupSingleLeakCallback> callback;
   request().LookupSingleLeak(test_url_loader_factory(), kAccessToken,
-                             /*api_key=*/absl::nullopt,
                              {kUsernameHash, kEncryptedPayload},
                              callback.Get());
   EXPECT_CALL(callback,
@@ -145,7 +140,7 @@ TEST_F(LeakDetectionRequestTest,
 
   base::MockCallback<LeakDetectionRequest::LookupSingleLeakCallback> callback;
   request().LookupSingleLeak(
-      test_url_loader_factory(), /*access_token=*/absl::nullopt, kApiKey,
+      test_url_loader_factory(), /*access_token=*/absl::nullopt,
       {kUsernameHash, kEncryptedPayload}, callback.Get());
   EXPECT_CALL(callback,
               Run(testing::Pointee(SingleLookupResponse()), Eq(absl::nullopt)));

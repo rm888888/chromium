@@ -7,6 +7,7 @@
 
 #include <string>
 
+#include "base/macros.h"
 #include "base/sequence_checker.h"
 #include "base/time/time.h"
 #include "base/version.h"

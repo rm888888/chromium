@@ -21,6 +21,7 @@
 #include "base/json/json_reader.h"
 #include "base/location.h"
 #include "base/logging.h"
+#include "base/macros.h"
 #include "base/rand_util.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
@@ -420,8 +421,9 @@ PrintSystemCUPS::PrintSystemCUPS(
     if (print_system_settings->GetInteger(kCUPSEncryption, &encryption))
       cups_encryption_ = static_cast<http_encryption_t>(encryption);
 
-    notify_delete_ = print_system_settings->FindBoolPath(kCUPSNotifyDelete)
-                         .value_or(notify_delete_);
+    bool notify_delete = true;
+    if (print_system_settings->GetBoolean(kCUPSNotifyDelete, &notify_delete))
+      notify_delete_ = notify_delete;
 
     std::string types;
     if (print_system_settings->GetString(kCUPSSupportedMimeTipes, &types))
@@ -433,15 +435,13 @@ PrintSystemCUPS::PrintSystemCUPS(
 
 void PrintSystemCUPS::InitPrintBackends(
     const base::DictionaryValue* print_system_settings) {
-  if (print_system_settings) {
-    const base::Value* url_list =
-        print_system_settings->FindListKey(kCUPSPrintServerURLs);
-    if (url_list) {
-      for (const base::Value& val : url_list->GetList()) {
-        const std::string* print_server_url = val.GetIfString();
-        if (print_server_url)
-          AddPrintServer(*print_server_url);
-      }
+  const base::ListValue* url_list;
+  if (print_system_settings &&
+      print_system_settings->GetList(kCUPSPrintServerURLs, &url_list)) {
+    for (size_t i = 0; i < url_list->GetList().size(); i++) {
+      std::string print_server_url;
+      if (url_list->GetString(i, &print_server_url))
+        AddPrintServer(print_server_url);
     }
   }
 

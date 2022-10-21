@@ -8,7 +8,6 @@
 #include <memory>
 
 #include "base/callback_forward.h"
-#include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "chrome/browser/web_applications/web_app.h"
 #include "chrome/browser/web_applications/web_app_constants.h"
@@ -117,10 +116,6 @@ class WebAppSyncBridge : public syncer::ModelTypeSyncBridge {
   void RemoveAllowedLaunchProtocol(const AppId& app_id,
                                    const std::string& protocol_scheme);
 
-  // Stores the user's preference for the app's use of the File Handling API.
-  void SetAppFileHandlerApprovalState(const AppId& app_id,
-                                      ApiApprovalState state);
-
   // These methods are used by web apps to add or remove disallowed
   // protocol schemes based on user preference or withdrawal of that preference.
   // Disallowed protocol schemes will never allow web apps to handle launches
@@ -191,8 +186,8 @@ class WebAppSyncBridge : public syncer::ModelTypeSyncBridge {
   void MaybeInstallAppsFromSyncAndPendingInstallation();
 
   std::unique_ptr<WebAppDatabase> database_;
-  const raw_ptr<WebAppRegistrarMutable> registrar_;
-  const raw_ptr<SyncInstallDelegate> install_delegate_;
+  WebAppRegistrarMutable* const registrar_;
+  SyncInstallDelegate* const install_delegate_;
 
   bool is_in_update_ = false;
   bool disable_checks_for_testing_ = false;

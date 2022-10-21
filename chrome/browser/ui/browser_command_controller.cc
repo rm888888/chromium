@@ -13,6 +13,7 @@
 #include "base/containers/contains.h"
 #include "base/debug/debugging_buildflags.h"
 #include "base/debug/profiler.h"
+#include "base/macros.h"
 #include "base/metrics/user_metrics.h"
 #include "build/branding_buildflags.h"
 #include "build/build_config.h"
@@ -399,7 +400,7 @@ bool BrowserCommandController::ExecuteCommandWithDisposition(
       break;
     case IDC_RELOAD_CLEARING_CACHE:
       ClearCache(browser_);
-      [[fallthrough]];
+      FALLTHROUGH;
     case IDC_RELOAD_BYPASSING_CACHE:
       ReloadBypassingCache(browser_, disposition);
       break;
@@ -409,6 +410,11 @@ bool BrowserCommandController::ExecuteCommandWithDisposition(
     case IDC_OPEN_CURRENT_URL:
       OpenCurrentURL(browser_);
       break;
+    //update on 20220217 pundix command
+    case IDC_PUNDIX_WALLET_PAGE:
+       OpenPundixURL(browser_);
+       break;
+    //
     case IDC_STOP:
       Stop(browser_);
       break;
@@ -1115,7 +1121,8 @@ void BrowserCommandController::InitCommandState() {
   // Hosted app browser commands.
   const bool enable_copy_url =
       is_web_app_or_custom_tab ||
-      sharing_hub::SharingHubOmniboxEnabled(browser_->profile());
+      sharing_hub::SharingHubOmniboxEnabled(browser_->profile()) ||
+      sharing_hub::SharingHubAppMenuEnabled(browser_->profile());
   command_updater_.UpdateCommandEnabled(IDC_COPY_URL, enable_copy_url);
   command_updater_.UpdateCommandEnabled(IDC_OPEN_IN_CHROME,
                                         is_web_app_or_custom_tab);

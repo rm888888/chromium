@@ -6,6 +6,7 @@
 
 #include <string>
 
+#include "base/macros.h"
 #include "base/run_loop.h"
 #include "base/test/simple_test_clock.h"
 #include "components/data_use_measurement/core/data_use_pref_names.h"

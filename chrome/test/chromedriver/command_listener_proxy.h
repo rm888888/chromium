@@ -7,7 +7,8 @@
 
 #include <string>
 
-#include "base/memory/raw_ptr.h"
+#include "base/compiler_specific.h"
+#include "base/macros.h"
 #include "chrome/test/chromedriver/command_listener.h"
 
 class CommandListenerProxy : public CommandListener {
@@ -24,7 +25,7 @@ class CommandListenerProxy : public CommandListener {
   Status BeforeCommand(const std::string& command_name) override;
 
  private:
-  const raw_ptr<CommandListener> command_listener_;
+  CommandListener* const command_listener_;
 };
 
 #endif  // CHROME_TEST_CHROMEDRIVER_COMMAND_LISTENER_PROXY_H_

@@ -24,7 +24,8 @@ using ParentAccessDialogBrowserTest = ParentAccessChildUserBrowserTestBase;
 // Verify that the dialog is shown and correctly configured.
 IN_PROC_BROWSER_TEST_F(ParentAccessDialogBrowserTest, ShowDialog) {
   // Show the dialog.
-  ParentAccessDialog::ShowError error = chromeos::ParentAccessDialog::Show();
+  ParentAccessDialog::ShowError error =
+      chromeos::ParentAccessDialog::Show(contents()->GetTopLevelNativeWindow());
 
   // Verify it is showing.
   ASSERT_EQ(error, ParentAccessDialog::ShowError::kNone);
@@ -51,13 +52,15 @@ IN_PROC_BROWSER_TEST_F(ParentAccessDialogBrowserTest, ShowDialog) {
 IN_PROC_BROWSER_TEST_F(ParentAccessDialogBrowserTest,
                        ErrorOnDialogAlreadyVisible) {
   // Show the dialog.
-  ParentAccessDialog::ShowError error = chromeos::ParentAccessDialog::Show();
+  ParentAccessDialog::ShowError error =
+      chromeos::ParentAccessDialog::Show(contents()->GetTopLevelNativeWindow());
 
   // Verify it is showing.
   ASSERT_EQ(error, ParentAccessDialog::ShowError::kNone);
   ASSERT_NE(chromeos::ParentAccessDialog::GetInstance(), nullptr);
 
-  error = chromeos::ParentAccessDialog::Show();
+  error =
+      chromeos::ParentAccessDialog::Show(contents()->GetTopLevelNativeWindow());
 
   // Verify an error was returned indicating it can't be shown again.
   EXPECT_EQ(error, ParentAccessDialog::ShowError::kDialogAlreadyVisible);
@@ -71,7 +74,11 @@ using ParentAccessDialogRegularUserBrowserTest =
 IN_PROC_BROWSER_TEST_F(ParentAccessDialogRegularUserBrowserTest,
                        ErrorForNonChildUser) {
   // Show the dialog.
-  ParentAccessDialog::ShowError error = chromeos::ParentAccessDialog::Show();
+  ParentAccessDialog::ShowError error =
+      chromeos::ParentAccessDialog::Show(browser()
+                                             ->tab_strip_model()
+                                             ->GetActiveWebContents()
+                                             ->GetTopLevelNativeWindow());
 
   // Verify it is not showing.
   EXPECT_EQ(error, ParentAccessDialog::ShowError::kNotAChildUser);

@@ -38,8 +38,5 @@ class WebSocketConnection(object):
     self._command_id -= 1
     self._websocket.send(json.dumps(cmd_params))
 
-  def ReadMessage(self):
-    return self._websocket.recv()
-
   def Close(self):
     self._websocket.close();

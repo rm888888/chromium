@@ -36,6 +36,7 @@ namespace web_app {
 class WebAppProtocolHandlingBrowserTest : public WebAppNavigationBrowserTest {
  public:
   WebAppProtocolHandlingBrowserTest() {
+    os_hooks_supress_ = OsIntegrationManager::ScopedSuppressOsHooksForTesting();
     scoped_feature_list_.InitAndEnableFeature(
         blink::features::kWebAppEnableProtocolHandlers);
   }
@@ -75,7 +76,7 @@ class WebAppProtocolHandlingBrowserTest : public WebAppNavigationBrowserTest {
   base::HistogramTester histogram_tester_;
 
  private:
-  OsIntegrationManager::ScopedSuppressForTesting os_hooks_supress_;
+  ScopedOsHooksSuppress os_hooks_supress_;
   base::test::ScopedFeatureList scoped_feature_list_;
 };
 

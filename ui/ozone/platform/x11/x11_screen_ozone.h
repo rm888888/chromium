@@ -9,6 +9,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/macros.h"
 #include "ui/base/x/x11_display_manager.h"
 #include "ui/gfx/geometry/point.h"
 #include "ui/gfx/x/event.h"
@@ -48,7 +49,7 @@ class X11ScreenOzone : public PlatformScreen,
       const gfx::Point& point) const override;
   display::Display GetDisplayMatching(
       const gfx::Rect& match_rect) const override;
-  bool SetScreenSaverSuspended(bool suspend) override;
+  void SetScreenSaverSuspended(bool suspend) override;
   bool IsScreenSaverActive() const override;
   base::TimeDelta CalculateIdleTime() const override;
   void AddObserver(display::DisplayObserver* observer) override;

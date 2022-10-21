@@ -6,6 +6,7 @@
 
 #include <memory>
 
+#include "chrome/browser/extensions/chrome_extension_web_contents_observer.h"
 #include "chrome/browser/task_manager/web_contents_tags.h"
 #include "chrome/browser/themes/theme_properties.h"
 #include "chrome/browser/ui/browser.h"
@@ -29,6 +30,8 @@ DownloadShelfWebView::DownloadShelfWebView(Browser* browser,
   shelf_animation_.SetSlideDuration(base::Milliseconds(
       gfx::Animation::ShouldRenderRichAnimation() ? 120 : 0));
 
+  extensions::ChromeExtensionWebContentsObserver::CreateForWebContents(
+      web_contents());
   task_manager::WebContentsTags::CreateForTabContents(web_contents());
 
   DownloadShelfUI* download_shelf_ui = GetDownloadShelfUI();
@@ -60,11 +63,11 @@ void DownloadShelfWebView::OnThemeChanged() {
 
 void DownloadShelfWebView::DoShowDownload(
     DownloadUIModel::DownloadUIModelPtr download) {
-  const base::Time show_download_start_time = base::Time::Now();
+  const base::TimeTicks show_download_start_time_ticks = base::TimeTicks::Now();
   DownloadShelfUI* download_shelf_ui = GetDownloadShelfUI();
   if (download_shelf_ui) {
     download_shelf_ui->DoShowDownload(std::move(download),
-                                      show_download_start_time);
+                                      show_download_start_time_ticks);
   }
 }
 

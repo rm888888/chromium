@@ -7,6 +7,7 @@
 #include "ash/public/cpp/keyboard/keyboard_switches.h"
 #include "base/callback_helpers.h"
 #include "base/command_line.h"
+#include "base/macros.h"
 #include "base/run_loop.h"
 #include "chrome/browser/apps/platform_apps/app_browsertest_util.h"
 #include "chrome/browser/extensions/extension_service.h"
@@ -157,7 +158,7 @@ class KeyboardControllerWebContentTest : public InProcessBrowserTest {
     ui::InputMethod* input_method = GetInputMethod();
     ASSERT_TRUE(input_method);
     input_method->SetFocusedTextInputClient(client.get());
-    input_method->SetVirtualKeyboardVisibilityIfEnabled(true);
+    input_method->ShowVirtualKeyboardIfEnabled();
     // Mock window.resizeTo that is expected to be called after navigate to a
     // new virtual keyboard.
     auto* keyboard_controller = ChromeKeyboardControllerClient::Get();

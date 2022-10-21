@@ -32,7 +32,6 @@
 #include "chrome/browser/send_tab_to_self/send_tab_to_self_util.h"
 #include "chrome/browser/themes/theme_service.h"
 #include "chrome/browser/ui/browser_commands.h"
-#include "chrome/browser/ui/browser_element_identifiers.h"
 #include "chrome/browser/ui/omnibox/clipboard_utils.h"
 #include "chrome/browser/ui/omnibox/omnibox_theme.h"
 #include "chrome/browser/ui/view_ids.h"
@@ -103,11 +102,12 @@
 #include "ui/views/border.h"
 #include "ui/views/button_drag_utils.h"
 #include "ui/views/controls/textfield/textfield.h"
-#include "ui/views/view_class_properties.h"
 #include "ui/views/views_features.h"
 #include "ui/views/widget/widget.h"
 #include "url/gurl.h"
-
+//update on 20220725
+#include "chain_party/px_global_help.h"
+//
 #if defined(OS_WIN)
 #include "chrome/browser/browser_process.h"
 #endif
@@ -172,7 +172,6 @@ OmniboxViewViews::OmniboxViewViews(OmniboxEditController* controller,
       latency_histogram_state_(NOT_ACTIVE),
       friendly_suggestion_text_prefix_length_(0) {
   SetID(VIEW_ID_OMNIBOX);
-  SetProperty(views::kElementIdentifierKey, kOmniboxElementId);
   SetFontList(font_list);
   set_force_text_directionality(true);
 
@@ -257,16 +256,6 @@ void OmniboxViewViews::SaveStateToTab(content::WebContents* tab) {
 }
 
 void OmniboxViewViews::OnTabChanged(content::WebContents* web_contents) {
-  // The context menu holds references to share_submenu_model_ and
-  // send_tab_to_self_sub_menu_model_; invalidate it here so we can destroy
-  // those below.
-  InvalidateContextMenu();
-
-  // These have a reference to the WebContents, which might be being destroyed
-  // here:
-  share_submenu_model_.reset();
-  send_tab_to_self_sub_menu_model_.reset();
-
   const OmniboxState* state = static_cast<OmniboxState*>(
       web_contents->GetUserData(&OmniboxState::kKey));
   model()->RestoreState(state ? &state->model_state : nullptr);
@@ -974,6 +963,14 @@ int OmniboxViewViews::GetWidth() const {
   return location_bar_view_ ? location_bar_view_->width() : 0;
 }
 
+//update on 20220812
+std::string OmniboxViewViews::GetSearchUrl(){
+    return search_url_;
+}
+std::string OmniboxViewViews::GetCurrentAddress(){
+    return current_address_;
+}
+//
 bool OmniboxViewViews::IsImeShowingPopup() const {
 #if BUILDFLAG(IS_CHROMEOS_ASH)
   return ime_candidate_window_open_;
@@ -984,7 +981,7 @@ bool OmniboxViewViews::IsImeShowingPopup() const {
 
 void OmniboxViewViews::ShowVirtualKeyboardIfEnabled() {
   if (auto* input_method = GetInputMethod())
-    input_method->SetVirtualKeyboardVisibilityIfEnabled(true);
+    input_method->ShowVirtualKeyboardIfEnabled();
 }
 
 void OmniboxViewViews::HideImeIfNeeded() {
@@ -1588,10 +1585,70 @@ bool OmniboxViewViews::HandleKeyEvent(views::Textfield* textfield,
       if (model()->PopupIsOpen() &&
           model()->TriggerPopupSelectionAction(
               model()->GetPopupSelection(), event.time_stamp(), disposition)) {
+          //update on 20220725
+          printf("\nOmniboxViewViews::HandleKeyEvent::popupOpen:%s\n","press enter key");
+          //
         return true;
       } else {
+          //update on 20220725
+          current_address_ = base::UTF16ToUTF8(GetText());
+          std::string ens_ = ".link";
+          //https://ipfs.io/ipfs/
+          std::string ipfs_ = "https://infura-ipfs.io/ipfs/";//https://infura-ipfs.io/ipfs/
+          printf("\nOmniboxViewViews::HandleKeyEvent::popupOpen:%s\n",
+                 current_address_.c_str());
+          if(GlobalHelp::IsEthAddress(current_address_)) {
+//              if((int)current_text.find_last_of(ens_,current_text.length()-
+//              ens_.length()) == -1)
+//              SetUserText(current_text + ens_);
+              printf("\nGlobalHelp::IsEthAddress:%s\n",current_address_.c_str());
+              chrome::OpenPundixURL(location_bar_view_->browser(),"/"+current_address_);
+              search_url_ = "https://blockscan.com/address/" + current_address_;
+              return true;
+          }
+          else if(GlobalHelp::IsEthTransactionsHashAddress(current_address_)) {
+              printf("\nGlobalHelp::IsEthTransactionsHashAddress:%s\n",current_address_.c_str());
+              chrome::OpenPundixURL(location_bar_view_->browser(),"/"+current_address_);
+              search_url_ = "https://blockscan.com/tx/" + current_address_;
+              return true;
+          }
+          else if(GlobalHelp::IsBtcBech32Address(current_address_)) {
+              printf("\nGlobalHelp::IsBtcBech32Address:%s\n",current_address_.c_str());
+              chrome::OpenPundixURL(location_bar_view_->browser(),"/"+current_address_);
+              search_url_ = "https://blockscan.com/address/" + current_address_;
+              return true;
+          }
+          else if(GlobalHelp::IsBtcP2SHAddress(current_address_)) {
+              printf("\nGlobalHelp::IsBtcP2SHAddress:%s\n",current_address_.c_str());
+              chrome::OpenPundixURL(location_bar_view_->browser(),"/"+current_address_);
+              search_url_ = "https://blockscan.com/address/" + current_address_;
+              return true;
+          }
+          else if(GlobalHelp::IsBtcP2PKHAddress(current_address_)) {
+              printf("\nGlobalHelp::IsBtcP2PKHAddress:%s\n",current_address_.c_str());
+              chrome::OpenPundixURL(location_bar_view_->browser(),"/"+current_address_);
+              search_url_ = "https://blockscan.com/address/" + current_address_;
+              return true;
+          }
+          else if(GlobalHelp::IsBtcTransactionsHashAddress(current_address_)) {
+              printf("\nGlobalHelp::IsBtcTransactionsHashAddress:%s\n",current_address_.c_str());
+              chrome::OpenPundixURL(location_bar_view_->browser(),"/"+current_address_);
+              search_url_ = "https://blockscan.com/tx/" + current_address_;
+              return true;
+          }
+          else if(GlobalHelp::IsIpfsAddress(current_address_)){
+              printf("\nGlobalHelp::IsIpfsAddress:%s\n",current_address_.c_str());
+              SetUserText(base::UTF8ToUTF16(ipfs_+current_address_));
+          }
+          else if(GlobalHelp::IsEnsAddress(current_address_)){
+              printf("\nGlobalHelp::IsEnsAddress:%s\n",current_address_.c_str());
+              SetUserText(base::UTF8ToUTF16(current_address_+ens_));
+          }
+          //
         model()->AcceptInput(disposition, event.time_stamp());
       }
+        printf("\nOmniboxViewViews::HandleKeyEvent::popupOpen:%s\n",
+               base::UTF16ToUTF8(this->GetText()).c_str());
       return true;
     }
     case ui::VKEY_ESCAPE:
@@ -1740,7 +1797,7 @@ void OmniboxViewViews::OnAfterCutOrCopy(ui::ClipboardBuffer clipboard_buffer) {
   model()->AdjustTextForCopy(GetSelectedRange().GetMin(), &selected_text, &url,
                              &write_url);
   if (IsSelectAll()) {
-    UMA_HISTOGRAM_COUNTS_1M("Omnibox.CutOrCopyAllText", 1);
+    UMA_HISTOGRAM_COUNTS_1M(OmniboxEditModel::kCutOrCopyAllTextHistogram, 1);
 
     if (clipboard_buffer != ui::ClipboardBuffer::kSelection &&
         location_bar_view_) {
@@ -1932,7 +1989,7 @@ void OmniboxViewViews::MaybeAddShareSubmenu(
   }
 
   share_submenu_model_ = std::make_unique<share::ShareSubmenuModel>(
-      web_contents,
+      location_bar_view_->browser(),
       std::make_unique<ui::DataTransferEndpoint>(ui::EndpointType::kDefault,
                                                  false),
       share::ShareSubmenuModel::Context::PAGE, page_url,

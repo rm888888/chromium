@@ -17,7 +17,6 @@
 #include "base/files/scoped_temp_dir.h"
 #include "base/notreached.h"
 #include "base/test/task_environment.h"
-#include "base/test/test_discardable_memory_allocator.h"
 #include "base/unguessable_token.h"
 #include "components/paint_preview/common/capture_result.h"
 #include "components/paint_preview/common/file_stream.h"
@@ -260,11 +259,6 @@ class PaintPreviewCompositorBeginCompositeTest
   void SetUp() override {
     ASSERT_TRUE(temp_dir_.CreateUniqueTempDir());
     compositor_.SetRootFrameUrl(url_);
-    base::DiscardableMemoryAllocator::SetInstance(&allocator_);
-  }
-
-  void TearDown() override {
-    base::DiscardableMemoryAllocator::SetInstance(nullptr);
   }
 
   // Run |Begin*Composite| with |request| and compare the response with
@@ -309,7 +303,6 @@ class PaintPreviewCompositorBeginCompositeTest
   base::test::TaskEnvironment task_environment_;
 
  private:
-  base::TestDiscardableMemoryAllocator allocator_;
   PaintPreviewCompositorImpl compositor_{mojo::NullReceiver(), nullptr,
                                          base::DoNothing()};
 };
@@ -579,29 +572,12 @@ INSTANTIATE_TEST_SUITE_P(All,
                                          CompositeType::kMainFrame),
                          CompositeTypeParamToString);
 
-class PaintPreviewCompositorTest : public testing::Test {
- protected:
-  void SetUp() override {
-    ASSERT_TRUE(temp_dir_.CreateUniqueTempDir());
-    base::DiscardableMemoryAllocator::SetInstance(&allocator_);
-  }
-
-  void TearDown() override {
-    base::DiscardableMemoryAllocator::SetInstance(nullptr);
-  }
-
-  base::ScopedTempDir temp_dir_;
-
- protected:
-  base::test::TaskEnvironment task_environment_;
-  PaintPreviewCompositorImpl compositor_{mojo::NullReceiver(), nullptr,
-                                         base::BindOnce([]() {})};
-
- private:
-  base::TestDiscardableMemoryAllocator allocator_;
-};
-
-TEST_F(PaintPreviewCompositorTest, TestComposite) {
+TEST(PaintPreviewCompositorTest, TestComposite) {
+  base::test::TaskEnvironment task_environment;
+  base::ScopedTempDir temp_dir;
+  ASSERT_TRUE(temp_dir.CreateUniqueTempDir());
+  PaintPreviewCompositorImpl compositor(mojo::NullReceiver(), nullptr,
+                                        base::BindOnce([]() {}));
   GURL url("https://www.chromium.org");
   const base::UnguessableToken kRootFrameID = base::UnguessableToken::Create();
   gfx::Size root_frame_scroll_extent(100, 200);
@@ -609,13 +585,13 @@ TEST_F(PaintPreviewCompositorTest, TestComposite) {
   proto.mutable_metadata()->set_url(url.spec());
   base::flat_map<base::UnguessableToken, mojom::FrameDataPtr> expected_data;
   PopulateFrameProto(proto.mutable_root_frame(), kRootFrameID, true,
-                     temp_dir_.GetPath().AppendASCII("root.skp"),
+                     temp_dir.GetPath().AppendASCII("root.skp"),
                      root_frame_scroll_extent, {}, &expected_data);
   mojom::PaintPreviewBeginCompositeRequestPtr request =
       mojom::PaintPreviewBeginCompositeRequest::New();
   request->recording_map = RecordingMapFromPaintPreviewProto(proto);
   request->proto = ToReadOnlySharedMemory(proto);
-  compositor_.BeginSeparatedFrameComposite(
+  compositor.BeginSeparatedFrameComposite(
       std::move(request),
       base::BindOnce(
           &BeginCompositeCallbackImpl,
@@ -629,21 +605,24 @@ TEST_F(PaintPreviewCompositorTest, TestComposite) {
   SkCanvas canvas(bitmap, SkSurfaceProps{});
   canvas.scale(scale_factor, scale_factor);
   DrawDummyTestPicture(&canvas, SK_ColorDKGRAY, root_frame_scroll_extent);
-  compositor_.BitmapForSeparatedFrame(
+  compositor.BitmapForSeparatedFrame(
       kRootFrameID, rect, scale_factor,
       base::BindOnce(&BitmapCallbackImpl,
                      mojom::PaintPreviewCompositor::BitmapStatus::kSuccess,
                      bitmap));
-  task_environment_.RunUntilIdle();
-  compositor_.BitmapForSeparatedFrame(
+  task_environment.RunUntilIdle();
+  compositor.BitmapForSeparatedFrame(
       base::UnguessableToken::Create(), rect, scale_factor,
       base::BindOnce(&BitmapCallbackImpl,
                      mojom::PaintPreviewCompositor::BitmapStatus::kMissingFrame,
                      bitmap));
-  task_environment_.RunUntilIdle();
+  task_environment.RunUntilIdle();
 }
 
-TEST_F(PaintPreviewCompositorTest, TestCompositeWithMemoryBuffer) {
+TEST(PaintPreviewCompositorTest, TestCompositeWithMemoryBuffer) {
+  base::test::TaskEnvironment task_environment;
+  PaintPreviewCompositorImpl compositor(mojo::NullReceiver(), nullptr,
+                                        base::BindOnce([]() {}));
   GURL url("https://www.chromium.org");
   const base::UnguessableToken kRootFrameID = base::UnguessableToken::Create();
   gfx::Size root_frame_scroll_extent(100, 200);
@@ -683,7 +662,7 @@ TEST_F(PaintPreviewCompositorTest, TestCompositeWithMemoryBuffer) {
       {kRootFrameID, SerializedRecording(std::move(buffer))});
   request->proto = ToReadOnlySharedMemory(proto);
 
-  compositor_.BeginSeparatedFrameComposite(
+  compositor.BeginSeparatedFrameComposite(
       std::move(request),
       base::BindOnce(
           &BeginCompositeCallbackImpl,
@@ -697,21 +676,26 @@ TEST_F(PaintPreviewCompositorTest, TestCompositeWithMemoryBuffer) {
   SkCanvas canvas(bitmap, SkSurfaceProps{});
   canvas.scale(scale_factor, scale_factor);
   DrawDummyTestPicture(&canvas, SK_ColorDKGRAY, root_frame_scroll_extent);
-  compositor_.BitmapForSeparatedFrame(
+  compositor.BitmapForSeparatedFrame(
       kRootFrameID, rect, scale_factor,
       base::BindOnce(&BitmapCallbackImpl,
                      mojom::PaintPreviewCompositor::BitmapStatus::kSuccess,
                      bitmap));
-  task_environment_.RunUntilIdle();
-  compositor_.BitmapForSeparatedFrame(
+  task_environment.RunUntilIdle();
+  compositor.BitmapForSeparatedFrame(
       base::UnguessableToken::Create(), rect, scale_factor,
       base::BindOnce(&BitmapCallbackImpl,
                      mojom::PaintPreviewCompositor::BitmapStatus::kMissingFrame,
                      bitmap));
-  task_environment_.RunUntilIdle();
+  task_environment.RunUntilIdle();
 }
 
-TEST_F(PaintPreviewCompositorTest, TestCompositeMainFrameNoDependencies) {
+TEST(PaintPreviewCompositorTest, TestCompositeMainFrameNoDependencies) {
+  base::test::TaskEnvironment task_environment;
+  base::ScopedTempDir temp_dir;
+  ASSERT_TRUE(temp_dir.CreateUniqueTempDir());
+  PaintPreviewCompositorImpl compositor(mojo::NullReceiver(), nullptr,
+                                        base::BindOnce([]() {}));
   GURL url("https://www.chromium.org");
   const base::UnguessableToken kRootFrameID = base::UnguessableToken::Create();
   gfx::Size root_frame_scroll_extent(100, 200);
@@ -719,13 +703,13 @@ TEST_F(PaintPreviewCompositorTest, TestCompositeMainFrameNoDependencies) {
   proto.mutable_metadata()->set_url(url.spec());
   base::flat_map<base::UnguessableToken, mojom::FrameDataPtr> expected_data;
   PopulateFrameProto(proto.mutable_root_frame(), kRootFrameID, true,
-                     temp_dir_.GetPath().AppendASCII("root.skp"),
+                     temp_dir.GetPath().AppendASCII("root.skp"),
                      root_frame_scroll_extent, {}, &expected_data);
   mojom::PaintPreviewBeginCompositeRequestPtr request =
       mojom::PaintPreviewBeginCompositeRequest::New();
   request->recording_map = RecordingMapFromPaintPreviewProto(proto);
   request->proto = ToReadOnlySharedMemory(proto);
-  compositor_.BeginMainFrameComposite(
+  compositor.BeginMainFrameComposite(
       std::move(request),
       base::BindOnce(
           &BeginCompositeCallbackImpl,
@@ -739,15 +723,20 @@ TEST_F(PaintPreviewCompositorTest, TestCompositeMainFrameNoDependencies) {
   SkCanvas canvas(bitmap, SkSurfaceProps{});
   canvas.scale(scale_factor, scale_factor);
   DrawDummyTestPicture(&canvas, SK_ColorDKGRAY, root_frame_scroll_extent);
-  compositor_.BitmapForMainFrame(
+  compositor.BitmapForMainFrame(
       rect, scale_factor,
       base::BindOnce(&BitmapCallbackImpl,
                      mojom::PaintPreviewCompositor::BitmapStatus::kSuccess,
                      bitmap));
-  task_environment_.RunUntilIdle();
+  task_environment.RunUntilIdle();
 }
 
-TEST_F(PaintPreviewCompositorTest, TestCompositeMainFrameOneDependency) {
+TEST(PaintPreviewCompositorTest, TestCompositeMainFrameOneDependency) {
+  base::test::TaskEnvironment task_environment;
+  base::ScopedTempDir temp_dir;
+  ASSERT_TRUE(temp_dir.CreateUniqueTempDir());
+  PaintPreviewCompositorImpl compositor(mojo::NullReceiver(), nullptr,
+                                        base::BindOnce([]() {}));
   GURL url("https://www.chromium.org");
   const base::UnguessableToken kRootFrameID = base::UnguessableToken::Create();
   gfx::Size root_frame_scroll_extent(100, 200);
@@ -760,11 +749,11 @@ TEST_F(PaintPreviewCompositorTest, TestCompositeMainFrameOneDependency) {
   proto.mutable_metadata()->set_url(url.spec());
   base::flat_map<base::UnguessableToken, mojom::FrameDataPtr> expected_data;
   PopulateFrameProto(proto.mutable_root_frame(), kRootFrameID, true,
-                     temp_dir_.GetPath().AppendASCII("root.skp"),
+                     temp_dir.GetPath().AppendASCII("root.skp"),
                      root_frame_scroll_extent,
                      {{kSubframe_0_ID, subframe_0_clip_rect}}, &expected_data);
   PopulateFrameProto(proto.add_subframes(), kSubframe_0_ID, false,
-                     temp_dir_.GetPath().AppendASCII("subframe_0.skp"),
+                     temp_dir.GetPath().AppendASCII("subframe_0.skp"),
                      subframe_0_scroll_extent, {}, &expected_data, gfx::Size(),
                      SK_ColorLTGRAY);
 
@@ -774,7 +763,7 @@ TEST_F(PaintPreviewCompositorTest, TestCompositeMainFrameOneDependency) {
   request->proto = ToReadOnlySharedMemory(proto);
   expected_data.erase(kSubframe_0_ID);
   expected_data.find(kRootFrameID)->second->subframes.clear();
-  compositor_.BeginMainFrameComposite(
+  compositor.BeginMainFrameComposite(
       std::move(request),
       base::BindOnce(
           &BeginCompositeCallbackImpl,
@@ -791,16 +780,20 @@ TEST_F(PaintPreviewCompositorTest, TestCompositeMainFrameOneDependency) {
   // Draw the subframe where we embedded it while populating the proto.
   DrawDummyTestPicture(&canvas, SK_ColorLTGRAY, subframe_0_scroll_extent,
                        subframe_0_clip_rect);
-  compositor_.BitmapForMainFrame(
+  compositor.BitmapForMainFrame(
       rect, scale_factor,
       base::BindOnce(&BitmapCallbackImpl,
                      mojom::PaintPreviewCompositor::BitmapStatus::kSuccess,
                      bitmap));
-  task_environment_.RunUntilIdle();
+  task_environment.RunUntilIdle();
 }
 
-TEST_F(PaintPreviewCompositorTest,
-       TestCompositeMainFrameOneDependencyScrolled) {
+TEST(PaintPreviewCompositorTest, TestCompositeMainFrameOneDependencyScrolled) {
+  base::test::TaskEnvironment task_environment;
+  base::ScopedTempDir temp_dir;
+  ASSERT_TRUE(temp_dir.CreateUniqueTempDir());
+  PaintPreviewCompositorImpl compositor(mojo::NullReceiver(), nullptr,
+                                        base::BindOnce([]() {}));
   GURL url("https://www.chromium.org");
   const base::UnguessableToken kRootFrameID = base::UnguessableToken::Create();
   gfx::Size root_frame_scroll_extent(100, 200);
@@ -814,11 +807,11 @@ TEST_F(PaintPreviewCompositorTest,
   proto.mutable_metadata()->set_url(url.spec());
   base::flat_map<base::UnguessableToken, mojom::FrameDataPtr> expected_data;
   PopulateFrameProto(proto.mutable_root_frame(), kRootFrameID, true,
-                     temp_dir_.GetPath().AppendASCII("root.skp"),
+                     temp_dir.GetPath().AppendASCII("root.skp"),
                      root_frame_scroll_extent,
                      {{kSubframe_0_ID, subframe_0_clip_rect}}, &expected_data);
   PopulateFrameProto(proto.add_subframes(), kSubframe_0_ID, false,
-                     temp_dir_.GetPath().AppendASCII("subframe_0.skp"),
+                     temp_dir.GetPath().AppendASCII("subframe_0.skp"),
                      subframe_0_scroll_extent, {}, &expected_data,
                      subframe_0_scroll_offsets, SK_ColorLTGRAY);
 
@@ -828,7 +821,7 @@ TEST_F(PaintPreviewCompositorTest,
   request->proto = ToReadOnlySharedMemory(proto);
   expected_data.erase(kSubframe_0_ID);
   expected_data.find(kRootFrameID)->second->subframes.clear();
-  compositor_.BeginMainFrameComposite(
+  compositor.BeginMainFrameComposite(
       std::move(request),
       base::BindOnce(
           &BeginCompositeCallbackImpl,
@@ -845,16 +838,21 @@ TEST_F(PaintPreviewCompositorTest,
   // Draw the subframe where we embedded it while populating the proto.
   DrawDummyTestPicture(&canvas, SK_ColorLTGRAY, subframe_0_scroll_extent,
                        subframe_0_clip_rect, subframe_0_scroll_offsets);
-  compositor_.BitmapForMainFrame(
+  compositor.BitmapForMainFrame(
       rect, scale_factor,
       base::BindOnce(&BitmapCallbackImpl,
                      mojom::PaintPreviewCompositor::BitmapStatus::kSuccess,
                      bitmap));
-  task_environment_.RunUntilIdle();
+  task_environment.RunUntilIdle();
 }
 
-TEST_F(PaintPreviewCompositorTest,
-       TestCompositeMainFrameOneDependencyWithRootFrameScrolled) {
+TEST(PaintPreviewCompositorTest,
+     TestCompositeMainFrameOneDependencyWithRootFrameScrolled) {
+  base::test::TaskEnvironment task_environment;
+  base::ScopedTempDir temp_dir;
+  ASSERT_TRUE(temp_dir.CreateUniqueTempDir());
+  PaintPreviewCompositorImpl compositor(mojo::NullReceiver(), nullptr,
+                                        base::BindOnce([]() {}));
   GURL url("https://www.chromium.org");
   const base::UnguessableToken kRootFrameID = base::UnguessableToken::Create();
   gfx::Size root_frame_scroll_extent(110, 215);
@@ -869,12 +867,12 @@ TEST_F(PaintPreviewCompositorTest,
   proto.mutable_metadata()->set_url(url.spec());
   base::flat_map<base::UnguessableToken, mojom::FrameDataPtr> expected_data;
   PopulateFrameProto(proto.mutable_root_frame(), kRootFrameID, true,
-                     temp_dir_.GetPath().AppendASCII("root.skp"),
+                     temp_dir.GetPath().AppendASCII("root.skp"),
                      root_frame_scroll_extent,
                      {{kSubframe_0_ID, subframe_0_clip_rect}}, &expected_data,
                      root_frame_scroll_offsets);
   PopulateFrameProto(proto.add_subframes(), kSubframe_0_ID, false,
-                     temp_dir_.GetPath().AppendASCII("subframe_0.skp"),
+                     temp_dir.GetPath().AppendASCII("subframe_0.skp"),
                      subframe_0_scroll_extent, {}, &expected_data, gfx::Size(),
                      SK_ColorLTGRAY);
 
@@ -884,7 +882,7 @@ TEST_F(PaintPreviewCompositorTest,
   request->proto = ToReadOnlySharedMemory(proto);
   expected_data.erase(kSubframe_0_ID);
   expected_data.find(kRootFrameID)->second->subframes.clear();
-  compositor_.BeginMainFrameComposite(
+  compositor.BeginMainFrameComposite(
       std::move(request),
       base::BindOnce(
           &BeginCompositeCallbackImpl,
@@ -903,16 +901,21 @@ TEST_F(PaintPreviewCompositorTest,
                        root_frame_clip_rect, root_frame_scroll_offsets);
   DrawDummyTestPicture(&canvas, SK_ColorLTGRAY, subframe_0_scroll_extent,
                        subframe_0_clip_rect);
-  compositor_.BitmapForMainFrame(
+  compositor.BitmapForMainFrame(
       gfx::ToEnclosingRect(rect), scale_factor,
       base::BindOnce(&BitmapCallbackImpl,
                      mojom::PaintPreviewCompositor::BitmapStatus::kSuccess,
                      bitmap));
-  task_environment_.RunUntilIdle();
+  task_environment.RunUntilIdle();
 }
 
-TEST_F(PaintPreviewCompositorTest,
-       TestCompositeMainFrameOneDependencyWithRootFrameScrolledWithClamp) {
+TEST(PaintPreviewCompositorTest,
+     TestCompositeMainFrameOneDependencyWithRootFrameScrolledWithClamp) {
+  base::test::TaskEnvironment task_environment;
+  base::ScopedTempDir temp_dir;
+  ASSERT_TRUE(temp_dir.CreateUniqueTempDir());
+  PaintPreviewCompositorImpl compositor(mojo::NullReceiver(), nullptr,
+                                        base::BindOnce([]() {}));
   GURL url("https://www.chromium.org");
   const base::UnguessableToken kRootFrameID = base::UnguessableToken::Create();
   gfx::Size root_frame_scroll_extent(110, 215);
@@ -927,12 +930,12 @@ TEST_F(PaintPreviewCompositorTest,
   proto.mutable_metadata()->set_url(url.spec());
   base::flat_map<base::UnguessableToken, mojom::FrameDataPtr> expected_data;
   PopulateFrameProto(proto.mutable_root_frame(), kRootFrameID, true,
-                     temp_dir_.GetPath().AppendASCII("root.skp"),
+                     temp_dir.GetPath().AppendASCII("root.skp"),
                      root_frame_scroll_extent,
                      {{kSubframe_0_ID, subframe_0_clip_rect}}, &expected_data,
                      root_frame_scroll_offsets);
   PopulateFrameProto(proto.add_subframes(), kSubframe_0_ID, false,
-                     temp_dir_.GetPath().AppendASCII("subframe_0.skp"),
+                     temp_dir.GetPath().AppendASCII("subframe_0.skp"),
                      subframe_0_scroll_extent, {}, &expected_data, gfx::Size(),
                      SK_ColorLTGRAY);
 
@@ -942,7 +945,7 @@ TEST_F(PaintPreviewCompositorTest,
   request->proto = ToReadOnlySharedMemory(proto);
   expected_data.erase(kSubframe_0_ID);
   expected_data.find(kRootFrameID)->second->subframes.clear();
-  compositor_.BeginMainFrameComposite(
+  compositor.BeginMainFrameComposite(
       std::move(request),
       base::BindOnce(
           &BeginCompositeCallbackImpl,
@@ -963,25 +966,12 @@ TEST_F(PaintPreviewCompositorTest,
                        root_frame_clip_rect, root_frame_scroll_offsets);
   DrawDummyTestPicture(&canvas, SK_ColorLTGRAY, subframe_0_scroll_extent,
                        subframe_0_clip_rect);
-  compositor_.BitmapForMainFrame(
+  compositor.BitmapForMainFrame(
       gfx::ToEnclosingRect(rect), scale_factor,
       base::BindOnce(&BitmapCallbackImpl,
                      mojom::PaintPreviewCompositor::BitmapStatus::kSuccess,
                      bitmap));
-  task_environment_.RunUntilIdle();
+  task_environment.RunUntilIdle();
 }
-
-class NoOpDiscardableAllocator : public base::DiscardableMemoryAllocator {
- public:
-  NoOpDiscardableAllocator() = default;
-  ~NoOpDiscardableAllocator() override = default;
-
-  std::unique_ptr<base::DiscardableMemory> AllocateLockedDiscardableMemory(
-      size_t size) override {
-    return nullptr;
-  }
-  size_t GetBytesAllocated() const override { return 0U; }
-  void ReleaseFreeMemory() override {}
-};
 
 }  // namespace paint_preview

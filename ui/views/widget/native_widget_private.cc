@@ -26,9 +26,5 @@ void NativeWidgetPrivate::ShowEmojiPanel() {
   ui::ShowEmojiPanel();
 }
 
-bool NativeWidgetPrivate::IsMoveLoopSupported() const {
-  return true;
-}
-
 }  // namespace internal
 }  // namespace views

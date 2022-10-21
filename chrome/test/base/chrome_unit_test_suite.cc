@@ -43,7 +43,6 @@
 #if BUILDFLAG(IS_CHROMEOS_ASH)
 #include "ash/constants/ash_paths.h"
 #include "chrome/browser/ash/arc/arc_util.h"
-#include "crypto/nss_util_internal.h"
 #endif
 
 #if BUILDFLAG(ENABLE_EXTENSIONS)
@@ -115,7 +114,6 @@ class ChromeUnitTestSuiteInitializer : public testing::EmptyTestEventListener {
            "AXPlatformNode::ResetAxModeForTesting() at the end of your test.";
 #if BUILDFLAG(IS_CHROMEOS_ASH)
     arc::ClearArcAllowedCheckForTesting();
-    crypto::ResetTokenManagerForTesting();
 #endif  // BUILDFLAG(IS_CHROMEOS_ASH)
   }
 

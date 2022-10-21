@@ -7,6 +7,7 @@
 
 #include <stdint.h>
 
+#include "base/macros.h"
 #include "components/feature_engagement/internal/availability_model.h"
 
 namespace feature_engagement {

@@ -29,8 +29,7 @@ class WebMeasureMemoryStressTester : public PageNode::ObserverDefaultImpl,
       const WebMeasureMemoryStressTester& other) = delete;
 
   // PageNode::ObserverDefaultImpl
-  void OnLoadingStateChanged(const PageNode* page_node,
-                             PageNode::LoadingState previous_state) override;
+  void OnLoadingStateChanged(const PageNode* page_node) override;
 
   // GraphOwned
   void OnPassedToGraph(Graph* graph) override;

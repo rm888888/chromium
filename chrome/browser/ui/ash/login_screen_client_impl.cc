@@ -35,7 +35,6 @@
 #include "components/session_manager/core/session_manager.h"
 #include "components/user_manager/remove_user_delegate.h"
 #include "components/user_manager/user_names.h"
-#include "ui/base/ime/ash/input_method_manager.h"
 
 namespace {
 using ash::SupervisedAction;
@@ -240,7 +239,7 @@ void LoginScreenClientImpl::RequestPublicSessionKeyboardLayouts(
   chromeos::GetKeyboardLayoutsForLocale(
       base::BindOnce(&LoginScreenClientImpl::SetPublicSessionKeyboardLayout,
                      weak_ptr_factory_.GetWeakPtr(), account_id, locale),
-      locale, ash::input_method::InputMethodManager::Get());
+      locale);
 }
 
 void LoginScreenClientImpl::HandleAccelerator(
@@ -265,7 +264,7 @@ void LoginScreenClientImpl::ShowParentAccessHelpApp() {
 void LoginScreenClientImpl::ShowLockScreenNotificationSettings() {
   chrome::SettingsWindowManager::GetInstance()->ShowOSSettings(
       ProfileManager::GetActiveUserProfile(),
-      chromeos::settings::mojom::kSecurityAndSignInSubpagePathV2);
+      chromeos::settings::mojom::kSecurityAndSignInSubpagePath);
 }
 
 void LoginScreenClientImpl::OnFocusLeavingSystemTray(bool reverse) {
@@ -299,8 +298,8 @@ void LoginScreenClientImpl::LoginAsGuest() {
   DCHECK(!ash::ScreenLocker::default_screen_locker());
   if (ash::LoginDisplayHost::default_host()) {
     ash::LoginDisplayHost::default_host()->GetExistingUserController()->Login(
-        ash::UserContext(user_manager::USER_TYPE_GUEST,
-                         user_manager::GuestAccountId()),
+        chromeos::UserContext(user_manager::USER_TYPE_GUEST,
+                              user_manager::GuestAccountId()),
         ash::SigninSpecifics());
   }
 }
@@ -343,8 +342,9 @@ void LoginScreenClientImpl::SetPublicSessionKeyboardLayout(
     dictionary->GetString("title", &title);
     input_method_item.title = title;
 
-    input_method_item.selected =
-        dictionary->FindBoolKey("selected").value_or(false);
+    bool selected;
+    dictionary->GetBoolean("selected", &selected);
+    input_method_item.selected = selected;
     result.push_back(std::move(input_method_item));
   }
   ash::LoginScreen::Get()->GetModel()->SetPublicSessionKeyboardLayouts(

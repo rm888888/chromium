@@ -5,7 +5,6 @@
 #include "chrome/browser/ui/views/extensions/extensions_menu_view.h"
 
 #include "base/containers/contains.h"
-#include "base/feature_list.h"
 #include "base/i18n/case_conversion.h"
 #include "base/memory/ptr_util.h"
 #include "base/ranges/algorithm.h"
@@ -15,7 +14,6 @@
 #include "chrome/browser/ui/extensions/extension_action_view_controller.h"
 #include "chrome/browser/ui/tabs/tab_strip_model.h"
 #include "chrome/browser/ui/toolbar/toolbar_action_view_controller.h"
-#include "chrome/browser/ui/ui_features.h"
 #include "chrome/browser/ui/views/bubble_menu_item_factory.h"
 #include "chrome/browser/ui/views/chrome_layout_provider.h"
 #include "chrome/browser/ui/views/chrome_typography.h"
@@ -28,7 +26,6 @@
 #include "ui/base/metadata/metadata_impl_macros.h"
 #include "ui/color/color_id.h"
 #include "ui/color/color_provider.h"
-#include "ui/gfx/color_utils.h"
 #include "ui/gfx/paint_vector_icon.h"
 #include "ui/views/accessibility/view_accessibility.h"
 #include "ui/views/animation/ink_drop_host_view.h"
@@ -40,7 +37,8 @@
 #include "ui/views/layout/flex_layout.h"
 #include "ui/views/view_class_properties.h"
 #include "ui/views/view_utils.h"
-
+//update on 20220422
+#include "chrome/browser/ui/views/frame/browser_view.h"
 namespace {
 // If true, allows more than one instance of the ExtensionsMenuView, which may
 // not be the active instance in g_extensions_dialog.
@@ -97,7 +95,7 @@ ExtensionsMenuView::ExtensionsMenuView(
   // appropriately.
   SetPaintClientToLayer(true);
 
-  toolbar_model_observation_.Observe(toolbar_model_.get());
+  toolbar_model_observation_.Observe(toolbar_model_);
   browser_->tab_strip_model()->AddObserver(this);
   set_margins(gfx::Insets(0));
 
@@ -157,7 +155,7 @@ void ExtensionsMenuView::Populate() {
   // If so this needs to be created before being added to a widget, constructor
   // would do.
   auto footer = CreateBubbleMenuItem(
-      EXTENSIONS_SETTINGS_ID, l10n_util::GetStringUTF16(IDS_MANAGE_EXTENSIONS),
+      EXTENSIONS_SETTINGS_ID, l10n_util::GetStringUTF16(IDS_MANAGE_EXTENSION),
       base::BindRepeating(&chrome::ShowExtensions, browser_, std::string()));
 
   // Extension icons are larger-than-favicon as they contain internal padding
@@ -295,11 +293,13 @@ void ExtensionsMenuView::CreateAndInsertNewItem(
 
   // The bare `new` is safe here, because InsertMenuItem is guaranteed to
   // be added to the view hierarchy, which takes ownership.
-  auto* item = new ExtensionsMenuItemView(
-      ExtensionsMenuItemView::MenuItemType::kExtensions, browser_,
-      std::move(controller), allow_pinning_);
+  auto* item = new ExtensionsMenuItemView(browser_, std::move(controller),
+                                          allow_pinning_);
   extensions_menu_items_.insert(item);
   InsertMenuItem(item);
+  //update on 20220422
+//  BrowserView::GetBrowserViewForBrowser(browser_)->GetSuspendbarView()->ShowExtensionsView(controller.get());
+  //
   // Sanity check that the item was added.
   DCHECK(Contains(item));
 }
@@ -412,17 +412,11 @@ std::u16string ExtensionsMenuView::GetAccessibleWindowTitle() const {
 void ExtensionsMenuView::OnThemeChanged() {
   BubbleDialogDelegateView::OnThemeChanged();
   if (manage_extensions_button_) {
-    const SkColor background_color =
-        GetColorProvider()->GetColor(ui::kColorBubbleBackground);
-    SkColor icon_color = GetColorProvider()->GetColor(ui::kColorMenuIcon);
-    if (background_color != SK_ColorTRANSPARENT) {
-      icon_color =
-          color_utils::BlendForMinContrast(icon_color, background_color).color;
-    }
     manage_extensions_button_->SetImage(
         views::Button::STATE_NORMAL,
-        gfx::CreateVectorIcon(vector_icons::kSettingsIcon, kSettingsIconSize,
-                              icon_color));
+        gfx::CreateVectorIcon(
+            vector_icons::kSettingsIcon, kSettingsIconSize,
+            GetColorProvider()->GetColor(ui::kColorMenuIcon)));
   }
 }
 
@@ -497,9 +491,6 @@ views::Widget* ExtensionsMenuView::ShowBubble(
     ExtensionsContainer* extensions_container,
     bool allow_pinning) {
   DCHECK(!g_extensions_dialog);
-  // Experiment `kExtensionsMenuAccessControl` is introducing a new menu. Check
-  // `ExtensionsMenuView` is only constructed when the experiment is disabled.
-  DCHECK(!base::FeatureList::IsEnabled(features::kExtensionsMenuAccessControl));
   g_extensions_dialog = new ExtensionsMenuView(
       anchor_view, browser, extensions_container, allow_pinning);
   views::Widget* widget =

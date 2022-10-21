@@ -13,7 +13,6 @@
 #include "base/compiler_specific.h"
 #include "base/format_macros.h"
 #include "base/json/json_reader.h"
-#include "base/memory/raw_ptr.h"
 #include "base/time/time.h"
 #include "base/values.h"
 #include "chrome/test/chromedriver/chrome/devtools_client_impl.h"
@@ -64,12 +63,12 @@ class FakeDevToolsClient : public StubDevToolsClient {
   // Overridden from DevToolsClient:
   Status ConnectIfNecessary() override { return listener_->OnConnected(this); }
 
-  Status SendCommandAndGetResult(const std::string& method,
-                                 const base::DictionaryValue& params,
-                                 base::Value* result) override {
+  Status SendCommandAndGetResult(
+      const std::string& method,
+      const base::DictionaryValue& params,
+      std::unique_ptr<base::DictionaryValue>* result) override {
     sent_commands_.push_back(
         std::make_unique<DevToolsCommand>(method, params.DeepCopy()));
-    *result = base::Value(base::Value::Type::DICTIONARY);
     return Status(kOk);
   }
 
@@ -84,8 +83,7 @@ class FakeDevToolsClient : public StubDevToolsClient {
   const std::string id_;  // WebView id.
   std::vector<std::unique_ptr<DevToolsCommand>>
       sent_commands_;                // Commands that were sent.
-  raw_ptr<DevToolsEventListener>
-      listener_;  // The fake allows only one event listener.
+  DevToolsEventListener* listener_;  // The fake allows only one event listener.
   size_t command_index_;
 };
 
@@ -299,13 +297,15 @@ TEST(PerformanceLogger, TracingStartStop) {
   base::ListValue* categories;
   EXPECT_TRUE(cmd->params->GetList("traceConfig.includedCategories",
                                    &categories));
-  ASSERT_EQ(2u, categories->GetList().size());
-  ASSERT_TRUE(categories->GetList()[0].is_string());
-  EXPECT_EQ("benchmark", categories->GetList()[0].GetString());
-  ASSERT_TRUE(categories->GetList()[1].is_string());
-  EXPECT_EQ("blink.console", categories->GetList()[1].GetString());
-  int expected_interval =
-      cmd->params->FindIntKey("bufferUsageReportingInterval").value_or(-1);
+  EXPECT_EQ(2u, categories->GetList().size());
+  std::string category;
+  EXPECT_TRUE(categories->GetString(0, &category));
+  EXPECT_EQ("benchmark", category);
+  EXPECT_TRUE(categories->GetString(1, &category));
+  EXPECT_EQ("blink.console", category);
+  int expected_interval = 0;
+  EXPECT_TRUE(cmd->params->GetInteger("bufferUsageReportingInterval",
+                                      &expected_interval));
   EXPECT_GT(expected_interval, 0);
   ASSERT_FALSE(client.PopSentCommand(&cmd));
 

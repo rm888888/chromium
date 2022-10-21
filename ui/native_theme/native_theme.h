@@ -8,7 +8,7 @@
 #include <map>
 
 #include "base/containers/flat_map.h"
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/observer_list.h"
 #include "base/sequence_checker.h"
 #include "build/build_config.h"
@@ -498,11 +498,12 @@ class NATIVE_THEME_EXPORT NativeTheme {
   // Assign the focus-ring-appropriate alpha value to the provided base_color.
   virtual SkColor FocusRingColorForBaseColor(SkColor base_color) const;
 
-  float AdjustBorderWidthByZoom(float border_width, float zoom_level) const;
+  virtual float AdjustBorderWidthByZoom(float border_width,
+                                        float zoom_level) const;
 
-  float AdjustBorderRadiusByZoom(Part part,
-                                 float border_width,
-                                 float zoom_level) const;
+  virtual float AdjustBorderRadiusByZoom(Part part,
+                                         float border_width,
+                                         float zoom_level) const;
 
  protected:
   explicit NativeTheme(bool should_only_use_dark_colors,
@@ -567,7 +568,7 @@ class NATIVE_THEME_EXPORT NativeTheme {
     void OnNativeThemeUpdated(ui::NativeTheme* observed_theme) override;
 
     // The theme that gets updated when OnNativeThemeUpdated() is called.
-    const raw_ptr<NativeTheme> theme_to_update_;
+    NativeTheme* const theme_to_update_;
   };
 
   mutable std::map<SystemThemeColor, SkColor> system_colors_;

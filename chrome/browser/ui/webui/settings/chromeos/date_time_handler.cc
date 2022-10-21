@@ -4,7 +4,6 @@
 
 #include "chrome/browser/ui/webui/settings/chromeos/date_time_handler.h"
 
-#include "ash/components/settings/timezone_settings.h"
 #include "ash/public/cpp/child_accounts/parent_access_controller.h"
 #include "ash/public/cpp/login_screen.h"
 #include "base/bind.h"
@@ -20,6 +19,7 @@
 #include "chrome/browser/browser_process_platform_part.h"
 #include "chrome/common/pref_names.h"
 #include "chromeos/dbus/system_clock/system_clock_client.h"
+#include "chromeos/settings/timezone_settings.h"
 #include "components/policy/proto/chrome_device_policy.pb.h"
 #include "components/prefs/pref_service.h"
 #include "components/user_manager/user_manager.h"
@@ -127,8 +127,9 @@ void DateTimeHandler::HandleGetTimeZones(const base::ListValue* args) {
   AllowJavascript();
 
   CHECK_EQ(1U, args->GetList().size());
-  const base::Value& callback_id = args->GetList()[0];
-  ResolveJavascriptCallback(callback_id, *system::GetTimezoneList());
+  const base::Value* callback_id;
+  CHECK(args->Get(0, &callback_id));
+  ResolveJavascriptCallback(*callback_id, *system::GetTimezoneList());
 }
 
 void DateTimeHandler::HandleShowSetDateTimeUI(const base::ListValue* args) {

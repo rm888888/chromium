@@ -8,7 +8,7 @@
 #include <memory>
 
 #include "base/gtest_prod_util.h"
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "build/chromeos_buildflags.h"
 #include "chrome/browser/extensions/extension_uninstall_dialog.h"
@@ -22,10 +22,6 @@ namespace extensions {
 class Extension;
 }
 
-namespace views {
-class MdTextButton;
-}
-
 // A small summary panel with buttons to control the app that is displayed at
 // the bottom of the app info dialog.
 class AppInfoFooterPanel
@@ -34,10 +30,6 @@ class AppInfoFooterPanel
       public base::SupportsWeakPtr<AppInfoFooterPanel> {
  public:
   METADATA_HEADER(AppInfoFooterPanel);
-
-  static base::OnceCallback<void(AppInfoFooterPanel*)>&
-  InstanceCallbackForTesting();
-
   AppInfoFooterPanel(Profile* profile, const extensions::Extension* app);
   AppInfoFooterPanel(const AppInfoFooterPanel&) = delete;
   AppInfoFooterPanel& operator=(const AppInfoFooterPanel&) = delete;
@@ -48,10 +40,6 @@ class AppInfoFooterPanel
   static std::unique_ptr<AppInfoFooterPanel> CreateFooterPanel(
       Profile* profile,
       const extensions::Extension* app);
-
-  views::MdTextButton* get_create_shortcuts_button_for_testing() {
-    return create_shortcuts_button_.get();
-  }
 
  private:
   FRIEND_TEST_ALL_PREFIXES(AppInfoDialogViewsTest,
@@ -88,12 +76,12 @@ class AppInfoFooterPanel
                               const extensions::Extension* app);
 
   // UI elements on the dialog. Elements are null if they are not displayed.
-  raw_ptr<views::MdTextButton> create_shortcuts_button_ = nullptr;
+  views::View* create_shortcuts_button_ = nullptr;
 #if BUILDFLAG(IS_CHROMEOS_ASH)
   views::View* pin_to_shelf_button_ = nullptr;
   views::View* unpin_from_shelf_button_ = nullptr;
 #endif  // BUILDFLAG(IS_CHROMEOS_ASH)
-  raw_ptr<views::View> remove_button_ = nullptr;
+  views::View* remove_button_ = nullptr;
 
   std::unique_ptr<extensions::ExtensionUninstallDialog>
       extension_uninstall_dialog_;

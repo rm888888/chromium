@@ -7,14 +7,14 @@
 #include "testing/gtest/include/gtest/gtest.h"
 #include "ui/gfx/geometry/size.h"
 
-#if BUILDFLAG(IS_WIN)
+#if defined(OS_WIN)
 #include "base/win/windows_version.h"
 #endif
 
 namespace vr {
 
 TEST(GlTestEnvironmentTest, InitializeAndCleanup) {
-#if BUILDFLAG(IS_WIN)
+#if defined(OS_WIN)
   // VR is not supported on Windows 7.
   if (base::win::GetVersion() <= base::win::Version::WIN7)
     return;

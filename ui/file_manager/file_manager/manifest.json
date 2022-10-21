@@ -82,6 +82,11 @@
         "application/pdf"
       ]
     },
+    "view-swf": {
+      "extensions": [
+        "swf"
+      ]
+    },
     "view-in-browser": {
       "extensions": [
         "htm",

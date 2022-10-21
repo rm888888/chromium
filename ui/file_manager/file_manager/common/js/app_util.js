@@ -18,7 +18,12 @@ appUtil.saveAppState = () => {
   const items = {};
 
   items[window.appID] = JSON.stringify(window.appState);
-  xfm.storage.local.setAsync(items);
+  xfm.storage.local.set(items, () => {
+    if (chrome.runtime.lastError) {
+      console.error(
+          'Failed to save app state: ' + chrome.runtime.lastError.message);
+    }
+  });
 };
 
 /**
@@ -108,18 +113,18 @@ appUtil.AppCache.update = (key, value, opt_lifetime) => {
  *   key-value pairs.
  * @private
  */
-appUtil.AppCache.read_ = async (callback) => {
-  const values = await xfm.storage.local.getAsync(appUtil.AppCache.KEY);
-
-  const json = /** @type {string} */ (values[appUtil.AppCache.KEY]);
-  if (json) {
-    try {
-      callback(/** @type {Object} */ (JSON.parse(json)));
-    } catch (e) {
-      // The local storage item somehow got messed up, start fresh.
+appUtil.AppCache.read_ = callback => {
+  xfm.storage.local.get(appUtil.AppCache.KEY, values => {
+    const json = values[appUtil.AppCache.KEY];
+    if (json) {
+      try {
+        callback(/** @type {Object} */ (JSON.parse(json)));
+      } catch (e) {
+        // The local storage item somehow got messed up, start fresh.
+      }
     }
-  }
-  callback({});
+    callback({});
+  });
 };
 
 /**
@@ -129,7 +134,7 @@ appUtil.AppCache.read_ = async (callback) => {
 appUtil.AppCache.write_ = map => {
   const items = {};
   items[appUtil.AppCache.KEY] = JSON.stringify(map);
-  xfm.storage.local.setAsync(items);
+  xfm.storage.local.set(items);
 };
 
 /**

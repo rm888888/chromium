@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+#include "base/macros.h"
 #include "ui/views/examples/views_examples_export.h"
 
 namespace views {

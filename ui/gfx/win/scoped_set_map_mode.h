@@ -8,6 +8,7 @@
 #include <windows.h>
 
 #include "base/check_op.h"
+#include "base/macros.h"
 
 namespace gfx {
 

@@ -10,7 +10,6 @@
 #include "base/bind.h"
 #include "base/containers/contains.h"
 #include "base/containers/cxx20_erase.h"
-#include "base/memory/raw_ptr.h"
 #include "build/chromeos_buildflags.h"
 #include "chrome/browser/profiles/profile.h"
 #include "chrome/browser/usb/usb_blocklist.h"
@@ -25,55 +24,8 @@
 
 #if BUILDFLAG(ENABLE_EXTENSIONS)
 #include "base/containers/fixed_flat_set.h"
-#include "extensions/browser/extension_registry.h"
 #include "extensions/common/constants.h"
 #endif
-
-namespace {
-
-#if BUILDFLAG(ENABLE_EXTENSIONS)
-// These extensions automatically gain permissions for the smart card USB class
-constexpr auto kSmartCardPrivilegedExtensionIds =
-    base::MakeFixedFlatSet<base::StringPiece>({
-        // Smart Card Connector Extension and its Beta version, see
-        // crbug.com/1233881.
-        "khpfeaanjngmcnplbdlpegiifgpfgdco",
-        "mockcojkppdndnhgonljagclgpkjbkek",
-    });
-
-bool DeviceHasInterfaceWithClass(
-    const device::mojom::UsbDeviceInfo& device_info,
-    uint8_t interface_class) {
-  for (const auto& configuration : device_info.configurations) {
-    for (const auto& interface : configuration->interfaces) {
-      for (const auto& alternate : interface->alternates) {
-        if (alternate->class_code == interface_class)
-          return true;
-      }
-    }
-  }
-  return false;
-}
-#endif  // BUILDFLAG(ENABLE_EXTENSIONS)
-
-bool IsDevicePermissionAutoGranted(
-    const url::Origin& origin,
-    const device::mojom::UsbDeviceInfo& device_info) {
-#if BUILDFLAG(ENABLE_EXTENSIONS)
-  // Note: The `DeviceHasInterfaceWithClass()` call is made after checking the
-  // origin, since that method call is expensive.
-  if (origin.scheme() == extensions::kExtensionScheme &&
-      base::Contains(kSmartCardPrivilegedExtensionIds, origin.host()) &&
-      DeviceHasInterfaceWithClass(device_info,
-                                  device::mojom::kUsbSmartCardClass)) {
-    return true;
-  }
-#endif  // BUILDFLAG(ENABLE_EXTENSIONS)
-
-  return false;
-}
-
-}  // namespace
 
 // A UsbDeviceClient represents a UsbDevice pipe that has been passed to the
 // renderer process. The UsbDeviceClient pipe allows the browser process to
@@ -119,7 +71,7 @@ class WebUsbServiceImpl::UsbDeviceClient
   }
 
  private:
-  const raw_ptr<WebUsbServiceImpl> service_;
+  WebUsbServiceImpl* const service_;
   const std::string device_guid_;
   bool opened_ = false;
   mojo::Receiver<device::mojom::UsbDeviceClient> receiver_;
@@ -157,19 +109,15 @@ void WebUsbServiceImpl::BindReceiver(
   // to UsbChooserContext, meaning that all ephemeral permission checks in
   // OnDeviceRemoved() will fail.
   if (!device_observation_.IsObserving())
-    device_observation_.Observe(chooser_context_.get());
+    device_observation_.Observe(chooser_context_);
   if (!permission_observation_.IsObserving())
-    permission_observation_.Observe(chooser_context_.get());
+    permission_observation_.Observe(chooser_context_);
 }
 
 bool WebUsbServiceImpl::HasDevicePermission(
     const device::mojom::UsbDeviceInfo& device_info) const {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   DCHECK(render_frame_host_);
-
-  if (IsDevicePermissionAutoGranted(origin_, device_info))
-    return true;
-
   if (!chooser_context_)
     return false;
 
@@ -177,22 +125,6 @@ bool WebUsbServiceImpl::HasDevicePermission(
 }
 
 std::vector<uint8_t> WebUsbServiceImpl::GetProtectedInterfaceClasses() const {
-#if BUILDFLAG(ENABLE_EXTENSIONS)
-  // Don't enforce protected interface classes for Chrome Apps since the
-  // chrome.usb API has no such restriction.
-  if (origin_.scheme() == extensions::kExtensionScheme) {
-    auto* extension_registry = extensions::ExtensionRegistry::Get(
-        render_frame_host_->GetBrowserContext());
-    if (extension_registry) {
-      const extensions::Extension* extension =
-          extension_registry->enabled_extensions().GetByID(origin_.host());
-      if (extension && extension->is_platform_app()) {
-        return {};
-      }
-    }
-  }
-#endif
-
   // Specified in https://wicg.github.io/webusb#protected-interface-classes
   std::vector<uint8_t> classes = {
       device::mojom::kUsbAudioClass,       device::mojom::kUsbHidClass,
@@ -250,6 +182,15 @@ std::vector<uint8_t> WebUsbServiceImpl::GetProtectedInterfaceClasses() const {
 #endif  // BUILDFLAG(ENABLE_EXTENSIONS) && BUILDFLAG(IS_CHROMEOS_ASH)
 
 #if BUILDFLAG(ENABLE_EXTENSIONS)
+  // These extensions can claim the smart card USB class
+  static constexpr auto kSmartCardPrivilegedExtensionIds =
+      base::MakeFixedFlatSet<base::StringPiece>({
+          // Smart Card Connector Extension and its Beta version, see
+          // crbug.com/1233881.
+          "khpfeaanjngmcnplbdlpegiifgpfgdco",
+          "mockcojkppdndnhgonljagclgpkjbkek",
+      });
+
   if (origin_.scheme() == extensions::kExtensionScheme &&
       base::Contains(kSmartCardPrivilegedExtensionIds, origin_.host())) {
     base::Erase(classes, device::mojom::kUsbSmartCardClass);

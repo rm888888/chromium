@@ -99,6 +99,8 @@ void ChromeExtensionsClient::FilterHostPermissions(
     const URLPatternSet& hosts,
     URLPatternSet* new_hosts,
     PermissionIDSet* permissions) const {
+  // When editing this function, be sure to add the same functionality to
+  // FilterHostPermissions() above.
   for (auto i = hosts.begin(); i != hosts.end(); ++i) {
     // Filters out every URL pattern that matches chrome:// scheme.
     if (i->scheme() == content::kChromeUIScheme) {
@@ -164,7 +166,7 @@ const GURL& ChromeExtensionsClient::GetWebstoreUpdateURL() const {
   return webstore_update_url_;
 }
 
-bool ChromeExtensionsClient::IsBlocklistUpdateURL(const GURL& url) const {
+bool ChromeExtensionsClient::IsBlacklistUpdateURL(const GURL& url) const {
   // The extension blocklist URL is returned from the update service and
   // therefore not determined by Chromium. If the location of the blocklist file
   // ever changes, we need to update this function. A DCHECK in the

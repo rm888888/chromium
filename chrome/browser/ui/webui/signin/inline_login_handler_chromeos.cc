@@ -12,15 +12,16 @@
 #include "base/base64.h"
 #include "base/callback_helpers.h"
 #include "base/logging.h"
+#include "base/macros.h"
 #include "base/threading/sequenced_task_runner_handle.h"
 #include "base/values.h"
-#include "chrome/browser/ash/account_manager/account_apps_availability.h"
-#include "chrome/browser/ash/account_manager/account_apps_availability_factory.h"
+#include "chrome/browser/ash/child_accounts/secondary_account_consent_logger.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/browser_process_platform_part.h"
 #include "chrome/browser/profiles/profile.h"
 #include "chrome/browser/signin/chrome_device_id_helper.h"
 #include "chrome/browser/signin/identity_manager_factory.h"
+#include "chrome/browser/supervised_user/supervised_user_features/supervised_user_features.h"
 #include "chrome/browser/ui/browser_commands.h"
 #include "chrome/browser/ui/webui/chromeos/edu_coexistence/edu_coexistence_state_tracker.h"
 #include "chrome/browser/ui/webui/signin/inline_login_dialog_chromeos.h"
@@ -85,13 +86,94 @@ std::string GetInlineLoginFlowName(Profile* profile, const std::string* email) {
   return kCrosAddAccountEduFlow;
 }
 
+// A version of SigninHelper for child users. After obtaining OAuth token it
+// logs the parental consent with provided parent id and rapt. After successful
+// consent logging populates Chrome OS AccountManager with the token.
+class ChildSigninHelper : public SigninHelper {
+ public:
+  ChildSigninHelper(
+      account_manager::AccountManager* account_manager,
+      crosapi::AccountManagerMojoService* account_manager_mojo_service,
+      const base::RepeatingClosure& close_dialog_closure,
+      scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory,
+      const std::string& gaia_id,
+      const std::string& email,
+      const std::string& auth_code,
+      const std::string& signin_scoped_device_id,
+      signin::IdentityManager* identity_manager,
+      PrefService* pref_service,
+      const std::string& parent_obfuscated_gaia_id,
+      const std::string& re_auth_proof_token)
+      : SigninHelper(account_manager,
+                     account_manager_mojo_service,
+                     close_dialog_closure,
+                     url_loader_factory,
+                     gaia_id,
+                     email,
+                     auth_code,
+                     signin_scoped_device_id),
+        identity_manager_(identity_manager),
+        pref_service_(pref_service),
+        parent_obfuscated_gaia_id_(parent_obfuscated_gaia_id),
+        re_auth_proof_token_(re_auth_proof_token) {}
+  ChildSigninHelper(const ChildSigninHelper&) = delete;
+  ChildSigninHelper& operator=(const ChildSigninHelper&) = delete;
+  ~ChildSigninHelper() override = default;
+
+ protected:
+  // GaiaAuthConsumer overrides.
+  void OnClientOAuthSuccess(const ClientOAuthResult& result) override {
+    // Log parental consent for secondary account addition. In case of success,
+    // refresh token from |result| will be added to Account Manager in
+    // |OnConsentLogged|.
+    DCHECK(!secondary_account_consent_logger_);
+    secondary_account_consent_logger_ =
+        std::make_unique<SecondaryAccountConsentLogger>(
+            identity_manager_, GetUrlLoaderFactory(), pref_service_, GetEmail(),
+            parent_obfuscated_gaia_id_, re_auth_proof_token_,
+            base::BindOnce(&ChildSigninHelper::OnConsentLogged,
+                           weak_ptr_factory_.GetWeakPtr(),
+                           result.refresh_token));
+    secondary_account_consent_logger_->StartLogging();
+  }
+
+  void OnConsentLogged(const std::string& refresh_token,
+                       SecondaryAccountConsentLogger::Result result) {
+    secondary_account_consent_logger_.reset();
+    if (result == SecondaryAccountConsentLogger::Result::kSuccess) {
+      // The EDU account has been added/re-authenticated. Mark migration to
+      // ARC++ as completed.
+      pref_service_->SetBoolean(::prefs::kEduCoexistenceArcMigrationCompleted,
+                                true);
+
+      UpsertAccount(refresh_token);
+    } else {
+      LOG(ERROR) << "Could not log parent consent, the result was: "
+                 << static_cast<int>(result);
+      // TODO(anastasiian): send error to UI?
+    }
+
+    CloseDialogAndExit();
+  }
+
+ private:
+  // Unowned pointer to identity manager.
+  signin::IdentityManager* const identity_manager_;
+  // Unowned pointer to pref service.
+  PrefService* const pref_service_;
+  const std::string parent_obfuscated_gaia_id_;
+  const std::string re_auth_proof_token_;
+  std::unique_ptr<SecondaryAccountConsentLogger>
+      secondary_account_consent_logger_;
+  base::WeakPtrFactory<ChildSigninHelper> weak_ptr_factory_{this};
+};
+
 class EduCoexistenceChildSigninHelper : public SigninHelper {
  public:
   EduCoexistenceChildSigninHelper(
       account_manager::AccountManager* account_manager,
       crosapi::AccountManagerMojoService* account_manager_mojo_service,
       scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory,
-      std::unique_ptr<SigninHelper::ArcHelper> arc_helper,
       const std::string& gaia_id,
       const std::string& email,
       const std::string& auth_code,
@@ -104,7 +186,6 @@ class EduCoexistenceChildSigninHelper : public SigninHelper {
                      // dialog. Therefore, passing a void callback.
                      base::DoNothing(),
                      url_loader_factory,
-                     std::move(arc_helper),
                      gaia_id,
                      email,
                      auth_code,
@@ -223,11 +304,18 @@ void InlineLoginHandlerChromeOS::SetExtraInitParams(
   params.SetBoolean("ignoreCrOSIdpSetting", true);
 }
 
-void InlineLoginHandlerChromeOS::CompleteLogin(
-    const CompleteLoginParams& params) {
-  CHECK(!params.auth_code.empty());
-  CHECK(!params.gaia_id.empty());
-  CHECK(!params.email.empty());
+void InlineLoginHandlerChromeOS::CompleteLogin(const std::string& email,
+                                               const std::string& password,
+                                               const std::string& gaia_id,
+                                               const std::string& auth_code,
+                                               bool skip_for_now,
+                                               bool trusted,
+                                               bool trusted_found,
+                                               bool choose_what_to_sync,
+                                               base::Value edu_login_params) {
+  CHECK(!auth_code.empty());
+  CHECK(!gaia_id.empty());
+  CHECK(!email.empty());
 
   // TODO(sinhak): Do not depend on Profile unnecessarily.
   Profile* profile = Profile::FromWebUI(web_ui());
@@ -250,25 +338,33 @@ void InlineLoginHandlerChromeOS::CompleteLogin(
       identity_manager->GetPrimaryAccountInfo(signin::ConsentLevel::kSignin)
           .email;
 
-  std::unique_ptr<SigninHelper::ArcHelper> arc_helper;
-  if (ash::AccountAppsAvailability::IsArcAccountRestrictionsEnabled()) {
-    // TODO(crbug.com/1260909): Set `is_available_in_arc` to the value chosen by
-    // the user.
-    arc_helper = std::make_unique<SigninHelper::ArcHelper>(
-        /*is_available_in_arc=*/true,
-        ash::AccountAppsAvailabilityFactory::GetForProfile(profile));
-  }
-
   // Child user added a secondary account.
   if (profile->IsChild() &&
-      !gaia::AreEmailsSame(primary_account_email, params.email)) {
-    new EduCoexistenceChildSigninHelper(
-        account_manager, account_manager_mojo_service,
-        profile->GetURLLoaderFactory(), std::move(arc_helper), params.gaia_id,
-        params.email, params.auth_code,
-        GetAccountDeviceId(GetSigninScopedDeviceIdForProfile(profile),
-                           params.gaia_id),
-        profile->GetPrefs(), web_ui());
+      !gaia::AreEmailsSame(primary_account_email, email)) {
+    if (!base::FeatureList::IsEnabled(
+            supervised_users::kEduCoexistenceFlowV2)) {
+      const std::string* rapt =
+          edu_login_params.FindStringKey("reAuthProofToken");
+      CHECK(rapt);
+      const std::string* parentId =
+          edu_login_params.FindStringKey("parentObfuscatedGaiaId");
+      CHECK(parentId);
+
+      // ChildSigninHelper deletes itself after its work is done.
+      new ChildSigninHelper(
+          account_manager, account_manager_mojo_service, close_dialog_closure_,
+          profile->GetURLLoaderFactory(), gaia_id, email, auth_code,
+          GetAccountDeviceId(GetSigninScopedDeviceIdForProfile(profile),
+                             gaia_id),
+          identity_manager, profile->GetPrefs(), *parentId, *rapt);
+    } else {
+      new EduCoexistenceChildSigninHelper(
+          account_manager, account_manager_mojo_service,
+          profile->GetURLLoaderFactory(), gaia_id, email, auth_code,
+          GetAccountDeviceId(GetSigninScopedDeviceIdForProfile(profile),
+                             gaia_id),
+          profile->GetPrefs(), web_ui());
+    }
 
     return;
   }
@@ -276,10 +372,8 @@ void InlineLoginHandlerChromeOS::CompleteLogin(
   // SigninHelper deletes itself after its work is done.
   new SigninHelper(
       account_manager, account_manager_mojo_service, close_dialog_closure_,
-      profile->GetURLLoaderFactory(), std::move(arc_helper), params.gaia_id,
-      params.email, params.auth_code,
-      GetAccountDeviceId(GetSigninScopedDeviceIdForProfile(profile),
-                         params.gaia_id));
+      profile->GetURLLoaderFactory(), gaia_id, email, auth_code,
+      GetAccountDeviceId(GetSigninScopedDeviceIdForProfile(profile), gaia_id));
 }
 
 void InlineLoginHandlerChromeOS::HandleDialogClose(

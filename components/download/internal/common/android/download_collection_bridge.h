@@ -10,6 +10,7 @@
 #include <string>
 
 #include "base/files/file.h"
+#include "base/macros.h"
 #include "components/download/public/common/download_export.h"
 #include "components/download/public/common/download_file.h"
 #include "components/download/public/common/in_progress_download_manager.h"

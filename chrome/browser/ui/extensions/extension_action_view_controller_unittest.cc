@@ -8,7 +8,6 @@
 #include "base/callback_helpers.h"
 #include "base/cxx17_backports.h"
 #include "base/json/json_reader.h"
-#include "base/memory/raw_ptr.h"
 #include "base/run_loop.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
@@ -38,7 +37,6 @@
 #include "extensions/browser/extension_system.h"
 #include "extensions/browser/notification_types.h"
 #include "extensions/browser/test_extension_registry_observer.h"
-#include "extensions/common/api/extension_action/action_info.h"
 #include "extensions/common/extension_builder.h"
 #include "extensions/common/mojom/run_location.mojom-shared.h"
 #include "extensions/common/user_script.h"
@@ -108,7 +106,7 @@ class ExtensionActionViewControllerUnitTest : public BrowserWithTestWindowTest {
 
   scoped_refptr<const extensions::Extension> CreateAndAddExtension(
       const std::string& name,
-      extensions::ActionInfo::Type action_type) {
+      extensions::ExtensionBuilder::ActionType action_type) {
     scoped_refptr<const extensions::Extension> extension =
         extensions::ExtensionBuilder(name)
             .SetAction(action_type)
@@ -129,10 +127,10 @@ class ExtensionActionViewControllerUnitTest : public BrowserWithTestWindowTest {
 
  private:
   // The ExtensionService associated with the primary profile.
-  raw_ptr<extensions::ExtensionService> extension_service_ = nullptr;
+  extensions::ExtensionService* extension_service_ = nullptr;
 
   // ToolbarActionsModel associated with the main profile.
-  raw_ptr<ToolbarActionsModel> toolbar_model_ = nullptr;
+  ToolbarActionsModel* toolbar_model_ = nullptr;
 
   std::unique_ptr<ExtensionActionTestHelper> test_util_;
 
@@ -145,7 +143,8 @@ class ExtensionActionViewControllerUnitTest : public BrowserWithTestWindowTest {
 TEST_F(ExtensionActionViewControllerUnitTest,
        ExtensionActionWantsToRunAppearance) {
   const std::string id =
-      CreateAndAddExtension("extension", extensions::ActionInfo::TYPE_PAGE)
+      CreateAndAddExtension(
+          "extension", extensions::ExtensionBuilder::ActionType::PAGE_ACTION)
           ->id();
 
   AddTab(browser(), GURL("chrome://newtab"));
@@ -169,7 +168,7 @@ TEST_F(ExtensionActionViewControllerUnitTest,
 TEST_F(ExtensionActionViewControllerUnitTest, BrowserActionBlockedActions) {
   scoped_refptr<const extensions::Extension> extension =
       extensions::ExtensionBuilder("browser action")
-          .SetAction(extensions::ActionInfo::TYPE_BROWSER)
+          .SetAction(extensions::ExtensionBuilder::ActionType::BROWSER_ACTION)
           .SetLocation(ManifestLocation::kInternal)
           .AddPermission("https://www.google.com/*")
           .Build();
@@ -217,7 +216,7 @@ TEST_F(ExtensionActionViewControllerUnitTest, BrowserActionBlockedActions) {
 TEST_F(ExtensionActionViewControllerUnitTest, PageActionBlockedActions) {
   scoped_refptr<const extensions::Extension> extension =
       extensions::ExtensionBuilder("page action")
-          .SetAction(extensions::ActionInfo::TYPE_PAGE)
+          .SetAction(extensions::ExtensionBuilder::ActionType::PAGE_ACTION)
           .SetLocation(ManifestLocation::kInternal)
           .AddPermission("https://www.google.com/*")
           .Build();
@@ -313,7 +312,8 @@ TEST_F(ExtensionActionViewControllerUnitTest, OnlyHostPermissionsAppearance) {
 TEST_F(ExtensionActionViewControllerUnitTest,
        ExtensionActionContextMenuVisibility) {
   std::string id =
-      CreateAndAddExtension("extension", extensions::ActionInfo::TYPE_BROWSER)
+      CreateAndAddExtension(
+          "extension", extensions::ExtensionBuilder::ActionType::BROWSER_ACTION)
           ->id();
 
   // Check that the context menu has the proper string for the action's pinned
@@ -528,7 +528,7 @@ scoped_refptr<const extensions::Extension>
 ExtensionActionViewControllerGrayscaleTest::CreateExtension(
     PermissionType permission_type) {
   extensions::ExtensionBuilder builder("extension");
-  builder.SetAction(extensions::ActionInfo::TYPE_BROWSER)
+  builder.SetAction(extensions::ExtensionBuilder::ActionType::BROWSER_ACTION)
       .SetLocation(ManifestLocation::kInternal);
   constexpr char kHostGoogle[] = "https://www.google.com/*";
   switch (permission_type) {
@@ -576,7 +576,7 @@ TEST_F(ExtensionActionViewControllerGrayscaleTest,
 TEST_F(ExtensionActionViewControllerUnitTest, RuntimeHostsTooltip) {
   scoped_refptr<const extensions::Extension> extension =
       extensions::ExtensionBuilder("extension name")
-          .SetAction(extensions::ActionInfo::TYPE_BROWSER)
+          .SetAction(extensions::ExtensionBuilder::ActionType::BROWSER_ACTION)
           .SetLocation(ManifestLocation::kInternal)
           .AddPermission("https://www.google.com/*")
           .Build();
@@ -696,7 +696,7 @@ TEST_F(ExtensionActionViewControllerUnitTest,
        GetPageInteractionStatusWithActiveTab) {
   scoped_refptr<const extensions::Extension> extension =
       extensions::ExtensionBuilder("active tab")
-          .SetAction(extensions::ActionInfo::TYPE_BROWSER)
+          .SetAction(extensions::ExtensionBuilder::ActionType::BROWSER_ACTION)
           .AddPermission("activeTab")
           .Build();
   extension_service()->AddExtension(extension.get());
@@ -794,7 +794,7 @@ TEST_F(ExtensionActionViewControllerUnitTest,
 TEST_F(ExtensionActionViewControllerUnitTest, TestGetIconWithNullWebContents) {
   scoped_refptr<const extensions::Extension> extension =
       extensions::ExtensionBuilder("extension name")
-          .SetAction(extensions::ActionInfo::TYPE_BROWSER)
+          .SetAction(extensions::ExtensionBuilder::ActionType::BROWSER_ACTION)
           .AddPermission("https://example.com/")
           .Build();
 

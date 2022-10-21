@@ -9,7 +9,6 @@
 
 #include "base/compiler_specific.h"
 #include "base/containers/circular_deque.h"
-#include "base/memory/raw_ptr.h"
 #include "base/test/test_mock_time_task_runner.h"
 #include "base/time/tick_clock.h"
 #include "base/time/time.h"
@@ -197,7 +196,7 @@ class VideoDetectorTest : public testing::Test {
     return frame_sink;
   }
 
-  raw_ptr<VideoDetector> detector_;
+  VideoDetector* detector_;
   TestObserver observer_;
 
   scoped_refptr<base::TestMockTimeTaskRunner> mock_task_runner_;
@@ -211,8 +210,7 @@ class VideoDetectorTest : public testing::Test {
   }
 
   ServerSharedBitmapManager shared_bitmap_manager_;
-  FrameSinkManagerImpl frame_sink_manager_{
-      FrameSinkManagerImpl::InitParams(&shared_bitmap_manager_)};
+  FrameSinkManagerImpl frame_sink_manager_{&shared_bitmap_manager_};
   DisplayResourceProviderSoftware resource_provider_{&shared_bitmap_manager_};
   FakeCompositorFrameSinkClient frame_sink_client_;
   SurfaceIdAllocatorSet allocators_;

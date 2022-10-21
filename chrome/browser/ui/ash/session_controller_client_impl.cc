@@ -8,7 +8,6 @@
 #include <memory>
 #include <utility>
 
-#include "ash/components/login/session/session_termination_manager.h"
 #include "ash/constants/ash_pref_names.h"
 #include "ash/public/cpp/session/session_controller.h"
 #include "ash/public/cpp/session/session_types.h"
@@ -21,7 +20,6 @@
 #include "chrome/browser/ash/crosapi/browser_util.h"
 #include "chrome/browser/ash/login/demo_mode/demo_session.h"
 #include "chrome/browser/ash/login/ui/user_adding_screen.h"
-#include "chrome/browser/ash/login/users/chrome_user_manager.h"
 #include "chrome/browser/ash/login/users/multi_profile_user_controller.h"
 #include "chrome/browser/ash/profiles/profile_helper.h"
 #include "chrome/browser/ash/settings/device_settings_service.h"
@@ -39,6 +37,7 @@
 #include "chrome/common/pref_names.h"
 #include "chromeos/assistant/buildflags.h"
 #include "chromeos/dbus/session_manager/session_manager_client.h"
+#include "chromeos/login/session/session_termination_manager.h"
 #include "components/prefs/pref_change_registrar.h"
 #include "components/prefs/pref_service.h"
 #include "components/session_manager/core/session_manager.h"
@@ -312,17 +311,12 @@ PrefService* SessionControllerClientImpl::GetUserPrefService(
   return user_profile->GetPrefs();
 }
 
-bool SessionControllerClientImpl::IsEnterpriseManaged() const {
-  const ash::ChromeUserManager* user_manager = ash::ChromeUserManager::Get();
-  return user_manager && user_manager->IsEnterpriseManaged();
-}
-
 // static
 bool SessionControllerClientImpl::IsMultiProfileAvailable() {
   if (!profiles::IsMultipleProfilesEnabled() || !UserManager::IsInitialized())
     return false;
-  if (ash::SessionTerminationManager::Get() &&
-      ash::SessionTerminationManager::Get()->IsLockedToSingleUser()) {
+  if (chromeos::SessionTerminationManager::Get() &&
+      chromeos::SessionTerminationManager::Get()->IsLockedToSingleUser()) {
     return false;
   }
   // Multiprofile mode is not allowed when Lacros is running.
@@ -387,7 +381,7 @@ bool SessionControllerClientImpl::ShouldLockScreenAutomatically() {
 // static
 ash::AddUserSessionPolicy
 SessionControllerClientImpl::GetAddUserSessionPolicy() {
-  if (ash::SessionTerminationManager::Get()->IsLockedToSingleUser())
+  if (chromeos::SessionTerminationManager::Get()->IsLockedToSingleUser())
     return ash::AddUserSessionPolicy::ERROR_LOCKED_TO_SINGLE_USER;
 
   UserManager* const user_manager = UserManager::Get();
@@ -528,7 +522,7 @@ void SessionControllerClientImpl::OnLoginUserProfilePrepared(Profile* profile) {
   const User* user = chromeos::ProfileHelper::Get()->GetUserByProfile(profile);
   DCHECK(user);
 
-  if (profile->IsChild()) {
+  if (profile->IsSupervised()) {
     // There can be only one supervised user per session.
     DCHECK(!supervised_user_profile_);
     supervised_user_profile_ = profile;

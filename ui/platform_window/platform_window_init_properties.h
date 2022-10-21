@@ -8,7 +8,6 @@
 #include <string>
 
 #include "base/component_export.h"
-#include "base/memory/raw_ptr.h"
 #include "build/build_config.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/gfx/geometry/rect.h"
@@ -108,7 +107,7 @@ struct COMPONENT_EXPORT(PLATFORM_WINDOW) PlatformWindowInitProperties {
   bool remove_standard_frame = false;
   std::string workspace;
 
-  raw_ptr<WorkspaceExtensionDelegate> workspace_extension_delegate = nullptr;
+  WorkspaceExtensionDelegate* workspace_extension_delegate = nullptr;
 
   PlatformWindowShadowType shadow_type = PlatformWindowShadowType::kDefault;
 
@@ -125,10 +124,6 @@ struct COMPONENT_EXPORT(PLATFORM_WINDOW) PlatformWindowInitProperties {
   std::string wm_class_class;
 
   X11ExtensionDelegate* x11_extension_delegate = nullptr;
-
-  // Wayland specific.  Holds the application ID that is used by the window
-  // manager to match the desktop entry and group windows.
-  std::string wayland_app_id;
 #endif
 
   bool enable_compositing_based_throttling = false;

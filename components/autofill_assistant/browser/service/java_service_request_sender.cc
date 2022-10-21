@@ -24,8 +24,7 @@ JavaServiceRequestSender::~JavaServiceRequestSender() = default;
 
 void JavaServiceRequestSender::SendRequest(const GURL& url,
                                            const std::string& request_body,
-                                           ResponseCallback callback,
-                                           RpcType rpc_type) {
+                                           ResponseCallback callback) {
   DCHECK(!callback_)
       << __func__
       << " invoked while still waiting for response to previous request";

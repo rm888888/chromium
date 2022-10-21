@@ -81,21 +81,20 @@ CvcUnmaskViewController::CvcUnmaskViewController(
     const autofill::CreditCard& credit_card,
     base::WeakPtr<autofill::payments::FullCardRequest::ResultDelegate>
         result_delegate,
-    content::RenderFrameHost* render_frame_host)
+    content::WebContents* web_contents)
     : PaymentRequestSheetController(spec, state, dialog),
       year_combobox_model_(credit_card.expiration_year()),
       credit_card_(credit_card),
-      frame_routing_id_(render_frame_host->GetGlobalId()),
+      frame_routing_id_(web_contents->GetMainFrame()->GetGlobalId()),
       payments_client_(
-          render_frame_host->GetBrowserContext()
+          web_contents->GetBrowserContext()
               ->GetDefaultStoragePartition()
               ->GetURLLoaderFactoryForBrowserProcess(),
           IdentityManagerFactory::GetForProfile(
-              Profile::FromBrowserContext(
-                  render_frame_host->GetBrowserContext())
+              Profile::FromBrowserContext(web_contents->GetBrowserContext())
                   ->GetOriginalProfile()),
           state->GetPersonalDataManager(),
-          Profile::FromBrowserContext(render_frame_host->GetBrowserContext())
+          Profile::FromBrowserContext(web_contents->GetBrowserContext())
               ->IsOffTheRecord()),
       full_card_request_(this,
                          &payments_client_,
@@ -137,7 +136,7 @@ void CvcUnmaskViewController::OnUnmaskVerificationResult(
   switch (result) {
     case autofill::AutofillClient::PaymentsRpcResult::kNone:
       NOTREACHED();
-      [[fallthrough]];
+      FALLTHROUGH;
     case autofill::AutofillClient::PaymentsRpcResult::kSuccess:
       // In the success case, don't show any error and don't hide the spinner
       // because the dialog is about to close when the merchant completes the

@@ -13,7 +13,6 @@
 #include "base/json/values_util.h"
 #include "base/logging.h"
 #include "base/memory/ptr_util.h"
-#include "base/memory/raw_ptr.h"
 #include "base/no_destructor.h"
 #include "base/strings/string_util.h"
 #include "build/build_config.h"
@@ -461,8 +460,9 @@ bool SessionsModifiedBetween(const base::Value* sessions_dict,
 
 // Returns the origin ID for |origin|, if it exists. Will return an empty value
 // if the origin ID can not be found in |storage_dict|.
-base::UnguessableToken GetOriginIdForOrigin(const base::Value* storage_dict,
-                                            const url::Origin& origin) {
+base::UnguessableToken GetOriginIdForOrigin(
+    const base::DictionaryValue* storage_dict,
+    const url::Origin& origin) {
   DCHECK(storage_dict);
 
   const base::Value* origin_dict = storage_dict->FindKeyOfType(
@@ -497,7 +497,7 @@ class InitializationSerializer {
              std::tie(other.pref_service, other.origin);
     }
 
-    raw_ptr<PrefService> pref_service;
+    PrefService* pref_service;
     const url::Origin origin;
   };
 
@@ -525,7 +525,7 @@ class InitializationSerializer {
     DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
 
     // Check if the preference has an existing origin ID.
-    const base::Value* storage_dict =
+    const base::DictionaryValue* storage_dict =
         pref_service->GetDictionary(prefs::kMediaDrmStorage);
     base::UnguessableToken origin_id =
         GetOriginIdForOrigin(storage_dict, origin);
@@ -573,8 +573,7 @@ class InitializationSerializer {
 
     // Save the origin ID in the preference as long as it is not null.
     if (origin_id) {
-      DictionaryPrefUpdateDeprecated update(pref_service,
-                                            prefs::kMediaDrmStorage);
+      DictionaryPrefUpdate update(pref_service, prefs::kMediaDrmStorage);
       CreateOriginDictAndReturnSessionsDict(update.Get(), origin,
                                             origin_id.value());
     }
@@ -612,7 +611,7 @@ std::set<GURL> MediaDrmStorageImpl::GetAllOrigins(
     const PrefService* pref_service) {
   DCHECK(pref_service);
 
-  const base::Value* storage_dict =
+  const base::DictionaryValue* storage_dict =
       pref_service->GetDictionary(prefs::kMediaDrmStorage);
   if (!storage_dict)
     return std::set<GURL>();
@@ -634,7 +633,7 @@ std::vector<GURL> MediaDrmStorageImpl::GetOriginsModifiedBetween(
     base::Time end) {
   DCHECK(pref_service);
 
-  const base::Value* storage_dict =
+  const base::DictionaryValue* storage_dict =
       pref_service->GetDictionary(prefs::kMediaDrmStorage);
   if (!storage_dict)
     return {};
@@ -693,7 +692,7 @@ void MediaDrmStorageImpl::ClearMatchingLicenses(
     base::OnceClosure complete_cb) {
   DVLOG(1) << __func__ << ": Clear licenses [" << start << ", " << end << "]";
 
-  DictionaryPrefUpdateDeprecated update(pref_service, prefs::kMediaDrmStorage);
+  DictionaryPrefUpdate update(pref_service, prefs::kMediaDrmStorage);
 
   std::vector<base::UnguessableToken> no_license_origin_ids =
       ClearMatchingLicenseData(update.Get(), start, end, filter);
@@ -815,7 +814,7 @@ void MediaDrmStorageImpl::OnProvisioned(OnProvisionedCallback callback) {
     return;
   }
 
-  DictionaryPrefUpdateDeprecated update(pref_service_, prefs::kMediaDrmStorage);
+  DictionaryPrefUpdate update(pref_service_, prefs::kMediaDrmStorage);
   base::DictionaryValue* storage_dict = update.Get();
   DCHECK(storage_dict);
 
@@ -847,7 +846,7 @@ void MediaDrmStorageImpl::SavePersistentSession(
     return;
   }
 
-  DictionaryPrefUpdateDeprecated update(pref_service_, prefs::kMediaDrmStorage);
+  DictionaryPrefUpdate update(pref_service_, prefs::kMediaDrmStorage);
   base::DictionaryValue* storage_dict = update.Get();
   DCHECK(storage_dict);
 
@@ -948,7 +947,7 @@ void MediaDrmStorageImpl::RemovePersistentSession(
     return;
   }
 
-  DictionaryPrefUpdateDeprecated update(pref_service_, prefs::kMediaDrmStorage);
+  DictionaryPrefUpdate update(pref_service_, prefs::kMediaDrmStorage);
 
   base::Value* sessions_dict = GetSessionsDictFromStorageDict<base::Value>(
       update.Get(), origin().Serialize());

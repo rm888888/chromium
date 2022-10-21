@@ -172,8 +172,7 @@ void NeuralStylusPalmDetectionFilter::Filter(
     auto stroke_it = strokes_.find(tracking_id);
 
     if (stroke_it == strokes_.end()) {
-      // TODO(crbug.com/1256926): Work out why this is hit on long presses.
-      DVLOG(1) << "No stroke found, continue.";
+      LOG(DFATAL) << "No stroke found, continue.";
       continue;
     }
 
@@ -323,8 +322,7 @@ std::vector<float> NeuralStylusPalmDetectionFilter::ExtractFeatures(
       AppendFeaturesAsNeighbor(strokes_.at(nearest_stroke.second),
                                nearest_stroke.first, &features);
     } else {
-      features.resize(
-          features.size() + features_per_stroke + kExtraFeaturesForNeighbor, 0);
+      features.resize(features.size() + features_per_stroke + 2, 0);
     }
   }
 

@@ -823,13 +823,12 @@ bool IsX11WindowFullScreen(x11::Window window) {
   return window_rect.size() == gfx::Size(width, height);
 }
 
-bool SuspendX11ScreenSaver(bool suspend) {
+void SuspendX11ScreenSaver(bool suspend) {
   static const bool kScreenSaverAvailable = IsX11ScreenSaverAvailable();
   if (!kScreenSaverAvailable)
-    return false;
+    return;
 
   x11::Connection::Get()->screensaver().Suspend({suspend});
-  return true;
 }
 
 void StoreGpuExtraInfoIntoListValue(x11::VisualId system_visual,
@@ -1136,6 +1135,20 @@ x11::ColorMap XVisualManager::XVisualData::GetColormap() {
     connection->Flush();
   }
   return colormap_;
+}
+
+ScopedUnsetDisplay::ScopedUnsetDisplay() {
+  const char* display = getenv("DISPLAY");
+  if (display) {
+    display_.emplace(display);
+    unsetenv("DISPLAY");
+  }
+}
+
+ScopedUnsetDisplay::~ScopedUnsetDisplay() {
+  if (display_) {
+    setenv("DISPLAY", display_->c_str(), 1);
+  }
 }
 
 }  // namespace ui

@@ -12,6 +12,7 @@
 #include <unordered_map>
 
 #include "base/containers/small_map.h"
+#include "base/macros.h"
 #include "base/memory/ref_counted.h"
 #include "base/synchronization/lock.h"
 #include "base/unguessable_token.h"

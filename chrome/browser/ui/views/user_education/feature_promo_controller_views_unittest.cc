@@ -7,24 +7,18 @@
 #include "base/bind.h"
 #include "base/callback_helpers.h"
 #include "base/feature_list.h"
-#include "base/memory/raw_ptr.h"
 #include "base/test/bind.h"
 #include "base/test/mock_callback.h"
 #include "base/test/task_environment.h"
 #include "chrome/browser/feature_engagement/tracker_factory.h"
 #include "chrome/browser/profiles/profile.h"
-#include "chrome/browser/ui/browser_element_identifiers.h"
+#include "chrome/browser/ui/user_education/feature_promo_bubble_params.h"
 #include "chrome/browser/ui/user_education/feature_promo_snooze_service.h"
-#include "chrome/browser/ui/user_education/feature_promo_specification.h"
-#include "chrome/browser/ui/user_education/tutorial/tutorial.h"
-#include "chrome/browser/ui/user_education/tutorial/tutorial_service_manager.h"
 #include "chrome/browser/ui/views/chrome_view_class_properties.h"
 #include "chrome/browser/ui/views/frame/browser_view.h"
 #include "chrome/browser/ui/views/frame/test_with_browser_view.h"
-#include "chrome/browser/ui/views/tabs/tab_group_editor_bubble_view.h"
 #include "chrome/browser/ui/views/toolbar/browser_app_menu_button.h"
 #include "chrome/browser/ui/views/toolbar/toolbar_view.h"
-#include "chrome/browser/ui/views/user_education/feature_promo_bubble_owner.h"
 #include "chrome/browser/ui/views/user_education/feature_promo_bubble_owner_impl.h"
 #include "chrome/browser/ui/views/user_education/feature_promo_bubble_view.h"
 #include "chrome/browser/ui/views/user_education/feature_promo_registry.h"
@@ -34,9 +28,7 @@
 #include "testing/gmock/include/gmock/gmock.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/base/l10n/l10n_util.h"
-#include "ui/events/base_event_utils.h"
 #include "ui/views/bubble/bubble_border.h"
-#include "ui/views/style/platform_style.h"
 #include "ui/views/test/widget_test.h"
 #include "ui/views/view_class_properties.h"
 
@@ -87,18 +79,21 @@ class FeaturePromoControllerViewsTest : public TestWithBrowserView {
     return browser_view()->toolbar()->app_menu_button();
   }
 
-  FeaturePromoSpecification DefaultBubbleParams() {
-    return FeaturePromoSpecification::CreateForLegacyPromo(
-        &kTestIPHFeature, kAppMenuButtonElementId, IDS_REOPEN_TAB_PROMO);
+  FeaturePromoBubbleParams DefaultBubbleParams() {
+    FeaturePromoBubbleParams params;
+    params.body_string_specifier = IDS_REOPEN_TAB_PROMO;
+    params.arrow = FeaturePromoBubbleParams::Arrow::TOP_RIGHT;
+    return params;
   }
 
-  FeaturePromoSpecification IPHSnoozeBubbleParams() {
-    return FeaturePromoSpecification::CreateForSnoozePromo(
-        kTestIPHFeature, kAppMenuButtonElementId, IDS_REOPEN_TAB_PROMO);
+  FeaturePromoBubbleParams IPHSnoozeBubbleParams() {
+    FeaturePromoBubbleParams params = DefaultBubbleParams();
+    params.allow_snooze = true;
+    return params;
   }
 
-  raw_ptr<FeaturePromoControllerViews> controller_;
-  raw_ptr<NiceMock<feature_engagement::test::MockTracker>> mock_tracker_;
+  FeaturePromoControllerViews* controller_;
+  NiceMock<feature_engagement::test::MockTracker>* mock_tracker_;
 
  private:
   static std::unique_ptr<KeyedService> MakeTestTracker(
@@ -135,8 +130,9 @@ TEST_F(FeaturePromoControllerViewsTest, AsksBackendToShowPromo) {
   base::MockCallback<BubbleCloseCallback> close_callback;
   EXPECT_CALL(close_callback, Run()).Times(0);
 
-  EXPECT_FALSE(controller_->MaybeShowPromoFromSpecification(
-      DefaultBubbleParams(), GetAnchorView(), {}, close_callback.Get()));
+  EXPECT_FALSE(controller_->MaybeShowPromoWithParams(
+      kTestIPHFeature, DefaultBubbleParams(), GetAnchorView(),
+      close_callback.Get()));
   EXPECT_FALSE(controller_->BubbleIsShowing(kTestIPHFeature));
   EXPECT_FALSE(
       FeaturePromoBubbleOwnerImpl::GetInstance()->bubble_for_testing());
@@ -146,8 +142,8 @@ TEST_F(FeaturePromoControllerViewsTest, ShowsBubble) {
   EXPECT_CALL(*mock_tracker_, ShouldTriggerHelpUI(Ref(kTestIPHFeature)))
       .Times(1)
       .WillOnce(Return(true));
-  EXPECT_TRUE(controller_->MaybeShowPromoFromSpecification(
-      DefaultBubbleParams(), GetAnchorView()));
+  EXPECT_TRUE(controller_->MaybeShowPromoWithParams(
+      kTestIPHFeature, DefaultBubbleParams(), GetAnchorView()));
   EXPECT_TRUE(controller_->BubbleIsShowing(kTestIPHFeature));
   EXPECT_TRUE(FeaturePromoBubbleOwnerImpl::GetInstance()->bubble_for_testing());
 }
@@ -157,8 +153,8 @@ TEST_F(FeaturePromoControllerViewsTest,
   EXPECT_CALL(*mock_tracker_, ShouldTriggerHelpUI(Ref(kTestIPHFeature)))
       .Times(1)
       .WillOnce(Return(true));
-  EXPECT_TRUE(controller_->MaybeShowPromoFromSpecification(
-      DefaultBubbleParams(), GetAnchorView()));
+  EXPECT_TRUE(controller_->MaybeShowPromoWithParams(
+      kTestIPHFeature, DefaultBubbleParams(), GetAnchorView()));
 
   const gfx::Rect bounds = FeaturePromoBubbleOwnerImpl::GetInstance()
                                ->bubble_for_testing()
@@ -178,8 +174,8 @@ TEST_F(FeaturePromoControllerViewsTest,
   EXPECT_CALL(*mock_tracker_, ShouldTriggerHelpUI(Ref(kTestIPHFeature)))
       .Times(1)
       .WillOnce(Return(true));
-  EXPECT_TRUE(controller_->MaybeShowPromoFromSpecification(
-      DefaultBubbleParams(), GetAnchorView()));
+  EXPECT_TRUE(controller_->MaybeShowPromoWithParams(
+      kTestIPHFeature, DefaultBubbleParams(), GetAnchorView()));
 
   const gfx::Rect bounds = FeaturePromoBubbleOwnerImpl::GetInstance()
                                ->bubble_for_testing()
@@ -214,8 +210,8 @@ TEST_F(FeaturePromoControllerViewsTest, SnoozeServiceBlocksPromo) {
   EXPECT_CALL(*mock_tracker_, ShouldTriggerHelpUI(Ref(kTestIPHFeature)))
       .Times(0);
   controller_->snooze_service_for_testing()->OnUserDismiss(kTestIPHFeature);
-  EXPECT_FALSE(controller_->MaybeShowPromoFromSpecification(
-      DefaultBubbleParams(), GetAnchorView()));
+  EXPECT_FALSE(controller_->MaybeShowPromoWithParams(
+      kTestIPHFeature, DefaultBubbleParams(), GetAnchorView()));
   EXPECT_FALSE(controller_->BubbleIsShowing(kTestIPHFeature));
   EXPECT_FALSE(
       FeaturePromoBubbleOwnerImpl::GetInstance()->bubble_for_testing());
@@ -229,8 +225,9 @@ TEST_F(FeaturePromoControllerViewsTest, PromoEndsWhenRequested) {
   EXPECT_CALL(*mock_tracker_, Dismissed(Ref(kTestIPHFeature))).Times(0);
 
   base::MockCallback<BubbleCloseCallback> close_callback;
-  ASSERT_TRUE(controller_->MaybeShowPromoFromSpecification(
-      DefaultBubbleParams(), GetAnchorView(), {}, close_callback.Get()));
+  ASSERT_TRUE(controller_->MaybeShowPromoWithParams(
+      kTestIPHFeature, DefaultBubbleParams(), GetAnchorView(),
+      close_callback.Get()));
 
   // Only valid before the widget is closed.
   FeaturePromoBubbleView* const bubble =
@@ -262,8 +259,8 @@ TEST_F(FeaturePromoControllerViewsTest,
   EXPECT_CALL(*mock_tracker_, ShouldTriggerHelpUI(Ref(kTestIPHFeature)))
       .Times(1)
       .WillOnce(Return(true));
-  ASSERT_TRUE(controller_->MaybeShowPromoFromSpecification(
-      DefaultBubbleParams(), GetAnchorView()));
+  ASSERT_TRUE(controller_->MaybeShowPromoWithParams(
+      kTestIPHFeature, DefaultBubbleParams(), GetAnchorView()));
 
   EXPECT_FALSE(controller_->CloseBubble(kSecondIPHFeature));
   EXPECT_TRUE(controller_->BubbleIsShowing(kTestIPHFeature));
@@ -277,8 +274,9 @@ TEST_F(FeaturePromoControllerViewsTest, PromoEndsOnBubbleClosure) {
   EXPECT_CALL(*mock_tracker_, Dismissed(Ref(kTestIPHFeature))).Times(0);
 
   base::MockCallback<BubbleCloseCallback> close_callback;
-  ASSERT_TRUE(controller_->MaybeShowPromoFromSpecification(
-      DefaultBubbleParams(), GetAnchorView(), {}, close_callback.Get()));
+  ASSERT_TRUE(controller_->MaybeShowPromoWithParams(
+      kTestIPHFeature, DefaultBubbleParams(), GetAnchorView(),
+      close_callback.Get()));
 
   // Only valid before the widget is closed.
   FeaturePromoBubbleView* const bubble =
@@ -305,8 +303,9 @@ TEST_F(FeaturePromoControllerViewsTest, ContinuedPromoDefersBackendDismissed) {
   EXPECT_CALL(*mock_tracker_, Dismissed(Ref(kTestIPHFeature))).Times(0);
 
   base::MockCallback<BubbleCloseCallback> close_callback;
-  ASSERT_TRUE(controller_->MaybeShowPromoFromSpecification(
-      DefaultBubbleParams(), GetAnchorView(), {}, close_callback.Get()));
+  ASSERT_TRUE(controller_->MaybeShowPromoWithParams(
+      kTestIPHFeature, DefaultBubbleParams(), GetAnchorView(),
+      close_callback.Get()));
 
   // Only valid before the widget is closed.
   FeaturePromoBubbleView* const bubble =
@@ -343,8 +342,8 @@ TEST_F(FeaturePromoControllerViewsTest,
 
   EXPECT_FALSE(GetAnchorView()->GetProperty(kHasInProductHelpPromoKey));
 
-  ASSERT_TRUE(controller_->MaybeShowPromoFromSpecification(
-      DefaultBubbleParams(), GetAnchorView()));
+  ASSERT_TRUE(controller_->MaybeShowPromoWithParams(
+      kTestIPHFeature, DefaultBubbleParams(), GetAnchorView()));
   EXPECT_TRUE(GetAnchorView()->GetProperty(kHasInProductHelpPromoKey));
 
   controller_->CloseBubble(kTestIPHFeature);
@@ -352,10 +351,13 @@ TEST_F(FeaturePromoControllerViewsTest,
 }
 
 TEST_F(FeaturePromoControllerViewsTest, GetsParamsFromRegistry) {
-  // If the browser view is not visible, none of the element tracker stuff will
-  // work properly, so ensure the browser widget is visible.
-  browser_view()->GetWidget()->Show();
-  FeaturePromoRegistry::GetInstance()->RegisterFeature(DefaultBubbleParams());
+  FeaturePromoBubbleParams params = DefaultBubbleParams();
+  FeaturePromoRegistry::GetInstance()->RegisterFeature(
+      kTestIPHFeature, DefaultBubbleParams(),
+      base::BindRepeating([](BrowserView* browser_view) {
+        return static_cast<views::View*>(
+            browser_view->toolbar()->app_menu_button());
+      }));
 
   EXPECT_CALL(*mock_tracker_, ShouldTriggerHelpUI(Ref(kTestIPHFeature)))
       .Times(1)
@@ -373,8 +375,8 @@ TEST_F(FeaturePromoControllerViewsTest, TestCanBlockPromos) {
       .Times(0);
 
   controller_->BlockPromosForTesting();
-  EXPECT_FALSE(controller_->MaybeShowPromoFromSpecification(
-      DefaultBubbleParams(), GetAnchorView()));
+  EXPECT_FALSE(controller_->MaybeShowPromoWithParams(
+      kTestIPHFeature, DefaultBubbleParams(), GetAnchorView()));
   EXPECT_FALSE(controller_->BubbleIsShowing(kTestIPHFeature));
   EXPECT_FALSE(
       FeaturePromoBubbleOwnerImpl::GetInstance()->bubble_for_testing());
@@ -385,8 +387,8 @@ TEST_F(FeaturePromoControllerViewsTest, TestCanStopCurrentPromo) {
       .Times(1)
       .WillOnce(Return(true));
 
-  EXPECT_TRUE(controller_->MaybeShowPromoFromSpecification(
-      DefaultBubbleParams(), GetAnchorView()));
+  EXPECT_TRUE(controller_->MaybeShowPromoWithParams(
+      kTestIPHFeature, DefaultBubbleParams(), GetAnchorView()));
 
   controller_->BlockPromosForTesting();
   EXPECT_FALSE(controller_->BubbleIsShowing(kTestIPHFeature));
@@ -401,8 +403,8 @@ TEST_F(FeaturePromoControllerViewsTest, CriticalPromoBlocksNormalPromo) {
 
   EXPECT_CALL(*mock_tracker_, ShouldTriggerHelpUI(Ref(kTestIPHFeature)))
       .Times(0);
-  EXPECT_FALSE(controller_->MaybeShowPromoFromSpecification(
-      DefaultBubbleParams(), GetAnchorView()));
+  EXPECT_FALSE(controller_->MaybeShowPromoWithParams(
+      kTestIPHFeature, DefaultBubbleParams(), GetAnchorView()));
 
   EXPECT_FALSE(controller_->BubbleIsShowing(kTestIPHFeature));
   EXPECT_TRUE(FeaturePromoBubbleOwnerImpl::GetInstance()->bubble_for_testing());
@@ -414,8 +416,9 @@ TEST_F(FeaturePromoControllerViewsTest, CriticalPromoPreemptsNormalPromo) {
       .WillOnce(Return(true));
 
   base::MockCallback<BubbleCloseCallback> close_callback;
-  EXPECT_TRUE(controller_->MaybeShowPromoFromSpecification(
-      DefaultBubbleParams(), GetAnchorView(), {}, close_callback.Get()));
+  EXPECT_TRUE(controller_->MaybeShowPromoWithParams(
+      kTestIPHFeature, DefaultBubbleParams(), GetAnchorView(),
+      close_callback.Get()));
   EXPECT_TRUE(controller_->BubbleIsShowing(kTestIPHFeature));
   EXPECT_TRUE(FeaturePromoBubbleOwnerImpl::GetInstance()->bubble_for_testing());
 
@@ -505,72 +508,6 @@ TEST_F(FeaturePromoControllerViewsTest, FailsIfBubbleIsShowing) {
       .Times(0);
   EXPECT_CALL(*mock_tracker_, Dismissed(Ref(kTestIPHFeature))).Times(0);
 
-  EXPECT_FALSE(controller_->MaybeShowPromoFromSpecification(
-      DefaultBubbleParams(), GetAnchorView()));
-}
-
-// Test that a feature promo can chain into a tutorial.
-TEST_F(FeaturePromoControllerViewsTest, StartsTutorial) {
-  TutorialService* const tutorial_service =
-      TutorialServiceManager::GetInstance()->GetTutorialServiceForProfile(
-          browser()->profile());
-  if (!tutorial_service)
-    return;
-
-  // Create a dummy tutorial.
-  // This is just the first two steps of the "create tab group" tutorial.
-  constexpr char kTestTutorialIdentifier[] = "Test Tutorial";
-  TutorialDescription desc;
-
-  TutorialDescription::Step step1(
-      absl::nullopt,
-      u"Right Click on a Tab and select \"Add Tab To new Group\".",
-      ui::InteractionSequence::StepType::kShown, kTabStripElementId,
-      std::string(), TutorialDescription::Step::Arrow::TOP, absl::nullopt);
-  desc.steps.emplace_back(step1);
-
-  TutorialDescription::Step step2(
-      absl::nullopt, u"Select \"Enter a name for your Tab Group\".",
-      ui::InteractionSequence::StepType::kShown,
-      TabGroupEditorBubbleView::kEditorBubbleIdentifier, std::string(),
-      TutorialDescription::Step::Arrow::CENTER_HORIZONTAL,
-      false /*must_remain_visible*/);
-  desc.steps.emplace_back(std::move(step2));
-
-  TutorialServiceManager::GetInstance()->tutorial_registry()->AddTutorial(
-      kTestTutorialIdentifier, std::move(desc));
-
-  // Launch a feature promo that has a tutorial.
-  EXPECT_CALL(*mock_tracker_, ShouldTriggerHelpUI(Ref(kTestIPHFeature)))
-      .Times(1)
-      .WillOnce(Return(true));
-  FeaturePromoSpecification spec =
-      FeaturePromoSpecification::CreateForTutorialPromo(
-          kTestIPHFeature, kAppMenuButtonElementId, IDS_REOPEN_TAB_PROMO,
-          kTestTutorialIdentifier);
-  ASSERT_TRUE(
-      controller_->MaybeShowPromoFromSpecification(spec, GetAnchorView(), {}));
-
-  // Simulate clicking the "Show Tutorial" button.
-  auto* const bubble = static_cast<FeaturePromoBubbleOwnerImpl*>(
-                           controller_->bubble_owner_for_testing())
-                           ->bubble_for_testing();
-  ASSERT_TRUE(bubble);
-  auto* const button = bubble->GetButtonForTesting(
-      views::PlatformStyle::kIsOkButtonLeading ? 0 : 1);
-  ASSERT_TRUE(button);
-  ui::MouseEvent mouse_press(ui::ET_MOUSE_PRESSED, gfx::Point(), gfx::Point(),
-                             ui::EventTimeForNow(), ui::EF_LEFT_MOUSE_BUTTON,
-                             ui::EF_LEFT_MOUSE_BUTTON);
-  ui::MouseEvent mouse_release(
-      ui::ET_MOUSE_RELEASED, gfx::Point(), gfx::Point(), ui::EventTimeForNow(),
-      ui::EF_LEFT_MOUSE_BUTTON, ui::EF_LEFT_MOUSE_BUTTON);
-  button->OnMouseEvent(&mouse_press);
-  button->OnMouseEvent(&mouse_release);
-  views::test::WidgetDestroyedWaiter waiter(bubble->GetWidget());
-  waiter.Wait();
-
-  // We should be running the tutorial now.
-  EXPECT_TRUE(tutorial_service->IsRunningTutorial());
-  tutorial_service->HideCurrentBubbleIfShowing();
+  EXPECT_FALSE(controller_->MaybeShowPromoWithParams(
+      kTestIPHFeature, DefaultBubbleParams(), GetAnchorView()));
 }

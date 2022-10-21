@@ -7,6 +7,7 @@
 
 #include <stdint.h>
 
+#include "base/macros.h"
 #include "base/time/default_clock.h"
 #include "base/time/time.h"
 

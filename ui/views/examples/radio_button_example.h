@@ -7,6 +7,7 @@
 
 #include <vector>
 
+#include "base/macros.h"
 #include "ui/views/examples/example_base.h"
 
 namespace views {

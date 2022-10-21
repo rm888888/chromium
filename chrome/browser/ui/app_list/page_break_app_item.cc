@@ -27,7 +27,7 @@ PageBreakAppItem::PageBreakAppItem(
     }
   }
 
-  SetPosition(CalculateDefaultPositionIfApplicable());
+  SetPosition(CalculateDefaultPositionIfApplicable(model_updater));
 
   // Set model updater last to avoid being called during construction.
   set_model_updater(model_updater);

@@ -9,11 +9,9 @@
  * secure payment confirmation.
  * @param {string} credentialIdentifier - An optional base64 encoded credential
  * identifier. If not specified, then 'cred' is used instead.
- * @param {string} iconUrl - An optional icon URL. If not specified, then
- * 'window.location.origin/icon.png' is used.
  * @return {Array<PaymentMethodData>} - Secure payment confirmation method data.
  */
-function getTestMethodData(credentialIdentifier, iconUrl) {
+function getTestMethodData(credentialIdentifier) {
   return [{
     supportedMethods: 'secure-payment-confirmation',
     data: {
@@ -24,7 +22,7 @@ function getTestMethodData(credentialIdentifier, iconUrl) {
       challenge: Uint8Array.from('challenge', (c) => c.charCodeAt(0)),
       instrument: {
         displayName: 'display_name_for_instrument',
-        icon: iconUrl ? iconUrl : window.location.origin + '/icon.png',
+        icon: window.location.origin + '/icon.png',
       },
       timeout: 60000,
       payeeOrigin: 'https://example-payee-origin.test',
@@ -36,13 +34,10 @@ function getTestMethodData(credentialIdentifier, iconUrl) {
  * request.
  * @param {string} credentialIdentifier - An optional base64 encoded credential
  * identifier. If not specified, then 'cred' is used instead.
- * @param {string} iconUrl - An optional icon URL. If not specified, then
- * 'window.location.origin/icon.png' is used.
  * @return {string} - The status field or error message.
  */
-async function getSecurePaymentConfirmationStatus(credentialIdentifier, iconUrl) { // eslint-disable-line no-unused-vars, max-len
-  return getStatusForMethodData(
-      getTestMethodData(credentialIdentifier, iconUrl));
+async function getSecurePaymentConfirmationStatus(credentialIdentifier) { // eslint-disable-line no-unused-vars, max-len
+  return getStatusForMethodData(getTestMethodData(credentialIdentifier));
 }
 
 /**
@@ -58,13 +53,10 @@ async function getSecurePaymentConfirmationStatusAfterCanMakePayment() { // esli
 
 /**
  * Checks whether secure payment confirmation can make payments.
- * @param {string} iconUrl - An optional icon URL. If not specified, then
- * 'window.location.origin/icon.png' is used.
  * @return {string} - 'true', 'false', or error message on failure.
  */
-async function securePaymentConfirmationCanMakePayment(iconUrl) { // eslint-disable-line no-unused-vars, max-len
-  return canMakePaymentForMethodData(getTestMethodData(
-      /* credentialIdentifier = */undefined, iconUrl));
+async function securePaymentConfirmationCanMakePayment() { // eslint-disable-line no-unused-vars, max-len
+  return canMakePaymentForMethodData(getTestMethodData());
 }
 
 /**
@@ -168,10 +160,9 @@ async function createAndReturnPaymentCredential(icon) {
 /**
  * Creates a public key credential with 'payment' extension and returns its
  * identifier in base64 encoding.
- * @param {string} userId - the user ID for the credential.
  * @return {DOMString} - The new credential's identifier in base64 encoding.
  */
-async function createPublicKeyCredentialWithPaymentExtensionAndReturnItsId(userId) { // eslint-disable-line no-unused-vars, max-len
+async function createPublicKeyCredentialWithPaymentExtensionAndReturnItsId() { // eslint-disable-line no-unused-vars, max-len
   try {
     const textEncoder = new TextEncoder();
     const credential = await navigator.credentials.create({
@@ -183,7 +174,7 @@ async function createPublicKeyCredentialWithPaymentExtensionAndReturnItsId(userI
         },
         user: {
           displayName: 'User',
-          id: textEncoder.encode(userId),
+          id: textEncoder.encode('user_123'),
           name: 'user@acme.com',
         },
         pubKeyCredParams: [{
@@ -199,4 +190,33 @@ async function createPublicKeyCredentialWithPaymentExtensionAndReturnItsId(userI
   } catch (e) {
     return e.toString();
   }
+}
+
+/**
+ * Attempts to create a payment credential that is missing the RP ID.
+ * @param {string} icon - The URL of the icon for the credential.
+ * @return {PaymentCredential} - The new credential.
+ */
+async function createCredentialWithNoRpId(icon) { // eslint-disable-line no-unused-vars, max-len
+  const textEncoder = new TextEncoder();
+  const publicKeyRP = {
+      // id omitted
+      name: 'Acme',
+  };
+  const publicKeyParameters = [{
+      type: 'public-key',
+      alg: -7,
+  }];
+  const publicKey = {
+      user: {
+        displayName: 'User',
+        id: textEncoder.encode('user_123'),
+        name: 'user@acme.com',
+      },
+      rp: publicKeyRP,
+      challenge: textEncoder.encode('climb a mountain'),
+      pubKeyCredParams: publicKeyParameters,
+      extensions: {payment: {isPayment: true}},
+  };
+  return navigator.credentials.create({publicKey});
 }

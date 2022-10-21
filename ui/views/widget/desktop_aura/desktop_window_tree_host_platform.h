@@ -93,7 +93,6 @@ class VIEWS_EXPORT DesktopWindowTreeHostPlatform
   bool IsVisibleOnAllWorkspaces() const override;
   bool SetWindowTitle(const std::u16string& title) override;
   void ClearNativeFocus() override;
-  bool IsMoveLoopSupported() const override;
   Widget::MoveLoopResult RunMoveLoop(
       const gfx::Vector2d& drag_offset,
       Widget::MoveLoopSource source,
@@ -141,10 +140,6 @@ class VIEWS_EXPORT DesktopWindowTreeHostPlatform
 
   // ui::WorkspaceExtensionDelegate:
   void OnWorkspaceChanged() override;
-
-  DesktopWindowTreeHostPlatform* window_parent() const {
-    return window_parent_;
-  }
 
  protected:
   // These are not general purpose methods and must be used with care. Please

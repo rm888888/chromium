@@ -15,8 +15,7 @@ ServiceRequestSenderLocalImpl::~ServiceRequestSenderLocalImpl() = default;
 
 void ServiceRequestSenderLocalImpl::SendRequest(const GURL& url,
                                                 const std::string& request_body,
-                                                ResponseCallback callback,
-                                                RpcType rpc_type) {
+                                                ResponseCallback callback) {
   std::move(callback).Run(net::HTTP_OK, response_);
 }
 

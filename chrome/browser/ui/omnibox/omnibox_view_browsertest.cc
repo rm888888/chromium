@@ -10,7 +10,6 @@
 
 #include "base/bind.h"
 #include "base/cxx17_backports.h"
-#include "base/memory/raw_ptr.h"
 #include "base/run_loop.h"
 #include "base/strings/strcat.h"
 #include "base/strings/string_util.h"
@@ -374,7 +373,7 @@ class OmniboxViewTest : public InProcessBrowserTest {
   testing::NiceMock<policy::MockConfigurationPolicyProvider> policy_provider_;
 
   // Non-owning pointer.
-  raw_ptr<TestLocationBarModel> test_location_bar_model_ = nullptr;
+  TestLocationBarModel* test_location_bar_model_ = nullptr;
 };
 
 // Test if ctrl-* accelerators are workable in omnibox.
@@ -751,7 +750,7 @@ IN_PROC_BROWSER_TEST_F(OmniboxViewTest, BasicTextOperations) {
   ASSERT_NO_FATAL_FAILURE(GetOmniboxView(&omnibox_view));
 
   std::u16string old_text = omnibox_view->GetText();
-  EXPECT_EQ(url::kAboutBlankURL16, old_text);
+  EXPECT_EQ(base::UTF8ToUTF16(url::kAboutBlankURL), old_text);
   EXPECT_TRUE(omnibox_view->IsSelectAll());
 
   size_t start, end;
@@ -1146,7 +1145,7 @@ IN_PROC_BROWSER_TEST_F(OmniboxViewTest, UndoRedo) {
   ASSERT_NO_FATAL_FAILURE(GetOmniboxView(&omnibox_view));
 
   std::u16string old_text = omnibox_view->GetText();
-  EXPECT_EQ(url::kAboutBlankURL16, old_text);
+  EXPECT_EQ(base::UTF8ToUTF16(url::kAboutBlankURL), old_text);
   EXPECT_TRUE(omnibox_view->IsSelectAll());
 
   // Delete the text, then undo.

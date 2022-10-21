@@ -13,7 +13,6 @@
 
 #include "base/compiler_specific.h"
 #include "base/gtest_prod_util.h"
-#include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/time/time.h"
 #include "build/build_config.h"
@@ -76,12 +75,6 @@ class OmniboxEditModel {
   //     completely moved to OmniboxController.
   AutocompleteController* autocomplete_controller() const {
     return omnibox_controller_->autocomplete_controller();
-  }
-
-  void set_autocomplete_controller(
-      std::unique_ptr<AutocompleteController> autocomplete_controller) {
-    omnibox_controller_->set_autocomplete_controller(
-        std::move(autocomplete_controller));
   }
 
   void set_popup_view(OmniboxPopupView* popup_view);
@@ -413,6 +406,9 @@ class OmniboxEditModel {
   // Used for testing purposes only.
   std::u16string GetUserTextForTesting() const { return user_text_; }
 
+  // Name of the histogram tracking cut or copy omnibox commands.
+  static const char kCutOrCopyAllTextHistogram[];
+
   // Just forwards the call to the OmniboxView referred within.
   void SetAccessibilityLabel(const AutocompleteMatch& match);
 
@@ -495,6 +491,8 @@ class OmniboxEditModel {
       int* label_prefix_length = nullptr);
 
   // Invoked any time the result set of the controller changes.
+  // TODO(orinj): This method seems like a good candidate for removal; it is
+  // preserved here only to prevent possible behavior change while refactoring.
   void OnPopupResultChanged();
 
   // Lookup the bitmap for |result_index|. Returns nullptr if not found.
@@ -606,9 +604,9 @@ class OmniboxEditModel {
 
   std::unique_ptr<OmniboxController> omnibox_controller_;
 
-  raw_ptr<OmniboxView> view_;
+  OmniboxView* view_;
 
-  raw_ptr<OmniboxEditController> controller_;
+  OmniboxEditController* controller_;
 
   OmniboxFocusState focus_state_;
 
@@ -761,7 +759,7 @@ class OmniboxEditModel {
 
   // The popup view is nullptr when there's no popup, and is non-null when
   // a popup view exists (i.e. between calls to `set_popup_view`).
-  raw_ptr<OmniboxPopupView> popup_view_ = nullptr;
+  OmniboxPopupView* popup_view_ = nullptr;
 
   // The current popup selection; set to normal kNoMatch when there's no popup.
   OmniboxPopupSelection popup_selection_ =

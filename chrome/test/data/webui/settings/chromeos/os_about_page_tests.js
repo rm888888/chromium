@@ -79,26 +79,6 @@ cr.define('settings_about_page', function() {
     }
 
     /**
-     * @param {string} id
-     */
-    function navigateToSettingsPageWithId(id) {
-      const params = new URLSearchParams;
-      params.append('settingId', id);
-      settings.Router.getInstance().navigateTo(
-          settings.routes.ABOUT_ABOUT, params);
-
-      Polymer.dom.flush();
-    }
-
-    /**
-     * @param {string} id
-     * @return {!HTMLButtonElement}
-     */
-    function getDeepLinkButtonElementById(id) {
-      return page.$$(`#${id}`).shadowRoot.querySelector('cr-icon-button');
-    }
-
-    /**
      * Test that the status icon and status message update according to
      * incoming 'update-status-changed' events.
      */
@@ -174,34 +154,6 @@ cr.define('settings_about_page', function() {
       assertFalse(relaunch.hidden);
       relaunch.click();
       return lifetimeBrowserProxy.whenCalled('relaunch');
-    });
-
-    test('Rollback', async () => {
-      loadTimeData.overrideValues({
-        deviceManager: 'google.com',
-        isManaged: true,
-      });
-      await initNewPage();
-      const statusMessageEl = page.$$('#updateStatusMessage div');
-
-      const progress = 90;
-      fireStatusChanged(
-          UpdateStatus.UPDATING,
-          {progress: progress, powerwash: true, rollback: true});
-
-      assertEquals(
-          page.i18nAdvanced(
-              'aboutRollbackInProgress',
-              {substitutions: [page.deviceManager_, progress + '%']}),
-          statusMessageEl.innerHTML);
-
-      fireStatusChanged(
-          UpdateStatus.NEARLY_UPDATED, {powerwash: true, rollback: true});
-
-      assertEquals(
-          page.i18nAdvanced(
-              'aboutRollbackSuccess', {substitutions: [page.deviceManager_]}),
-          statusMessageEl.innerHTML);
     });
 
     test('NoInternet', function() {
@@ -591,48 +543,19 @@ cr.define('settings_about_page', function() {
       await initNewPage();
       Polymer.dom.flush();
 
-      const diagnosticsId = '1707';
-      navigateToSettingsPageWithId(diagnosticsId);
+      const params = new URLSearchParams;
+      params.append('settingId', '1707');  // Setting::kDiagnostics
+      settings.Router.getInstance().navigateTo(
+          settings.routes.ABOUT_ABOUT, params);
 
-      const deepLinkElement = getDeepLinkButtonElementById('diagnostics');
+      Polymer.dom.flush();
+
+      const deepLinkElement =
+          page.$$('#diagnostics').shadowRoot.querySelector('cr-icon-button');
       await test_util.waitAfterNextRender(deepLinkElement);
       assertEquals(
           deepLinkElement, getDeepActiveElement(),
-          `Diagnostics should be focused for settingId=${diagnosticsId}.`);
-    });
-
-    test('LaunchFirmwareUpdates', async function() {
-      loadTimeData.overrideValues({
-        isDeepLinkingEnabled: true,
-        isFirmwareUpdaterAppEnabled: true,
-      });
-
-      await initNewPage();
-      Polymer.dom.flush();
-
-      assertTrue(!!page.$.firmwareUpdates);
-      page.$.firmwareUpdates.click();
-      await aboutBrowserProxy.whenCalled('openFirmwareUpdatesPage');
-    });
-
-    test('Deep link to firmware updates', async () => {
-      loadTimeData.overrideValues({
-        isDeepLinkingEnabled: true,
-        isFirmwareUpdaterAppEnabled: true,
-      });
-
-      await initNewPage();
-      Polymer.dom.flush();
-
-      const firmwareUpdatesId = '1709';
-      navigateToSettingsPageWithId(firmwareUpdatesId);
-
-      const deepLinkElement = getDeepLinkButtonElementById('firmwareUpdates');
-      await test_util.waitAfterNextRender(deepLinkElement);
-      assertEquals(
-          deepLinkElement, getDeepActiveElement(),
-          `Firmware updates should be focused for settingId=${
-              firmwareUpdatesId}.`);
+          'Diagnostics should be focused for settingId=1707.');
     });
 
     // Regression test for crbug.com/1220294

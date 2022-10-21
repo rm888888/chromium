@@ -13,7 +13,7 @@
 #include <vector>
 
 #include "base/callback.h"
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/memory/ref_counted.h"
 #include "base/values.h"
 #include "components/prefs/pref_store.h"
@@ -45,7 +45,6 @@ class COMPONENTS_PREFS_EXPORT PrefValueStore {
     virtual void Init(PrefStore* managed_prefs,
                       PrefStore* supervised_user_prefs,
                       PrefStore* extension_prefs,
-                      PrefStore* standalone_browser_prefs,
                       PrefStore* command_line_prefs,
                       PrefStore* user_prefs,
                       PrefStore* recommended_prefs,
@@ -65,19 +64,15 @@ class COMPONENTS_PREFS_EXPORT PrefValueStore {
   };
 
   // PrefStores must be listed here in order from highest to lowest priority.
-  //   MANAGED contains all managed preferences that are provided by
+  //   MANAGED contains all managed preference values that are provided by
   //      mandatory policies (e.g. Windows Group Policy or cloud policy).
   //   SUPERVISED_USER contains preferences that are valid for supervised users.
-  //   EXTENSION contains preferences set by extensions.
-  //   STANDALONE_BROWSER contains system preferences inherited from a separate
-  //      Chrome instance. One relevant source is extension prefs in lacros
-  //      passed to ash, so these prefs have similar precedence to extension
-  //      prefs.
-  //   COMMAND_LINE contains preferences set by command-line switches.
-  //   USER contains all user-set preferences.
+  //   EXTENSION contains preference values set by extensions.
+  //   COMMAND_LINE contains preference values set by command-line switches.
+  //   USER contains all user-set preference values.
   //   RECOMMENDED contains all preferences that are provided by recommended
   //      policies.
-  //   DEFAULT contains all application default preferences.
+  //   DEFAULT contains all application default preference values.
   enum PrefStoreType {
     // INVALID_STORE is not associated with an actual PrefStore but used as
     // an invalid marker, e.g. as a return value.
@@ -85,7 +80,6 @@ class COMPONENTS_PREFS_EXPORT PrefValueStore {
     MANAGED_STORE = 0,
     SUPERVISED_USER_STORE,
     EXTENSION_STORE,
-    STANDALONE_BROWSER_STORE,
     COMMAND_LINE_STORE,
     USER_STORE,
     RECOMMENDED_STORE,
@@ -111,7 +105,6 @@ class COMPONENTS_PREFS_EXPORT PrefValueStore {
   PrefValueStore(PrefStore* managed_prefs,
                  PrefStore* supervised_user_prefs,
                  PrefStore* extension_prefs,
-                 PrefStore* standalone_browser_prefs,
                  PrefStore* command_line_prefs,
                  PrefStore* user_prefs,
                  PrefStore* recommended_prefs,
@@ -132,7 +125,6 @@ class COMPONENTS_PREFS_EXPORT PrefValueStore {
       PrefStore* managed_prefs,
       PrefStore* supervised_user_prefs,
       PrefStore* extension_prefs,
-      PrefStore* standalone_browser_prefs,
       PrefStore* command_line_prefs,
       PrefStore* user_prefs,
       PrefStore* recommended_prefs,
@@ -226,7 +218,7 @@ class COMPONENTS_PREFS_EXPORT PrefValueStore {
     void OnInitializationCompleted(bool succeeded) override;
 
     // PrefValueStore this keeper is part of.
-    raw_ptr<PrefValueStore> pref_value_store_;
+    PrefValueStore* pref_value_store_;
 
     // The PrefStore managed by this keeper.
     scoped_refptr<PrefStore> pref_store_;
@@ -305,7 +297,7 @@ class COMPONENTS_PREFS_EXPORT PrefValueStore {
 
   // Used for generating notifications. This is a weak reference,
   // since the notifier is owned by the corresponding PrefService.
-  raw_ptr<PrefNotifier> pref_notifier_;
+  PrefNotifier* pref_notifier_;
 
   // A mapping of preference names to their registered types.
   PrefTypeMap pref_types_;

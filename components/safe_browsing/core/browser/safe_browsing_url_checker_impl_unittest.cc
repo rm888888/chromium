@@ -7,7 +7,6 @@
 
 #include "base/bind.h"
 #include "base/containers/contains.h"
-#include "base/memory/raw_ptr.h"
 #include "base/run_loop.h"
 #include "base/test/metrics/histogram_tester.h"
 #include "base/test/mock_callback.h"
@@ -167,7 +166,7 @@ class MockUrlCheckerDelegate : public UrlCheckerDelegate {
   ~MockUrlCheckerDelegate() override = default;
 
  private:
-  raw_ptr<SafeBrowsingDatabaseManager> database_manager_;
+  SafeBrowsingDatabaseManager* database_manager_;
   SBThreatTypeSet threat_types_;
 };
 
@@ -242,6 +241,7 @@ class MockRealTimeUrlLookupService : public RealTimeUrlLookupServiceBase {
     return TRAFFIC_ANNOTATION_FOR_TESTS;
   }
   bool CanPerformFullURLLookupWithToken() const override { return false; }
+  bool CanAttachReferrerChain() const override { return false; }
   int GetReferrerUserGestureLimit() const override { return 0; }
   bool CanSendPageLoadToken() const override { return false; }
   void GetAccessToken(

@@ -10,7 +10,7 @@
 #include <vector>
 
 #include "base/gtest_prod_util.h"
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "chrome/browser/apps/intent_helper/apps_navigation_types.h"
 #include "chrome/browser/ui/browser_dialogs.h"
 #include "chrome/browser/ui/page_action/page_action_icon_type.h"
@@ -121,7 +121,6 @@ class IntentPickerBubbleView : public LocationBarBubbleDelegateView {
   FRIEND_TEST_ALL_PREFIXES(IntentPickerBubbleViewTest, WebContentsTiedToBubble);
   FRIEND_TEST_ALL_PREFIXES(IntentPickerBubbleViewTest, WindowTitle);
   FRIEND_TEST_ALL_PREFIXES(IntentPickerBubbleViewTest, ButtonLabels);
-  FRIEND_TEST_ALL_PREFIXES(IntentPickerBubbleViewTest, RememberCheckbox);
   FRIEND_TEST_ALL_PREFIXES(IntentPickerBubbleViewBrowserTest,
                            DoubleClickOpensApp);
   FRIEND_TEST_ALL_PREFIXES(IntentPickerBubbleViewBrowserTestChromeOS,
@@ -231,11 +230,11 @@ class IntentPickerBubbleView : public LocationBarBubbleDelegateView {
   // Pre-select the first app on the list.
   size_t selected_app_tag_ = 0;
 
-  raw_ptr<views::ScrollView> scroll_view_ = nullptr;
+  views::ScrollView* scroll_view_ = nullptr;
 
   std::vector<AppInfo> app_info_;
 
-  raw_ptr<views::Checkbox> remember_selection_checkbox_ = nullptr;
+  views::Checkbox* remember_selection_checkbox_ = nullptr;
 
   // Tells whether 'Stay in Chrome' button should be shown or hidden.
   const bool show_stay_in_chrome_;
@@ -244,7 +243,7 @@ class IntentPickerBubbleView : public LocationBarBubbleDelegateView {
   const bool show_remember_selection_;
 
   // The corresponding icon view shown in the omnibox.
-  raw_ptr<PageActionIconView> icon_view_;
+  PageActionIconView* icon_view_;
 
   // The type of the icon shown in the omnibox.
   const PageActionIconType icon_type_;

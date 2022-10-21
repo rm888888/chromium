@@ -14,7 +14,6 @@
 #include <utility>
 #include <vector>
 
-#include "base/memory/raw_ptr.h"
 #include "components/zucchini/address_translator.h"
 #include "components/zucchini/buffer_view.h"
 #include "components/zucchini/disassembler.h"
@@ -105,7 +104,7 @@ class DisassemblerWin32 : public Disassembler {
   typename Traits::Address image_base_ = 0;
 
   // Pointer to data Directory entry of the relocation table.
-  raw_ptr<const pe::ImageDataDirectory> base_relocation_table_ = nullptr;
+  const pe::ImageDataDirectory* base_relocation_table_ = nullptr;
 
   // Translator between offsets and RVAs.
   AddressTranslator translator_;
@@ -114,7 +113,7 @@ class DisassemblerWin32 : public Disassembler {
   BufferRegion reloc_region_ = {kInvalidOffset, 0U};
   std::vector<offset_t> reloc_block_offsets_;
   offset_t reloc_end_ = 0;
-  std::deque<offset_t> abs32_locations_;
+  std::vector<offset_t> abs32_locations_;
   // Using std::deque to reduce peak memory footprint.
   std::deque<offset_t> rel32_locations_;
 

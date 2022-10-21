@@ -7,6 +7,7 @@
 
 #include <memory>
 
+#include "base/macros.h"
 #include "ui/events/event_handler.h"
 #include "ui/wm/core/wm_core_export.h"
 

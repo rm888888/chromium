@@ -7,6 +7,8 @@
 
 #include <string>
 
+#include "base/macros.h"
+
 namespace metrics {
 
 // Provides machine characteristics used as a machine id. The implementation is

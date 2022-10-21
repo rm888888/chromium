@@ -7,6 +7,7 @@
 
 #include <memory>
 
+#include "base/macros.h"
 #include "ui/display/display_export.h"
 #include "ui/display/display_layout.h"
 

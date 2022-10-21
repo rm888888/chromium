@@ -7,7 +7,7 @@
 
 #include <string>
 
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "ui/views/corewm/tooltip_controller.h"
 #include "ui/views/corewm/tooltip_state_manager.h"
 #include "ui/views/view.h"
@@ -55,7 +55,7 @@ class TooltipControllerTestHelper {
   void MockWindowActivated(aura::Window* window, bool active);
 
  private:
-  raw_ptr<TooltipController> controller_;
+  TooltipController* controller_;
 };
 
 // Trivial View subclass that lets you set the tooltip text.

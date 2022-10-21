@@ -11,7 +11,6 @@
 #include "base/bind.h"
 #include "base/compiler_specific.h"
 #include "base/cxx17_backports.h"
-#include "base/memory/raw_ptr.h"
 #include "base/run_loop.h"
 #include "base/test/metrics/histogram_tester.h"
 #include "base/test/simple_test_clock.h"
@@ -162,8 +161,8 @@ class NetworkTimeTrackerTest : public ::testing::Test {
   base::TimeDelta resolution_;
   base::TimeDelta latency_;
   base::TimeDelta adjustment_;
-  raw_ptr<base::SimpleTestClock> clock_;
-  raw_ptr<base::SimpleTestTickClock> tick_clock_;
+  base::SimpleTestClock* clock_;
+  base::SimpleTestTickClock* tick_clock_;
   TestingPrefServiceSimple pref_service_;
   std::unique_ptr<NetworkTimeTracker> tracker_;
   std::unique_ptr<net::EmbeddedTestServer> test_server_;
@@ -395,7 +394,7 @@ TEST_F(NetworkTimeTrackerTest, DeserializeOldFormat) {
   EXPECT_EQ(NetworkTimeTracker::NETWORK_TIME_AVAILABLE,
             tracker_->GetNetworkTime(&out_network_time, nullptr));
   absl::optional<double> local, network;
-  const base::Value* saved_prefs =
+  const base::DictionaryValue* saved_prefs =
       pref_service_.GetDictionary(prefs::kNetworkTimeMapping);
   local = saved_prefs->FindDoubleKey("local");
   network = saved_prefs->FindDoubleKey("network");

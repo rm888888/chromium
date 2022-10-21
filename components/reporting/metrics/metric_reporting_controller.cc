@@ -14,12 +14,10 @@ namespace reporting {
 MetricReportingController::MetricReportingController(
     ReportingSettings* reporting_settings,
     const std::string& setting_path,
-    bool setting_enabled_default_value,
     base::RepeatingClosure on_setting_enabled,
     base::RepeatingClosure on_setting_disabled)
     : reporting_settings_(reporting_settings),
       setting_path_(setting_path),
-      setting_enabled_default_value_(setting_enabled_default_value),
       on_setting_enabled_(std::move(on_setting_enabled)),
       on_setting_disabled_(std::move(on_setting_disabled)) {
   UpdateSetting();
@@ -46,7 +44,7 @@ void MetricReportingController::UpdateSetting() {
     return;
   }
 
-  bool new_setting_enabled = setting_enabled_default_value_;
+  bool new_setting_enabled = false;
   reporting_settings_->GetBoolean(setting_path_, &new_setting_enabled);
 
   if (setting_enabled_ != new_setting_enabled) {

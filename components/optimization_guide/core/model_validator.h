@@ -8,7 +8,6 @@
 #include "base/task/sequenced_task_runner.h"
 #include "components/optimization_guide/core/base_model_executor.h"
 #include "components/optimization_guide/core/model_executor.h"
-#include "components/optimization_guide/core/model_handler.h"
 #include "components/optimization_guide/core/optimization_guide_model_provider.h"
 #include "components/optimization_guide/proto/models.pb.h"
 
@@ -53,9 +52,9 @@ class ModelValidatorExecutor
 
  protected:
   // BaseModelExecutor:
-  bool Preprocess(const std::vector<TfLiteTensor*>& input_tensors,
-                  const std::vector<float>& input) override;
-  absl::optional<float> Postprocess(
+  absl::Status Preprocess(const std::vector<TfLiteTensor*>& input_tensors,
+                          const std::vector<float>& input) override;
+  float Postprocess(
       const std::vector<const TfLiteTensor*>& output_tensors) override;
 };
 

@@ -11,6 +11,7 @@
 
 #include <string>
 
+#include "base/macros.h"
 #include "components/metrics/reporting_service.h"
 #include "components/metrics/unsent_log_store.h"
 #include "third_party/metrics_proto/ukm/report.pb.h"

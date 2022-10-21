@@ -7,7 +7,6 @@
 
 #include "base/feature_list.h"
 #include "base/gtest_prod_util.h"
-#include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/scoped_observation.h"
 #include "chrome/browser/ui/views/toolbar/toolbar_button.h"
@@ -35,7 +34,13 @@ class AvatarToolbarButton : public ToolbarButton,
     kSyncError,
     kNormal
   };
-
+ //update on 20220214
+ enum ButtonType
+{
+ kDefault = 0,
+ kPundixWallet
+};
+ //
   class Observer {
    public:
     virtual ~Observer() = default;
@@ -45,7 +50,7 @@ class AvatarToolbarButton : public ToolbarButton,
 
   // TODO(crbug.com/922525): Remove this constructor when this button always has
   // ToolbarIconContainerView as a parent.
-  explicit AvatarToolbarButton(BrowserView* browser);
+  explicit AvatarToolbarButton(BrowserView* browser,int type);
   AvatarToolbarButton(BrowserView* browser_view,
                       ToolbarIconContainerView* parent);
   AvatarToolbarButton(const AvatarToolbarButton&) = delete;
@@ -98,9 +103,11 @@ class AvatarToolbarButton : public ToolbarButton,
 
   std::unique_ptr<AvatarToolbarButtonDelegate> delegate_;
 
-  const raw_ptr<Browser> browser_;
-  const raw_ptr<ToolbarIconContainerView> parent_;
-
+  Browser* const browser_;
+  ToolbarIconContainerView* const parent_;
+  //update on 20220214
+  int buttontype_;
+  //
   // Time when this object was created.
   const base::TimeTicks creation_time_;
 
@@ -108,7 +115,7 @@ class AvatarToolbarButton : public ToolbarButton,
   // separate animation.
   static base::TimeDelta g_iph_min_delay_after_creation;
 
-  const raw_ptr<FeaturePromoControllerViews> feature_promo_controller_;
+  FeaturePromoControllerViews* const feature_promo_controller_;
 
   base::ObserverList<Observer>::Unchecked observer_list_;
 

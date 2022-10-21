@@ -9,7 +9,7 @@
 #include <memory>
 #include <vector>
 
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/memory/scoped_refptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/strings/utf_string_conversions.h"
@@ -342,7 +342,7 @@ class PasswordFormManager : public PasswordFormManagerForUI,
   void DelayFillForServerSidePredictions();
 
   // The client which implements embedder-specific PasswordManager operations.
-  raw_ptr<PasswordManagerClient> client_;
+  PasswordManagerClient* client_;
 
   base::WeakPtr<PasswordManagerDriver> driver_;
 
@@ -372,7 +372,7 @@ class PasswordFormManager : public PasswordFormManagerForUI,
   std::unique_ptr<FormFetcher> owned_form_fetcher_;
 
   // FormFetcher instance which owns the login data from PasswordStore.
-  raw_ptr<FormFetcher> form_fetcher_;
+  FormFetcher* form_fetcher_;
 
   std::unique_ptr<PasswordSaveManager> password_save_manager_;
 

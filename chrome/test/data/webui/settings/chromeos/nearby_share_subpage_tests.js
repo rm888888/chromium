@@ -198,19 +198,12 @@ suite('NearbyShare', function() {
   });
 
   suite('Deeplinking', () => {
-    suiteSetup(function() {
-      loadTimeData.overrideValues({
-        isNearbyShareBackgroundScanningEnabled: true,
-      });
-    });
-
     const deepLinkTestData = [
       {settingId: '208', deepLinkElement: '#featureToggleButton'},
       {settingId: '214', deepLinkElement: '#editDeviceNameButton'},
       {settingId: '215', deepLinkElement: '#editVisibilityButton'},
       {settingId: '216', deepLinkElement: '#manageContactsLinkRow'},
       {settingId: '217', deepLinkElement: '#editDataUsageButton'},
-      {settingId: '220', deepLinkElement: '#fastInitiationNotificationToggle'},
     ];
 
     deepLinkTestData.forEach((testData) => {

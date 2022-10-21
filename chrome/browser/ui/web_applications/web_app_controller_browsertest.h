@@ -43,7 +43,7 @@ class WebAppControllerBrowserTest : public InProcessBrowserTest {
 
   AppId InstallPWA(const GURL& app_url);
 
-  AppId InstallWebApp(std::unique_ptr<WebAppInstallInfo> web_app_info);
+  AppId InstallWebApp(std::unique_ptr<WebApplicationInfo> web_app_info);
 
   // Launches the app as a window and returns the browser.
   Browser* LaunchWebAppBrowser(const AppId&);
@@ -75,8 +75,7 @@ class WebAppControllerBrowserTest : public InProcessBrowserTest {
   absl::optional<AppId> FindAppWithUrlInScope(const GURL& url);
 
  protected:
-  absl::optional<OsIntegrationManager::ScopedSuppressForTesting>
-      os_hooks_suppress_;
+  ScopedOsHooksSuppress os_hooks_suppress_;
 
   content::WebContents* OpenApplication(const AppId&);
 

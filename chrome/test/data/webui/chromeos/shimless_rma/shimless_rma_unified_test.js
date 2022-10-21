@@ -14,7 +14,7 @@ import {onboardingSelectComponentsPageTest} from './onboarding_select_components
 import {onboardingUpdatePageTest} from './onboarding_update_page_test.js';
 import {onboardingWaitForManualWpDisablePageTest} from './onboarding_wait_for_manual_wp_disable_page_test.js';
 import {onboardingWpDisableCompletePageTest} from './onboarding_wp_disable_complete_page_test.js';
-import {reimagingCalibrationFailedPageTest} from './reimaging_calibration_failed_page_test.js';
+import {reimagingCalibrationPageTest} from './reimaging_calibration_page_test.js';
 import {reimagingCalibrationRunPageTest} from './reimaging_calibration_run_page_test.js';
 import {reimagingCalibrationSetupPageTest} from './reimaging_calibration_setup_page_test.js';
 import {reimagingDeviceInformationPageTest} from './reimaging_device_information_page_test.js';
@@ -52,8 +52,7 @@ runSuite(
     onboardingWaitForManualWpDisablePageTest);
 runSuite(
     'OnboardingWpDisableCompletePageTest', onboardingWpDisableCompletePageTest);
-runSuite(
-    'ReimagingCalibrationFailedPageTest', reimagingCalibrationFailedPageTest);
+runSuite('ReimagingCalibrationPageTest', reimagingCalibrationPageTest);
 runSuite('ReimagingCalibrationRunPageTest', reimagingCalibrationRunPageTest);
 runSuite(
     'ReimagingCalibrationSetupPageTest', reimagingCalibrationSetupPageTest);

@@ -9,12 +9,11 @@
 #include "base/bind.h"
 #include "base/location.h"
 #include "base/logging.h"
-#include "base/task/task_traits.h"
+#include "base/threading/thread_task_runner_handle.h"
 #include "ui/ozone/platform/wayland/common/wayland_util.h"
 #include "ui/ozone/platform/wayland/host/wayland_connection.h"
 #include "ui/ozone/platform/wayland/host/wayland_data_offer_base.h"
 #include "ui/ozone/platform/wayland/host/wayland_serial_tracker.h"
-#include "wayland-client-core.h"
 
 namespace ui {
 
@@ -33,23 +32,32 @@ const std::vector<std::string>& WaylandDataDeviceBase::GetAvailableMimeTypes()
   return data_offer_->mime_types();
 }
 
-PlatformClipboard::Data WaylandDataDeviceBase::ReadSelectionData(
-    const std::string& mime_type) {
-  if (!data_offer_)
-    return {};
+bool WaylandDataDeviceBase::ReadSelectionData(
+    const std::string& mime_type,
+    PlatformClipboard::RequestDataClosure callback) {
+  DCHECK(callback);
+  if (!data_offer_) {
+    std::move(callback).Run(nullptr);
+    return false;
+  }
 
   base::ScopedFD fd = data_offer_->Receive(mime_type);
   if (!fd.is_valid()) {
     DPLOG(ERROR) << "Failed to open file descriptor.";
-    return {};
+    std::move(callback).Run(nullptr);
+    return false;
   }
 
-  // Do a roundtrip to ensure the above request reaches the server and the
-  // resulting events get processed. Otherwise, the source client won’t send any
-  // data, thus getting the owning thread stuck at the blocking read call below.
-  connection_->RoundTripQueue();
+  connection_->ScheduleFlush();
 
-  return ReadFromFD(std::move(fd));
+  // Schedule data reading to be done asynchronously, otherwise it can block
+  // awaiting data to be sent to pipe.
+  base::ThreadTaskRunnerHandle::Get()->PostTaskAndReplyWithResult(
+      FROM_HERE,
+      base::BindOnce(&WaylandDataDeviceBase::ReadFromFD, base::Unretained(this),
+                     std::move(fd)),
+      std::move(callback));
+  return true;
 }
 
 void WaylandDataDeviceBase::ResetDataOffer() {
@@ -95,9 +103,9 @@ void WaylandDataDeviceBase::DeferredReadCallbackInternal(struct wl_callback* cb,
   DCHECK(!deferred_read_closure_.is_null());
 
   // The callback must be reset before invoking the closure because the latter
-  // may want to set another callback.  That typically happens when
-  // non-trivial data types are dropped; they have fallbacks to plain text so
-  // several roundtrips to data are chained.
+  // may want to set another callback.  That typically happens when non-trivial
+  // data types are dropped; they have fallbacks to plain text so several
+  // roundtrips to data are chained.
   deferred_read_callback_.reset();
 
   std::move(deferred_read_closure_).Run();

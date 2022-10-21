@@ -15,6 +15,7 @@
 #include "base/check_op.h"
 #include "base/compiler_specific.h"
 #include "base/files/file.h"
+#include "base/macros.h"
 #include "base/memory/ptr_util.h"
 #include "base/metrics/histogram_macros.h"
 #include "base/strings/string_number_conversions.h"

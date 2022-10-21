@@ -5,6 +5,7 @@
 #ifndef COMPONENTS_METRICS_CONTENT_GPU_METRICS_PROVIDER_H_
 #define COMPONENTS_METRICS_CONTENT_GPU_METRICS_PROVIDER_H_
 
+#include "base/macros.h"
 #include "components/metrics/metrics_provider.h"
 
 namespace metrics {

@@ -10,6 +10,7 @@
 
 #include "ash/public/cpp/shelf_item_delegate.h"
 #include "ash/public/cpp/shelf_types.h"
+#include "base/macros.h"
 #include "base/time/time.h"
 #include "chrome/browser/ui/browser_list_observer.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"

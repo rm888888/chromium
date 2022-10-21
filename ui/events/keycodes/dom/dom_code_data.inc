@@ -76,13 +76,6 @@
 //       Apple keyboards with USB 0x070049 [Insert] labelled "Help" have not
 //       been made since 2007.
 
-// ChromeOS notes:
-//
-//  Any keys that are added or updated specifically for use in the ChromeOS
-//  top-row should also be updated in sections of Input Diagnostics:
-//    ash/webui/diagnostics_ui/mojom/input_data_provider.mojom: enum TopRowKey
-//    ash/webui/diagnostics_ui/backend/input_data_provider_keyboard.cc: kScancodeMapping
-
 DOM_CODE_DECLARATION {
 
   //            USB     evdev    XKB     Win     Mac   Code
@@ -110,10 +103,6 @@ DOM_CODE_DECLARATION {
   // content.
   DOM_CODE(0x000018, 0x00f8, 0x0100, 0x0000, 0xffff, "MicrophoneMuteToggle",
              MICROPHONE_MUTE_TOGGLE),  // Microphone Mute Toggle
-  // As with privacy screen, keyboard backlight toggle will not be exposed to web
-  // content.
-  DOM_CODE(0x000019, 0x00e4, 0x00ec, 0x0000, 0xffff, "KeyboardBacklightToggle",
-             KEYBOARD_BACKLIGHT_TOGGLE),  // Keyboard Backlight Toggle
 
   // =========================================
   // USB Usage Page 0x01: Generic Desktop Page

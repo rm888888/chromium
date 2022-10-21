@@ -8,6 +8,7 @@
 #include <memory>
 #include <vector>
 
+#include "base/macros.h"
 #include "ui/display/manager/display_configurator.h"
 #include "ui/display/manager/display_layout_manager.h"
 

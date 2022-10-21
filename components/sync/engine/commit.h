@@ -11,6 +11,7 @@
 #include <memory>
 #include <string>
 
+#include "base/macros.h"
 #include "components/sync/base/extensions_activity.h"
 #include "components/sync/base/model_type.h"
 #include "components/sync/base/syncer_error.h"

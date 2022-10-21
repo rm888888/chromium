@@ -5,9 +5,11 @@
 #ifndef COMPONENTS_DOWNLOAD_PUBLIC_BACKGROUND_SERVICE_LOGGER_H_
 #define COMPONENTS_DOWNLOAD_PUBLIC_BACKGROUND_SERVICE_LOGGER_H_
 
+#include "base/macros.h"
+
 namespace base {
 class Value;
-}  // namespace base
+}
 
 namespace download {
 

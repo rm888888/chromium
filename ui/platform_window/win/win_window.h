@@ -5,7 +5,8 @@
 #ifndef UI_PLATFORM_WINDOW_WIN_WIN_WINDOW_H_
 #define UI_PLATFORM_WINDOW_WIN_WIN_WINDOW_H_
 
-#include "base/memory/raw_ptr.h"
+#include "base/compiler_specific.h"
+#include "base/macros.h"
 #include "base/memory/scoped_refptr.h"
 #include "base/memory/weak_ptr.h"
 #include "ui/gfx/win/msg_util.h"
@@ -108,7 +109,7 @@ class WIN_WINDOW_EXPORT WinWindow : public PlatformWindow,
   void OnPaint(HDC);
   void OnWindowPosChanged(WINDOWPOS* window_pos);
 
-  raw_ptr<PlatformWindowDelegate> delegate_;
+  PlatformWindowDelegate* delegate_;
 
   // Keep a reference to the current cursor to make sure the wrapped HCURSOR
   // isn't destroyed after the call to SetCursor().

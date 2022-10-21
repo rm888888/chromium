@@ -36,17 +36,8 @@ suite('OSSearchPageTests', function() {
     settings.Router.getInstance().navigateTo(
         settings.routes.OS_SEARCH, params);
 
-    let deepLinkElement;
-    if (loadTimeData.getBoolean('syncSettingsCategorizationEnabled')) {
-      const browserSearchSettingsLink =
-          page.$$('settings-search-engine').$$('#browserSearchSettingsLink');
-      deepLinkElement =
-          browserSearchSettingsLink.shadowRoot.querySelector('cr-icon-button');
-    } else {
-      deepLinkElement =
-          page.$$('settings-search-engine').$$('#searchSelectionDialogButton');
-    }
-    assertTrue(!!deepLinkElement);
+    const deepLinkElement =
+        page.$$('settings-search-engine').$$('#searchSelectionDialogButton');
     await test_util.waitAfterNextRender(deepLinkElement);
     assertEquals(
         deepLinkElement, getDeepActiveElement(),

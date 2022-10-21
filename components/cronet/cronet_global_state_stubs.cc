@@ -4,8 +4,6 @@
 
 #include "components/cronet/cronet_global_state.h"
 
-#include <tuple>
-
 #include "base/at_exit.h"
 #include "base/feature_list.h"
 #include "base/task/post_task.h"
@@ -26,7 +24,7 @@ scoped_refptr<base::SingleThreadTaskRunner> InitializeAndCreateTaskRunner() {
 // Cronet tests sets AtExitManager as part of TestSuite, so statically linked
 // library is not allowed to set its own.
 #if !defined(CRONET_TESTS_IMPLEMENTATION)
-  std::ignore = new base::AtExitManager;
+  ignore_result(new base::AtExitManager);
 #endif
 
   base::FeatureList::InitializeInstance(std::string(), std::string());
@@ -49,7 +47,7 @@ base::SingleThreadTaskRunner* InitTaskRunner() {
 }  // namespace
 
 void EnsureInitialized() {
-  std::ignore = InitTaskRunner();
+  ignore_result(InitTaskRunner());
 }
 
 bool OnInitThread() {

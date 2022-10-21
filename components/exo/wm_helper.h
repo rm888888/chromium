@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+#include "base/macros.h"
 #include "base/observer_list.h"
 #include "ui/aura/client/drag_drop_delegate.h"
 #include "ui/base/cursor/cursor.h"

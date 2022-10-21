@@ -89,12 +89,7 @@ void WaylandClientTestHelper::SetUpOnUIThread(base::WaitableEvent* event) {
   display_ = std::make_unique<Display>(nullptr, nullptr, nullptr, nullptr);
   wayland_server_ = exo::wayland::Server::Create(display_.get());
   DCHECK(wayland_server_);
-  wayland_server_->StartWithDefaultPath(base::BindOnce(
-      [](base::WaitableEvent* event, bool success, const base::FilePath& path) {
-        DCHECK(success);
-        event->Signal();
-      },
-      event));
+  event->Signal();
 }
 
 void WaylandClientTestHelper::TearDownOnUIThread(base::WaitableEvent* event) {

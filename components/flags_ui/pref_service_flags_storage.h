@@ -5,7 +5,7 @@
 #ifndef COMPONENTS_FLAGS_UI_PREF_SERVICE_FLAGS_STORAGE_H_
 #define COMPONENTS_FLAGS_UI_PREF_SERVICE_FLAGS_STORAGE_H_
 
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "build/build_config.h"
 #include "build/chromeos_buildflags.h"
 #include "components/flags_ui/flags_storage.h"
@@ -45,7 +45,7 @@ class PrefServiceFlagsStorage : public FlagsStorage {
 #endif  // BUILDFLAG(IS_CHROMEOS_ASH)
 
  private:
-  raw_ptr<PrefService> prefs_;
+  PrefService* prefs_;
 };
 
 }  // namespace flags_ui

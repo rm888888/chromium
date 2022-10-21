@@ -7,7 +7,6 @@
 #include <memory>
 #include <utility>
 
-#include "base/memory/raw_ptr.h"
 #include "base/strings/utf_string_conversions.h"
 #include "ui/base/dragdrop/os_exchange_data.h"
 #include "ui/base/models/image_model.h"
@@ -51,7 +50,7 @@ class ScopedWidget {
   views::Widget* get() const { return widget_; }
 
  private:
-  raw_ptr<views::Widget> widget_;
+  views::Widget* widget_;
 };
 
 void SetURLAndDragImage(const GURL& url,

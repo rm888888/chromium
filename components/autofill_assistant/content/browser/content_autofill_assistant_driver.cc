@@ -4,8 +4,6 @@
 
 #include "components/autofill_assistant/content/browser/content_autofill_assistant_driver.h"
 
-#include "base/files/file.h"
-#include "third_party/abseil-cpp/absl/types/optional.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 
 namespace autofill_assistant {
@@ -17,20 +15,6 @@ ContentAutofillAssistantDriver::ContentAutofillAssistantDriver(
     : content::DocumentUserData<ContentAutofillAssistantDriver>(
           render_frame_host) {}
 ContentAutofillAssistantDriver::~ContentAutofillAssistantDriver() = default;
-
-// static
-void ContentAutofillAssistantDriver::BindDriver(
-    mojo::PendingAssociatedReceiver<mojom::AutofillAssistantDriver>
-        pending_receiver,
-    content::RenderFrameHost* render_frame_host) {
-  DCHECK(render_frame_host);
-
-  auto* driver = ContentAutofillAssistantDriver::GetOrCreateForCurrentDocument(
-      render_frame_host);
-  if (driver) {
-    driver->BindPendingReceiver(std::move(pending_receiver));
-  }
-}
 
 void ContentAutofillAssistantDriver::BindPendingReceiver(
     mojo::PendingAssociatedReceiver<mojom::AutofillAssistantDriver>
@@ -47,48 +31,6 @@ ContentAutofillAssistantDriver::GetAutofillAssistantAgent() {
   }
 
   return autofill_assistant_agent_;
-}
-
-void ContentAutofillAssistantDriver::SetAnnotateDomModelService(
-    AnnotateDomModelService* annotate_dom_model_service) {
-  DCHECK(annotate_dom_model_service);
-  annotate_dom_model_service_ = annotate_dom_model_service;
-}
-
-void ContentAutofillAssistantDriver::GetAnnotateDomModel(
-    GetAnnotateDomModelCallback callback) {
-  DCHECK(annotate_dom_model_service_);
-  if (!annotate_dom_model_service_) {
-    std::move(callback).Run(base::File());
-    return;
-  }
-
-  absl::optional<base::File> file = annotate_dom_model_service_->GetModelFile();
-  if (file) {
-    std::move(callback).Run(file->Duplicate());
-    return;
-  }
-
-  annotate_dom_model_service_->NotifyOnModelFileAvailable(base::BindOnce(
-      &ContentAutofillAssistantDriver::OnModelAvailabilityChanged,
-      weak_pointer_factory_.GetWeakPtr(), std::move(callback)));
-}
-
-void ContentAutofillAssistantDriver::OnModelAvailabilityChanged(
-    GetAnnotateDomModelCallback callback,
-    bool is_available) {
-  if (!is_available) {
-    std::move(callback).Run(base::File());
-    return;
-  }
-
-  auto file_opt = annotate_dom_model_service_->GetModelFile();
-  DCHECK(file_opt);
-  if (!file_opt) {
-    std::move(callback).Run(base::File());
-    return;
-  }
-  std::move(callback).Run(file_opt->Duplicate());
 }
 
 }  // namespace autofill_assistant

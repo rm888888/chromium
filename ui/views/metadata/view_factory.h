@@ -13,7 +13,6 @@
 
 #include "base/bind.h"
 #include "base/compiler_specific.h"
-#include "base/memory/raw_ptr.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/base/class_property.h"
 #include "ui/base/metadata/base_type_conversion.h"
@@ -38,23 +37,12 @@ class BaseViewBuilderT : public internal::ViewBuilderCore {
 
   template <typename View>
   Builder& CopyAddressTo(View** view_address) & {
-    *view_address = view_ ? view_.get() : root_view_.get();
+    *view_address = view_ ? view_.get() : root_view_;
     return *static_cast<Builder*>(this);
   }
 
   template <typename View>
   Builder&& CopyAddressTo(View** view_address) && {
-    return std::move(this->CopyAddressTo(view_address));
-  }
-
-  template <typename View>
-  Builder& CopyAddressTo(raw_ptr<View>* view_address) & {
-    *view_address = view_ ? view_.get() : root_view_.get();
-    return *static_cast<Builder*>(this);
-  }
-
-  template <typename View>
-  Builder&& CopyAddressTo(raw_ptr<View>* view_address) && {
     return std::move(this->CopyAddressTo(view_address));
   }
 
@@ -206,7 +194,7 @@ class BaseViewBuilderT : public internal::ViewBuilderCore {
 
   // Unowned root view. Used for creating a builder with an existing root
   // instance.
-  raw_ptr<ViewClass_> root_view_ = nullptr;
+  ViewClass_* root_view_ = nullptr;
 };
 
 }  // namespace views
@@ -284,7 +272,7 @@ class BaseViewBuilderT : public internal::ViewBuilderCore {
     view_class##BuilderT& operator=(view_class##BuilderT&&) = default;        \
     ~view_class##BuilderT() override = default;
 
-#define VIEW_BUILDER_PROPERTY2(property_type, property_name)                  \
+#define VIEW_BUILDER_PROPERTY(property_type, property_name)                   \
   BuilderT& Set##property_name(                                               \
       ::ui::metadata::ArgType<property_type> value)& {                        \
     auto setter = std::make_unique<::views::internal::PropertySetter<         \
@@ -297,25 +285,6 @@ class BaseViewBuilderT : public internal::ViewBuilderCore {
       ::ui::metadata::ArgType<property_type> value)&& {                       \
     return std::move(this->Set##property_name(std::move(value)));             \
   }
-
-#define VIEW_BUILDER_PROPERTY3(property_type, property_name, field_type)      \
-  BuilderT& Set##property_name(                                               \
-      ::ui::metadata::ArgType<property_type> value)& {                        \
-    auto setter = std::make_unique<::views::internal::PropertySetter<         \
-        ViewClass_, property_type, decltype(&ViewClass_::Set##property_name), \
-        &ViewClass_::Set##property_name, field_type>>(std::move(value));      \
-    ::views::internal::ViewBuilderCore::AddPropertySetter(std::move(setter)); \
-    return *static_cast<BuilderT*>(this);                                     \
-  }                                                                           \
-  BuilderT&& Set##property_name(                                              \
-      ::ui::metadata::ArgType<property_type> value)&& {                       \
-    return std::move(this->Set##property_name(std::move(value)));             \
-  }
-
-#define GET_VB_MACRO(_1, _2, _3, macro_name, ...) macro_name
-#define VIEW_BUILDER_PROPERTY(...)                                          \
-  GET_VB_MACRO(__VA_ARGS__, VIEW_BUILDER_PROPERTY3, VIEW_BUILDER_PROPERTY2) \
-  (__VA_ARGS__)
 
 #define VIEW_BUILDER_METHOD(method_name, ...)                                 \
   template <typename... Args>                                                 \

@@ -13,8 +13,8 @@
 #include "base/json/json_reader.h"
 #include "base/json/json_string_value_serializer.h"
 #include "base/json/json_writer.h"
+#include "base/macros.h"
 #include "base/memory/ptr_util.h"
-#include "base/memory/raw_ptr.h"
 #include "base/strings/utf_string_conversions.h"
 #include "build/chromeos_buildflags.h"
 #include "components/pref_registry/pref_registry_syncable.h"
@@ -105,7 +105,7 @@ class TestSyncProcessorStub : public syncer::SyncChangeProcessor {
   void FailNextProcessSyncChanges() { fail_next_ = true; }
 
  private:
-  raw_ptr<syncer::SyncChangeList> output_;
+  syncer::SyncChangeList* output_;
   bool fail_next_;
 };
 
@@ -149,7 +149,7 @@ class TestPrefServiceSyncableObserver : public PrefServiceSyncableObserver {
 
  private:
   bool is_syncing_changed_ = false;
-  raw_ptr<const TestSyncedPrefObserver> sync_pref_observer_ = nullptr;
+  const TestSyncedPrefObserver* sync_pref_observer_ = nullptr;
 };
 
 syncer::SyncChange MakeRemoteChange(const std::string& name,
@@ -263,7 +263,7 @@ class PrefServiceSyncableTest : public testing::Test {
  protected:
   TestingPrefServiceSyncable prefs_;
 
-  raw_ptr<PrefModelAssociator> pref_sync_service_ = nullptr;
+  PrefModelAssociator* pref_sync_service_ = nullptr;
 };
 
 TEST_F(PrefServiceSyncableTest, CreatePrefSyncData) {
@@ -299,7 +299,7 @@ TEST_F(PrefServiceSyncableTest, ModelAssociationDoNotSyncDefaults) {
 TEST_F(PrefServiceSyncableTest, ModelAssociationEmptyCloud) {
   prefs_.SetString(kStringPrefName, kExampleUrl0);
   {
-    ListPrefUpdateDeprecated update(GetPrefs(), kListPrefName);
+    ListPrefUpdate update(GetPrefs(), kListPrefName);
     base::ListValue* url_list = update.Get();
     url_list->Append(kExampleUrl0);
     url_list->Append(kExampleUrl1);
@@ -318,7 +318,7 @@ TEST_F(PrefServiceSyncableTest, ModelAssociationEmptyCloud) {
 TEST_F(PrefServiceSyncableTest, ModelAssociationCloudHasData) {
   prefs_.SetString(kStringPrefName, kExampleUrl0);
   {
-    ListPrefUpdateDeprecated update(GetPrefs(), kListPrefName);
+    ListPrefUpdate update(GetPrefs(), kListPrefName);
     base::ListValue* url_list = update.Get();
     url_list->Append(kExampleUrl0);
   }
@@ -381,11 +381,11 @@ class TestPrefModelAssociatorClient : public PrefModelAssociatorClient {
     return is_dict_pref_;
   }
 
-  base::Value MaybeMergePreferenceValues(
+  std::unique_ptr<base::Value> MaybeMergePreferenceValues(
       const std::string& pref_name,
       const base::Value& local_value,
       const base::Value& server_value) const override {
-    return base::Value();
+    return nullptr;
   }
 
   void SetIsDictPref(bool is_dict_pref) { is_dict_pref_ = is_dict_pref; }
@@ -400,7 +400,6 @@ class PrefServiceSyncableMergeTest : public testing::Test {
       : prefs_(
             std::unique_ptr<PrefNotifierImpl>(pref_notifier_),
             std::make_unique<PrefValueStore>(managed_prefs_.get(),
-                                             new TestingPrefStore,
                                              new TestingPrefStore,
                                              new TestingPrefStore,
                                              new TestingPrefStore,
@@ -496,19 +495,19 @@ class PrefServiceSyncableMergeTest : public testing::Test {
   scoped_refptr<user_prefs::PrefRegistrySyncable> pref_registry_ =
       base::MakeRefCounted<user_prefs::PrefRegistrySyncable>();
   // Owned by prefs_;
-  const raw_ptr<PrefNotifierImpl> pref_notifier_ = new PrefNotifierImpl;
+  PrefNotifierImpl* const pref_notifier_ = new PrefNotifierImpl;
   scoped_refptr<TestingPrefStore> managed_prefs_ =
       base::MakeRefCounted<TestingPrefStore>();
   scoped_refptr<TestingPrefStore> user_prefs_ =
       base::MakeRefCounted<TestingPrefStore>();
   TestPrefModelAssociatorClient client_;
   PrefServiceSyncable prefs_;
-  raw_ptr<PrefModelAssociator> pref_sync_service_ = nullptr;
+  PrefModelAssociator* pref_sync_service_ = nullptr;
 };
 
 TEST_F(PrefServiceSyncableMergeTest, ShouldMergeSelectedListValues) {
   {
-    ListPrefUpdateDeprecated update(&prefs_, kListPrefName);
+    ListPrefUpdate update(&prefs_, kListPrefName);
     base::ListValue* url_list = update.Get();
     url_list->Append(kExampleUrl0);
     url_list->Append(kExampleUrl1);
@@ -589,7 +588,7 @@ TEST_F(PrefServiceSyncableMergeTest, ManagedListPreferences) {
 
 TEST_F(PrefServiceSyncableMergeTest, ShouldMergeSelectedDictionaryValues) {
   {
-    DictionaryPrefUpdateDeprecated update(&prefs_, kDictPrefName);
+    DictionaryPrefUpdate update(&prefs_, kDictPrefName);
     base::DictionaryValue* dict_value = update.Get();
     dict_value->Set("my_key1", std::make_unique<base::Value>("my_value1"));
     dict_value->Set("my_key3", std::make_unique<base::Value>("my_value3"));
@@ -934,9 +933,8 @@ class PrefServiceSyncableChromeOsTest : public testing::Test {
         std::unique_ptr<PrefNotifierImpl>(pref_notifier_),
         std::make_unique<PrefValueStore>(
             new TestingPrefStore, new TestingPrefStore, new TestingPrefStore,
-            new TestingPrefStore, new TestingPrefStore, user_prefs_.get(),
-            new TestingPrefStore, pref_registry_->defaults().get(),
-            pref_notifier_),
+            new TestingPrefStore, user_prefs_.get(), new TestingPrefStore,
+            pref_registry_->defaults().get(), pref_notifier_),
         user_prefs_, pref_registry_, &client_,
         /*read_error_callback=*/base::DoNothing(),
         /*async=*/false);

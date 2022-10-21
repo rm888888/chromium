@@ -9,7 +9,7 @@
 #include <string>
 
 #include "base/gtest_prod_util.h"
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/strings/string_piece_forward.h"
 #include "base/win/scoped_handle.h"
 
@@ -87,7 +87,7 @@ class ExperimentStorage {
 
     explicit Lock(ExperimentStorage* storage);
 
-    raw_ptr<ExperimentStorage> storage_;
+    ExperimentStorage* storage_;
   };
 
   ExperimentStorage();

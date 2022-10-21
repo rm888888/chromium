@@ -10,6 +10,7 @@
 
 #include "base/callback.h"
 #include "base/component_export.h"
+#include "base/macros.h"
 #include "base/metrics/field_trial.h"
 #include "base/threading/thread_local.h"
 

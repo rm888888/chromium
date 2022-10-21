@@ -5,6 +5,8 @@
 #ifndef COMPONENTS_UI_DEVTOOLS_UI_ELEMENT_DELEGATE_H_
 #define COMPONENTS_UI_DEVTOOLS_UI_ELEMENT_DELEGATE_H_
 
+#include "base/macros.h"
+
 namespace ui_devtools {
 
 class UIElement;

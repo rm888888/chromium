@@ -33,17 +33,22 @@ void MediaRouterGmcUiForTest::SetUp() {
 }
 
 void MediaRouterGmcUiForTest::ShowDialog() {
-  base::RunLoop loop;
-  dialog_ui_.ClickToolbarIcon();
-  loop.Run();
+  Browser* browser = chrome::FindBrowserWithWebContents(web_contents_);
+  MediaToolbarButtonView* button =
+      BrowserView::GetBrowserViewForBrowser(browser)->toolbar()->media_button();
+  base::RunLoop closure_loop;
+  ui_test_utils::MoveMouseToCenterAndPress(button, ui_controls::LEFT,
+                                           ui_controls::DOWN | ui_controls::UP,
+                                           closure_loop.QuitClosure());
+  closure_loop.Run();
 }
 
 bool MediaRouterGmcUiForTest::IsDialogShown() const {
-  return MediaDialogView::IsShowing();
+  return MediaDialogView::GetDialogViewForTesting()->IsShowing();
 }
 
 void MediaRouterGmcUiForTest::HideDialog() {
-  return MediaDialogView::HideDialog();
+  return MediaDialogView::GetDialogViewForTesting()->HideDialog();
 }
 
 void MediaRouterGmcUiForTest::ChooseSourceType(
@@ -82,17 +87,21 @@ void MediaRouterGmcUiForTest::WaitForDialogHidden() {
   NOTIMPLEMENTED();
 }
 
+void MediaRouterGmcUiForTest::SetLocalFile(const GURL& file_url) {
+  NOTIMPLEMENTED();
+}
+
+void MediaRouterGmcUiForTest::SetLocalFileSelectionIssue(
+    const IssueInfo& issue) {
+  NOTIMPLEMENTED();
+}
+
 MediaRouterGmcUiForTest::MediaRouterGmcUiForTest(
     content::WebContents* web_contents)
-    : MediaRouterUiForTestBase(web_contents),
-      content::WebContentsUserData<MediaRouterGmcUiForTest>(*web_contents),
-      browser_(chrome::FindBrowserWithWebContents(&GetWebContents())) {
-  DCHECK(browser_);
-}
+    : MediaRouterUiForTestBase(web_contents) {}
 
 CastDialogSinkButton* MediaRouterGmcUiForTest::GetSinkButton(
     const std::string& sink_name) const {
-  DCHECK(IsDialogShown());
   auto items = MediaDialogView::GetDialogViewForTesting()->GetItemsForTesting();
   global_media_controls::MediaItemUIView* view = items.begin()->second;
   auto* device_selector = static_cast<MediaItemUIDeviceSelectorView*>(

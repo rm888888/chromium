@@ -100,7 +100,7 @@ FileSearchProvider::FileSearchProvider(Profile* profile)
 
 FileSearchProvider::~FileSearchProvider() = default;
 
-ash::AppListSearchResultType FileSearchProvider::ResultType() const {
+ash::AppListSearchResultType FileSearchProvider::ResultType() {
   return ash::AppListSearchResultType::kFileSearch;
 }
 
@@ -111,6 +111,10 @@ void FileSearchProvider::Start(const std::u16string& query) {
   // Clear results and cancel any outgoing requests.
   ClearResultsSilently();
   weak_factory_.InvalidateWeakPtrs();
+
+  // This provider does not handle zero-state.
+  if (query.empty())
+    return;
 
   last_query_ = query;
   last_tokenized_query_.emplace(query, TokenizedString::Mode::kWords);
@@ -133,15 +137,13 @@ void FileSearchProvider::OnSearchComplete(
               return a.last_accessed < b.last_accessed;
             });
 
-  constexpr double kScoreEps = 1.0e-5;
+  constexpr float kScoreEps = 1.0e-5f;
   SearchProvider::Results results;
   for (int i = 0; i < paths.size(); ++i) {
+    // Add increasing score boosts for more recently accessed files.
     double relevance =
         FileResult::CalculateRelevance(last_tokenized_query_, paths[i].path);
-    // Slightly penalize scores for less recently accessed files, but don't let
-    // the relevance go below zero.
-    relevance = std::max(0.0, relevance - (paths.size() - i) * kScoreEps);
-    DCHECK((relevance >= 0.0) && (relevance <= 1.0));
+    relevance += i * kScoreEps;
     results.emplace_back(MakeResult(paths[i], relevance));
   }
 
@@ -157,8 +159,7 @@ std::unique_ptr<FileResult> FileSearchProvider::MakeResult(
                                       : FileResult::Type::kFile;
   auto result = std::make_unique<FileResult>(
       kFileSearchSchema, path.path, ash::AppListSearchResultType::kFileSearch,
-      ash::SearchResultDisplayType::kList, relevance, last_query_, type,
-      profile_);
+      last_query_, relevance, type, profile_);
   result->RequestThumbnail(&thumbnail_loader_);
   return result;
 }

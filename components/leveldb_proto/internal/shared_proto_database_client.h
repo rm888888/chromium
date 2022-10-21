@@ -11,21 +11,12 @@
 #include "base/bind.h"
 #include "base/component_export.h"
 #include "base/sequence_checker.h"
-#include "base/types/strong_alias.h"
 #include "components/leveldb_proto/internal/leveldb_database.h"
 #include "components/leveldb_proto/internal/proto/shared_db_metadata.pb.h"
 #include "components/leveldb_proto/internal/unique_proto_database.h"
 #include "components/leveldb_proto/public/shared_proto_database_client_list.h"
-#include "third_party/abseil-cpp/absl/types/optional.h"
 
 namespace leveldb_proto {
-
-// Key prefix not visible to the client.
-using KeyPrefix = base::StrongAlias<class KeyPrefixTag, std::string>;
-// Logical key visible to the client.
-using LogicalKey = base::StrongAlias<class LogicalKeyTag, std::string>;
-// Physical key used in the underlying db.
-using PhysicalKey = base::StrongAlias<class PhysicalKeyTag, std::string>;
 
 class SharedProtoDatabase;
 
@@ -41,29 +32,22 @@ using SharedClientInitCallback =
 class COMPONENT_EXPORT(LEVELDB_PROTO) SharedProtoDatabaseClient
     : public UniqueProtoDatabase {
  public:
-  static KeyPrefix PrefixForDatabase(ProtoDbType db_type);
+  static std::string PrefixForDatabase(ProtoDbType db_type);
 
-  static bool HasPrefix(const PhysicalKey& key, const KeyPrefix& prefix);
-  static absl::optional<LogicalKey> StripPrefix(const PhysicalKey& key,
-                                                const KeyPrefix& prefix);
+  static bool HasPrefix(const std::string& key, const std::string& prefix);
+  static std::string StripPrefix(const std::string& key,
+                                 const std::string& prefix);
 
   static std::unique_ptr<KeyVector> PrefixStrings(
       std::unique_ptr<KeyVector> strings,
-      const KeyPrefix& prefix);
+      const std::string& prefix);
 
   static bool KeyFilterStripPrefix(const KeyFilter& key_filter,
-                                   const KeyPrefix& prefix,
-                                   const PhysicalKey& key);
-  static bool KeyStringFilterStripPrefix(const KeyFilter& key_filter,
-                                         const KeyPrefix& prefix,
-                                         const std::string& key);
+                                   const std::string& prefix,
+                                   const std::string& key);
   static Enums::KeyIteratorAction KeyIteratorControllerStripPrefix(
       const KeyIteratorController& controller,
-      const KeyPrefix& prefix,
-      const PhysicalKey& key);
-  static Enums::KeyIteratorAction KeyStringIteratorControllerStripPrefix(
-      const KeyIteratorController& controller,
-      const KeyPrefix& prefix,
+      const std::string& prefix,
       const std::string& key);
 
   static void GetSharedDatabaseInitStatusAsync(
@@ -157,7 +141,7 @@ class COMPONENT_EXPORT(LEVELDB_PROTO) SharedProtoDatabaseClient
 
   Callbacks::InitCallback GetInitCallback() const;
 
-  const std::string& client_db_id() const { return prefix_.value(); }
+  const std::string& client_db_id() const { return prefix_; }
 
   void set_migration_status(
       SharedDBMetadataProto::MigrationStatus migration_status) {
@@ -184,18 +168,18 @@ class COMPONENT_EXPORT(LEVELDB_PROTO) SharedProtoDatabaseClient
 
   static void StripPrefixLoadKeysCallback(
       Callbacks::LoadKeysCallback callback,
-      const KeyPrefix& prefix,
+      const std::string& prefix,
       bool success,
       std::unique_ptr<leveldb_proto::KeyVector> keys);
   static void StripPrefixLoadKeysAndEntriesCallback(
       Callbacks::LoadKeysAndEntriesCallback callback,
-      const KeyPrefix& prefix,
+      const std::string& prefix,
       bool success,
       std::unique_ptr<KeyValueMap> keys_entries);
 
   static std::unique_ptr<KeyValueVector> PrefixKeyEntryVector(
       std::unique_ptr<KeyValueVector> kev,
-      const KeyPrefix& prefix);
+      const std::string& prefix);
 
   SEQUENCE_CHECKER(sequence_checker_);
 
@@ -206,7 +190,7 @@ class COMPONENT_EXPORT(LEVELDB_PROTO) SharedProtoDatabaseClient
   SharedDBMetadataProto::MigrationStatus migration_status_ =
       SharedDBMetadataProto::MIGRATION_NOT_ATTEMPTED;
 
-  const KeyPrefix prefix_;
+  const std::string prefix_;
 
   scoped_refptr<SharedProtoDatabase> parent_db_;
 

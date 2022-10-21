@@ -6,7 +6,6 @@
 
 #include "ash/constants/ash_features.h"
 #include "ash/constants/ash_switches.h"
-#include "base/environment.h"
 #include "base/files/file_util.h"
 #include "base/task/thread_pool.h"
 #include "base/test/bind.h"
@@ -47,28 +46,20 @@ bool AshBrowserTestStarter::PrepareEnvironmentForLacros() {
 
 class LacrosStartedObserver : public crosapi::BrowserManagerObserver {
  public:
-  LacrosStartedObserver() = default;
+  explicit LacrosStartedObserver(base::OnceClosure quit_closure)
+      : quit_closure_(std::move(quit_closure)) {}
   LacrosStartedObserver(const LacrosStartedObserver&) = delete;
   LacrosStartedObserver& operator=(const LacrosStartedObserver&) = delete;
   ~LacrosStartedObserver() override = default;
 
   void OnStateChanged() override {
     if (crosapi::BrowserManager::Get()->IsRunning()) {
-      run_loop_.Quit();
+      std::move(quit_closure_).Run();
     }
-  }
-
-  void Wait(base::TimeDelta timeout) {
-    if (crosapi::BrowserManager::Get()->IsRunning()) {
-      return;
-    }
-    base::ThreadPool::PostDelayedTask(FROM_HERE, run_loop_.QuitClosure(),
-                                      timeout);
-    run_loop_.Run();
   }
 
  private:
-  base::RunLoop run_loop_;
+  base::OnceClosure quit_closure_;
 };
 
 void WaitForExoStarted(const base::FilePath& xdg_path) {
@@ -92,14 +83,14 @@ void AshBrowserTestStarter::StartLacros(InProcessBrowserTest* test_class_obj) {
 
   WaitForExoStarted(scoped_temp_dir_xdg_.GetPath());
 
-  crosapi::BrowserManager::Get()->NewWindow(
-      /*incongnito=*/false, /*should_trigger_session_restore=*/false);
-
-  LacrosStartedObserver observer;
+  crosapi::BrowserManager::Get()->NewWindow(/*incongnito=*/false);
+  base::RunLoop run_loop;
+  LacrosStartedObserver observer(run_loop.QuitClosure());
   crosapi::BrowserManager::Get()->AddObserver(&observer);
-  observer.Wait(TestTimeouts::action_max_timeout());
+  base::ThreadPool::PostDelayedTask(FROM_HERE, run_loop.QuitClosure(),
+                                    TestTimeouts::action_max_timeout());
+  run_loop.Run();
   crosapi::BrowserManager::Get()->RemoveObserver(&observer);
-
   CHECK(crosapi::BrowserManager::Get()->IsRunning());
 
   // Create a new ash browser window so browser() can work.

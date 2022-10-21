@@ -13,7 +13,6 @@
 #include "chrome/browser/media/router/media_router_feature.h"
 #include "chrome/browser/themes/theme_properties.h"
 #include "chrome/browser/ui/browser.h"
-#include "chrome/browser/ui/browser_element_identifiers.h"
 #include "chrome/browser/ui/global_media_controls/media_notification_service.h"
 #include "chrome/browser/ui/global_media_controls/media_notification_service_factory.h"
 #include "chrome/browser/ui/global_media_controls/media_toolbar_button_controller.h"
@@ -38,7 +37,6 @@
 #include "ui/views/accessibility/view_accessibility.h"
 #include "ui/views/animation/ink_drop.h"
 #include "ui/views/controls/button/button_controller.h"
-#include "ui/views/view_class_properties.h"
 
 MediaToolbarButtonView::MediaToolbarButtonView(
     BrowserView* browser_view,
@@ -60,7 +58,6 @@ MediaToolbarButtonView::MediaToolbarButtonView(
   SetTooltipText(
       l10n_util::GetStringUTF16(IDS_GLOBAL_MEDIA_CONTROLS_ICON_TOOLTIP_TEXT));
   GetViewAccessibility().OverrideHasPopup(ax::mojom::HasPopup::kDialog);
-  SetProperty(views::kElementIdentifierKey, kMediaButtonElementId);
 
   // We start hidden and only show once |controller_| tells us to.
   SetVisible(false);
@@ -108,7 +105,8 @@ void MediaToolbarButtonView::Enable() {
 
   if (media::IsLiveCaptionFeatureEnabled()) {
     // Live Caption multi language is only enabled when SODA is also enabled.
-    if (base::FeatureList::IsEnabled(media::kLiveCaptionMultiLanguage)) {
+    if (base::FeatureList::IsEnabled(media::kLiveCaptionMultiLanguage) &&
+        base::FeatureList::IsEnabled(media::kUseSodaForLiveCaption)) {
       feature_promo_controller_->MaybeShowPromo(
           feature_engagement::kIPHLiveCaptionFeature);
     } else {
@@ -142,8 +140,8 @@ void MediaToolbarButtonView::Disable() {
 }
 
 void MediaToolbarButtonView::MaybeShowStopCastingPromo() {
-  if (media_router::GlobalMediaControlsCastStartStopEnabled(
-          browser_->profile()) &&
+  if (media_router::GlobalMediaControlsCastStartStopEnabled() &&
+      media_router::MediaRouterEnabled(browser_->profile()) &&
       service_->HasLocalCastNotifications()) {
     feature_promo_controller_->MaybeShowPromo(
         feature_engagement::kIPHGMCCastStartStopFeature);

@@ -85,7 +85,15 @@ TabStripRegionView::TabStripRegionView(std::unique_ptr<TabStrip> tab_strip) {
                                       tab_strip_container_flex_spec);
   }
 
-  new_tab_button_ = AddChildView(std::make_unique<NewTabButton>(
+  //update on 20220519
+//  views::View* temp = AddChildView(std::make_unique<views::View>());
+//  temp->SetLayoutManager(std::make_unique<views::BoxLayout>(
+//            views::BoxLayout::Orientation::kVertical,
+//            gfx::Insets(10,0,10,0),
+//            6));
+//  temp->SetID(180);
+  //
+  new_tab_button_ = /*temp->*/AddChildView(std::make_unique<NewTabButton>(
       tab_strip_, base::BindRepeating(&TabStrip::NewTabButtonPressed,
                                       base::Unretained(tab_strip_))));
   new_tab_button_->SetTooltipText(
@@ -95,7 +103,6 @@ TabStripRegionView::TabStripRegionView(std::unique_ptr<TabStrip> tab_strip) {
   new_tab_button_->SetImageVerticalAlignment(views::ImageButton::ALIGN_BOTTOM);
   new_tab_button_->SetEventTargeter(
       std::make_unique<views::ViewTargeter>(new_tab_button_));
-
   UpdateNewTabButtonBorder();
 
   reserved_grab_handle_space_ =
@@ -145,6 +152,12 @@ TabStripRegionView::TabStripRegionView(std::unique_ptr<TabStrip> tab_strip) {
     tab_search_button_ = AddChildView(std::move(tab_search_button));
     tab_search_button_->SetProperty(views::kMarginsKey, control_padding);
   }
+  //update on 20220407
+  //SetPreferredSize(gfx::Size(width(),height()+20));
+  if(browser->is_type_normal())
+  tab_search_button_->SetVisible(false);
+  //SetBackground(views::CreateSolidBackground(SkColorSetARGB(255,235,226,238)));
+  //
 }
 
 TabStripRegionView::~TabStripRegionView() = default;

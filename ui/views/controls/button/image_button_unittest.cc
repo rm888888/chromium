@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 #include "ui/views/controls/button/image_button.h"
+#include "base/macros.h"
 #include "testing/gtest/include/gtest/gtest.h"
 #include "ui/base/layout.h"
 #include "ui/views/border.h"

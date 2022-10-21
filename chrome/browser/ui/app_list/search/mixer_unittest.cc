@@ -109,7 +109,7 @@ class TestSearchProvider : public SearchProvider {
     }
   }
 
-  ash::AppListSearchResultType ResultType() const override {
+  ash::AppListSearchResultType ResultType() override {
     return ash::AppListSearchResultType::kUnknown;
   }
 

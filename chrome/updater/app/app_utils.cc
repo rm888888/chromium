@@ -4,6 +4,7 @@
 
 #include "chrome/updater/app/app_utils.h"
 
+#include "base/containers/contains.h"
 #include "chrome/updater/constants.h"
 
 namespace updater {

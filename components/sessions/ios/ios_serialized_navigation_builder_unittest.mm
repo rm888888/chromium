@@ -32,10 +32,9 @@ std::unique_ptr<web::NavigationItem> MakeNavigationItemForTest() {
   navigation_item->SetTitle(test_data::kTitle);
   navigation_item->SetTransitionType(test_data::kTransitionType);
   navigation_item->SetTimestamp(test_data::kTimestamp);
-  web::FaviconStatus favicon_status;
-  favicon_status.valid = true;
-  favicon_status.url = GURL("http://virtual-url.com/favicon.ico");
-  navigation_item->SetFaviconStatus(favicon_status);
+  navigation_item->GetFavicon().valid = true;
+  navigation_item->GetFavicon().url =
+      GURL("http://virtual-url.com/favicon.ico");
   return navigation_item;
 }
 
@@ -62,7 +61,7 @@ TEST_F(IOSSerializedNavigationBuilderTest, FromNavigationItem) {
   EXPECT_TRUE(ui::PageTransitionTypeIncludingQualifiersIs(
       navigation.transition_type(), navigation_item->GetTransitionType()));
   EXPECT_EQ(navigation_item->GetTimestamp(), navigation.timestamp());
-  EXPECT_EQ(navigation_item->GetFaviconStatus().url, navigation.favicon_url());
+  EXPECT_EQ(navigation_item->GetFavicon().url, navigation.favicon_url());
 
   // The following fields should be left at their default values.
   SerializedNavigationEntry default_navigation;

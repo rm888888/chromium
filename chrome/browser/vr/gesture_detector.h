@@ -8,6 +8,7 @@
 #include <memory>
 #include <vector>
 
+#include "base/macros.h"
 #include "base/time/time.h"
 #include "chrome/browser/vr/vr_export.h"
 #include "ui/gfx/geometry/point_f.h"

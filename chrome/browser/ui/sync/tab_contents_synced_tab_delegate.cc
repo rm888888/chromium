@@ -120,9 +120,9 @@ void TabContentsSyncedTabDelegate::GetSerializedNavigationAtIndex(
   }
 }
 
-bool TabContentsSyncedTabDelegate::ProfileHasChildAccount() const {
+bool TabContentsSyncedTabDelegate::ProfileIsSupervised() const {
   return Profile::FromBrowserContext(web_contents_->GetBrowserContext())
-      ->IsChild();
+      ->IsSupervised();
 }
 
 const std::vector<std::unique_ptr<const sessions::SerializedNavigationEntry>>*
@@ -145,7 +145,7 @@ bool TabContentsSyncedTabDelegate::ShouldSync(
           GetWindowId()) == nullptr)
     return false;
 
-  if (ProfileHasChildAccount() && !GetBlockedNavigations()->empty())
+  if (ProfileIsSupervised() && !GetBlockedNavigations()->empty())
     return true;
 
   if (IsInitialBlankNavigation())

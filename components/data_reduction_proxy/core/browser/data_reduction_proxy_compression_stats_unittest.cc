@@ -38,14 +38,10 @@ const int kWriteDelayMinutes = 60;
 // for 60 days.
 const int kNumExpectedBuckets = 60 * 24 * 60 / 15;
 
-int64_t GetListPrefInt64Value(const base::Value& list_update, size_t index) {
+int64_t GetListPrefInt64Value(const base::ListValue& list_update,
+                              size_t index) {
   std::string string_value;
-  base::Value::ConstListView list_view = list_update.GetList();
-  if (index < list_view.size() && list_view[index].is_string()) {
-    string_value = list_view[index].GetString();
-  } else {
-    ADD_FAILURE() << "invalid index or [index] not a string";
-  }
+  EXPECT_TRUE(list_update.GetString(index, &string_value));
 
   int64_t value = 0;
   EXPECT_TRUE(base::StringToInt64(string_value, &value));
@@ -156,14 +152,14 @@ class DataReductionProxyCompressionStatsTest : public testing::Test {
     compression_stats_->SetInt64(
         prefs::kHttpReceivedContentLength, kReceivedLength);
 
-    base::Value* original_daily_content_length_list =
+    base::ListValue* original_daily_content_length_list =
         compression_stats_->GetList(prefs::kDailyHttpOriginalContentLength);
-    base::Value* received_daily_content_length_list =
+    base::ListValue* received_daily_content_length_list =
         compression_stats_->GetList(prefs::kDailyHttpReceivedContentLength);
 
     for (size_t i = 0; i < kNumDaysInHistory; ++i) {
-      original_daily_content_length_list->GetList()[i] =
-          base::Value(base::NumberToString(i));
+      original_daily_content_length_list->Set(
+          i, std::make_unique<base::Value>(base::NumberToString(i)));
     }
 
     received_daily_content_length_list->ClearList();
@@ -184,8 +180,8 @@ class DataReductionProxyCompressionStatsTest : public testing::Test {
   // Verify the pref list values in |pref_service_| are equal to those in
   // |simple_pref_service| for |pref|.
   void VerifyPrefListWasWritten(const char* pref) {
-    const base::Value* delayed_list = compression_stats_->GetList(pref);
-    const base::Value* written_list = pref_service()->GetList(pref);
+    const base::ListValue* delayed_list = compression_stats_->GetList(pref);
+    const base::ListValue* written_list = pref_service()->GetList(pref);
     ASSERT_EQ(delayed_list->GetList().size(), written_list->GetList().size());
     size_t count = delayed_list->GetList().size();
 
@@ -203,6 +199,25 @@ class DataReductionProxyCompressionStatsTest : public testing::Test {
     EXPECT_EQ(delayed_pref, written_pref);
   }
 
+  // Verify the pref values in |dict| are equal to that in |compression_stats_|.
+  void VerifyPrefs(base::DictionaryValue* dict) {
+    std::u16string dict_pref_string;
+    int64_t dict_pref;
+    int64_t service_pref;
+
+    dict->GetString("historic_original_content_length", &dict_pref_string);
+    base::StringToInt64(dict_pref_string, &dict_pref);
+    service_pref =
+        compression_stats_->GetInt64(prefs::kHttpOriginalContentLength);
+    EXPECT_EQ(service_pref, dict_pref);
+
+    dict->GetString("historic_received_content_length", &dict_pref_string);
+    base::StringToInt64(dict_pref_string, &dict_pref);
+    service_pref =
+        compression_stats_->GetInt64(prefs::kHttpReceivedContentLength);
+    EXPECT_EQ(service_pref, dict_pref);
+  }
+
   // Verify the pref list values are equal to the given values.
   // If the count of values is less than kNumDaysInHistory, zeros are assumed
   // at the beginning.
@@ -211,7 +226,7 @@ class DataReductionProxyCompressionStatsTest : public testing::Test {
                       size_t count,
                       size_t num_days_in_history) {
     ASSERT_GE(num_days_in_history, count);
-    base::Value* update = compression_stats_->GetList(pref);
+    base::ListValue* update = compression_stats_->GetList(pref);
     ASSERT_EQ(num_days_in_history, update->GetList().size())
         << "Pref: " << pref;
 
@@ -354,11 +369,9 @@ class DataReductionProxyCompressionStatsTest : public testing::Test {
   void VerifyDictionaryPref(const std::string& pref,
                             int key,
                             int expected_value) const {
-    const base::Value* dict =
+    const base::DictionaryValue* dict =
         compression_stats_->pref_service_->GetDictionary(pref);
-
-    const base::Value* value = dict->FindKey(base::NumberToString(key));
-    EXPECT_EQ(expected_value != 0, !!value);
+    EXPECT_EQ(expected_value != 0, dict->HasKey(base::NumberToString(key)));
     if (expected_value) {
       EXPECT_EQ(expected_value,
                 dict->FindKey(base::NumberToString(key))->GetInt());

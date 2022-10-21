@@ -9,7 +9,6 @@
 
 #include "base/containers/fixed_flat_map.h"
 #include "base/containers/span.h"
-#include "base/memory/raw_ptr.h"
 #include "base/metrics/histogram_functions.h"
 #include "base/metrics/histogram_macros.h"
 #include "base/trace_event/trace_event.h"
@@ -102,8 +101,8 @@ class WebUIBackgroundContextMenu : public ui::SimpleMenuModel::Delegate,
   }
 
  private:
-  const raw_ptr<Browser> browser_;
-  const raw_ptr<const ui::AcceleratorProvider> accelerator_provider_;
+  Browser* const browser_;
+  const ui::AcceleratorProvider* const accelerator_provider_;
 };
 
 class WebUITabContextMenu : public ui::SimpleMenuModel::Delegate,
@@ -142,8 +141,8 @@ class WebUITabContextMenu : public ui::SimpleMenuModel::Delegate,
   }
 
  private:
-  const raw_ptr<Browser> browser_;
-  const raw_ptr<const ui::AcceleratorProvider> accelerator_provider_;
+  Browser* const browser_;
+  const ui::AcceleratorProvider* const accelerator_provider_;
   const int tab_index_;
 };
 
@@ -421,13 +420,10 @@ bool TabStripPageHandler::PreHandleGestureEvent(
       if (!context_menu_after_tap_)
         page_->ShowContextMenu();
       return true;
-    case blink::WebInputEvent::Type::kGestureTwoFingerTap:
-      page_->ShowContextMenu();
-      return true;
     case blink::WebInputEvent::Type::kGestureLongTap:
       if (context_menu_after_tap_)
         page_->ShowContextMenu();
-      [[fallthrough]];
+      FALLTHROUGH;
     case blink::WebInputEvent::Type::kGestureTap:
       // Ensure that we reset `should_drag_on_gesture_scroll_` when we encounter
       // a gesture tap event (i.e. an event triggered after the user lifts their
@@ -639,7 +635,7 @@ void TabStripPageHandler::MoveGroup(const std::string& group_id_string,
     to_index = browser_->tab_strip_model()->count();
   }
 
-  auto* target_browser = browser_.get();
+  auto* target_browser = browser_;
   Browser* source_browser =
       tab_strip_ui::GetBrowserWithGroupId(browser_->profile(), group_id_string);
   if (!source_browser) {

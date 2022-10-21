@@ -7,7 +7,7 @@
 
 #include <memory>
 
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 
 namespace views {
 
@@ -31,7 +31,7 @@ class MenuRunnerTestAPI {
       std::unique_ptr<MenuRunnerHandler> menu_runner_handler);
 
  private:
-  raw_ptr<MenuRunner> menu_runner_;
+  MenuRunner* menu_runner_;
 };
 
 }  // namespace test

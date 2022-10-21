@@ -22,6 +22,8 @@
 namespace web_app {
 
 SystemWebAppBrowserTestBase::SystemWebAppBrowserTestBase(bool install_mock) {
+  os_hooks_suppress_ =
+      web_app::OsIntegrationManager::ScopedSuppressOsHooksForTesting();
 #if BUILDFLAG(IS_CHROMEOS_LACROS)
   EnableSystemWebAppsInLacrosForTesting();
 #endif

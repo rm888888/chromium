@@ -244,6 +244,10 @@ const SystemWebAppDelegate* AppBrowserController::system_app() const {
 }
 
 std::u16string AppBrowserController::GetLaunchFlashText() const {
+  if (base::FeatureList::IsEnabled(
+          features::kDesktopPWAsFlashAppNameInsteadOfOrigin)) {
+    return GetAppShortName();
+  }
   return GetFormattedUrlOrigin();
 }
 
@@ -286,8 +290,7 @@ void AppBrowserController::DidStartNavigation(
 
 void AppBrowserController::DidFinishNavigation(
     content::NavigationHandle* navigation_handle) {
-  if (!navigation_handle->IsInMainFrame() ||
-      navigation_handle->IsSameDocument())
+  if (!navigation_handle->IsInMainFrame())
     return;
 
   // Reset the draggable regions so they are not cached on navigation.

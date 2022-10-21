@@ -10,7 +10,6 @@
 #include <memory>
 #include <string>
 
-#include "base/memory/raw_ptr.h"
 #include "base/test/bind.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/resource_coordinator/lifecycle_unit.h"
@@ -68,7 +67,6 @@
 #include "chrome/browser/ui/startup/launch_mode_recorder.h"
 #include "chrome/browser/ui/startup/startup_browser_creator.h"
 #include "chrome/browser/ui/startup/startup_browser_creator_impl.h"
-#include "chrome/browser/ui/startup/startup_types.h"
 #include "chrome/browser/ui/tabs/pinned_tab_codec.h"
 #include "chrome/browser/ui/tabs/tab_strip_model.h"
 #include "chrome/browser/ui/ui_features.h"
@@ -315,7 +313,7 @@ class RenderViewSizeObserver : public content::WebContentsObserver {
   // Enlarge WebContentsView by this size insets in
   // DidStartNavigation.
   gfx::Size wcv_resize_insets_;
-  raw_ptr<BrowserWindow> browser_window_;  // Weak ptr.
+  BrowserWindow* browser_window_;  // Weak ptr.
 };
 
 }  // namespace
@@ -1335,7 +1333,7 @@ IN_PROC_BROWSER_TEST_F(BrowserTest, AppIdSwitch) {
   command_line.AppendSwitchASCII(switches::kAppId, extension_app->id());
 
   EXPECT_TRUE(StartupBrowserCreator().ProcessCmdLineImpl(
-      command_line, base::FilePath(), chrome::startup::IsProcessStartup::kNo,
+      command_line, base::FilePath(), /*process_startup=*/false,
       browser()->profile(), {}));
 
   tab_waiter.Wait();
@@ -1514,11 +1512,10 @@ IN_PROC_BROWSER_TEST_F(BrowserTest, RestorePinnedTabs) {
   // Launch again with the same profile.
   base::CommandLine dummy(base::CommandLine::NO_PROGRAM);
   chrome::startup::IsFirstRun first_run =
-      first_run::IsChromeFirstRun() ? chrome::startup::IsFirstRun::kYes
-                                    : chrome::startup::IsFirstRun::kNo;
+      first_run::IsChromeFirstRun() ? chrome::startup::IS_FIRST_RUN
+                                    : chrome::startup::IS_NOT_FIRST_RUN;
   StartupBrowserCreatorImpl launch(base::FilePath(), dummy, first_run);
-  launch.Launch(browser()->profile(), chrome::startup::IsProcessStartup::kNo,
-                nullptr);
+  launch.Launch(browser()->profile(), false, nullptr);
 
   // The launch should have created a new browser.
   ASSERT_EQ(2u, chrome::GetBrowserCount(browser()->profile()));
@@ -2018,7 +2015,7 @@ IN_PROC_BROWSER_TEST_F(BrowserTest, WindowOpenClose1) {
   GURL url = embedded_test_server()->GetURL("/window.close.html");
   GURL::Replacements add_query;
   std::string query("test1");
-  add_query.SetQueryStr(query);
+  add_query.SetQuery(query.c_str(), url::Component(0, query.length()));
   url = url.ReplaceComponents(add_query);
 
   std::u16string title = u"Title Of Awesomeness";
@@ -2035,7 +2032,7 @@ IN_PROC_BROWSER_TEST_F(BrowserTest, WindowOpenClose2) {
   GURL url = embedded_test_server()->GetURL("/window.close.html");
   GURL::Replacements add_query;
   std::string query("test2");
-  add_query.SetQueryStr(query);
+  add_query.SetQuery(query.c_str(), url::Component(0, query.length()));
   url = url.ReplaceComponents(add_query);
 
   std::u16string title = u"Title Of Awesomeness";
@@ -2058,7 +2055,7 @@ IN_PROC_BROWSER_TEST_F(BrowserTest, DISABLED_WindowOpenClose3) {
   GURL url = embedded_test_server()->GetURL("/window.close.html");
   GURL::Replacements add_query;
   std::string query("test3");
-  add_query.SetQueryStr(query);
+  add_query.SetQuery(query.c_str(), url::Component(0, query.length()));
   url = url.ReplaceComponents(add_query);
 
   std::u16string title = u"Title Of Awesomeness";

@@ -15,6 +15,10 @@
 
 class Profile;
 
+namespace base {
+class SequencedTaskRunner;
+}  // namespace base
+
 namespace gfx {
 class Image;
 }  // namespace gfx
@@ -69,6 +73,7 @@ class SanitizedImageSource : public content::URLDataSource {
   const scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory_;
   std::list<std::unique_ptr<network::SimpleURLLoader>> loaders_;
   std::unique_ptr<image_fetcher::ImageDecoder> image_decoder_;
+  scoped_refptr<base::SequencedTaskRunner> encode_task_runner_;
 
   SEQUENCE_CHECKER(sequence_checker_);
   base::WeakPtrFactory<SanitizedImageSource> weak_ptr_factory_{this};

@@ -80,6 +80,8 @@ class StartSurfaceToolbarView extends RelativeLayout {
     private Rect mLogoRect = new Rect();
     private Rect mViewRect = new Rect();
 
+    private boolean mShouldShow;
+    private boolean mInStartSurfaceMode;
     private boolean mShowTransitionAnimations;
     private AnimatorSet mLayoutChangeAnimatorSet;
 
@@ -394,11 +396,21 @@ class StartSurfaceToolbarView extends RelativeLayout {
     }
 
     /**
+     * Show or hide toolbar from tab.
+     * @param inStartSurfaceMode Whether or not toolbar should be shown or hidden.
+     * */
+    void setStartSurfaceMode(boolean inStartSurfaceMode) {
+        mInStartSurfaceMode = inStartSurfaceMode;
+        startToolbarVisibilityAnimations();
+    }
+
+    /**
      * Show or hide toolbar.
      * @param shouldShowStartSurfaceToolbar Whether or not toolbar should be shown or hidden.
      * */
     void setToolbarVisibility(boolean shouldShowStartSurfaceToolbar) {
-        startToolbarVisibilityAnimations(shouldShowStartSurfaceToolbar);
+        mShouldShow = shouldShowStartSurfaceToolbar;
+        startToolbarVisibilityAnimations();
     }
 
     /**
@@ -480,7 +492,9 @@ class StartSurfaceToolbarView extends RelativeLayout {
      * If transition animations shouldn't show, update the visibility of toolbar; Otherwise if
      * toolbar is already showing and transition animations should show, show transition animations.
      */
-    private void startToolbarVisibilityAnimations(boolean shouldShowStartSurfaceToolbar) {
+    private void startToolbarVisibilityAnimations() {
+        boolean shouldShowStartSurfaceToolbar = mInStartSurfaceMode && mShouldShow;
+
         if (mLayoutChangeAnimatorSet != null) mLayoutChangeAnimatorSet.cancel();
 
         if (!mShowTransitionAnimations) {

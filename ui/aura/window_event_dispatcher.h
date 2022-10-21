@@ -10,9 +10,8 @@
 #include <vector>
 
 #include "base/callback.h"
-#include "base/compiler_specific.h"
 #include "base/gtest_prod_util.h"
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/memory/ref_counted.h"
 #include "base/memory/weak_ptr.h"
 #include "base/scoped_multi_source_observation.h"
@@ -25,6 +24,7 @@
 #include "ui/events/event_constants.h"
 #include "ui/events/event_processor.h"
 #include "ui/events/event_targeter.h"
+#include "ui/events/fraction_of_time_without_user_input_recorder.h"
 #include "ui/events/gestures/gesture_recognizer.h"
 #include "ui/events/gestures/gesture_types.h"
 #include "ui/events/types/event_type.h"
@@ -164,7 +164,7 @@ class AURA_EXPORT WindowEventDispatcher : public ui::EventProcessor,
     ~ObserverNotifier();
 
    private:
-    raw_ptr<WindowEventDispatcher> dispatcher_;
+    WindowEventDispatcher* dispatcher_;
   };
 
   // The parameter for OnWindowHidden() to specify why window is hidden.
@@ -290,13 +290,16 @@ class AURA_EXPORT WindowEventDispatcher : public ui::EventProcessor,
   ui::EventDispatchDetails PreDispatchKeyEvent(Window* target,
                                                ui::KeyEvent* event);
 
-  raw_ptr<WindowTreeHost> host_;
+  WindowTreeHost* host_;
 
-  raw_ptr<Window> mouse_pressed_handler_ = nullptr;
-  raw_ptr<Window> mouse_moved_handler_ = nullptr;
-  raw_ptr<Window> touchpad_pinch_handler_ = nullptr;
-  raw_ptr<Window> event_dispatch_target_ = nullptr;
-  raw_ptr<Window> old_dispatch_target_ = nullptr;
+  Window* mouse_pressed_handler_ = nullptr;
+  Window* mouse_moved_handler_ = nullptr;
+  Window* touchpad_pinch_handler_ = nullptr;
+  Window* event_dispatch_target_ = nullptr;
+  Window* old_dispatch_target_ = nullptr;
+
+  ui::FractionOfTimeWithoutUserInputRecorder
+      fraction_of_time_without_user_input_recorder_;
 
   bool synthesize_mouse_move_ = false;
 
@@ -314,7 +317,7 @@ class AURA_EXPORT WindowEventDispatcher : public ui::EventProcessor,
   std::unique_ptr<ui::LocatedEvent> held_repostable_event_;
 
   // Set when dispatching a held event.
-  raw_ptr<ui::LocatedEvent> dispatching_held_event_ = nullptr;
+  ui::LocatedEvent* dispatching_held_event_ = nullptr;
 
   base::ScopedMultiSourceObservation<aura::Window, aura::WindowObserver>
       observation_manager_{this};

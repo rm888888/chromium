@@ -74,13 +74,14 @@ function setupEvents() {
       interstitialType === 'SAFEBROWSING' && loadTimeData.getBoolean('billing');
   const originPolicy = interstitialType === 'ORIGIN_POLICY';
   const blockedInterception = interstitialType === 'BLOCKED_INTERCEPTION';
+  const legacyTls = interstitialType == 'LEGACY_TLS';
   const insecureForm = interstitialType == 'INSECURE_FORM';
   const httpsOnly = interstitialType == 'HTTPS_ONLY';
   const hidePrimaryButton = loadTimeData.getBoolean('hide_primary_button');
   const showRecurrentErrorParagraph = loadTimeData.getBoolean(
     'show_recurrent_error_paragraph');
 
-  if (ssl || originPolicy || blockedInterception) {
+  if (ssl || originPolicy || blockedInterception || legacyTls) {
     $('body').classList.add(badClock ? 'bad-clock' : 'ssl');
     if (loadTimeData.valueExists('errorCode')) {
       $('error-code').textContent = loadTimeData.getString('errorCode');
@@ -105,6 +106,10 @@ function setupEvents() {
 
   $('icon').classList.add('icon');
 
+  if (legacyTls) {
+    $('icon').classList.add('legacy-tls');
+  }
+
   if (hidePrimaryButton) {
     $('primary-button').classList.add(HIDDEN_CLASS);
   } else {
@@ -115,6 +120,7 @@ function setupEvents() {
           break;
 
         case 'SSL':
+        case 'LEGACY_TLS':
           if (badClock) {
             sendCommand(SecurityInterstitialCommandId.CMD_OPEN_DATE_SETTINGS);
           } else if (overridable) {

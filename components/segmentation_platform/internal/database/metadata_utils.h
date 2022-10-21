@@ -84,9 +84,6 @@ int ConvertToDiscreteScore(const std::string& mapping_key,
                            float input_score,
                            const proto::SegmentationModelMetadata& metadata);
 
-std::string SegmetationModelMetadataToString(
-    const proto::SegmentationModelMetadata& model_metadata);
-
 }  // namespace metadata_utils
 }  // namespace segmentation_platform
 

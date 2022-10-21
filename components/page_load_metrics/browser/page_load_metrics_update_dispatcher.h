@@ -8,7 +8,7 @@
 #include <map>
 #include <memory>
 
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/time/time.h"
 #include "base/timer/timer.h"
 #include "components/page_load_metrics/browser/layout_shift_normalization.h"
@@ -97,6 +97,8 @@ enum PageLoadTimingStatus {
 };
 
 extern const char kPageLoadTimingStatus[];
+extern const char kHistogramOutOfOrderTiming[];
+extern const char kHistogramOutOfOrderTimingBuffered[];
 
 }  // namespace internal
 
@@ -270,10 +272,10 @@ class PageLoadMetricsUpdateDispatcher {
   void UpdateHasSeenInputOrScroll(const mojom::PageLoadTiming& new_timing);
 
   // The client is guaranteed to outlive this object.
-  const raw_ptr<Client> client_;
+  Client* const client_;
 
   // Interface to chrome features. Must outlive the class.
-  const raw_ptr<PageLoadMetricsEmbedderInterface> embedder_interface_;
+  PageLoadMetricsEmbedderInterface* const embedder_interface_;
 
   std::unique_ptr<base::OneShotTimer> timer_;
 

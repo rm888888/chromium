@@ -275,8 +275,6 @@ Polymer({
         return 'badge-lte-advanced';
       case 'UMTS':
         return 'badge-3g';
-      case '5GNR':
-        return 'badge-5g';
     }
     return '';
   },

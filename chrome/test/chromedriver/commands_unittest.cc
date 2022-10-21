@@ -211,7 +211,7 @@ Status ExecuteSimpleCommand(const std::string& expected_id,
   EXPECT_TRUE(expected_params->is_dict());
   EXPECT_EQ(expected_id, session->id);
   EXPECT_TRUE(expected_params->Equals(&params));
-  *return_value = base::Value::ToUniquePtrValue(value->Clone());
+  return_value->reset(value->DeepCopy());
   session->quit = true;
   return Status(kOk);
 }

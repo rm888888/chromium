@@ -18,7 +18,6 @@
 #include "chrome/browser/web_applications/os_integration_manager.h"
 #include "chrome/browser/web_applications/test/web_app_install_test_utils.h"
 #include "chrome/browser/web_applications/test/web_app_registration_waiter.h"
-#include "chrome/browser/web_applications/test/web_app_test_utils.h"
 #include "chrome/browser/web_applications/web_app.h"
 #include "chrome/browser/web_applications/web_app_constants.h"
 #include "chrome/browser/web_applications/web_app_provider.h"
@@ -42,6 +41,8 @@ class ExternallyManagedAppManagerImplBrowserTest : public InProcessBrowserTest {
     InProcessBrowserTest::SetUpOnMainThread();
     // Allow different origins to be handled by the embedded_test_server.
     host_resolver()->AddRule("*", "127.0.0.1");
+    os_hooks_suppress_ =
+        OsIntegrationManager::ScopedSuppressOsHooksForTesting();
     web_app::test::WaitUntilReady(
         web_app::WebAppProvider::GetForTest(profile()));
   }
@@ -64,19 +65,28 @@ class ExternallyManagedAppManagerImplBrowserTest : public InProcessBrowserTest {
 
   void CheckServiceWorkerStatus(const GURL& url,
                                 content::ServiceWorkerCapability status) {
+    base::RunLoop run_loop;
     std::unique_ptr<content::WebContents> web_contents =
         content::WebContents::Create(
             content::WebContents::CreateParams(profile()));
-    content::StoragePartition* storage_partition =
-        web_contents->GetBrowserContext()->GetStoragePartition(
-            web_contents->GetSiteInstance());
-    test::CheckServiceWorkerStatus(url, storage_partition, status);
+    content::ServiceWorkerContext* service_worker_context =
+        web_contents->GetBrowserContext()
+            ->GetStoragePartition(web_contents->GetSiteInstance())
+            ->GetServiceWorkerContext();
+    service_worker_context->CheckHasServiceWorker(
+        url, blink::StorageKey(url::Origin::Create(url)),
+        base::BindLambdaForTesting(
+            [&run_loop, status](content::ServiceWorkerCapability capability) {
+              CHECK_EQ(status, capability);
+              run_loop.Quit();
+            }));
+    run_loop.Run();
   }
 
   absl::optional<InstallResultCode> result_code_;
 
  private:
-  OsIntegrationManager::ScopedSuppressForTesting os_hooks_suppress_;
+  ScopedOsHooksSuppress os_hooks_suppress_;
 };
 
 // Basic integration test to make sure the whole flow works. Each step in the

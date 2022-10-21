@@ -9,8 +9,6 @@
 #include "base/threading/sequenced_task_runner_handle.h"
 
 namespace reporting {
-namespace test {
-
 FakeReportingSettings::FakeReportingSettings() = default;
 
 FakeReportingSettings::~FakeReportingSettings() = default;
@@ -76,5 +74,4 @@ void FakeReportingSettings::SetIsTrusted(bool is_trusted) {
                                                    run_loop.QuitClosure());
   run_loop.Run();
 }
-}  // namespace test
 }  // namespace reporting

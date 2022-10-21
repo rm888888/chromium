@@ -120,10 +120,6 @@ void AppNotificationHandler::GetApps(GetAppsCallback callback) {
   std::move(callback).Run(GetAppList());
 }
 
-void AppNotificationHandler::GetQuietMode(GetQuietModeCallback callback) {
-  std::move(callback).Run(ash::MessageCenterAsh::Get()->IsQuietMode());
-}
-
 void AppNotificationHandler::OnAppUpdate(const apps::AppUpdate& update) {
   if (ShouldIncludeApp(update)) {
     // Uninstalled apps are allowed to be sent as an update.
@@ -154,6 +150,10 @@ void AppNotificationHandler::NotifyAppChanged(
 void AppNotificationHandler::OnAppRegistryCacheWillBeDestroyed(
     apps::AppRegistryCache* cache) {
   Observe(nullptr);
+}
+
+void AppNotificationHandler::NotifyPageReady() {
+  OnQuietModeChanged(ash::MessageCenterAsh::Get()->IsQuietMode());
 }
 
 }  // namespace settings

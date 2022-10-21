@@ -8,6 +8,7 @@
 #include <map>
 #include <memory>
 
+#include "base/macros.h"
 #include "ui/events/devices/x11/events_devices_x11_export.h"
 #include "ui/gfx/x/xinput.h"
 

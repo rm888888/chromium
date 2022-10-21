@@ -75,22 +75,4 @@ std::string GetAppId(aura::Window* window) {
   return FullRestoreSaveHandler::GetInstance()->GetAppId(window);
 }
 
-void OnLacrosChromeAppWindowAdded(const std::string& app_id,
-                                  const std::string& window_id) {
-  if (!full_restore::features::IsFullRestoreForLacrosEnabled())
-    return;
-
-  FullRestoreSaveHandler::GetInstance()->OnLacrosChromeAppWindowAdded(
-      app_id, window_id);
-}
-
-void OnLacrosChromeAppWindowRemoved(const std::string& app_id,
-                                    const std::string& window_id) {
-  if (!full_restore::features::IsFullRestoreForLacrosEnabled())
-    return;
-
-  FullRestoreSaveHandler::GetInstance()->OnLacrosChromeAppWindowRemoved(
-      app_id, window_id);
-}
-
 }  // namespace full_restore

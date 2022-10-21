@@ -309,13 +309,12 @@ base::Value ForeignSessionHandler::GetForeignSessions() {
     // Use a pref to keep track of sessions that were collapsed by the user.
     // To prevent the pref from accumulating stale sessions, clear it each time
     // and only add back sessions that are still current.
-    DictionaryPrefUpdateDeprecated pref_update(
-        Profile::FromWebUI(web_ui())->GetPrefs(),
-        prefs::kNtpCollapsedForeignSessions);
+    DictionaryPrefUpdate pref_update(Profile::FromWebUI(web_ui())->GetPrefs(),
+                                     prefs::kNtpCollapsedForeignSessions);
     base::DictionaryValue* current_collapsed_sessions = pref_update.Get();
     std::unique_ptr<base::DictionaryValue> collapsed_sessions(
         current_collapsed_sessions->DeepCopy());
-    current_collapsed_sessions->DictClear();
+    current_collapsed_sessions->Clear();
 
     // Note: we don't own the SyncedSessions themselves.
     for (size_t i = 0; i < sessions.size() && i < kMaxSessionsToShow; ++i) {
@@ -372,26 +371,26 @@ void ForeignSessionHandler::HandleOpenForeignSession(
   }
 
   // Extract the session tag (always provided).
-  if (!args->GetList()[0].is_string()) {
+  std::string session_string_value;
+  if (!args->GetString(0, &session_string_value)) {
     LOG(ERROR) << "Failed to extract session tag.";
     return;
   }
-  const std::string& session_string_value = args->GetList()[0].GetString();
 
   // Extract window number.
+  std::string window_num_str;
   int window_num = -1;
-  if (num_args >= 2 &&
-      (!args->GetList()[1].is_string() ||
-       !base::StringToInt(args->GetList()[1].GetString(), &window_num))) {
+  if (num_args >= 2 && (!args->GetString(1, &window_num_str) ||
+                        !base::StringToInt(window_num_str, &window_num))) {
     LOG(ERROR) << "Failed to extract window number.";
     return;
   }
 
   // Extract tab id.
+  std::string tab_id_str;
   SessionID::id_type tab_id_value = 0;
-  if (num_args >= 3 &&
-      (!args->GetList()[2].is_string() ||
-       !base::StringToInt(args->GetList()[2].GetString(), &tab_id_value))) {
+  if (num_args >= 3 && (!args->GetString(2, &tab_id_str) ||
+                        !base::StringToInt(tab_id_str, &tab_id_value))) {
     LOG(ERROR) << "Failed to extract tab SessionID.";
     return;
   }
@@ -414,11 +413,11 @@ void ForeignSessionHandler::HandleDeleteForeignSession(
   }
 
   // Get the session tag argument (required).
-  if (!args->GetList()[0].is_string()) {
+  std::string session_tag;
+  if (!args->GetString(0, &session_tag)) {
     LOG(ERROR) << "Unable to extract session tag";
     return;
   }
-  const std::string& session_tag = args->GetList()[0].GetString();
 
   sync_sessions::OpenTabsUIDelegate* open_tabs =
       GetOpenTabsUIDelegate(web_ui());
@@ -428,30 +427,28 @@ void ForeignSessionHandler::HandleDeleteForeignSession(
 
 void ForeignSessionHandler::HandleSetForeignSessionCollapsed(
     const base::ListValue* args) {
-  const auto& list = args->GetList();
-  if (list.size() != 2U) {
+  if (args->GetList().size() != 2U) {
     LOG(ERROR) << "Wrong number of args to setForeignSessionCollapsed";
     return;
   }
 
   // Get the session tag argument (required).
-  if (!args->GetList()[0].is_string()) {
+  std::string session_tag;
+  if (!args->GetString(0, &session_tag)) {
     LOG(ERROR) << "Unable to extract session tag";
     return;
   }
-  const std::string& session_tag = args->GetList()[0].GetString();
 
-  if (!list[1].is_bool()) {
+  bool is_collapsed;
+  if (!args->GetBoolean(1, &is_collapsed)) {
     LOG(ERROR) << "Unable to extract boolean argument";
     return;
   }
-  const bool is_collapsed = list[1].GetBool();
 
   // Store session tags for collapsed sessions in a preference so that the
   // collapsed state persists.
   PrefService* prefs = Profile::FromWebUI(web_ui())->GetPrefs();
-  DictionaryPrefUpdateDeprecated update(prefs,
-                                        prefs::kNtpCollapsedForeignSessions);
+  DictionaryPrefUpdate update(prefs, prefs::kNtpCollapsedForeignSessions);
   if (is_collapsed)
     update.Get()->SetBoolean(session_tag, true);
   else

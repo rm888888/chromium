@@ -11,8 +11,9 @@
 
 #include <vector>
 
-#include "base/memory/weak_ptr.h"
+#include "base/macros.h"
 #include "chrome/browser/send_tab_to_self/send_tab_to_self_desktop_util.h"
+#include "content/public/browser/web_contents_observer.h"
 #include "ui/base/models/simple_menu_model.h"
 #include "url/gurl.h"
 
@@ -25,7 +26,8 @@ class WebContents;
 namespace send_tab_to_self {
 
 class SendTabToSelfSubMenuModel : public ui::SimpleMenuModel,
-                                  public ui::SimpleMenuModel::Delegate {
+                                  public ui::SimpleMenuModel::Delegate,
+                                  public content::WebContentsObserver {
  public:
   static const int kMinCommandId = 2000;
   static const int kMaxCommandId = 2020;
@@ -48,13 +50,18 @@ class SendTabToSelfSubMenuModel : public ui::SimpleMenuModel,
   bool IsCommandIdEnabled(int command_id) const override;
   void ExecuteCommand(int command_id, int event_flags) override;
 
+  // Overridden from content::WebContentsObserver:
+  void WebContentsDestroyed() override;
+
  private:
   void Build(Profile* profile);
   void BuildDeviceItem(const std::string& device_name,
                        const std::string& guid,
                        int index);
 
-  base::WeakPtr<content::WebContents> tab_;
+  // Injected on construction and set to null if the WebContents is being
+  // destroyed.
+  content::WebContents* tab_;
   const SendTabToSelfMenuType menu_type_;
   const GURL link_url_;
   std::vector<ValidDeviceItem> valid_device_items_;

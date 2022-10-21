@@ -4,6 +4,7 @@
 
 #include "chrome/browser/vr/ui_scene_creator.h"
 
+#include "base/macros.h"
 #include "base/numerics/ranges.h"
 #include "base/run_loop.h"
 #include "base/strings/utf_string_conversions.h"
@@ -180,7 +181,7 @@ TEST_F(UiTest, CaptureToasts) {
 
   for (auto& spec : GetIndicatorSpecs()) {
     for (int i = 0; i < 3; ++i) {
-#if !BUILDFLAG(IS_ANDROID)
+#if !defined(OS_ANDROID)
       if (i == 1)  // Skip background tabs for non-Android platforms.
         continue;
 #endif
@@ -819,7 +820,7 @@ TEST_F(UiTest, WebVrTimeout) {
 
   RunForMs(500);
   // On Windows, the timeout message button is not shown.
-#if !BUILDFLAG(IS_WIN)
+#if !defined(OS_WIN)
   VerifyVisibility(
       {kWebVrTimeoutSpinner, kWebVrTimeoutMessage, kWebVrTimeoutMessageLayout,
        kWebVrTimeoutMessageIcon, kWebVrTimeoutMessageText,
@@ -840,7 +841,7 @@ TEST_F(UiTest, WebVrTimeout) {
   model_->web_vr.state = kWebVrTimeoutImminent;
   RunForMs(500);
   // On Windows, the timeout message button is not shown.
-#if !BUILDFLAG(IS_WIN)
+#if !defined(OS_WIN)
   VerifyVisibility({kWebVrTimeoutMessage, kWebVrTimeoutMessageLayout,
                     kWebVrTimeoutMessageIcon, kWebVrTimeoutMessageText,
                     kWebVrTimeoutMessageButton, kWebVrTimeoutMessageButtonText},
@@ -864,7 +865,7 @@ TEST_F(UiTest, WebVrTimeout) {
       },
       false);
 // On Windows, the timeout message button is not shown.
-#if !BUILDFLAG(IS_WIN)
+#if !defined(OS_WIN)
   VerifyVisibility(
       {kWebVrBackground, kWebVrTimeoutMessage, kWebVrTimeoutMessageLayout,
        kWebVrTimeoutMessageIcon, kWebVrTimeoutMessageText,
@@ -1339,7 +1340,7 @@ TEST_F(UiTest, RepositionHostedUi) {
 
 // Ensures that permissions do not appear after showing hosted UI.
 TEST_F(UiTest, DoNotShowIndicatorsAfterHostedUi) {
-#if !BUILDFLAG(IS_WIN)
+#if !defined(OS_WIN)
   CreateScene(kInWebVr);
   auto browser_ui = ui_->GetBrowserUiWeakPtr();
   browser_ui->SetWebVrMode(true);
@@ -1363,7 +1364,7 @@ TEST_F(UiTest, DoNotShowIndicatorsAfterHostedUi) {
 // is released that we do not show the exclusive screen toast. Distinguishing
 // these cases requires knowledge of the previous state.
 TEST_F(UiTest, LongPressMenuButtonInWebVrMode) {
-#if !BUILDFLAG(IS_WIN)
+#if !defined(OS_WIN)
   CreateScene(kInWebVr);
   auto browser_ui = ui_->GetBrowserUiWeakPtr();
   browser_ui->SetWebVrMode(true);

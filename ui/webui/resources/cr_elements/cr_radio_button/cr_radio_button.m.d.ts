@@ -6,11 +6,7 @@ import {LegacyElementMixin} from 'chrome://resources/polymer/v3_0/polymer/lib/le
 import {CrRadioButtonBehavior} from './cr_radio_button_behavior.m.js';
 
 interface CrRadioButtonElement extends LegacyElementMixin,
-                                       CrRadioButtonBehavior, HTMLElement {
-  $: {
-    button: HTMLElement,
-  };
-}
+                                       CrRadioButtonBehavior, HTMLElement {}
 
 export {CrRadioButtonElement};
 

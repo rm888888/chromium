@@ -23,11 +23,11 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
 #include "components/autofill/core/browser/autofill_field.h"
+#include "components/autofill/core/browser/autofill_metrics.h"
 #include "components/autofill/core/browser/browser_autofill_manager.h"
 #include "components/autofill/core/browser/data_model/autofill_profile.h"
 #include "components/autofill/core/browser/data_model/credit_card.h"
 #include "components/autofill/core/browser/keyboard_accessory_metrics_logger.h"
-#include "components/autofill/core/browser/metrics/autofill_metrics.h"
 #include "components/autofill/core/browser/ui/popup_item_ids.h"
 #include "components/autofill/core/common/autofill_constants.h"
 #include "components/autofill/core/common/autofill_features.h"
@@ -125,9 +125,10 @@ void GetFormField(autofill::FormFieldData* field,
   // The pref service for which this agent was created.
   PrefService* _prefService;
 
-  // The unique renderer ID of the most recent autocomplete field;
+  // The name and the unique renderer ID of the most recent autocomplete field;
   // tracks the currently-focused form element in order to force filling of
   // the currently selected form element, even if it's non-empty.
+  std::u16string _pendingAutocompleteField;
   FieldRendererId _pendingAutocompleteFieldID;
 
   // Suggestions state:
@@ -419,6 +420,7 @@ void GetFormField(autofill::FormFieldData* field,
   _suggestionHandledCompletion = [completion copy];
 
   if (suggestion.identifier > 0) {
+    _pendingAutocompleteField = SysNSStringToUTF16(fieldIdentifier);
     _pendingAutocompleteFieldID = uniqueFieldID;
     if (_popupDelegate) {
       // TODO(966411): Replace 0 with the index of the selected suggestion.
@@ -455,8 +457,8 @@ void GetFormField(autofill::FormFieldData* field,
         [_suggestionHandledCompletion copy];
     _suggestionHandledCompletion = nil;
     autofill::AutofillJavaScriptFeature::GetInstance()
-        ->ClearAutofilledFieldsForForm(
-            frame, uniqueFormID, uniqueFieldID,
+        ->ClearAutofilledFieldsForFormName(
+            frame, formName, uniqueFormID, fieldIdentifier, uniqueFieldID,
             base::BindOnce(^(NSString* jsonString) {
               AutofillAgent* strongSelf = weakSelf;
               if (!strongSelf)
@@ -492,6 +494,8 @@ void GetFormField(autofill::FormFieldData* field,
       "formRendererID",
       base::Value(static_cast<int>(form.unique_renderer_id.value())));
 
+  bool useRendererIDs = base::FeatureList::IsEnabled(
+      autofill::features::kAutofillUseUniqueRendererIDsOnIOS);
   base::Value fieldsData(base::Value::Type::DICTIONARY);
   for (const auto& field : form.fields) {
     // Skip empty fields and those that are not autofilled.
@@ -501,8 +505,13 @@ void GetFormField(autofill::FormFieldData* field,
     base::Value fieldData(base::Value::Type::DICTIONARY);
     fieldData.SetKey("value", base::Value(field.value));
     fieldData.SetKey("section", base::Value(field.section));
-    fieldsData.SetKey(NumberToString(field.unique_renderer_id.value()),
-                      std::move(fieldData));
+    if (useRendererIDs) {
+      fieldsData.SetKey(NumberToString(field.unique_renderer_id.value()),
+                        std::move(fieldData));
+    } else {
+      fieldsData.SetKey(base::UTF16ToUTF8(field.unique_id),
+                        std::move(fieldData));
+    }
   }
   autofillData->SetKey("fields", std::move(fieldsData));
 
@@ -955,8 +964,8 @@ void GetFormField(autofill::FormFieldData* field,
       [_suggestionHandledCompletion copy];
   _suggestionHandledCompletion = nil;
   autofill::AutofillJavaScriptFeature::GetInstance()->FillForm(
-      frame, std::move(data), _pendingAutocompleteFieldID,
-      base::BindOnce(^(NSString* jsonString) {
+      frame, std::move(data), SysUTF16ToNSString(_pendingAutocompleteField),
+      _pendingAutocompleteFieldID, base::BindOnce(^(NSString* jsonString) {
         AutofillAgent* strongSelf = weakSelf;
         if (!strongSelf)
           return;

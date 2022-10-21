@@ -6,7 +6,6 @@
 #define COMPONENTS_VIZ_SERVICE_FRAME_SINKS_EXTERNAL_BEGIN_FRAME_SOURCE_MOJO_H_
 
 #include "base/containers/flat_set.h"
-#include "base/memory/raw_ptr.h"
 #include "components/viz/common/frame_sinks/begin_frame_args.h"
 #include "components/viz/common/frame_sinks/begin_frame_source.h"
 #include "components/viz/service/display/display.h"
@@ -14,7 +13,6 @@
 #include "mojo/public/cpp/bindings/associated_receiver.h"
 #include "mojo/public/cpp/bindings/pending_associated_receiver.h"
 #include "services/viz/privileged/mojom/compositing/external_begin_frame_controller.mojom.h"
-#include "third_party/abseil-cpp/absl/types/optional.h"
 
 namespace viz {
 
@@ -73,9 +71,8 @@ class VIZ_SERVICE_EXPORT ExternalBeginFrameSourceMojo
                                  const BeginFrameArgs& args) override;
 
   void MaybeProduceFrameCallback();
-  void DispatchFrameCallback(const BeginFrameAck& ack);
 
-  const raw_ptr<FrameSinkManagerImpl> frame_sink_manager_;
+  FrameSinkManagerImpl* const frame_sink_manager_;
 
   // The pending_frame_callback_ needs to be destroyed after the mojo receiver,
   // or else we may get a DCHECK that the callback was dropped while the
@@ -90,8 +87,7 @@ class VIZ_SERVICE_EXPORT ExternalBeginFrameSourceMojo
   uint64_t original_source_id_ = BeginFrameArgs::kStartingSourceId;
 
   base::flat_set<FrameSinkId> pending_frame_sinks_;
-  absl::optional<BeginFrameAck> pending_ack_;
-  raw_ptr<Display> display_ = nullptr;
+  Display* display_ = nullptr;
 };
 
 }  // namespace viz

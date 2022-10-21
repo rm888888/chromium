@@ -144,7 +144,7 @@ public class AutofillProviderUMA {
             if (mSuggestionTimeMillis != null) {
                 recordTimesHistogram(UMA_AUTOFILL_SUGGESTION_TIME, mSuggestionTimeMillis);
             }
-            if (!mServerPredictionAvailable) {
+            if (!mServerPredictionAvailable && AutofillProvider.isQueryServerFieldTypesEnabled()) {
                 RecordHistogram.recordEnumeratedHistogram(
                         UMA_AUTOFILL_SERVER_PREDICTION_AVAILABILITY,
                         SERVER_PREDICTION_NOT_AVAILABLE, SERVER_PREDICTION_AVAILABLE_COUNT);
@@ -152,6 +152,7 @@ public class AutofillProviderUMA {
         }
 
         public void onServerTypeAvailable(FormData formData, boolean afterSessionStarted) {
+            if (!AutofillProvider.isQueryServerFieldTypesEnabled()) return;
             mServerPredictionAvailable = true;
             RecordHistogram.recordEnumeratedHistogram(UMA_AUTOFILL_SERVER_PREDICTION_AVAILABILITY,
                     afterSessionStarted ? SERVER_PREDICTION_AVAILABLE_AFTER_SESSION_STARTS

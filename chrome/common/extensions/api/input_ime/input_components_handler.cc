@@ -50,7 +50,7 @@ bool InputComponentsHandler::Parse(Extension* extension,
                                    std::u16string* error) {
   const base::Value* list_value;
   if (!extension->manifest()->GetList(keys::kInputComponents, &list_value)) {
-    *error = errors::kInvalidInputComponents16;
+    *error = base::ASCIIToUTF16(errors::kInvalidInputComponents);
     return false;
   }
 
@@ -58,7 +58,7 @@ bool InputComponentsHandler::Parse(Extension* extension,
   for (size_t i = 0; i < list_value->GetList().size(); ++i) {
     const base::Value& module_value = list_value->GetList()[i];
     if (!module_value.is_dict()) {
-      *error = errors::kInvalidInputComponents16;
+      *error = base::ASCIIToUTF16(errors::kInvalidInputComponents);
       return false;
     }
 

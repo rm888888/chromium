@@ -35,6 +35,7 @@
 #include "base/time/time.h"
 #include "base/values.h"
 #include "build/build_config.h"
+#include "build/chromeos_buildflags.h"
 #include "chrome/common/chrome_constants.h"
 #include "chrome/common/chrome_result_codes.h"
 #include "chrome/common/chrome_version.h"
@@ -893,9 +894,10 @@ Status GetExtensionBackgroundPage(const base::DictionaryValue* manifest,
                                   const std::string& id,
                                   std::string* bg_page) {
   std::string bg_page_name;
-  bool persistent =
-      manifest->FindBoolPath("background.persistent").value_or(true);
-  if (manifest->FindPath("background.scripts"))
+  bool persistent = true;
+  manifest->GetBoolean("background.persistent", &persistent);
+  const base::Value* unused_value;
+  if (manifest->Get("background.scripts", &unused_value))
     bg_page_name = "_generated_background_page.html";
   manifest->GetString("background.page", &bg_page_name);
   if (bg_page_name.empty() || !persistent)
@@ -1194,7 +1196,7 @@ std::string GetTerminationReason(base::TerminationStatus status) {
     case base::TERMINATION_STATUS_ABNORMAL_TERMINATION:
       return "exited abnormally";
     case base::TERMINATION_STATUS_PROCESS_WAS_KILLED:
-#if defined(OS_CHROMEOS)
+#if BUILDFLAG(IS_CHROMEOS_ASH) || BUILDFLAG(IS_CHROMEOS_LACROS)
     case base::TERMINATION_STATUS_PROCESS_WAS_KILLED_BY_OOM:
 #endif
     case base::TERMINATION_STATUS_OOM:

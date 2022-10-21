@@ -12,12 +12,15 @@
 #include "base/containers/contains.h"
 #include "base/json/json_reader.h"
 #include "base/memory/ptr_util.h"
-#include "base/no_destructor.h"
 #include "base/notreached.h"
 #include "base/strings/utf_string_conversions.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "ui/gfx/geometry/size.h"
 #include "url/gurl.h"
+
+#if defined(USE_OZONE)
+#include "ui/base/ui_base_features.h"
+#endif
 
 namespace ui {
 
@@ -27,10 +30,13 @@ bool Clipboard::IsSupportedClipboardBuffer(ClipboardBuffer buffer) {
   // member IsSelectionBufferAvailable().
   static auto IsSupportedSelectionClipboard = []() -> bool {
 #if defined(USE_OZONE) && !defined(OS_CHROMEOS)
-    ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
-    CHECK(clipboard);
-    return clipboard->IsSelectionBufferAvailable();
-#elif !defined(OS_WIN) && !defined(OS_APPLE) && !defined(OS_CHROMEOS)
+    if (features::IsUsingOzonePlatform()) {
+      ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
+      CHECK(clipboard);
+      return clipboard->IsSelectionBufferAvailable();
+    }
+#endif
+#if !defined(OS_WIN) && !defined(OS_APPLE) && !defined(OS_CHROMEOS)
     return true;
 #else
     return false;

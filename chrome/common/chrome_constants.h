@@ -67,7 +67,6 @@ extern const base::FilePath::CharType kPreviewsOptOutDBFilename[];
 extern const base::FilePath::CharType kQueryTileStorageDirname[];
 extern const base::FilePath::CharType kReadmeFilename[];
 extern const base::FilePath::CharType kReportingAndNelStoreFilename[];
-extern const base::FilePath::CharType kSCTAuditingPendingReportsFileName[];
 extern const base::FilePath::CharType kSecurePreferencesFilename[];
 extern const base::FilePath::CharType kSegmentationPlatformStorageDirName[];
 extern const base::FilePath::CharType kServiceStateFileName[];
@@ -90,14 +89,11 @@ extern const base::FilePath::CharType kJumpListIconDirname[];
 extern const wchar_t kUserDataDirname[];
 #endif
 
-// Fraction of the soft process limit that can be consumed by extensions, before
-// additional extension processes are ignored. By allowing this many extension
-// processes to count toward the limit, Chrome takes steps to limit the process
-// count (e.g., using same-site process sharing) when there are many tabs and
-// extensions. By ignoring extensions beyond this fraction, Chrome ensures that
-// a very large number of extensions cannot immediately force the user into a
-// one-process-per-site mode for all tabs (with poor responsiveness), while
-// still securely isolating each extension in its own process.
+// Fraction of the total number of processes to be used for hosting
+// extensions. If we have more extensions than this percentage, we will start
+// combining extensions in existing processes. This allows web pages to have
+// enough render processes and not be starved when a lot of extensions are
+// installed.
 extern const float kMaxShareOfExtensionProcesses;
 
 #if BUILDFLAG(IS_CHROMEOS_ASH)

@@ -199,6 +199,13 @@ class DriveToggleOfflineAction {
      * @const
      */
     this.onExecute_ = onExecute;
+
+    /**
+     * @private {boolean}
+     * @const
+     */
+    this.containsOnlyHosted_ = metadataModel.getCache(entries, ['hosted'])
+                                   .every(metadata => metadata.hosted);
   }
 
   /**
@@ -247,9 +254,10 @@ class DriveToggleOfflineAction {
           return;
         }
         currentEntry = entries.shift();
-        // Skip files we cannot pin.
-        if (this.metadataModel_.getCache([currentEntry], ['canPin'])[0]
-                .canPin) {
+        // Skip hosted files if we cannot pin them.
+        if (this.volumeManager_.getDriveConnectionState().canPinHostedFiles ||
+            !this.metadataModel_.getCache([currentEntry], ['hosted'])[0]
+                 .hosted) {
           chrome.fileManagerPrivate.pinDriveFile(
               currentEntry, this.value_, steps.entryPinned);
         } else {
@@ -309,8 +317,8 @@ class DriveToggleOfflineAction {
    * @override
    */
   canExecute() {
-    return this.metadataModel_.getCache(this.entries_, ['canPin'])
-        .some(metadata => metadata.canPin);
+    return this.volumeManager_.getDriveConnectionState().canPinHostedFiles ||
+        !this.containsOnlyHosted_;
   }
 
   /**

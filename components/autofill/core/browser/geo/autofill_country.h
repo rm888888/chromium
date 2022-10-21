@@ -7,6 +7,7 @@
 
 #include <string>
 
+#include "base/macros.h"
 #include "components/autofill/core/browser/geo/country_data.h"
 
 namespace autofill {
@@ -58,11 +59,6 @@ class AutofillCountry {
   bool requires_zip_or_state() const {
     return (required_fields_for_address_import_ &
             ADDRESS_REQUIRES_ZIP_OR_STATE) != 0;
-  }
-
-  bool requires_line1_or_house_number() const {
-    return (required_fields_for_address_import_ &
-            ADDRESS_REQUIRES_LINE1_OR_HOUSE_NUMBER);
   }
 
  private:

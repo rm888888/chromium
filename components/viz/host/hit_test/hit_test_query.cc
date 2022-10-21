@@ -5,8 +5,6 @@
 #include "components/viz/host/hit_test/hit_test_query.h"
 
 #include <sstream>
-#include <string>
-#include <utility>
 
 #include "base/containers/stack.h"
 #include "base/metrics/histogram_macros.h"
@@ -52,6 +50,8 @@ const std::string GetFlagNames(uint32_t flag) {
     names.emplace_back("Touch");
   if (flag & kHitTestNotActive)
     names.emplace_back("NotActive");
+  if (flag & kHitTestDebug)
+    names.emplace_back("Debug");
 
   return base::JoinString(std::move(names), ", ");
 }

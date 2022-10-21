@@ -87,13 +87,13 @@ public class TabSwitcherModeTTPhone extends OptimizedFrameLayout
     }
 
     void initialize(boolean isGridTabSwitcherEnabled, boolean isTabToGtsAnimationEnabled,
-            BooleanSupplier isIncognitoModeEnabledSupplier) {
+            boolean isStartSurfaceEnabled, BooleanSupplier isIncognitoModeEnabledSupplier) {
         mIsGridTabSwitcherEnabled = isGridTabSwitcherEnabled;
         mShowZoomingAnimation = isGridTabSwitcherEnabled && isTabToGtsAnimationEnabled;
         mIsIncognitoModeEnabledSupplier = isIncognitoModeEnabledSupplier;
 
         mNewTabImageButton.setGridTabSwitcherEnabled(isGridTabSwitcherEnabled);
-        mNewTabImageButton.setStartSurfaceEnabled(false);
+        mNewTabImageButton.setStartSurfaceEnabled(isStartSurfaceEnabled);
         updateTabSwitchingElements(shouldShowIncognitoToggle());
         updateNewTabButtonVisibility();
     }

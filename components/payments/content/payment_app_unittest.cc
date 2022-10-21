@@ -4,11 +4,8 @@
 
 #include "components/payments/content/payment_app.h"
 
-#include <memory>
-#include <utility>
 #include <vector>
 
-#include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/test/scoped_feature_list.h"
@@ -145,10 +142,6 @@ class PaymentAppTest : public testing::TestWithParam<RequiredPaymentOptions>,
     icon->eraseColor(SK_ColorRED);
   }
 
-  base::test::ScopedFeatureList& scoped_feature_list() {
-    return scoped_feature_list_;
-  }
-
   autofill::CreditCard& local_credit_card() { return local_card_; }
   std::vector<autofill::AutofillProfile*>& billing_profiles() {
     return billing_profiles_;
@@ -189,14 +182,10 @@ class PaymentAppTest : public testing::TestWithParam<RequiredPaymentOptions>,
         std::move(method_data), weak_ptr_factory_.GetWeakPtr(), "en-US");
   }
 
-  // ScopedFeatureList has to be declared before BrowserTaskEnvironment so that
-  // it is destroyed after BrowserTaskEnvironment, to prevent data race errors,
-  // caused by tasks on other threads accessing the ScopedFeatureList.
-  base::test::ScopedFeatureList scoped_feature_list_;
   content::BrowserTaskEnvironment task_environment_;
   content::TestBrowserContext browser_context_;
   content::TestWebContentsFactory test_web_contents_factory_;
-  raw_ptr<content::WebContents> web_contents_;
+  content::WebContents* web_contents_;
   autofill::AutofillProfile address_;
   autofill::CreditCard local_card_;
   std::vector<autofill::AutofillProfile*> billing_profiles_;
@@ -390,9 +379,11 @@ TEST_P(PaymentAppTest, SortAppsBasedOnSupportedDelegations) {
 class DownRankJustInTimePaymentAppTest : public PaymentAppTest {
  public:
   DownRankJustInTimePaymentAppTest() {
-    scoped_feature_list().InitAndEnableFeature(
+    scoped_feature_list_.InitAndEnableFeature(
         features::kDownRankJustInTimePaymentApp);
   }
+
+  base::test::ScopedFeatureList scoped_feature_list_;
 };
 
 INSTANTIATE_TEST_SUITE_P(All,

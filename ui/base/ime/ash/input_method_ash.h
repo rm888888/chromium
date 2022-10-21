@@ -13,6 +13,7 @@
 #include "base/callback_forward.h"
 #include "base/compiler_specific.h"
 #include "base/component_export.h"
+#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "ui/base/ime/ash/ime_input_context_handler_interface.h"
 #include "ui/base/ime/ash/typing_session_manager.h"
@@ -46,7 +47,6 @@ class COMPONENT_EXPORT(UI_BASE_IME_ASH) InputMethodAsh
   // Overridden from InputMethodBase:
   void OnFocus() override;
   void OnBlur() override;
-  void OnTouch(ui::EventPointerType pointerType) override;
   void OnWillChangeFocusedClient(TextInputClient* focused_before,
                                  TextInputClient* focused) override;
   void OnDidChangeFocusedClient(TextInputClient* focused_before,
@@ -83,7 +83,6 @@ class COMPONENT_EXPORT(UI_BASE_IME_ASH) InputMethodAsh
   InputMethod* GetInputMethod() override;
   void ConfirmCompositionText(bool reset_engine, bool keep_selection) override;
   bool HasCompositionText() override;
-  std::u16string GetCompositionText() override;
   ukm::SourceId GetClientSourceForMetrics() override;
 
  protected:

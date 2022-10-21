@@ -7,12 +7,12 @@
 #include <memory>
 
 #include "base/gtest_prod_util.h"
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/run_loop.h"
 #include "base/scoped_observation.h"
 #include "base/test/task_environment.h"
 #include "testing/gtest/include/gtest/gtest.h"
-#include "ui/base/ime/fake_text_input_client.h"
+#include "ui/base/ime/dummy_text_input_client.h"
 #include "ui/base/ime/input_method_observer.h"
 #include "ui/events/event.h"
 
@@ -147,7 +147,7 @@ class MockInputMethodBase : public InputMethodBase {
   }
 
   // Not owned.
-  const raw_ptr<ClientChangeVerifier> verifier_;
+  ClientChangeVerifier* const verifier_;
 
   FRIEND_TEST_ALL_PREFIXES(InputMethodBaseTest, CandidateWindowEvents);
 };
@@ -170,10 +170,11 @@ class MockInputMethodObserver : public InputMethodObserver {
   void OnTextInputStateChanged(const TextInputClient* client) override {
     verifier_->OnTextInputStateChanged(client);
   }
+  void OnShowVirtualKeyboardIfEnabled() override {}
   void OnInputMethodDestroyed(const InputMethod* client) override {}
 
   // Not owned.
-  const raw_ptr<ClientChangeVerifier> verifier_;
+  ClientChangeVerifier* const verifier_;
 };
 
 typedef base::ScopedObservation<InputMethod, InputMethodObserver>
@@ -185,8 +186,8 @@ void SetFocusedTextInputClient(InputMethod* input_method,
 }
 
 TEST_F(InputMethodBaseTest, SetFocusedTextInputClient) {
-  FakeTextInputClient text_input_client_1st(TEXT_INPUT_TYPE_TEXT);
-  FakeTextInputClient text_input_client_2nd(TEXT_INPUT_TYPE_TEXT);
+  DummyTextInputClient text_input_client_1st;
+  DummyTextInputClient text_input_client_2nd;
 
   ClientChangeVerifier verifier;
   MockInputMethodBase input_method(&verifier);
@@ -244,8 +245,8 @@ TEST_F(InputMethodBaseTest, SetFocusedTextInputClient) {
 }
 
 TEST_F(InputMethodBaseTest, DetachTextInputClient) {
-  FakeTextInputClient text_input_client(TEXT_INPUT_TYPE_TEXT);
-  FakeTextInputClient text_input_client_the_other(TEXT_INPUT_TYPE_TEXT);
+  DummyTextInputClient text_input_client;
+  DummyTextInputClient text_input_client_the_other;
 
   ClientChangeVerifier verifier;
   MockInputMethodBase input_method(&verifier);

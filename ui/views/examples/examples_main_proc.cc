@@ -134,7 +134,7 @@ ExamplesExitCode ExamplesMainProc(bool under_test) {
   ui::ResourceBundle::InitSharedInstanceWithPakPath(ui_test_pak_path);
 
   base::FilePath views_examples_resources_pak_path;
-  CHECK(base::PathService::Get(base::DIR_ASSETS,
+  CHECK(base::PathService::Get(base::DIR_MODULE,
                                &views_examples_resources_pak_path));
   ui::ResourceBundle::GetSharedInstance().AddDataPackFromPath(
       views_examples_resources_pak_path.AppendASCII(

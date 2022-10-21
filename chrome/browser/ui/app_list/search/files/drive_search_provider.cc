@@ -23,8 +23,8 @@ using chromeos::string_matching::TokenizedString;
 constexpr char kDriveSearchSchema[] = "drive_search://";
 constexpr int kMaxResults = 10;
 
-// Outcome of a call to DriveSearchProvider::Start. These values persist
-// to logs. Entries should not be renumbered and numeric values should never be
+// Outcome of a call to DriveSearchProvider::Start. These values persist to
+// logs. Entries should not be renumbered and numeric values should never be
 // reused.
 enum class Status {
   kOk = 0,
@@ -50,7 +50,7 @@ DriveSearchProvider::DriveSearchProvider(Profile* profile)
 
 DriveSearchProvider::~DriveSearchProvider() = default;
 
-ash::AppListSearchResultType DriveSearchProvider::ResultType() const {
+ash::AppListSearchResultType DriveSearchProvider::ResultType() {
   return ash::AppListSearchResultType::kDriveSearch;
 }
 
@@ -61,6 +61,10 @@ void DriveSearchProvider::Start(const std::u16string& query) {
   // Clear results and cancel any outgoing requests.
   ClearResultsSilently();
   weak_factory_.InvalidateWeakPtrs();
+
+  // This provider does not handle zero-state.
+  if (query.empty())
+    return;
 
   if (!drive_service_ || !drive_service_->is_enabled()) {
     LogStatus(Status::kDriveUnavailable);
@@ -131,8 +135,7 @@ std::unique_ptr<FileResult> DriveSearchProvider::MakeResult(
       FileResult::CalculateRelevance(last_tokenized_query_, reparented_path);
   return std::make_unique<FileResult>(
       kDriveSearchSchema, reparented_path,
-      ash::AppListSearchResultType::kDriveSearch,
-      ash::SearchResultDisplayType::kList, relevance, last_query_, type,
+      ash::AppListSearchResultType::kDriveSearch, last_query_, relevance, type,
       profile_);
 }
 

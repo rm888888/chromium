@@ -10,6 +10,7 @@
 #include "base/base64.h"
 #include "base/bind.h"
 #include "base/json/json_string_value_serializer.h"
+#include "base/macros.h"
 #include "base/task/cancelable_task_tracker.h"
 #include "base/threading/sequenced_task_runner_handle.h"
 #include "chrome/browser/favicon/favicon_service_factory.h"

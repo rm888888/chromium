@@ -104,10 +104,8 @@ new_tab_page::mojom::ThemePtr MakeTheme(
   theme->is_dark = !color_utils::IsDark(text_color);
   auto background_image = new_tab_page::mojom::BackgroundImage::New();
   if (custom_background.has_value()) {
-    theme->is_custom_background = true;
     background_image->url = custom_background->custom_background_url;
   } else if (theme_provider->HasCustomImage(IDR_THEME_NTP_BACKGROUND)) {
-    theme->is_custom_background = false;
     most_visited->use_title_pill = true;
     auto theme_id = theme_service->GetThemeID();
     background_image->url = GURL(base::StrCat(
@@ -360,9 +358,7 @@ NewTabPageHandler::NewTabPageHandler(
       profile_(profile),
       web_contents_(web_contents),
       ntp_navigation_start_time_(ntp_navigation_start_time),
-      logger_(profile,
-              GURL(chrome::kChromeUINewTabPageURL),
-              ntp_navigation_start_time),
+      logger_(profile, GURL(chrome::kChromeUINewTabPageURL)),
       promo_service_(PromoServiceFactory::GetForProfile(profile)),
       page_{std::move(pending_page)},
       receiver_{this, std::move(pending_page_handler)} {
@@ -375,10 +371,10 @@ NewTabPageHandler::NewTabPageHandler(
   CHECK(web_contents_);
   ntp_background_service_->AddObserver(this);
   native_theme_observation_.Observe(ui::NativeTheme::GetInstanceForNativeUi());
-  theme_service_observation_.Observe(theme_service_.get());
+  theme_service_observation_.Observe(theme_service_);
   ntp_custom_background_service_observation_.Observe(
-      ntp_custom_background_service_.get());
-  promo_service_observation_.Observe(promo_service_.get());
+      ntp_custom_background_service_);
+  promo_service_observation_.Observe(promo_service_);
   page_->SetTheme(MakeTheme(theme_provider_, theme_service_,
                             ntp_custom_background_service_));
 }
@@ -451,14 +447,6 @@ void NewTabPageHandler::SetNoBackgroundImage() {
       /* attribution_line_2= */ "",
       /* action_url= */ GURL(), /* collection_id= */ "");
   LogEvent(NTP_BACKGROUND_IMAGE_RESET);
-}
-
-void NewTabPageHandler::RevertBackgroundChanges() {
-  ntp_custom_background_service_->RevertBackgroundChanges();
-}
-
-void NewTabPageHandler::ConfirmBackgroundChanges() {
-  ntp_custom_background_service_->ConfirmBackgroundChanges();
 }
 
 void NewTabPageHandler::GetBackgroundCollections(
@@ -580,8 +568,7 @@ void NewTabPageHandler::SetModulesVisible(bool visible) {
 
 void NewTabPageHandler::SetModuleDisabled(const std::string& module_id,
                                           bool disabled) {
-  ListPrefUpdateDeprecated update(profile_->GetPrefs(),
-                                  prefs::kNtpDisabledModules);
+  ListPrefUpdate update(profile_->GetPrefs(), prefs::kNtpDisabledModules);
   base::Value module_id_value(module_id);
   if (disabled) {
     if (!base::Contains(update->GetList(), module_id_value))
@@ -1044,7 +1031,8 @@ void NewTabPageHandler::Fetch(const GURL& url,
             }
           }
         })");
-  auto url_loader_factory = profile_->GetURLLoaderFactory();
+  auto url_loader_factory = profile_->GetDefaultStoragePartition()
+                                ->GetURLLoaderFactoryForBrowserProcess();
   auto request = std::make_unique<network::ResourceRequest>();
   request->url = url;
   auto loader =

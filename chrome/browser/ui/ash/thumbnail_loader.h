@@ -11,7 +11,6 @@
 
 #include "base/callback.h"
 #include "base/files/file.h"
-#include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/unguessable_token.h"
 #include "ui/gfx/geometry/size.h"
@@ -38,11 +37,11 @@ class ThumbnailLoader {
 
   // Thumbnail request data that will be forwarded to the image loader.
   struct ThumbnailRequest {
-    ThumbnailRequest(const base::FilePath& file_path, const gfx::Size& size);
+    ThumbnailRequest(const base::FilePath& item_path, const gfx::Size& size);
     ~ThumbnailRequest();
 
-    // The absolute file path.
-    const base::FilePath file_path;
+    // The absolute item file path.
+    const base::FilePath item_path;
 
     // The desired bitmap size.
     const gfx::Size size;
@@ -85,7 +84,7 @@ class ThumbnailLoader {
                         const SkBitmap* bitmap,
                         base::File::Error error);
 
-  const raw_ptr<Profile> profile_;
+  Profile* const profile_;
 
   // Maps pending thumbnail requests to their registered callbacks.
   std::map<base::UnguessableToken, ImageCallback> requests_;

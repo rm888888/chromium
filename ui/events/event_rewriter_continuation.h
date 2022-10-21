@@ -5,8 +5,6 @@
 #ifndef UI_EVENTS_EVENT_REWRITER_CONTINUATION_H_
 #define UI_EVENTS_EVENT_REWRITER_CONTINUATION_H_
 
-#include "base/compiler_specific.h"
-
 namespace ui {
 
 struct EventDispatchDetails;

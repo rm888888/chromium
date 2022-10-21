@@ -9,7 +9,6 @@
 #include <utility>
 
 #include "base/hash/sha1.h"
-#include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/test/simple_test_clock.h"
 #include "base/time/default_clock.h"
@@ -149,7 +148,7 @@ class ConsentAuditorImplTest : public testing::Test {
 
  private:
   std::unique_ptr<ConsentAuditorImpl> consent_auditor_;
-  raw_ptr<base::Clock> clock_;
+  base::Clock* clock_;
 
   std::unique_ptr<TestingPrefServiceSimple> pref_service_;
   std::string app_version_;
@@ -172,7 +171,7 @@ TEST_F(ConsentAuditorImplTest, LocalConsentPrefRepresentation) {
   consent_auditor()->RecordLocalConsent("feature1", kFeature1Description,
                                         kFeature1Confirmation);
   ASSERT_TRUE(pref_service()->HasPrefPath(prefs::kLocalConsentsDictionary));
-  const base::Value* consents =
+  const base::DictionaryValue* consents =
       pref_service()->GetDictionary(prefs::kLocalConsentsDictionary);
   ASSERT_TRUE(consents);
   std::string description;

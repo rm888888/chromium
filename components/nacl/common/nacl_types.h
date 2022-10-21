@@ -85,7 +85,7 @@ struct NaClStartParams {
   IPC::PlatformFileForTransit debug_stub_server_bound_socket;
 #endif
 
-#if defined(OS_LINUX) || defined(OS_CHROMEOS)
+#if defined(OS_LINUX) || defined(OS_CHROMEOS) || defined(OS_NACL_NONSFI)
   // These are for Non-SFI mode IPC channels.
   // For security hardening, unlike in SFI mode, we cannot create socket pairs
   // in a NaCl loader process. Thus, the browser process creates the
@@ -130,6 +130,7 @@ struct NaClLaunchParams {
                        resource_prefetch_request_list,
                    int render_frame_id,
                    uint32_t permission_bits,
+                   bool uses_nonsfi_mode,
                    NaClAppProcessType process_type);
   NaClLaunchParams(const NaClLaunchParams& other);
   ~NaClLaunchParams();
@@ -145,6 +146,7 @@ struct NaClLaunchParams {
 
   int render_frame_id = 0;
   uint32_t permission_bits = 0;
+  bool uses_nonsfi_mode = false;
 
   NaClAppProcessType process_type = kUnknownNaClProcessType;
 };

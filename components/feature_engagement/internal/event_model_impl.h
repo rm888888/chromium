@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 
+#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "components/feature_engagement/internal/event_model.h"
 #include "components/feature_engagement/internal/proto/feature_event.pb.h"

@@ -10,6 +10,7 @@
 #include <set>
 #include <unordered_map>
 
+#include "base/macros.h"
 #include "base/memory/ref_counted.h"
 #include "components/prefs/pref_value_map.h"
 #include "components/prefs/prefs_export.h"

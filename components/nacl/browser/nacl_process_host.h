@@ -14,6 +14,7 @@
 
 #include "base/files/file.h"
 #include "base/files/file_path.h"
+#include "base/macros.h"
 #include "base/memory/read_only_shared_memory_region.h"
 #include "base/memory/ref_counted.h"
 #include "base/memory/weak_ptr.h"
@@ -66,6 +67,7 @@ class NaClProcessHost : public content::BrowserChildProcessHostDelegate {
   // prefetched_resource_files_info: An array of resource files prefetched.
   // permissions: PPAPI permissions, to control access to private APIs.
   // permission_bits: controls which interfaces the NaCl plugin can use.
+  // uses_nonsfi_mode: whether the program should be loaded under non-SFI mode.
   // off_the_record: was the process launched from an incognito renderer?
   // process_type: the type of NaCl process.
   // profile_directory: is the path of current profile directory.
@@ -76,6 +78,8 @@ class NaClProcessHost : public content::BrowserChildProcessHostDelegate {
       const std::vector<NaClResourcePrefetchResult>& prefetched_resource_files,
       ppapi::PpapiPermissions permissions,
       uint32_t permission_bits,
+      bool uses_nonsfi_mode,
+      bool nonsfi_mode_allowed,
       bool off_the_record,
       NaClAppProcessType process_type,
       const base::FilePath& profile_directory);
@@ -227,6 +231,9 @@ class NaClProcessHost : public content::BrowserChildProcessHostDelegate {
   base::FilePath manifest_path_;
 
   std::unique_ptr<content::BrowserChildProcessHost> process_;
+
+  bool uses_nonsfi_mode_;
+  bool nonsfi_mode_allowed_;
 
   bool enable_debug_stub_;
   bool enable_crash_throttling_;

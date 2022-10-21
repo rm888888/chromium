@@ -7,11 +7,6 @@
 #include <memory>
 #include <vector>
 
-#include "ash/components/arc/session/arc_bridge_service.h"
-#include "ash/components/arc/session/arc_service_manager.h"
-#include "ash/components/arc/test/arc_util_test_support.h"
-#include "ash/components/arc/test/connection_holder_util.h"
-#include "ash/components/arc/test/fake_app_instance.h"
 #include "base/run_loop.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/test/scoped_feature_list.h"
@@ -34,6 +29,11 @@
 #include "chrome/common/chrome_features.h"
 #include "chrome/test/base/in_process_browser_test.h"
 #include "chrome/test/base/ui_test_utils.h"
+#include "components/arc/session/arc_bridge_service.h"
+#include "components/arc/session/arc_service_manager.h"
+#include "components/arc/test/arc_util_test_support.h"
+#include "components/arc/test/connection_holder_util.h"
+#include "components/arc/test/fake_app_instance.h"
 #include "components/arc/test/fake_intent_helper_instance.h"
 #include "components/services/app_service/public/cpp/icon_loader.h"
 #include "components/services/app_service/public/cpp/intent_filter_util.h"
@@ -80,37 +80,25 @@ class FakeIconLoader : public apps::IconLoader {
   FakeIconLoader& operator=(const FakeIconLoader&) = delete;
   ~FakeIconLoader() override = default;
 
+  apps::mojom::IconKeyPtr GetIconKey(const std::string& app_id) override {
+    return apps::mojom::IconKey::New(0, 0, 0);
+  }
+
   std::unique_ptr<apps::IconLoader::Releaser> LoadIconFromIconKey(
-      apps::AppType app_type,
+      apps::mojom::AppType app_type,
       const std::string& app_id,
-      const apps::IconKey& icon_key,
-      apps::IconType icon_type,
+      apps::mojom::IconKeyPtr icon_key,
+      apps::mojom::IconType icon_type,
       int32_t size_hint_in_dip,
       bool allow_placeholder_icon,
-      apps::LoadIconCallback callback) override {
-    auto iv = std::make_unique<apps::IconValue>();
+      apps::mojom::Publisher::LoadIconCallback callback) override {
+    auto iv = apps::mojom::IconValue::New();
     iv->icon_type = icon_type;
     iv->uncompressed = gfx::ImageSkia(gfx::ImageSkiaRep(gfx::Size(1, 1), 1.0f));
     iv->is_placeholder_icon = false;
 
     std::move(callback).Run(std::move(iv));
     return nullptr;
-  }
-
-  std::unique_ptr<apps::IconLoader::Releaser> LoadIconFromIconKey(
-      apps::mojom::AppType app_type,
-      const std::string& app_id,
-      apps::mojom::IconKeyPtr mojom_icon_key,
-      apps::mojom::IconType icon_type,
-      int32_t size_hint_in_dip,
-      bool allow_placeholder_icon,
-      apps::mojom::Publisher::LoadIconCallback callback) override {
-    auto icon_key = apps::ConvertMojomIconKeyToIconKey(mojom_icon_key);
-    return LoadIconFromIconKey(
-        apps::ConvertMojomAppTypToAppType(app_type), app_id, *icon_key,
-        apps::ConvertMojomIconTypeToIconType(icon_type), size_hint_in_dip,
-        allow_placeholder_icon,
-        apps::IconValueToMojomIconValueCallback(std::move(callback)));
   }
 };
 }  // namespace
@@ -182,7 +170,7 @@ class IntentPickerBubbleViewBrowserTestChromeOS : public InProcessBrowserTest {
   }
 
   std::string InstallWebApp(const std::string& app_name, const GURL& url) {
-    auto web_app_info = std::make_unique<WebAppInstallInfo>();
+    auto web_app_info = std::make_unique<WebApplicationInfo>();
     web_app_info->title = base::UTF8ToUTF16(app_name);
     web_app_info->start_url = url;
     web_app_info->scope = url;
@@ -316,7 +304,6 @@ IN_PROC_BROWSER_TEST_F(IntentPickerBubbleViewBrowserTestChromeOS,
   ui_test_utils::NavigateToURL(&params);
 
   waiter.WaitIfNeededAndGet();
-
   EXPECT_TRUE(intent_picker_view->GetVisible());
   ASSERT_TRUE(intent_picker_bubble());
   EXPECT_TRUE(intent_picker_bubble()->GetVisible());
@@ -333,19 +320,8 @@ IN_PROC_BROWSER_TEST_F(IntentPickerBubbleViewBrowserTestChromeOS,
 
   // Launch the default selected app.
   EXPECT_EQ(0U, launched_arc_apps().size());
-
-  content::TestNavigationObserver observer(
-      browser()->tab_strip_model()->GetActiveWebContents());
-
   intent_picker_bubble()->AcceptDialog();
   ASSERT_NO_FATAL_FAILURE(VerifyArcAppLaunched(app_name, test_url));
-
-  // The page should go back to blank state after launching the app.
-  observer.WaitForNavigationFinished();
-
-  // Make sure that the intent picker icon is no longer visible.
-  ASSERT_TRUE(intent_picker_view);
-  EXPECT_FALSE(intent_picker_view->GetVisible());
 }
 
 // Test that navigate outside url scope will not show the intent picker icon or
@@ -371,48 +347,6 @@ IN_PROC_BROWSER_TEST_F(IntentPickerBubbleViewBrowserTestChromeOS,
   WaitForAppService();
   EXPECT_FALSE(intent_picker_view->GetVisible());
   EXPECT_FALSE(intent_picker_bubble());
-}
-
-// Test that navigating to service pages (chrome://) will hide the intent
-// picker icon.
-IN_PROC_BROWSER_TEST_F(IntentPickerBubbleViewBrowserTestChromeOS,
-                       DoNotShowIconAndBubbleOnServicePages) {
-  GURL test_url("https://www.google.com/");
-  GURL chrome_pages_url("chrome://version");
-  std::string app_name = "test_name";
-  auto app_id = InstallWebApp(app_name, test_url);
-  PageActionIconView* intent_picker_view = GetIntentPickerIcon();
-
-  chrome::NewTab(browser());
-  ASSERT_TRUE(
-      ui_test_utils::NavigateToURL(browser(), GURL(url::kAboutBlankURL)));
-
-  // Go to google.com and wait for the intent picker icon to load.
-  {
-    NavigateParams params(browser(), test_url,
-                          ui::PageTransition::PAGE_TRANSITION_TYPED);
-    ui_test_utils::NavigateToURL(&params);
-  }
-
-  WaitForAppService();
-
-  ASSERT_TRUE(intent_picker_view);
-  EXPECT_TRUE(intent_picker_view->GetVisible());
-
-  // Now switch to chrome://version.
-  {
-    NavigateParams params(browser(), chrome_pages_url,
-                          ui::PageTransition::PAGE_TRANSITION_TYPED);
-    // Navigates and waits for loading to finish.
-    ui_test_utils::NavigateToURL(&params);
-  }
-
-  WaitForAppService();
-
-  // Make sure that the intent picker icon is no longer visible.
-
-  ASSERT_TRUE(intent_picker_view);
-  EXPECT_FALSE(intent_picker_view->GetVisible());
 }
 
 // Test that intent picker bubble pop up status will depends on

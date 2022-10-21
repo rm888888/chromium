@@ -30,7 +30,7 @@ class ChromeXrIntegrationClient : public content::XrIntegrationClient {
   content::XRProviderList GetAdditionalProviders() override;
 
   // The only class that we have which implements VrUiHost is Win-only.
-#if BUILDFLAG(IS_WIN)
+#if defined(OS_WIN)
   std::unique_ptr<content::VrUiHost> CreateVrUiHost(
       device::mojom::XRDeviceId device_id,
       mojo::PendingRemote<device::mojom::XRCompositorHost> compositor) override;

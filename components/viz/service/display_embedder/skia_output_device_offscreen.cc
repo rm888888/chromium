@@ -7,6 +7,7 @@
 #include <utility>
 
 #include "gpu/command_buffer/service/skia_utils.h"
+#include "skia/ext/legacy_display_globals.h"
 #include "third_party/skia/include/core/SkSurface.h"
 
 namespace viz {
@@ -139,7 +140,8 @@ SkSurface* SkiaOutputDeviceOffscreen::BeginPaint(
   DCHECK(!allocate_frame_buffer);
   DCHECK(backend_texture_.isValid());
   if (!sk_surface_) {
-    SkSurfaceProps surface_props{0, kUnknown_SkPixelGeometry};
+    SkSurfaceProps surface_props =
+        skia::LegacyDisplayGlobals::GetSkSurfaceProps();
     sk_surface_ = SkSurface::MakeFromBackendTexture(
         context_state_->gr_context(), backend_texture_,
         capabilities_.output_surface_origin == gfx::SurfaceOrigin::kTopLeft

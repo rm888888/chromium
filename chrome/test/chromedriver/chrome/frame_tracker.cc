@@ -84,7 +84,7 @@ Status FrameTracker::OnConnected(DevToolsClient* client) {
   if (status.IsError())
     return status;
   // Enable runtime events to allow tracking execution context creation.
-  params.DictClear();
+  params.Clear();
   status = client->SendCommand("Runtime.enable", params);
   if (status.IsError())
     return status;
@@ -101,41 +101,34 @@ Status FrameTracker::OnEvent(DevToolsClient* client,
                     "Runtime.executionContextCreated missing dict 'context'");
     }
 
+    int context_id;
     std::string frame_id;
     bool is_default = true;
 
-    absl::optional<int> context_id = context->FindIntKey("id");
-    if (!context_id) {
+    if (!context->GetInteger("id", &context_id)) {
       std::string json;
       base::JSONWriter::Write(*context, &json);
       return Status(kUnknownError, method + " has invalid 'context': " + json);
     }
 
-    if (const base::Value* auxData = context->FindDictKey("auxData")) {
-      if (!auxData->is_dict()) {
+    if (context->HasKey("auxData")) {
+      const base::DictionaryValue* auxData;
+      if (!context->GetDictionary("auxData", &auxData))
         return Status(kUnknownError, method + " has invalid 'auxData' value");
-      }
-      if (absl::optional<bool> b = auxData->FindBoolKey("isDefault")) {
-        is_default = *b;
-      } else {
+      if (!auxData->GetBoolean("isDefault", &is_default))
         return Status(kUnknownError, method + " has invalid 'isDefault' value");
-      }
-      if (const std::string* s = auxData->FindStringKey("frameId")) {
-        frame_id = *s;
-      } else {
+      if (!auxData->GetString("frameId", &frame_id))
         return Status(kUnknownError, method + " has invalid 'frameId' value");
-      }
     }
 
     if (is_default && !frame_id.empty())
-      frame_to_context_map_[frame_id] = *context_id;
+      frame_to_context_map_[frame_id] = context_id;
   } else if (method == "Runtime.executionContextDestroyed") {
-    absl::optional<int> execution_context_id =
-        params.FindIntKey("executionContextId");
-    if (!execution_context_id)
+    int execution_context_id;
+    if (!params.GetInteger("executionContextId", &execution_context_id))
       return Status(kUnknownError, method + " missing 'executionContextId'");
     for (auto entry : frame_to_context_map_) {
-      if (entry.second == *execution_context_id) {
+      if (entry.second == execution_context_id) {
         frame_to_context_map_.erase(entry.first);
         break;
       }
@@ -155,7 +148,8 @@ Status FrameTracker::OnEvent(DevToolsClient* client,
                     "missing frameId in Page.frameDetached event");
     attached_frames_.erase(frame_id);
   } else if (method == "Page.frameNavigated") {
-    if (!params.FindPath("frame.parentId"))
+    const base::Value* unused_value;
+    if (!params.Get("frame.parentId", &unused_value))
       frame_to_context_map_.clear();
   } else if (method == "Target.attachedToTarget") {
     std::string type, target_id, session_id;

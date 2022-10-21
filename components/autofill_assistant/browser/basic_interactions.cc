@@ -415,15 +415,15 @@ base::WeakPtr<BasicInteractions> BasicInteractions::GetWeakPtr() {
   return weak_ptr_factory_.GetWeakPtr();
 }
 
-BasicInteractions::BasicInteractions(ScriptExecutorDelegate* delegate,
-                                     ClientSettings* settings)
-    : delegate_(delegate), settings_(settings) {}
+BasicInteractions::BasicInteractions(ScriptExecutorDelegate* delegate)
+    : delegate_(delegate) {}
 
 BasicInteractions::~BasicInteractions() {}
 
 const ClientSettings& BasicInteractions::GetClientSettings() {
-  return *settings_;
+  return delegate_->GetSettings();
 }
+
 bool BasicInteractions::SetValue(const SetModelValueProto& proto) {
   if (proto.model_identifier().empty()) {
     DVLOG(2) << "Error setting value: model_identifier empty";
@@ -544,7 +544,8 @@ bool BasicInteractions::SetUserActions(const SetUserActionsProto& proto) {
     user_actions->push_back({user_action});
     // No callback needed, the framework relies on generic events which will
     // be fired automatically when user actions are called.
-    user_actions->back().SetCallback(base::DoNothing());
+    user_actions->back().SetCallback(
+        base::DoNothingAs<void(std::unique_ptr<TriggerContext>)>());
   }
 
   delegate_->SetUserActions(std::move(user_actions));

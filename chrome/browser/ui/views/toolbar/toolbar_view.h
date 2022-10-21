@@ -8,7 +8,6 @@
 #include <memory>
 #include <vector>
 
-#include "base/memory/raw_ptr.h"
 #include "base/scoped_observation.h"
 #include "build/chromeos_buildflags.h"
 #include "chrome/browser/command_observer.h"
@@ -22,7 +21,7 @@
 #include "chrome/browser/ui/views/location_bar/location_bar_view.h"
 #include "chrome/browser/ui/views/profiles/avatar_toolbar_button.h"
 #include "chrome/browser/ui/views/toolbar/chrome_labs_bubble_view_model.h"
-#include "chrome/browser/ui/views/toolbar/side_panel_toolbar_button.h"
+#include "chrome/browser/ui/views/toolbar/read_later_toolbar_button.h"
 #include "chrome/browser/upgrade_detector/upgrade_observer.h"
 #include "components/prefs/pref_member.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
@@ -34,17 +33,18 @@
 #include "ui/views/controls/button/menu_button.h"
 #include "ui/views/view.h"
 #include "url/origin.h"
-
+//update on 20220315
+#include "chrome/browser/ui/views/toolbar/left_side_toolbar_button.h"
+//
 #if BUILDFLAG(IS_CHROMEOS_ASH)
-#include "ash/components/arc/mojom/intent_helper.mojom-forward.h"  // nogncheck https://crbug.com/784179
 #include "components/arc/intent_helper/arc_intent_helper_bridge.h"
+#include "components/arc/mojom/intent_helper.mojom-forward.h"  // nogncheck https://crbug.com/784179
 #endif  // BUILDFLAG(IS_CHROMEOS_ASH)
 
 class AppMenuButton;
 class AvatarToolbarButton;
 class BrowserAppMenuButton;
 class Browser;
-class DownloadToolbarButtonView;
 class ExtensionsToolbarButton;
 class ExtensionsToolbarContainer;
 class ChromeLabsButton;
@@ -54,7 +54,8 @@ class ReloadButton;
 class ToolbarButton;
 class ToolbarAccountIconContainerView;
 class AvatarToolbarButtonBrowserTest;
-
+//update on 20220315
+class LeftSideToolbarButton;
 namespace bookmarks {
 class BookmarkBubbleObserver;
 }
@@ -145,9 +146,6 @@ class ToolbarView : public views::AccessiblePaneView,
   ChromeLabsBubbleViewModel* chrome_labs_model() const {
     return chrome_labs_model_.get();
   }
-  DownloadToolbarButtonView* download_button() const {
-    return download_button_;
-  }
   ExtensionsToolbarContainer* extensions_container() const {
     return extensions_container_;
   }
@@ -157,8 +155,8 @@ class ToolbarView : public views::AccessiblePaneView,
   LocationBarView* location_bar() const { return location_bar_; }
   CustomTabBarView* custom_tab_bar() { return custom_tab_bar_; }
   media_router::CastToolbarButton* cast_button() const { return cast_; }
-  SidePanelToolbarButton* side_panel_button() const {
-    return side_panel_button_;
+  ReadLaterToolbarButton* read_later_button() const {
+    return read_later_button_;
   }
   MediaToolbarButtonView* media_button() const { return media_button_; }
   send_tab_to_self::SendTabToSelfToolbarIconView* send_tab_to_self_button()
@@ -241,8 +239,11 @@ class ToolbarView : public views::AccessiblePaneView,
   views::AccessiblePaneView* GetAsAccessiblePaneView() override;
   views::View* GetAnchorView(PageActionIconType type) override;
   void ZoomChangedForActiveTab(bool can_show_bubble) override;
-  SidePanelToolbarButton* GetSidePanelButton() override;
+  ReadLaterToolbarButton* GetSidePanelButton() override;
   AvatarToolbarButton* GetAvatarToolbarButton() override;
+  //update on 20220215
+  AvatarToolbarButton* GetWalletToolbarButton() override;
+  //
   ToolbarButton* GetBackButton() override;
   ReloadButton* GetReloadButton() override;
 
@@ -256,6 +257,10 @@ class ToolbarView : public views::AccessiblePaneView,
 
   // Loads the images for all the child views.
   void LoadImages();
+
+  //update on 20220531
+  views::View* GetSpaceView(gfx::Size size);
+  //
 
   // Shows the critical notification bubble against the app menu.
   void ShowCriticalNotification();
@@ -273,30 +278,34 @@ class ToolbarView : public views::AccessiblePaneView,
   // Controls. Most of these can be null, e.g. in popup windows. Only
   // |location_bar_| is guaranteed to exist. These pointers are owned by the
   // view hierarchy.
-  raw_ptr<ToolbarButton> left_side_panel_button_ = nullptr;
-  raw_ptr<ToolbarButton> back_ = nullptr;
-  raw_ptr<ToolbarButton> forward_ = nullptr;
-  raw_ptr<ReloadButton> reload_ = nullptr;
-  raw_ptr<HomeButton> home_ = nullptr;
-  raw_ptr<CustomTabBarView> custom_tab_bar_ = nullptr;
-  raw_ptr<LocationBarView> location_bar_ = nullptr;
-  raw_ptr<ExtensionsToolbarContainer> extensions_container_ = nullptr;
-  raw_ptr<ChromeLabsButton> chrome_labs_button_ = nullptr;
-  raw_ptr<media_router::CastToolbarButton> cast_ = nullptr;
-  raw_ptr<SidePanelToolbarButton> side_panel_button_ = nullptr;
-  raw_ptr<ToolbarAccountIconContainerView> toolbar_account_icon_container_ =
+  ToolbarButton* left_side_panel_button_ = nullptr;
+  ToolbarButton* back_ = nullptr;
+  ToolbarButton* forward_ = nullptr;
+  ReloadButton* reload_ = nullptr;
+  HomeButton* home_ = nullptr;
+  CustomTabBarView* custom_tab_bar_ = nullptr;
+  LocationBarView* location_bar_ = nullptr;
+  ExtensionsToolbarContainer* extensions_container_ = nullptr;
+  ChromeLabsButton* chrome_labs_button_ = nullptr;
+  media_router::CastToolbarButton* cast_ = nullptr;
+  ReadLaterToolbarButton* read_later_button_ = nullptr;
+  //update on 20220315
+  LeftSideToolbarButton* left_side_button_ = nullptr;
+  //
+  ToolbarAccountIconContainerView* toolbar_account_icon_container_ = nullptr;
+  AvatarToolbarButton* avatar_ = nullptr;
+  //update on 20220214
+  //AvatarToolbarButton* pundix_wallet_ = nullptr;
+  //
+  MediaToolbarButtonView* media_button_ = nullptr;
+  send_tab_to_self::SendTabToSelfToolbarIconView* send_tab_to_self_button_ =
       nullptr;
-  raw_ptr<AvatarToolbarButton> avatar_ = nullptr;
-  raw_ptr<MediaToolbarButtonView> media_button_ = nullptr;
-  raw_ptr<send_tab_to_self::SendTabToSelfToolbarIconView>
-      send_tab_to_self_button_ = nullptr;
-  raw_ptr<BrowserAppMenuButton> app_menu_button_ = nullptr;
-  raw_ptr<DownloadToolbarButtonView> download_button_ = nullptr;
+  BrowserAppMenuButton* app_menu_button_ = nullptr;
 
-  const raw_ptr<Browser> browser_;
-  const raw_ptr<BrowserView> browser_view_;
+  Browser* const browser_;
+  BrowserView* const browser_view_;
 
-  raw_ptr<views::FlexLayout> layout_manager_ = nullptr;
+  views::FlexLayout* layout_manager_ = nullptr;
 
   AppMenuIconController app_menu_icon_controller_;
 

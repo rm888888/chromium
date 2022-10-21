@@ -20,7 +20,7 @@
 
 #include <memory>
 
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/observer_list.h"
 #include "base/observer_list_types.h"
 #include "build/chromeos_buildflags.h"
@@ -99,12 +99,15 @@ class PrimaryAccountManager : public ProfileOAuth2TokenServiceObserver {
   // convenience wrapper over GetPrimaryAccountInfo().account_id.
   CoreAccountId GetPrimaryAccountId(signin::ConsentLevel consent_level) const;
 
-  // Sets the primary account with the required consent level. The primary
-  // account can only be changed if the user has not consented for sync. If the
-  // user has consented for sync already, then use ClearPrimaryAccount() or
-  // RevokeSync() instead.
-  void SetPrimaryAccountInfo(const CoreAccountInfo& account_info,
-                             signin::ConsentLevel consent_level);
+  // Signs a user in. PrimaryAccountManager assumes that |username| can be used
+  // to look up the corresponding account_id and gaia_id for this email.
+  void SetSyncPrimaryAccountInfo(const CoreAccountInfo& account_info);
+
+  // Sets the unconsented primary account. The unconsented primary account can
+  // only be changed if the user has not consented for sync If the user has
+  // consented for sync already, then use ClearPrimaryAccount() or RevokeSync()
+  // instead.
+  void SetUnconsentedPrimaryAccountInfo(const CoreAccountInfo& account_info);
 
   // Updates the primary account information from AccountTrackerService.
   void UpdatePrimaryAccountInfo();
@@ -169,12 +172,12 @@ class PrimaryAccountManager : public ProfileOAuth2TokenServiceObserver {
     return primary_account_info_;
   }
 
-  raw_ptr<SigninClient> client_;
+  SigninClient* client_;
 
   // The ProfileOAuth2TokenService instance associated with this object. Must
   // outlive this object.
-  raw_ptr<ProfileOAuth2TokenService> token_service_ = nullptr;
-  raw_ptr<AccountTrackerService> account_tracker_service_ = nullptr;
+  ProfileOAuth2TokenService* token_service_ = nullptr;
+  AccountTrackerService* account_tracker_service_ = nullptr;
 
   bool initialized_ = false;
 

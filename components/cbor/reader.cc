@@ -6,7 +6,6 @@
 
 #include <math.h>
 
-#include <map>
 #include <utility>
 
 #include "base/check_op.h"
@@ -59,7 +58,6 @@ const char kUnsupportedFloatingPointValue[] =
     "Floating point numbers are not supported.";
 const char kOutOfRangeIntegerValue[] =
     "Integer values must be between INT64_MIN and INT64_MAX.";
-const char kMapKeyDuplicate[] = "Duplicate map keys are not allowed.";
 const char kUnknownError[] = "An unknown error occured.";
 
 }  // namespace
@@ -315,7 +313,7 @@ absl::optional<Value> Reader::ReadMapContent(
     int max_nesting_level) {
   const uint64_t length = header.value;
 
-  std::map<Value, Value, Value::Less> cbor_map;
+  Value::MapValue cbor_map;
   for (uint64_t i = 0; i < length; ++i) {
     absl::optional<Value> key =
         DecodeCompleteDataItem(config, max_nesting_level - 1);
@@ -338,24 +336,13 @@ absl::optional<Value> Reader::ReadMapContent(
         error_code_ = DecoderError::INCORRECT_MAP_KEY_TYPE;
         return absl::nullopt;
     }
-    if (IsDuplicateKey(key.value(), cbor_map))
-      return absl::nullopt;
-
-    if (!config.allow_and_canonicalize_out_of_order_keys &&
-        !IsKeyInOrder(key.value(), cbor_map)) {
+    if (!IsKeyInOrder(key.value(), &cbor_map)) {
       return absl::nullopt;
     }
 
-    cbor_map.emplace(std::move(key.value()), std::move(value.value()));
+    cbor_map.insert_or_assign(std::move(key.value()), std::move(value.value()));
   }
-
-  Value::MapValue map;
-  map.reserve(cbor_map.size());
-  // TODO(crbug/1271599): when Chromium switches to C++17, this code can be
-  // optimized using std::map::extract().
-  for (auto& it : cbor_map)
-    map.emplace_hint(map.end(), it.first.Clone(), std::move(it.second));
-  return Value(std::move(map));
+  return Value(std::move(cbor_map));
 }
 
 absl::optional<uint8_t> Reader::ReadByte() {
@@ -383,27 +370,17 @@ bool Reader::IsEncodingMinimal(uint8_t additional_bytes, uint64_t uint_data) {
   return true;
 }
 
-bool Reader::IsKeyInOrder(const Value& new_key,
-                          const std::map<Value, Value, Value::Less>& map) {
-  if (map.empty()) {
+bool Reader::IsKeyInOrder(const Value& new_key, Value::MapValue* map) {
+  if (map->empty()) {
     return true;
   }
 
-  const auto& max_current_key = map.rbegin()->first;
-  const auto less = map.key_comp();
+  const auto& max_current_key = map->rbegin()->first;
+  const auto less = map->key_comp();
   if (!less(max_current_key, new_key)) {
     error_code_ = DecoderError::OUT_OF_ORDER_KEY;
     return false;
   }
-  return true;
-}
-
-bool Reader::IsDuplicateKey(const Value& new_key,
-                            const std::map<Value, Value, Value::Less>& map) {
-  if (map.find(new_key) == map.end()) {
-    return false;
-  }
-  error_code_ = DecoderError::DUPLICATE_KEY;
   return true;
 }
 
@@ -436,8 +413,6 @@ const char* Reader::ErrorCodeToString(DecoderError error) {
       return kUnsupportedFloatingPointValue;
     case DecoderError::OUT_OF_RANGE_INTEGER_VALUE:
       return kOutOfRangeIntegerValue;
-    case DecoderError::DUPLICATE_KEY:
-      return kMapKeyDuplicate;
     case DecoderError::UNKNOWN_ERROR:
       return kUnknownError;
     default:

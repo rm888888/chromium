@@ -133,9 +133,10 @@ void GoogleAppsHandler::HandleCacheGoogleAppIcon(const base::ListValue* args) {
 void GoogleAppsHandler::HandleGetGoogleAppsList(const base::ListValue* args) {
   AllowJavascript();
   CHECK_EQ(1U, args->GetList().size());
-  const base::Value& callback_id = args->GetList()[0];
+  const base::Value* callback_id;
+  CHECK(args->Get(0, &callback_id));
   ResolveJavascriptCallback(
-      callback_id,
+      *callback_id,
       BookmarkItemsToListValue(google_apps_.data(), google_apps_.size()));
 }
 

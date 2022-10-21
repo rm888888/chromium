@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "base/callback_helpers.h"
+#include "base/macros.h"
 #include "base/strings/string_piece.h"
 
 namespace sql {

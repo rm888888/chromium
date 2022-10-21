@@ -62,9 +62,8 @@ void FileSystemHelper::DeleteFileSystemOrigin(const url::Origin& origin) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
   file_task_runner()->PostTask(
       FROM_HERE,
-      base::BindOnce(
-          &FileSystemHelper::DeleteFileSystemForStorageKeyInFileThread, this,
-          blink::StorageKey(origin)));
+      base::BindOnce(&FileSystemHelper::DeleteFileSystemOriginInFileThread,
+                     this, origin));
   native_io_context_->DeleteStorageKeyData(blink::StorageKey(origin),
                                            base::DoNothing());
 }
@@ -102,10 +101,14 @@ void FileSystemHelper::FetchFileSystemInfoInFileThread(FetchCallback callback) {
       FROM_HERE, base::BindOnce(std::move(callback), result));
 }
 
-void FileSystemHelper::DeleteFileSystemForStorageKeyInFileThread(
-    const blink::StorageKey& storage_key) {
+// TODO(https://crbug.com/1254031): Refactor DeleteFileSystemOriginInFileThread
+// to replace url::Origin parameter with blink::StorageKey; replace in-line
+// conversion to StorageKey below with parameter
+void FileSystemHelper::DeleteFileSystemOriginInFileThread(
+    const url::Origin& origin) {
   DCHECK(file_task_runner()->RunsTasksInCurrentSequence());
-  filesystem_context_->DeleteDataForStorageKeyOnFileTaskRunner(storage_key);
+  filesystem_context_->DeleteDataForStorageKeyOnFileTaskRunner(
+      blink::StorageKey(origin));
 }
 
 void FileSystemHelper::DidFetchFileSystemInfo(

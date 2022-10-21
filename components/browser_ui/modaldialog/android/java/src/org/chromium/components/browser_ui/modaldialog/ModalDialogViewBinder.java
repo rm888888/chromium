@@ -22,8 +22,6 @@ public class ModalDialogViewBinder
     public void bind(PropertyModel model, ModalDialogView view, PropertyKey propertyKey) {
         if (ModalDialogProperties.TITLE == propertyKey) {
             view.setTitle(model.get(ModalDialogProperties.TITLE));
-        } else if (ModalDialogProperties.TITLE_MAX_LINES == propertyKey) {
-            view.setTitleMaxLines(model.get(ModalDialogProperties.TITLE_MAX_LINES));
         } else if (ModalDialogProperties.TITLE_ICON == propertyKey) {
             view.setTitleIcon(model.get(ModalDialogProperties.TITLE_ICON));
         } else if (ModalDialogProperties.MESSAGE == propertyKey) {
@@ -71,14 +69,8 @@ public class ModalDialogViewBinder
         } else if (ModalDialogProperties.BUTTON_STYLES == propertyKey) {
             assert checkFilledButtonConsistency(model);
             // Intentionally left empty since this is only read once before the dialog is inflated.
-        } else if (ModalDialogProperties.FULLSCREEN_DIALOG == propertyKey
-                || ModalDialogProperties.DIALOG_WHEN_LARGE == propertyKey) {
+        } else if (ModalDialogProperties.FULLSCREEN_DIALOG == propertyKey) {
             view.setIgnoreWidthConstraints(true);
-            assert !(model.get(ModalDialogProperties.FULLSCREEN_DIALOG)
-                    && model.get(ModalDialogProperties.DIALOG_WHEN_LARGE))
-                : "Both FULLSCREEN_DIALOG and DIALOG_WHEN_LARGE cannot be set to true.";
-        } else if (ModalDialogProperties.FOCUS_DIALOG == propertyKey) {
-            // Intentionally left empty since this is a property for the dialog container.
         } else {
             assert false : "Unhandled property detected in ModalDialogViewBinder!";
         }

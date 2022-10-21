@@ -12,6 +12,7 @@
 #include "base/check_op.h"
 #include "base/command_line.h"
 #include "base/debug/crash_logging.h"
+#include "base/macros.h"
 #include "base/metrics/histogram_functions.h"
 #include "base/metrics/histogram_macros.h"
 #include "base/metrics/user_metrics_action.h"
@@ -46,6 +47,8 @@
 #include "chrome/renderer/chrome_content_settings_agent_delegate.h"
 #include "chrome/renderer/chrome_render_frame_observer.h"
 #include "chrome/renderer/chrome_render_thread_observer.h"
+#include "chrome/renderer/lite_video/lite_video_hint_agent.h"
+#include "chrome/renderer/lite_video/lite_video_util.h"
 #include "chrome/renderer/loadtimes_extension_bindings.h"
 #include "chrome/renderer/media/flash_embed_rewrite.h"
 #include "chrome/renderer/media/webrtc_logging_agent_impl.h"
@@ -55,6 +58,7 @@
 #include "chrome/renderer/plugins/non_loadable_plugin_placeholder.h"
 #include "chrome/renderer/plugins/pdf_plugin_placeholder.h"
 #include "chrome/renderer/plugins/plugin_uma.h"
+#include "chrome/renderer/previews/resource_loading_hints_agent.h"
 #include "chrome/renderer/subresource_redirect/login_robots_decider_agent.h"
 #include "chrome/renderer/subresource_redirect/public_image_hints_decider_agent.h"
 #include "chrome/renderer/subresource_redirect/subresource_redirect_params.h"
@@ -84,7 +88,7 @@
 #include "components/error_page/common/localized_error.h"
 #include "components/feed/buildflags.h"
 #include "components/grit/components_scaled_resources.h"
-#include "components/history_clusters/core/features.h"
+#include "components/history_clusters/core/memories_features.h"
 #include "components/network_hints/renderer/web_prescient_networking_impl.h"
 #include "components/no_state_prefetch/common/prerender_url_loader_throttle.h"
 #include "components/no_state_prefetch/renderer/no_state_prefetch_client.h"
@@ -176,7 +180,6 @@
 
 #if defined(OS_WIN)
 #include "base/win/windows_version.h"
-#include "chrome/renderer/render_frame_font_family_accessor.h"
 #endif
 
 #if BUILDFLAG(ENABLE_FEED_V2)
@@ -350,10 +353,8 @@ bool IsTerminalSystemWebAppNaClPage(GURL url) {
   url::Replacements<char> replacements;
   replacements.ClearQuery();
   replacements.ClearRef();
-  url = url.ReplaceComponents(replacements);
-  // TODO(crbug.com/1283153): remove nassh.html when the migration is done.
-  return url == "chrome-untrusted://terminal/html/nassh.html" ||
-         url == "chrome-untrusted://terminal/html/terminal_ssh.html";
+  return url.ReplaceComponents(replacements) ==
+         "chrome-untrusted://terminal/html/nassh.html";
 }
 #endif
 
@@ -591,13 +592,14 @@ void ChromeContentRendererClient::RenderFrameCreated(
     new webapps::WebPageMetadataAgent(render_frame);
 
 #if defined(OS_ANDROID)
-  const bool search_result_extractor_enabled =
-      base::FeatureList::IsEnabled(features::kContinuousSearch);
+  const base::Feature& kSearchResultExtractorFeature =
+      features::kContinuousSearch;
 #else
-  const bool search_result_extractor_enabled =
-      history_clusters::IsJourneysEnabled(RenderThread::Get()->GetLocale());
+  const base::Feature& kSearchResultExtractorFeature =
+      history_clusters::kJourneys;
 #endif
-  if (render_frame->IsMainFrame() && search_result_extractor_enabled) {
+  if (render_frame->IsMainFrame() &&
+      base::FeatureList::IsEnabled(kSearchResultExtractorFeature)) {
     continuous_search::SearchResultExtractorImpl::Create(render_frame);
   }
 
@@ -683,6 +685,11 @@ void ChromeContentRendererClient::RenderFrameCreated(
     subresource_filter_agent->Initialize();
   }
 
+  if (lite_video::IsLiteVideoEnabled())
+    new lite_video::LiteVideoHintAgent(render_frame);
+
+  new previews::ResourceLoadingHintsAgent(associated_interfaces, render_frame);
+
   if (subresource_redirect::ShouldEnablePublicImageHintsBasedCompression()) {
     new subresource_redirect::PublicImageHintsDeciderAgent(
         associated_interfaces, render_frame);
@@ -702,11 +709,8 @@ void ChromeContentRendererClient::RenderFrameCreated(
     new SearchBox(render_frame);
   }
 
-  // We should create CommerceHintAgent only for a primary main frame. A fenced
-  // frame is the main frame as well, so we should check if |render_frame|
-  // is the primary main frame.
   if (base::FeatureList::IsEnabled(ntp_features::kNtpChromeCartModule) &&
-      render_frame->IsMainFrame() && !render_frame->IsInFencedFrameTree()) {
+      render_frame->IsMainFrame()) {
     new cart::CommerceHintAgent(render_frame);
   }
 #endif  // !defined(OS_ANDROID)
@@ -730,13 +734,6 @@ void ChromeContentRendererClient::RenderFrameCreated(
     associated_interfaces->AddInterface(
         base::BindRepeating(&pdf::PdfFindInPageFactory::BindReceiver,
                             render_frame->GetRoutingID()));
-  }
-#endif
-
-#if defined(OS_WIN)
-  if (render_frame->IsMainFrame()) {
-    associated_interfaces->AddInterface(base::BindRepeating(
-        &RenderFrameFontFamilyAccessor::Bind, render_frame));
   }
 #endif
 }
@@ -858,7 +855,6 @@ bool ChromeContentRendererClient::OverrideCreatePlugin(
   return true;
 }
 
-#if BUILDFLAG(ENABLE_PLUGINS)
 WebPlugin* ChromeContentRendererClient::CreatePluginReplacement(
     content::RenderFrame* render_frame,
     const base::FilePath& plugin_path) {
@@ -866,7 +862,6 @@ WebPlugin* ChromeContentRendererClient::CreatePluginReplacement(
       render_frame, plugin_path);
   return placeholder->plugin();
 }
-#endif  // BUILDFLAG(ENABLE_PLUGINS)
 
 bool ChromeContentRendererClient::DeferMediaLoad(
     content::RenderFrame* render_frame,

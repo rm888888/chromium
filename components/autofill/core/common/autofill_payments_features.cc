@@ -87,6 +87,17 @@ const base::Feature kAutofillEnableOffersInClankKeyboardAccessory{
 const base::Feature kAutofillEnableOffersInDownstream{
     "kAutofillEnableOffersInDownstream", base::FEATURE_ENABLED_BY_DEFAULT};
 
+// When enabled and user is signed in, a footer indicating user's e-mail address
+// and profile picture will appear at the bottom of SaveCardInfoBar.
+const base::Feature kAutofillEnableSaveCardInfoBarAccountIndicationFooter{
+  "AutofillEnableSaveCardInfoBarAccountIndicationFooter",
+#if defined(OS_IOS)
+      base::FEATURE_DISABLED_BY_DEFAULT
+#else
+      base::FEATURE_ENABLED_BY_DEFAULT
+#endif
+};
+
 // When enabled, if the user interacts with the manual fallback bottom sheet
 // on Android, it'll remain sticky until the user dismisses it.
 const base::Feature kAutofillEnableStickyManualFallbackForCards{
@@ -97,14 +108,6 @@ const base::Feature kAutofillEnableStickyManualFallbackForCards{
 // chip in toolbar along with the avatar toolbar button.
 const base::Feature kAutofillEnableToolbarStatusChip{
     "AutofillEnableToolbarStatusChip", base::FEATURE_DISABLED_BY_DEFAULT};
-
-// When enabled, the user will have the ability to update the virtual card
-// enrollment of a credit card through their chrome browser after certain
-// autofill flows (for example, downstream and upstream), and from the settings
-// page.
-const base::Feature kAutofillEnableUpdateVirtualCardEnrollment{
-    "AutofillEnableUpdateVirtualCardEnrollment",
-    base::FEATURE_DISABLED_BY_DEFAULT};
 
 // When enabled, the option of using cloud token virtual card will be offered
 // when all requirements are met.

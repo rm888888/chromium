@@ -6,7 +6,6 @@
 #include <stdint.h>
 
 #include <memory>
-#include <tuple>
 #include <vector>
 
 #include "chrome/utility/safe_browsing/mac/hfs.h"
@@ -24,9 +23,9 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
 
   while (hfs_iterator.Next()) {
     // Test accessing properties.
-    std::ignore = hfs_iterator.IsSymbolicLink();
-    std::ignore = hfs_iterator.IsDecmpfsCompressed();
-    std::ignore = hfs_iterator.GetPath();
+    ignore_result(hfs_iterator.IsSymbolicLink());
+    ignore_result(hfs_iterator.IsDecmpfsCompressed());
+    ignore_result(hfs_iterator.GetPath());
 
     if (hfs_iterator.IsDirectory() || hfs_iterator.IsHardLink())
       continue;

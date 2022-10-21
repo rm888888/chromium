@@ -31,12 +31,16 @@ class RuntimeManagerImpl
   void AddObserver(RuntimeObserver* observer) override;
   void RemoveObserver(RuntimeObserver* observer) override;
   UIState GetState() const override;
-  void SetUIState(UIState state) override;
-  base::WeakPtr<RuntimeManager> GetWeakPtr() override;
+
+  virtual void SetUIState(UIState state);
+
+  base::WeakPtr<RuntimeManagerImpl> GetWeakPtr();
 
  private:
   friend class content::WebContentsUserData<RuntimeManagerImpl>;
+  friend class MockRuntimeManager;
 
+  RuntimeManagerImpl();
   explicit RuntimeManagerImpl(content::WebContents* web_contents);
 
   // Holds the state of Autofill Assistant.

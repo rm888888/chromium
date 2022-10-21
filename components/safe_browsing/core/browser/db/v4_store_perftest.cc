@@ -7,6 +7,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/macros.h"
 #include "base/memory/ref_counted.h"
 #include "base/numerics/checked_math.h"
 #include "base/strings/stringprintf.h"

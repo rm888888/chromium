@@ -50,10 +50,6 @@ extern const char kRunningChromeVersionSymlinkName[];
 // launch_now = false. This associates the shim without launching the app.
 extern const char kLaunchedByChromeProcessId[];
 
-// The bundle path ID of the Chrome process that launched the app shim. This
-// is used to locate the Chrome framework that will be loaded.
-extern const char kLaunchedByChromeBundlePath[];
-
 // Indicates to the shim that it was launched for a test, so don't attempt to
 // launch Chrome.
 extern const char kLaunchedForTest[];

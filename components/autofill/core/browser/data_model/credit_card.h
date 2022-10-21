@@ -13,7 +13,6 @@
 #include "base/gtest_prod_util.h"
 #include "base/strings/string_piece_forward.h"
 #include "build/build_config.h"
-#include "components/autofill/core/browser/autofill_field.h"
 #include "components/autofill/core/browser/data_model/autofill_data_model.h"
 #include "url/gurl.h"
 
@@ -22,7 +21,8 @@ namespace autofill {
 struct AutofillMetadata;
 
 // A midline horizontal ellipsis (U+22EF).
-extern const char16_t kMidlineEllipsisDot[];
+extern const char16_t kMidlineEllipsis4Dots[];
+extern const char16_t kMidlineEllipsis2Dots[];
 
 namespace internal {
 
@@ -111,9 +111,6 @@ class CreditCard : public AutofillDataModel {
   // Returns whether the nickname is valid. Note that empty nicknames are valid
   // because they are not required.
   static bool IsNicknameValid(const std::u16string& nickname);
-
-  // Returns string of dots for hidden card information.
-  static std::u16string GetMidlineEllipsisDots(size_t num_dots);
 
   // Network issuer strings are defined at the bottom of this file, e.g.
   // kVisaCard.
@@ -278,11 +275,6 @@ class CreditCard : public AutofillDataModel {
   // A label for this card formatted as '••••2345' where the number of dots are
   // specified by the `obfuscation_length`.
   std::u16string ObfuscatedLastFourDigits(int obfuscation_length = 4) const;
-  // A label for this card formatted '••••••••••••2345' where every digit in the
-  // the credit card number is obfuscated except for the last four. This method
-  // is primarily used for splitting the preview of a credit card number into
-  // several fields.
-  std::u16string ObfuscatedLastFourDigitsForSplitFields() const;
   // The string used to represent the icon to be used for the autofill
   // suggestion. For ex: visaCC, googleIssuedCC, americanExpressCC, etc.
   std::string CardIconStringForAutofillSuggestion() const;
@@ -324,7 +316,6 @@ class CreditCard : public AutofillDataModel {
   std::u16string ExpirationDateForDisplay() const;
   // Expiration functions.
   std::u16string Expiration2DigitMonthAsString() const;
-  std::u16string Expiration2DigitYearAsString() const;
   std::u16string Expiration4DigitYearAsString() const;
 
   // Whether the cardholder name was created from separate first name and last
@@ -359,10 +350,10 @@ class CreditCard : public AutofillDataModel {
   }
 
  private:
-  friend class CreditCardTestApi;
-
   FRIEND_TEST_ALL_PREFIXES(CreditCardTest, SetExpirationDateFromString);
   FRIEND_TEST_ALL_PREFIXES(CreditCardTest, SetExpirationYearFromString);
+
+  std::u16string Expiration2DigitYearAsString() const;
 
   // FormGroup:
   void GetSupportedTypes(ServerFieldTypeSet* supported_types) const override;

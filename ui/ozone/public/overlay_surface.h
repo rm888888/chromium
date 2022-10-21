@@ -7,6 +7,7 @@
 
 #include "base/callback.h"
 #include "base/component_export.h"
+#include "base/macros.h"
 #include "base/memory/ref_counted.h"
 #include "ui/gfx/geometry/rect.h"
 #include "ui/gfx/geometry/rect_f.h"

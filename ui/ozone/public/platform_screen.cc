@@ -24,9 +24,8 @@ std::string PlatformScreen::GetCurrentWorkspace() {
   return {};
 }
 
-bool PlatformScreen::SetScreenSaverSuspended(bool suspend) {
+void PlatformScreen::SetScreenSaverSuspended(bool suspend) {
   NOTIMPLEMENTED_LOG_ONCE();
-  return false;
 }
 
 bool PlatformScreen::IsScreenSaverActive() const {

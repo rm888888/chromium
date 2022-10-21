@@ -4,8 +4,6 @@
 
 #include "components/services/storage/dom_storage/local_storage_impl.h"
 
-#include <tuple>
-
 #include "base/bind.h"
 #include "base/callback_helpers.h"
 #include "base/containers/span.h"
@@ -257,7 +255,7 @@ class LocalStorageImplTest : public testing::Test {
     base::RunLoop run_loop;
     std::vector<blink::mojom::KeyValuePtr> data;
     mojo::PendingRemote<blink::mojom::StorageAreaObserver> unused_observer;
-    std::ignore = unused_observer.InitWithNewPipeAndPassReceiver();
+    ignore_result(unused_observer.InitWithNewPipeAndPassReceiver());
     area->GetAll(std::move(unused_observer),
                  test::MakeGetAllCallback(run_loop.QuitClosure(), &data));
     run_loop.Run();

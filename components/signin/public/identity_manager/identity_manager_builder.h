@@ -8,10 +8,8 @@
 #include <memory>
 
 #include "base/files/file_path.h"
-#include "base/memory/raw_ptr.h"
 #include "build/build_config.h"
 #include "build/chromeos_buildflags.h"
-#include "components/signin/public/base/signin_buildflags.h"
 #include "components/signin/public/identity_manager/identity_manager.h"
 
 #if !defined(OS_ANDROID)
@@ -25,7 +23,7 @@
 class PrefService;
 class SigninClient;
 
-#if BUILDFLAG(ENABLE_DICE_SUPPORT)
+#if !defined(OS_ANDROID)
 class TokenWebData;
 #endif
 
@@ -57,13 +55,13 @@ struct IdentityManagerBuildParams {
   AccountConsistencyMethod account_consistency =
       AccountConsistencyMethod::kDisabled;
   std::unique_ptr<image_fetcher::ImageDecoder> image_decoder;
-  raw_ptr<PrefService> local_state = nullptr;
-  raw_ptr<network::NetworkConnectionTracker> network_connection_tracker;
-  raw_ptr<PrefService> pref_service = nullptr;
+  PrefService* local_state = nullptr;
+  network::NetworkConnectionTracker* network_connection_tracker;
+  PrefService* pref_service = nullptr;
   base::FilePath profile_path;
-  raw_ptr<SigninClient> signin_client = nullptr;
+  SigninClient* signin_client = nullptr;
 
-#if BUILDFLAG(ENABLE_DICE_SUPPORT)
+#if !defined(OS_ANDROID)
   bool delete_signin_cookies_on_exit = false;
   scoped_refptr<TokenWebData> token_web_data;
 #endif

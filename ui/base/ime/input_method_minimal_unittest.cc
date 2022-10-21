@@ -4,6 +4,7 @@
 
 #include "ui/base/ime/input_method_minimal.h"
 
+#include "base/macros.h"
 #include "testing/gtest/include/gtest/gtest.h"
 #include "ui/base/ime/dummy_text_input_client.h"
 #include "ui/base/ime/init/input_method_initializer.h"

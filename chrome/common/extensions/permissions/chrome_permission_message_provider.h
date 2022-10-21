@@ -8,6 +8,7 @@
 #include <set>
 #include <vector>
 
+#include "base/macros.h"
 #include "chrome/common/extensions/permissions/chrome_permission_message_rules.h"
 #include "extensions/common/permissions/permission_message_provider.h"
 

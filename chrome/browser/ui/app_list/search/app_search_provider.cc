@@ -21,6 +21,7 @@
 #include "base/callback_list.h"
 #include "base/containers/contains.h"
 #include "base/i18n/rtl.h"
+#include "base/macros.h"
 #include "base/metrics/field_trial_params.h"
 #include "base/metrics/histogram_macros.h"
 #include "base/strings/utf_string_conversions.h"
@@ -49,8 +50,6 @@
 #include "components/services/app_service/public/cpp/types_util.h"
 #include "components/sync/base/model_type.h"
 #include "components/sync_sessions/session_sync_service.h"
-#include "content/public/browser/browser_task_traits.h"
-#include "content/public/browser/browser_thread.h"
 #include "ui/chromeos/devicetype_utils.h"
 
 namespace {
@@ -330,8 +329,18 @@ class AppServiceDataSource : public AppSearchProvider::DataSource,
 
       if (!std::strcmp(update.AppId().c_str(),
                        ash::kInternalAppIdContinueReading)) {
-        // Don't show continue reading results in the recommended apps.
-        return;
+        // Continue reading depends on the tab of session from other devices.
+        // This checking can be moved to built_in_app, however, it's more
+        // reasonable to leave it in search result code, because the status of
+        // continue reading is not changed. It depends on the session sync
+        // result to decide whether it should be shown in the recommended
+        // result, so leave the code in the search result part.
+        sync_sessions::SessionSyncService* service =
+            SessionSyncServiceFactory::GetInstance()->GetForProfile(profile());
+        if (!service || (!service->GetOpenTabsUIDelegate() &&
+                         !owner()->open_tabs_ui_delegate_for_testing())) {
+          return;
+        }
       }
 
       // TODO(crbug.com/826982): add the "can load in incognito" concept to
@@ -417,55 +426,41 @@ AppSearchProvider::AppSearchProvider(Profile* profile,
                                      AppListControllerDelegate* list_controller,
                                      base::Clock* clock,
                                      AppListModelUpdater* model_updater)
-    : list_controller_(list_controller),
+    : profile_(profile),
+      list_controller_(list_controller),
       model_updater_(model_updater),
       clock_(clock) {
   data_sources_.emplace_back(
       std::make_unique<AppServiceDataSource>(profile, this));
 }
 
-AppSearchProvider::~AppSearchProvider() = default;
+AppSearchProvider::~AppSearchProvider() {}
 
 void AppSearchProvider::Start(const std::u16string& query) {
-  ClearResultsSilently();
+  // When the AppSearchProvider initializes, UpdateRecommendedResults is called
+  // three times. We only want to start updating user prefs for release notes
+  // after these first three calls are done.
   query_ = query;
   query_start_time_ = base::TimeTicks::Now();
   // We only need to record app search latency for queries started by user.
-  // TODO(crbug.com/1258415): Is this needed?
   record_query_uma_ = true;
+  const bool show_recommendations = query.empty();
   // Refresh list of apps to ensure we have the latest launch time information.
-  if (apps_.empty()) {
+  // This will also cause the results to update.
+  if (show_recommendations || apps_.empty())
     RefreshAppsAndUpdateResults();
-  } else {
+  else
     UpdateResults();
-  }
-}
-
-void AppSearchProvider::StartZeroState() {
-  ClearResultsSilently();
-  query_.clear();
-  query_start_time_ = base::TimeTicks::Now();
-  record_query_uma_ = true;
-  RefreshAppsAndUpdateResults();
 }
 
 void AppSearchProvider::ViewClosing() {
-  // Clear search results asynchronously to keep the search results and prevent
-  // the search results, e.g. AppServiceContextMenu, from being deleted when
-  // executing their functions.
-  base::ThreadTaskRunnerHandle::Get()->PostTask(
-      FROM_HERE, base::BindOnce(&AppSearchProvider::ClearResultsSilently,
-                                weak_ptr_factory_.GetWeakPtr()));
+  ClearResultsSilently();
   for (auto& data_source : data_sources_)
     data_source->ViewClosing();
 }
 
-ash::AppListSearchResultType AppSearchProvider::ResultType() const {
+ash::AppListSearchResultType AppSearchProvider::ResultType() {
   return ash::AppListSearchResultType::kInstalledApp;
-}
-
-bool AppSearchProvider::ShouldBlockZeroState() const {
-  return true;
 }
 
 void AppSearchProvider::RefreshAppsAndUpdateResults() {
@@ -503,6 +498,18 @@ void AppSearchProvider::UpdateRecommendedResults(
       continue;
 
     std::u16string title = app->name();
+    if (app->id() == ash::kInternalAppIdContinueReading) {
+      std::u16string navigation_title;
+      if (!HasRecommendableForeignTab(profile_, &navigation_title,
+                                      /*url=*/nullptr,
+                                      open_tabs_ui_delegate_for_testing())) {
+        continue;
+      } else if (!navigation_title.empty()) {
+        title = navigation_title;
+        app->AddSearchableText(title);
+      }
+    }
+
     std::unique_ptr<AppResult> result =
         app->data_source()->CreateResult(app->id(), list_controller_, true);
     result->SetTitle(title);
@@ -527,16 +534,12 @@ void AppSearchProvider::UpdateRecommendedResults(
       result->set_relevance(0.0f);
     }
 
-    if (ash::features::IsProductivityLauncherEnabled()) {
-      // For ProductivityLauncher, zero-state suggestions for apps are displayed
-      // in a separate "recent apps" section.
-      result->SetDisplayType(ChromeSearchResult::DisplayType::kRecentApps);
-    } else {
-      // In the old launcher, create a second result to the display in the
-      // launcher chips, that is otherwise identical to |result|.
-      //
-      // TODO(crbug.com/1258415): This can be removed once the productivity
-      // launcher is launched.
+    // In the old launcher, create a second result to the display in the
+    // launcher chips, that is otherwise identical to |result|.
+    //
+    // TODO(crbug.com/1258415): This can be removed once the productivity
+    // launcher is launched.
+    if (!ash::features::IsProductivityLauncherEnabled()) {
       std::unique_ptr<AppResult> chip_result =
           app->data_source()->CreateResult(app->id(), list_controller_, true);
       chip_result->SetMetadata(result->CloneMetadata());

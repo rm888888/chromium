@@ -6,8 +6,7 @@
 #define CHROME_BROWSER_UI_VIEWS_PROFILES_SIGNIN_VIEW_CONTROLLER_DELEGATE_VIEWS_H_
 
 #include "base/callback.h"
-#include "base/memory/raw_ptr.h"
-#include "base/types/strong_alias.h"
+#include "base/macros.h"
 #include "build/build_config.h"
 #include "build/chromeos_buildflags.h"
 #include "chrome/browser/ui/chrome_web_modal_dialog_manager_delegate.h"
@@ -107,9 +106,6 @@ class SigninViewControllerDelegateViews
   friend SigninViewControllerDelegate;
   friend class SigninViewControllerDelegateViewsBrowserTest;
 
-  using InitializeSigninWebDialogUI =
-      base::StrongAlias<class InitializeSigninWebDialogUITag, bool>;
-
   // Creates and displays a constrained window containing |web_contents|. If
   // |wait_for_size| is true, the delegate will wait for ResizeNativeView() to
   // be called by the base class before displaying the constrained window.
@@ -126,8 +122,7 @@ class SigninViewControllerDelegateViews
       Browser* browser,
       const GURL& url,
       int dialog_height,
-      absl::optional<int> dialog_width,
-      InitializeSigninWebDialogUI initialize_signin_web_dialog_ui);
+      absl::optional<int> dialog_width);
 
   // Displays the modal dialog.
   void DisplayModal();
@@ -139,11 +134,11 @@ class SigninViewControllerDelegateViews
 
   // If the widget is non-null, then it owns the
   // `SigninViewControllerDelegateViews` and the content view.
-  raw_ptr<views::Widget> modal_signin_widget_ = nullptr;
+  views::Widget* modal_signin_widget_ = nullptr;
 
-  raw_ptr<content::WebContents> web_contents_;
-  const raw_ptr<Browser> browser_;
-  raw_ptr<views::WebView> content_view_;
+  content::WebContents* web_contents_;
+  Browser* const browser_;
+  views::WebView* content_view_;
   views::UnhandledKeyboardEventHandler unhandled_keyboard_event_handler_;
   bool should_show_close_button_;
 };

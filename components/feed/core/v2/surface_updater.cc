@@ -19,7 +19,6 @@
 #include "components/feed/core/v2/metrics_reporter.h"
 #include "components/feed/core/v2/public/feed_stream_surface.h"
 #include "components/feed/core/v2/stream_surface_set.h"
-#include "components/feed/core/v2/types.h"
 
 namespace feed {
 namespace {
@@ -85,7 +84,6 @@ StreamUpdateAndType MakeStreamUpdate(
     const std::vector<std::string>& updated_shared_state_ids,
     const base::flat_set<ContentRevision>& already_sent_content,
     const StreamModel* model,
-    const LoggingParameters& logging_parameters,
     const DrawState& state) {
   DCHECK(!state.loading_initial || !state.loading_more)
       << "logic bug: requested both top and bottom spinners.";
@@ -139,23 +137,17 @@ StreamUpdateAndType MakeStreamUpdate(
         model->GetLastAddedTime().ToDeltaSinceWindowsEpoch().InMilliseconds());
   }
 
-  ToProto(logging_parameters,
-          *update.stream_update.mutable_logging_parameters());
-
   return update;
 }
 
-StreamUpdateAndType GetUpdateForNewSurface(
-    const DrawState& state,
-    const StreamModel* model,
-    const LoggingParameters& logging_parameters) {
+StreamUpdateAndType GetUpdateForNewSurface(const DrawState& state,
+                                           const StreamModel* model) {
   std::vector<std::string> updated_shared_state_ids;
   if (model) {
     updated_shared_state_ids = model->GetSharedStateIds();
   }
   return MakeStreamUpdate(std::move(updated_shared_state_ids),
-                          /*already_sent_content=*/{}, model,
-                          logging_parameters, state);
+                          /*already_sent_content=*/{}, model, state);
 }
 
 base::flat_set<ContentRevision> GetContentSet(const StreamModel* model) {
@@ -218,14 +210,12 @@ SurfaceUpdater::SurfaceUpdater(MetricsReporter* metrics_reporter,
 
 SurfaceUpdater::~SurfaceUpdater() = default;
 
-void SurfaceUpdater::SetModel(StreamModel* model,
-                              const LoggingParameters& logging_parameters) {
+void SurfaceUpdater::SetModel(StreamModel* model) {
   if (model_ == model)
     return;
   if (model_)
     model_->RemoveObserver(this);
   model_ = model;
-  logging_parameters_ = logging_parameters;
   sent_content_.clear();
   if (model_) {
     model_->AddObserver(this);
@@ -264,8 +254,7 @@ void SurfaceUpdater::SurfaceAdded(
     logger.LogLaunchFinishedAfterStreamUpdate(loading_not_allowed_reason);
   }
 
-  StreamUpdateAndType update =
-      GetUpdateForNewSurface(GetState(), model_, logging_parameters_);
+  StreamUpdateAndType update = GetUpdateForNewSurface(GetState(), model_);
   launch_reliability_logger_.OnStreamUpdate(update.type, *surface);
   SendUpdateToSurface(surface, update.stream_update);
 
@@ -346,8 +335,7 @@ void SurfaceUpdater::SendStreamUpdate(
     const std::vector<std::string>& updated_shared_state_ids) {
   DrawState state = GetState();
   StreamUpdateAndType update =
-      MakeStreamUpdate(updated_shared_state_ids, sent_content_, model_,
-                       logging_parameters_, state);
+      MakeStreamUpdate(updated_shared_state_ids, sent_content_, model_, state);
 
   if (load_stream_started_ && !loading_more_)
     launch_reliability_logger_.OnStreamUpdate(update.type);

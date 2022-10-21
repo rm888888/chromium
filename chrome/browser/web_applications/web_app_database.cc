@@ -94,7 +94,7 @@ WebAppProto::CaptureLinks CaptureLinksToProto(
   switch (capture_links) {
     case blink::mojom::CaptureLinks::kUndefined:
       NOTREACHED();
-      [[fallthrough]];
+      FALLTHROUGH;
     case blink::mojom::CaptureLinks::kNone:
       return WebAppProto_CaptureLinks_NONE;
     case blink::mojom::CaptureLinks::kNewClient:
@@ -174,26 +174,6 @@ WebAppProto::ApiApprovalState ApiApprovalStateToProto(
       return WebAppProto_ApiApprovalState_ALLOWED;
     case ApiApprovalState::kDisallowed:
       return WebAppProto_ApiApprovalState_DISALLOWED;
-  }
-}
-
-OsIntegrationState ProtoToOsIntegrationState(
-    WebAppProto::OsIntegrationState state) {
-  switch (state) {
-    case WebAppProto_OsIntegrationState_ENABLED:
-      return OsIntegrationState::kEnabled;
-    case WebAppProto_OsIntegrationState_DISABLED:
-      return OsIntegrationState::kDisabled;
-  }
-}
-
-WebAppProto::OsIntegrationState OsIntegrationStateToProto(
-    OsIntegrationState state) {
-  switch (state) {
-    case OsIntegrationState::kEnabled:
-      return WebAppProto_OsIntegrationState_ENABLED;
-    case OsIntegrationState::kDisabled:
-      return WebAppProto_OsIntegrationState_DISABLED;
   }
 }
 
@@ -338,8 +318,6 @@ std::unique_ptr<WebAppProto> WebAppDatabase::CreateWebAppProto(
         chromeos_data.show_in_management);
     mutable_chromeos_data->set_is_disabled(chromeos_data.is_disabled);
     mutable_chromeos_data->set_oem_installed(chromeos_data.oem_installed);
-    mutable_chromeos_data->set_handles_file_open_intents(
-        chromeos_data.handles_file_open_intents);
   }
 
   if (web_app.client_data().system_web_app_data.has_value()) {
@@ -424,14 +402,14 @@ std::unique_ptr<WebAppProto> WebAppDatabase::CreateWebAppProto(
     }
   }
 
-  for (const WebAppShortcutsMenuItemInfo& shortcut_info :
+  for (const WebApplicationShortcutsMenuItemInfo& shortcut_info :
        web_app.shortcuts_menu_item_infos()) {
     WebAppShortcutsMenuItemInfoProto* shortcut_info_proto =
         local_data->add_shortcuts_menu_item_infos();
     shortcut_info_proto->set_name(base::UTF16ToUTF8(shortcut_info.name));
     shortcut_info_proto->set_url(shortcut_info.url.spec());
     for (IconPurpose purpose : kIconPurposes) {
-      for (const WebAppShortcutsMenuItemInfo::Icon& icon_info :
+      for (const WebApplicationShortcutsMenuItemInfo::Icon& icon_info :
            shortcut_info.GetShortcutIconInfosForPurpose(purpose)) {
         sync_pb::WebAppIconInfo* shortcut_icon_info_proto;
         switch (purpose) {
@@ -518,11 +496,11 @@ std::unique_ptr<WebAppProto> WebAppDatabase::CreateWebAppProto(
   if (!web_app.manifest_url().is_empty())
     local_data->set_manifest_url(web_app.manifest_url().spec());
 
+  local_data->set_file_handler_permission_blocked(
+      web_app.file_handler_permission_blocked());
+
   local_data->set_file_handler_approval_state(
       ApiApprovalStateToProto(web_app.file_handler_approval_state()));
-
-  local_data->set_file_handler_os_integration_state(
-      OsIntegrationStateToProto(web_app.file_handler_os_integration_state()));
 
   local_data->set_window_controls_overlay_enabled(
       web_app.window_controls_overlay_enabled());
@@ -581,7 +559,7 @@ std::unique_ptr<WebApp> WebAppDatabase::CreateWebApp(
     return nullptr;
   }
 
-  WebAppSources sources;
+  WebApp::Sources sources;
   sources[Source::kSystem] = local_data.sources().system();
   sources[Source::kPolicy] = local_data.sources().policy();
   sources[Source::kWebAppStore] = local_data.sources().web_app_store();
@@ -650,8 +628,6 @@ std::unique_ptr<WebApp> WebAppDatabase::CreateWebApp(
         chromeos_data_proto.show_in_management();
     chromeos_data->is_disabled = chromeos_data_proto.is_disabled();
     chromeos_data->oem_installed = chromeos_data_proto.oem_installed();
-    chromeos_data->handles_file_open_intents =
-        chromeos_data_proto.handles_file_open_intents();
     web_app->SetWebAppChromeOsData(std::move(chromeos_data));
   }
 
@@ -855,10 +831,10 @@ std::unique_ptr<WebApp> WebAppDatabase::CreateWebApp(
     web_app->SetShareTarget(std::move(share_target));
   }
 
-  std::vector<WebAppShortcutsMenuItemInfo> shortcuts_menu_item_infos;
+  std::vector<WebApplicationShortcutsMenuItemInfo> shortcuts_menu_item_infos;
   for (const auto& shortcut_info_proto :
        local_data.shortcuts_menu_item_infos()) {
-    WebAppShortcutsMenuItemInfo shortcut_info;
+    WebApplicationShortcutsMenuItemInfo shortcut_info;
     shortcut_info.name = base::UTF8ToUTF16(shortcut_info_proto.name());
     shortcut_info.url = GURL(shortcut_info_proto.url());
     for (IconPurpose purpose : kIconPurposes) {
@@ -881,9 +857,9 @@ std::unique_ptr<WebApp> WebAppDatabase::CreateWebApp(
           break;
       }
 
-      std::vector<WebAppShortcutsMenuItemInfo::Icon> manifest_icons;
+      std::vector<WebApplicationShortcutsMenuItemInfo::Icon> manifest_icons;
       for (const auto& icon_info_proto : *shortcut_manifest_icons) {
-        WebAppShortcutsMenuItemInfo::Icon shortcut_icon_info;
+        WebApplicationShortcutsMenuItemInfo::Icon shortcut_icon_info;
         shortcut_icon_info.square_size_px = icon_info_proto.size_in_px();
         shortcut_icon_info.url = GURL(icon_info_proto.url());
         manifest_icons.emplace_back(std::move(shortcut_icon_info));
@@ -1009,15 +985,14 @@ std::unique_ptr<WebApp> WebAppDatabase::CreateWebApp(
     }
     web_app->SetManifestUrl(manifest_url);
   }
+  if (local_data.has_file_handler_permission_blocked()) {
+    web_app->SetFileHandlerPermissionBlocked(
+        local_data.file_handler_permission_blocked());
+  }
 
   if (local_data.has_file_handler_approval_state()) {
     web_app->SetFileHandlerApprovalState(
         ProtoToApiApprovalState(local_data.file_handler_approval_state()));
-  }
-
-  if (local_data.has_file_handler_os_integration_state()) {
-    web_app->SetFileHandlerOsIntegrationState(ProtoToOsIntegrationState(
-        local_data.file_handler_os_integration_state()));
   }
 
   if (local_data.has_window_controls_overlay_enabled()) {
@@ -1188,7 +1163,7 @@ WebAppProto::DisplayMode ToWebAppProtoDisplayMode(DisplayMode display_mode) {
       return WebAppProto::MINIMAL_UI;
     case DisplayMode::kUndefined:
       NOTREACHED();
-      [[fallthrough]];
+      FALLTHROUGH;
     case DisplayMode::kStandalone:
       return WebAppProto::STANDALONE;
     case DisplayMode::kFullscreen:

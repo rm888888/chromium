@@ -8,6 +8,7 @@
 #include <utility>
 
 #include "base/feature_list.h"
+#include "base/macros.h"
 #include "base/metrics/field_trial_params.h"
 #include "base/metrics/histogram_macros.h"
 #include "base/metrics/user_metrics.h"
@@ -77,8 +78,6 @@ using content_settings::PageSpecificContentSettings;
 //     ContentSettingNotificationsImageModel      - notifications
 //   ContentSettingMediaImageModel              - media
 //   ContentSettingFramebustBlockImageModel     - blocked framebust
-
-constexpr bool kNotifyAccessibility = true;
 
 class ContentSettingBlockedImageModel : public ContentSettingSimpleImageModel {
  public:
@@ -510,7 +509,7 @@ bool ContentSettingBlockedImageModel::UpdateAndGetVisibility(
 // Geolocation -----------------------------------------------------------------
 
 ContentSettingGeolocationImageModel::ContentSettingGeolocationImageModel()
-    : ContentSettingImageModel(ImageType::GEOLOCATION, kNotifyAccessibility) {}
+    : ContentSettingImageModel(ImageType::GEOLOCATION) {}
 
 bool ContentSettingGeolocationImageModel::UpdateAndGetVisibility(
     WebContents* web_contents) {
@@ -583,8 +582,6 @@ bool ContentSettingGeolocationImageModel::UpdateAndGetVisibility(
   set_tooltip(l10n_util::GetStringUTF16(is_allowed
                                             ? IDS_ALLOWED_GEOLOCATION_MESSAGE
                                             : IDS_BLOCKED_GEOLOCATION_MESSAGE));
-  set_explanatory_string_id(is_allowed ? IDS_ALLOWED_GEOLOCATION_MESSAGE
-                                       : IDS_BLOCKED_GEOLOCATION_MESSAGE);
 
   return true;
 }
@@ -733,7 +730,7 @@ bool ContentSettingClipboardReadWriteImageModel::UpdateAndGetVisibility(
 // Media -----------------------------------------------------------------------
 
 ContentSettingMediaImageModel::ContentSettingMediaImageModel()
-    : ContentSettingImageModel(ImageType::MEDIASTREAM, kNotifyAccessibility) {}
+    : ContentSettingImageModel(ImageType::MEDIASTREAM) {}
 
 bool ContentSettingMediaImageModel::UpdateAndGetVisibility(
     WebContents* web_contents) {
@@ -838,7 +835,6 @@ bool ContentSettingMediaImageModel::UpdateAndGetVisibility(
                            : IDS_MICROPHONE_ACCESSED;
   }
   set_tooltip(l10n_util::GetStringUTF16(id));
-  set_explanatory_string_id(id);
 
   return true;
 }

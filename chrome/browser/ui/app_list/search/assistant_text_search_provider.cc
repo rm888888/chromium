@@ -94,7 +94,7 @@ AssistantTextSearchProvider::AssistantTextSearchProvider() {
 
 AssistantTextSearchProvider::~AssistantTextSearchProvider() = default;
 
-ash::AppListSearchResultType AssistantTextSearchProvider::ResultType() const {
+ash::AppListSearchResultType AssistantTextSearchProvider::ResultType() {
   return ash::AppListSearchResultType::kAssistantText;
 }
 

@@ -9,7 +9,6 @@
 #include "base/metrics/histogram_macros.h"
 #include "base/notreached.h"
 #include "base/time/time.h"
-#include "components/safe_browsing/core/common/utils.h"
 #include "net/http/http_status_code.h"
 
 namespace safe_browsing {
@@ -283,10 +282,9 @@ void LogSyncAccountType(SyncAccountType sync_account_type) {
 
 void LogPasswordProtectionNetworkResponseAndDuration(
     int response_code,
-    int net_error,
     const base::TimeTicks& request_start_time) {
-  RecordHttpResponseOrErrorCode(
-      "PasswordProtection.PasswordProtectionResponseOrErrorCode", net_error,
+  base::UmaHistogramSparse(
+      "PasswordProtection.PasswordProtectionResponseOrErrorCode",
       response_code);
   if (response_code == net::HTTP_OK) {
     UMA_HISTOGRAM_TIMES("PasswordProtection.RequestNetworkDuration",

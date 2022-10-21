@@ -17,39 +17,6 @@
 namespace chrome {
 namespace {
 
-// Output operator for logging.
-std::ostream& operator<<(std::ostream& out, const base::File::Error error) {
-  switch (error) {
-    case base::File::FILE_OK:
-      return out << "FILE_OK";
-#define ENTRY(S)      \
-  case base::File::S: \
-    return out << #S;
-      ENTRY(FILE_ERROR_FAILED);
-      ENTRY(FILE_ERROR_IN_USE);
-      ENTRY(FILE_ERROR_EXISTS);
-      ENTRY(FILE_ERROR_NOT_FOUND);
-      ENTRY(FILE_ERROR_ACCESS_DENIED);
-      ENTRY(FILE_ERROR_TOO_MANY_OPENED);
-      ENTRY(FILE_ERROR_NO_MEMORY);
-      ENTRY(FILE_ERROR_NO_SPACE);
-      ENTRY(FILE_ERROR_NOT_A_DIRECTORY);
-      ENTRY(FILE_ERROR_INVALID_OPERATION);
-      ENTRY(FILE_ERROR_SECURITY);
-      ENTRY(FILE_ERROR_ABORT);
-      ENTRY(FILE_ERROR_NOT_A_FILE);
-      ENTRY(FILE_ERROR_NOT_EMPTY);
-      ENTRY(FILE_ERROR_INVALID_URL);
-      ENTRY(FILE_ERROR_IO);
-#undef ENTRY
-    default:
-      return out << "File::Error("
-                 << static_cast<std::underlying_type_t<base::File::Error>>(
-                        error)
-                 << ")";
-  }
-}
-
 std::string Redact(const std::string& s) {
   return LOG_IS_ON(INFO) ? base::StrCat({"'", s, "'"}) : "(redacted)";
 }
@@ -122,7 +89,7 @@ class MojoFileAccessor : public zip::FileAccessor {
           path.value(), dir_remote.BindNewPipeAndPassReceiver(),
           filesystem::mojom::kFlagRead | filesystem::mojom::kFlagOpen, &error);
       if (error != base::File::Error::FILE_OK) {
-        LOG(ERROR) << "Cannot open " << Redact(path) << ": " << error;
+        LOG(ERROR) << "Cannot open " << Redact(path) << ": Error " << error;
         return false;
       }
       dir = dir_remote.get();
@@ -132,7 +99,8 @@ class MojoFileAccessor : public zip::FileAccessor {
     base::File::Error error;
     dir->Read(&error, &contents);
     if (error != base::File::Error::FILE_OK) {
-      LOG(ERROR) << "Cannot list content of " << Redact(path) << ": " << error;
+      LOG(ERROR) << "Cannot list content of " << Redact(path) << ": Error "
+                 << error;
       return false;
     }
 
@@ -156,7 +124,8 @@ class MojoFileAccessor : public zip::FileAccessor {
     filesystem::mojom::FileInformationPtr file_info;
     src_dir_->StatFile(path.value(), &error, &file_info);
     if (error != base::File::Error::FILE_OK) {
-      LOG(ERROR) << "Cannot stat " << Redact(path) << ": " << error;
+      LOG(ERROR) << "Cannot get info of " << Redact(path) << ": Error "
+                 << error;
       return false;
     }
 
@@ -220,7 +189,6 @@ void ZipFileCreator::WriteZipFile(
                                                this, std::cref(listener)),
       .progress_period = base::Milliseconds(1000),
       .recursive = true,
-      .continue_on_error = true,
   });
 
   listener->OnFinished(success);

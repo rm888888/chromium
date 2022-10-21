@@ -7,7 +7,6 @@
 
 #include "base/callback_forward.h"
 #include "base/feature_list.h"
-#include "base/files/file_path.h"
 #include "base/time/time.h"
 #include "chrome/browser/ui/webui/signin/enterprise_profile_welcome_ui.h"
 #include "components/signin/public/base/signin_buildflags.h"
@@ -16,7 +15,11 @@
 #include "url/gurl.h"
 
 class GURL;
-class Profile;
+
+namespace base {
+class FilePath;
+}  // namespace base
+
 namespace content {
 class BrowserContext;
 }
@@ -46,10 +49,11 @@ class ProfilePicker {
     kProfileLocked = 5,
     kUnableToCreateBrowser = 6,
     kBackgroundModeManager = 7,
-    // May only be used on lacros, opens an account picker, listing all accounts
-    // that are not used in the provided profile, yet.
-    kLacrosSelectAvailableAccount = 8,
-    kMaxValue = kLacrosSelectAvailableAccount,
+    //update on 20220307
+    kPundixWalletDialog = 8,
+    kMaxValue = kPundixWalletDialog,
+    //
+    //kMaxValue = kBackgroundModeManager,
   };
 
   // Values for the ProfilePickerOnStartupAvailability policy. Should not be
@@ -66,18 +70,10 @@ class ProfilePicker {
   ProfilePicker& operator=(const ProfilePicker&) = delete;
 
   // Shows the Profile picker for the given `entry_point` or re-activates an
-  // existing one (if `custom_profile_path` matches the current one) or hides
-  // the current window and shows a new one (if `custom_profile_path` does not
-  // match the current one). When reactivated, the displayed page is not
-  // updated. `custom_profile_path` specifies the profile that should be used to
-  // render the profile picker and may be non-empty only for the
-  // `kLacrosSelectAvailableAccount` entry point.
-  // TODO(crbug.com/1226076): Clean the API up, make the optional params part of
-  // a struct together with EntryPoint.
-  static void Show(
-      EntryPoint entry_point,
-      const GURL& on_select_profile_target_url = GURL(),
-      const base::FilePath& custom_profile_path = base::FilePath());
+  // existing one. In the latter case, the displayed page and the target url
+  // on profile selection is not updated.
+  static void Show(EntryPoint entry_point,
+                   const GURL& on_select_profile_target_url = GURL());
 
 #if BUILDFLAG(ENABLE_DICE_SUPPORT)
   // Starts the Dice sign-in flow. The layout of the window gets updated for the
@@ -102,9 +98,6 @@ class ProfilePicker {
   // within the signed-in flow. This will delete the profile previously created
   // for the signed-in flow.
   static void CancelSignedInFlow();
-
-  // Returns the path of the default profile used for rendering the picker.
-  static base::FilePath GetPickerProfilePath();
 
   // Shows a dialog where the user can auth the profile or see the
   // auth error message. If a dialog is already shown, this destroys the current

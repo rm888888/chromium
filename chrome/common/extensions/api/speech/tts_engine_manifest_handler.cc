@@ -41,7 +41,7 @@ bool TtsVoices::Parse(base::Value::ConstListView tts_voices,
   bool added_gender_warning = false;
   for (const base::Value& one_tts_voice : tts_voices) {
     if (!one_tts_voice.is_dict()) {
-      *error = errors::kInvalidTtsVoices;
+      *error = base::ASCIIToUTF16(errors::kInvalidTtsVoices);
       return false;
     }
 
@@ -49,7 +49,7 @@ bool TtsVoices::Parse(base::Value::ConstListView tts_voices,
     const base::Value* name = one_tts_voice.FindKey(keys::kTtsVoicesVoiceName);
     if (name) {
       if (!name->is_string()) {
-        *error = errors::kInvalidTtsVoicesVoiceName;
+        *error = base::ASCIIToUTF16(errors::kInvalidTtsVoicesVoiceName);
         return false;
       }
       voice_data.voice_name = name->GetString();
@@ -59,7 +59,7 @@ bool TtsVoices::Parse(base::Value::ConstListView tts_voices,
     if (lang) {
       if (!lang->is_string() ||
           !l10n_util::IsValidLocaleSyntax(lang->GetString())) {
-        *error = errors::kInvalidTtsVoicesLang;
+        *error = base::ASCIIToUTF16(errors::kInvalidTtsVoicesLang);
         return false;
       }
       voice_data.lang = lang->GetString();
@@ -77,7 +77,7 @@ bool TtsVoices::Parse(base::Value::ConstListView tts_voices,
     const base::Value* remote = one_tts_voice.FindKey(keys::kTtsVoicesRemote);
     if (remote) {
       if (!remote->is_bool()) {
-        *error = errors::kInvalidTtsVoicesRemote;
+        *error = base::ASCIIToUTF16(errors::kInvalidTtsVoicesRemote);
         return false;
       }
       voice_data.remote = remote->GetBool();
@@ -87,12 +87,13 @@ bool TtsVoices::Parse(base::Value::ConstListView tts_voices,
         one_tts_voice.FindKey(keys::kTtsVoicesEventTypes);
     if (event_types) {
       if (!event_types->is_list()) {
-        *error = errors::kInvalidTtsVoicesEventTypes;
+        *error = base::ASCIIToUTF16(
+            errors::kInvalidTtsVoicesEventTypes);
         return false;
       }
       for (const base::Value& event_type_val : event_types->GetList()) {
         if (!event_type_val.is_string()) {
-          *error = errors::kInvalidTtsVoicesEventTypes;
+          *error = base::ASCIIToUTF16(errors::kInvalidTtsVoicesEventTypes);
           return false;
         }
         const std::string& event_type = event_type_val.GetString();
@@ -102,12 +103,12 @@ bool TtsVoices::Parse(base::Value::ConstListView tts_voices,
             event_type != keys::kTtsVoicesEventTypeSentence &&
             event_type != keys::kTtsVoicesEventTypeStart &&
             event_type != keys::kTtsVoicesEventTypeWord) {
-          *error = errors::kInvalidTtsVoicesEventTypes;
+          *error = base::ASCIIToUTF16(errors::kInvalidTtsVoicesEventTypes);
           return false;
         }
         if (voice_data.event_types.find(event_type) !=
             voice_data.event_types.end()) {
-          *error = errors::kInvalidTtsVoicesEventTypes;
+          *error = base::ASCIIToUTF16(errors::kInvalidTtsVoicesEventTypes);
           return false;
         }
         voice_data.event_types.insert(event_type);
@@ -141,7 +142,7 @@ bool TtsEngineManifestHandler::Parse(Extension* extension,
   auto info = std::make_unique<TtsVoices>();
   const base::DictionaryValue* tts_dict = nullptr;
   if (!extension->manifest()->GetDictionary(keys::kTtsEngine, &tts_dict)) {
-    *error = errors::kInvalidTts;
+    *error = base::ASCIIToUTF16(errors::kInvalidTts);
     return false;
   }
 
@@ -150,7 +151,7 @@ bool TtsEngineManifestHandler::Parse(Extension* extension,
     return true;
 
   if (!tts_voices->is_list()) {
-    *error = errors::kInvalidTtsVoices;
+    *error = base::ASCIIToUTF16(errors::kInvalidTtsVoices);
     return false;
   }
 
@@ -161,7 +162,7 @@ bool TtsEngineManifestHandler::Parse(Extension* extension,
       tts_dict->FindKey(keys::kTtsEngineSampleRate);
   if (tts_engine_sample_rate) {
     if (!tts_engine_sample_rate->GetIfInt()) {
-      *error = errors::kInvalidTtsSampleRateFormat;
+      *error = base::ASCIIToUTF16(errors::kInvalidTtsSampleRateFormat);
       return false;
     }
 
@@ -179,7 +180,7 @@ bool TtsEngineManifestHandler::Parse(Extension* extension,
       tts_dict->FindKey(keys::kTtsEngineBufferSize);
   if (tts_engine_buffer_size) {
     if (!tts_engine_buffer_size->GetIfInt()) {
-      *error = errors::kInvalidTtsBufferSizeFormat;
+      *error = base::ASCIIToUTF16(errors::kInvalidTtsBufferSizeFormat);
       return false;
     }
 
@@ -198,7 +199,8 @@ bool TtsEngineManifestHandler::Parse(Extension* extension,
 
   if ((!tts_engine_sample_rate && tts_engine_buffer_size) ||
       (tts_engine_sample_rate && !tts_engine_buffer_size)) {
-    *error = errors::kInvalidTtsRequiresSampleRateAndBufferSize;
+    *error =
+        base::ASCIIToUTF16(errors::kInvalidTtsRequiresSampleRateAndBufferSize);
     return false;
   }
 

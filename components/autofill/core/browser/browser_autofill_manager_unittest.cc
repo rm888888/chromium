@@ -17,7 +17,6 @@
 #include "base/command_line.h"
 #include "base/cxx17_backports.h"
 #include "base/feature_list.h"
-#include "base/memory/raw_ptr.h"
 #include "base/memory/ref_counted.h"
 #include "base/metrics/field_trial.h"
 #include "base/metrics/metrics_hashes.h"
@@ -39,7 +38,7 @@
 #include "components/autofill/core/browser/data_model/autofill_profile.h"
 #include "components/autofill/core/browser/data_model/credit_card.h"
 #include "components/autofill/core/browser/geo/alternative_state_name_map_test_utils.h"
-#include "components/autofill/core/browser/metrics/form_events/form_events.h"
+#include "components/autofill/core/browser/metrics/form_events.h"
 #include "components/autofill/core/browser/mock_autocomplete_history_manager.h"
 #include "components/autofill/core/browser/mock_single_field_form_fill_router.h"
 #include "components/autofill/core/browser/payments/test_credit_card_save_manager.h"
@@ -320,7 +319,7 @@ class MockAutofillDriver : public TestAutofillDriver {
   MockAutofillDriver& operator=(const MockAutofillDriver&) = delete;
 
   // Mock methods to enable testability.
-  MOCK_METHOD((base::flat_map<FieldGlobalId, ServerFieldType>),
+  MOCK_METHOD(void,
               FillOrPreviewForm,
               (int query_id,
                mojom::RendererFormDataAction action,
@@ -528,25 +527,8 @@ class BrowserAutofillManagerTest : public testing::Test {
                                           FormData* response_data) {
     EXPECT_CALL(*autofill_driver_, FillOrPreviewForm(_, _, _, _, _))
         .WillOnce((DoAll(testing::SaveArg<0>(response_query_id),
-                         testing::SaveArg<2>(response_data),
-                         testing::ReturnArg<4>())));
+                         testing::SaveArg<2>(response_data))));
     FillAutofillFormData(input_query_id, input_form, input_field, unique_id);
-  }
-
-  void PreviewVirtualCardDataAndSaveResults(
-      mojom::RendererFormDataAction action,
-      const std::string& guid,
-      int input_query_id,
-      const FormData& input_form,
-      const FormFieldData& input_field,
-      int* response_query_id,
-      FormData* response_data) {
-    EXPECT_CALL(*autofill_driver_, FillOrPreviewForm(_, _, _, _, _))
-        .WillOnce((DoAll(testing::SaveArg<0>(response_query_id),
-                         testing::SaveArg<2>(response_data),
-                         testing::ReturnArg<4>())));
-    browser_autofill_manager_->FillOrPreviewVirtualCardInformation(
-        action, guid, input_query_id, input_form, input_field);
   }
 
   int MakeFrontendID(const std::string& cc_sid,
@@ -574,7 +556,8 @@ class BrowserAutofillManagerTest : public testing::Test {
       // the main frame to HTTP, otherwise mixed form warnings will trigger and
       // autofill will be disabled.
       GURL::Replacements replacements;
-      replacements.SetSchemeStr(url::kHttpScheme);
+      replacements.SetScheme(url::kHttpScheme,
+                             url::Component(0, strlen(url::kHttpScheme)));
       autofill_client_.set_form_origin(
           autofill_client_.form_origin().ReplaceComponents(replacements));
       form->url = GURL("http://myform.com/form.html");
@@ -719,15 +702,15 @@ class BrowserAutofillManagerTest : public testing::Test {
   NiceMock<MockAutofillClient> autofill_client_;
   std::unique_ptr<MockAutofillDriver> autofill_driver_;
   std::unique_ptr<TestBrowserAutofillManager> browser_autofill_manager_;
-  raw_ptr<TestAutofillExternalDelegate> external_delegate_;
+  TestAutofillExternalDelegate* external_delegate_;
   scoped_refptr<AutofillWebDataService> database_;
-  raw_ptr<MockAutofillDownloadManager> download_manager_;
+  MockAutofillDownloadManager* download_manager_;
   TestPersonalDataManager personal_data_;
   std::unique_ptr<MockAutocompleteHistoryManager> autocomplete_history_manager_;
-  raw_ptr<MockSingleFieldFormFillRouter> single_field_form_fill_router_;
+  MockSingleFieldFormFillRouter* single_field_form_fill_router_;
   base::test::ScopedFeatureList scoped_feature_list_;
-  raw_ptr<TestStrikeDatabase> strike_database_;
-  raw_ptr<payments::TestPaymentsClient> payments_client_;
+  TestStrikeDatabase* strike_database_;
+  payments::TestPaymentsClient* payments_client_;
 
  private:
   int ToHistogramSample(AutofillMetrics::CardUploadDecisionMetric metric) {
@@ -960,7 +943,7 @@ TEST_P(BrowserAutofillManagerStructuredProfileTest,
 
   // Different form structure.
   FormData form2;
-  form2.host_frame = test::MakeLocalFrameToken();
+  form2.host_frame = test::GetLocalFrameToken();
   form2.unique_renderer_id = test::MakeFormRendererId();
   form2.name = u"MyForm";
   form2.url = GURL("https://myform.com/form.html");
@@ -993,7 +976,7 @@ TEST_P(BrowserAutofillManagerStructuredProfileTest,
   FormData form2;
   FormFieldData field;
   test::CreateTestFormField("Querty", "qwerty", "", "text", &field);
-  form2.host_frame = test::MakeLocalFrameToken();
+  form2.host_frame = test::GetLocalFrameToken();
   form2.unique_renderer_id = test::MakeFormRendererId();
   form2.name = u"NonQueryable";
   form2.url = form1.url;
@@ -1021,7 +1004,7 @@ TEST_P(BrowserAutofillManagerStructuredProfileTest,
   FormData form2;
   FormFieldData field;
   test::CreateTestFormField("Querty", "qwerty", "", "text", &field);
-  form2.host_frame = test::MakeLocalFrameToken();
+  form2.host_frame = test::GetLocalFrameToken();
   form2.unique_renderer_id = test::MakeFormRendererId();
   form2.name = u"NonQueryable";
   form2.url = form1.url;
@@ -2655,8 +2638,7 @@ TEST_F(BrowserAutofillManagerTest, DoNotFillIfFormFieldChanged) {
   FormData response_data;
   EXPECT_CALL(*autofill_driver_, FillOrPreviewForm(_, _, _, _, _))
       .WillOnce((DoAll(testing::SaveArg<0>(&response_query_id),
-                       testing::SaveArg<2>(&response_data),
-                       testing::ReturnArg<4>())));
+                       testing::SaveArg<2>(&response_data))));
   browser_autofill_manager_->FillOrPreviewDataModelForm(
       mojom::RendererFormDataAction::kFill, kDefaultPageID, form,
       form.fields.front(), profile, nullptr, form_structure, autofill_field);
@@ -4254,7 +4236,7 @@ TEST_P(BrowserAutofillManagerStructuredProfileTest,
        FillCreditCardForm_VirtualCard) {
   personal_data_.ClearCreditCards();
   CreditCard masked_server_card;
-  test::SetCreditCardInfo(&masked_server_card, "Lorem Ipsum",
+  test::SetCreditCardInfo(&masked_server_card, "Lorem Ispum",
                           "5555555555554444",  // Mastercard
                           "10", test::NextYear().c_str(), "1");
   masked_server_card.set_guid("00000000-0000-0000-0000-000000000007");
@@ -4268,9 +4250,8 @@ TEST_P(BrowserAutofillManagerStructuredProfileTest,
   std::vector<FormData> forms(1, form);
   FormsSeen(forms);
 
-  browser_autofill_manager_->FillOrPreviewVirtualCardInformation(
-      mojom::RendererFormDataAction::kFill, masked_server_card.guid(),
-      kDefaultPageID, form, form.fields[1]);
+  browser_autofill_manager_->FillVirtualCardInformation(
+      masked_server_card.guid(), kDefaultPageID, form, form.fields[1]);
 
   CardUnmaskDelegate::UserProvidedUnmaskDetails details;
   details.cvc = u"123";
@@ -4283,42 +4264,6 @@ TEST_P(BrowserAutofillManagerStructuredProfileTest,
   EXPECT_EQ(request_details->card.number(), u"5555555555554444");
   EXPECT_EQ(request_details->last_committed_url_origin.value(),
             GURL("https://example.test/"));
-}
-
-TEST_P(BrowserAutofillManagerStructuredProfileTest,
-       PreviewCreditCardForm_VirtualCard) {
-  personal_data_.ClearCreditCards();
-  CreditCard virtual_card = test::GetVirtualCard();
-  personal_data_.AddServerCreditCard(virtual_card);
-  // Set up our form data.
-  FormData form;
-  CreateTestCreditCardFormData(&form, true, false);
-  std::vector<FormData> forms(1, form);
-  FormsSeen(forms);
-
-  int response_page_id = 0;
-  FormData response_data;
-  PreviewVirtualCardDataAndSaveResults(
-      mojom::RendererFormDataAction::kPreview, virtual_card.guid(),
-      kDefaultPageID, form, form.fields[1], &response_page_id, &response_data);
-
-  std::u16string expected_cardholder_name = u"Lorem Ipsum";
-  // Virtual card number using obfuscated dots only: Virtual card Mastercard
-  // ••••4444
-  std::u16string expected_card_number =
-      u"Virtual card Mastercard  " + virtual_card.ObfuscatedLastFourDigits();
-  // Virtual card expiration month using obfuscated dots: ••
-  std::u16string expected_exp_month = CreditCard::GetMidlineEllipsisDots(2);
-  // Virtual card expiration year using obfuscated dots: ••••
-  std::u16string expected_exp_year = CreditCard::GetMidlineEllipsisDots(4);
-  // Virtual card cvc using obfuscated dots: •••
-  std::u16string expected_cvc = CreditCard::GetMidlineEllipsisDots(3);
-
-  EXPECT_EQ(response_data.fields[0].value, expected_cardholder_name);
-  EXPECT_EQ(response_data.fields[1].value, expected_card_number);
-  EXPECT_EQ(response_data.fields[2].value, expected_exp_month);
-  EXPECT_EQ(response_data.fields[3].value, expected_exp_year);
-  EXPECT_EQ(response_data.fields[4].value, expected_cvc);
 }
 
 // Test that non-focusable field is ignored while inferring boundaries between
@@ -5815,7 +5760,8 @@ TEST_P(BrowserAutofillManagerStructuredProfileTest,
   // the main frame to HTTP in the client, otherwise mixed form warnings will
   // trigger and autofill will be disabled.
   GURL::Replacements replacements;
-  replacements.SetSchemeStr(url::kHttpScheme);
+  replacements.SetScheme(url::kHttpScheme,
+                         url::Component(0, strlen(url::kHttpScheme)));
   client.set_form_origin(client.form_origin().ReplaceComponents(replacements));
   ResetBrowserAutofillManager(&client);
   browser_autofill_manager_->SetAutofillProfileEnabled(false);
@@ -5851,7 +5797,8 @@ TEST_P(BrowserAutofillManagerStructuredProfileTest,
   // the main frame to HTTP in the client, otherwise mixed form warnings will
   // trigger and autofill will be disabled.
   GURL::Replacements replacements;
-  replacements.SetSchemeStr(url::kHttpScheme);
+  replacements.SetScheme(url::kHttpScheme,
+                         url::Component(0, strlen(url::kHttpScheme)));
   client.set_form_origin(client.form_origin().ReplaceComponents(replacements));
   ResetBrowserAutofillManager(&client);
   browser_autofill_manager_->SetAutofillProfileEnabled(false);
@@ -5951,7 +5898,7 @@ TEST_P(BrowserAutofillManagerStructuredProfileTest,
        OnLoadedServerPredictionsFromApi) {
   // First form on the page.
   FormData form;
-  form.host_frame = test::MakeLocalFrameToken();
+  form.host_frame = test::GetLocalFrameToken();
   form.unique_renderer_id = test::MakeFormRendererId();
   form.name = u"MyForm";
   form.url = GURL("https://myform.com/form.html");
@@ -5977,7 +5924,7 @@ TEST_P(BrowserAutofillManagerStructuredProfileTest,
 
   // Second form on the page.
   FormData form2;
-  form2.host_frame = test::MakeLocalFrameToken();
+  form2.host_frame = test::GetLocalFrameToken();
   form2.unique_renderer_id = test::MakeFormRendererId();
   form2.name = u"MyForm2";
   form2.url = GURL("https://myform.com/form.html");
@@ -9319,7 +9266,7 @@ TEST_F(BrowserAutofillManagerTest, PageLanguageGetsCorrectlySet) {
 TEST_F(BrowserAutofillManagerTest, PageLanguageGetsCorrectlyDetected) {
   base::test::ScopedFeatureList scoped_feature_list;
   scoped_feature_list.InitAndEnableFeature(
-      features::kAutofillPageLanguageDetection);
+      features::kAutofillParsingPatternsLanguageDetection);
 
   FormData form;
   test::CreateTestAddressFormData(&form);
@@ -9483,50 +9430,6 @@ TEST_F(BrowserAutofillManagerTest, GetSuggestions_AboutBlankTarget) {
 
   // Check there is no warning.
   EXPECT_FALSE(external_delegate_->on_suggestions_returned_seen());
-}
-
-// Test that the Autofill does not override field values that were already
-// prefilled.
-TEST_F(BrowserAutofillManagerTest, PreventOverridingOfPrefilledValues) {
-  base::test::ScopedFeatureList features;
-  features.InitAndEnableFeature(
-      autofill::features::kAutofillPreventOverridingPrefilledValues);
-  // Set up our form data.
-  FormData form;
-  form.name = u"MyForm";
-  form.url = GURL("https://myform.com/form.html");
-  form.action = GURL("about:blank");
-  FormFieldData field;
-  test::CreateTestFormField("Name", "name", "Test Name", "text", &field);
-  form.fields.push_back(field);
-  test::CreateTestFormField("City", "city", "Test City", "text", &field);
-  form.fields.push_back(field);
-  test::CreateTestFormField("Country", "country", "Test Country", "text",
-                            &field);
-  form.fields.push_back(field);
-  std::vector<FormData> forms(1, form);
-  FormsSeen(forms);
-
-  const char guid[] = "00000000-0000-0000-0000-000000000001";
-  int response_page_id = 0;
-  FormData response_data;
-  FillAutofillFormDataAndSaveResults(kDefaultPageID, form, form.fields[0],
-                                     MakeFrontendID(std::string(), guid),
-                                     &response_page_id, &response_data);
-  EXPECT_EQ(response_data.fields[0].value, u"Test Name");
-  EXPECT_EQ(response_data.fields[1].value, u"Test City");
-  EXPECT_EQ(response_data.fields[2].value, u"Test Country");
-
-  features.Reset();
-  features.InitAndDisableFeature(
-      autofill::features::kAutofillPreventOverridingPrefilledValues);
-
-  FillAutofillFormDataAndSaveResults(kDefaultPageID, form, form.fields[0],
-                                     MakeFrontendID(std::string(), guid),
-                                     &response_page_id, &response_data);
-  EXPECT_EQ(response_data.fields[0].value, u"Elvis Aaron Presley");
-  EXPECT_EQ(response_data.fields[1].value, u"Memphis");
-  EXPECT_EQ(response_data.fields[2].value, u"United States");
 }
 
 // Desktop only tests.

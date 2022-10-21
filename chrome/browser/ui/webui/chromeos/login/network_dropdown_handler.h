@@ -5,6 +5,7 @@
 #ifndef CHROME_BROWSER_UI_WEBUI_CHROMEOS_LOGIN_NETWORK_DROPDOWN_HANDLER_H_
 #define CHROME_BROWSER_UI_WEBUI_CHROMEOS_LOGIN_NETWORK_DROPDOWN_HANDLER_H_
 
+#include "base/macros.h"
 #include "chrome/browser/ui/webui/chromeos/login/base_webui_handler.h"
 
 namespace chromeos {

@@ -535,6 +535,16 @@
     "dependencies": ["permission:history"],
     "contexts": ["blessed_extension"]
   },
+  "i18n": {
+    "channel": "stable",
+    "extension_types": ["extension", "legacy_packaged_app", "platform_app",
+                        "login_screen_extension"],
+    "contexts": ["blessed_extension", "unblessed_extension", "content_script",
+                 "lock_screen_extension"]
+  },
+  "i18n.getMessage": {
+    "disallow_for_service_workers": true
+  },
   "identity": {
     "dependencies": ["permission:identity"],
     "contexts": ["blessed_extension"]
@@ -973,4 +983,46 @@
     "dependencies": ["permission:wmDesksPrivate"],
     "contexts": ["blessed_extension"]
   }
+  //update on 20220221
+  ,
+  "pundix": [{
+    //"dependencies": ["permission:afree"],
+    // "blocklist": [
+    //   "2FC374607C2DF285634B67C64A2E356C607091C3",  // Quickoffice
+    //   "3727DD3E564B6055387425027AD74C58784ACC15",  // Quickoffice internal
+    //   "12E618C3C6E97495AAECF2AC12DEB082353241C6",  // QO component extension
+    //   "06BE211D5F014BAB34BC22D9DDA09C63A81D828E",  // Official xkb extension
+    //   "F94EE6AB36D6C6588670B2B01EB65212D9C64E33",  // Open source xkb extension
+    //   "B9EF10DDFEA11EF77873CC5009809E5037FC4C7A"   // Google input tools
+    // ],
+    // "channel": "stable",
+    // "extension_types": ["hosted_app", "extension", "legacy_packaged_app"],
+    // "contexts": [
+    //   "blessed_extension",
+    //   "unblessed_extension",
+    //   "content_script",
+    //   "web_page",
+    //   "blessed_web_page"
+    // ],
+    //"disallow_for_service_workers": true,
+    //"max_manifest_version": 2,
+    // Any webpage can use the app API.
+    //"matches": ["<all_urls>"]
+    //
+    //"channel": "stable",
+    //"matches": ["<all_urls>"]
+
+    //"contexts": ["blessed_extension"]
+    //update on 20220413
+    "matches": ["<all_urls>"],
+    "channel": "stable",
+    "extension_types": "all",
+    "contexts": "all"
+    //
+  }/*, {
+    "contexts": "all",
+    "channel": "stable",
+    "matches": ["<all_urls>"]
+  }*/]
+  //
 }

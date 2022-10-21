@@ -75,7 +75,7 @@ SubframeNavigationFilteringThrottle::SubframeNavigationFilteringThrottle(
 SubframeNavigationFilteringThrottle::~SubframeNavigationFilteringThrottle() {
   switch (load_policy_) {
     case LoadPolicy::EXPLICITLY_ALLOW:
-      [[fallthrough]];
+      FALLTHROUGH;
     case LoadPolicy::ALLOW:
       UMA_HISTOGRAM_CUSTOM_MICRO_TIMES(
           "SubresourceFilter.DocumentLoad.SubframeFilteringDelay.Allowed",

@@ -30,12 +30,17 @@ class AppUpdate : public App {
   void FirstTaskRun() override;
 
   void SetupDone(int result);
+
+  scoped_refptr<Configurator> config_;
 };
 
 void AppUpdate::Initialize() {
+  config_ = base::MakeRefCounted<Configurator>(
+      CreateGlobalPrefs(updater_scope()), CreateExternalConstants());
 }
 
 void AppUpdate::Uninitialize() {
+  PrefsCommitPendingWrites(config_->GetPrefService());
 }
 
 void AppUpdate::FirstTaskRun() {

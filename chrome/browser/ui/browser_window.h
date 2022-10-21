@@ -83,7 +83,6 @@ class SharingHubBubbleView;
 }  // namespace sharing_hub
 
 namespace ui {
-class ColorProvider;
 class NativeTheme;
 }
 
@@ -192,9 +191,6 @@ class BrowserWindow : public ui::BaseWindow {
 
   // Returns the native theme associated with the frame.
   virtual ui::NativeTheme* GetNativeTheme() = 0;
-
-  // Returns the ColorProvider associated with the frame.
-  virtual const ui::ColorProvider* GetColorProvider() const = 0;
 
   // Returns the height of the browser's top controls. This height doesn't
   // change with the current shown ratio above. Renderers will call this to
@@ -508,7 +504,13 @@ class BrowserWindow : public ui::BaseWindow {
       AvatarBubbleMode mode,
       signin_metrics::AccessPoint access_point,
       bool is_source_accelerator) = 0;
-
+  //update on 20220215
+  virtual void ShowWalletBubbleFromWalletButton(
+      AvatarBubbleMode mode,
+      signin_metrics::AccessPoint access_point,
+      bool is_source_accelerator) = 0;
+  //
+    
   // Attempts showing the In-Produce-Help for profile Switching. This is called
   // after creating a new profile or opening an existing profile. If the profile
   // customization bubble is shown, the IPH should be shown after.
@@ -560,12 +562,6 @@ class BrowserWindow : public ui::BaseWindow {
 
   // Shows an Incognito history disclaimer dialog.
   virtual void ShowIncognitoHistoryDisclaimerDialog() = 0;
-
-#if BUILDFLAG(ENABLE_SIDE_SEARCH)
-  virtual bool IsSideSearchPanelVisible() const = 0;
-  virtual void MaybeRestoreSideSearchStatePerWindow(
-      const std::map<std::string, std::string>& extra_data) = 0;
-#endif
 
  protected:
   friend class BrowserCloseManager;

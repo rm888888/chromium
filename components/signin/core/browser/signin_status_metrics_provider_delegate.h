@@ -9,7 +9,7 @@
 
 #include <vector>
 
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "build/build_config.h"
 
 class SigninStatusMetricsProvider;
@@ -61,7 +61,7 @@ class SigninStatusMetricsProviderDelegate {
   SigninStatusMetricsProvider* owner() { return owner_; }
 
  private:
-  raw_ptr<SigninStatusMetricsProvider> owner_;
+  SigninStatusMetricsProvider* owner_;
 };
 
 #endif  // COMPONENTS_SIGNIN_CORE_BROWSER_SIGNIN_STATUS_METRICS_PROVIDER_DELEGATE_H_

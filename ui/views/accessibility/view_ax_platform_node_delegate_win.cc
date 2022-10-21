@@ -45,7 +45,7 @@ ViewAXPlatformNodeDelegateWin::ViewAXPlatformNodeDelegateWin(View* view)
 
 ViewAXPlatformNodeDelegateWin::~ViewAXPlatformNodeDelegateWin() = default;
 
-gfx::NativeViewAccessible ViewAXPlatformNodeDelegateWin::GetParent() const {
+gfx::NativeViewAccessible ViewAXPlatformNodeDelegateWin::GetParent() {
   // If the View has a parent View, return that View's IAccessible.
   if (view()->parent())
     return ViewAXPlatformNodeDelegate::GetParent();

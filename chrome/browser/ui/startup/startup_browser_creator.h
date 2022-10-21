@@ -113,9 +113,7 @@ class StartupBrowserCreator {
       const base::FilePath& startup_profile_dir);
 
   // Opens the set of startup pages from the current session startup prefs.
-  static void OpenStartupPages(
-      Browser* browser,
-      chrome::startup::IsProcessStartup process_startup);
+  static void OpenStartupPages(Browser* browser, bool process_startup);
 
   // Returns true if we're launching a profile synchronously. In that case, the
   // opened window should not cause a session restore.
@@ -128,22 +126,21 @@ class StartupBrowserCreator {
   // |is_first_run| indicates that this is a new profile.
   // If |launch_mode_recorder| is non null, and a browser is launched, a launch
   // mode histogram will be recorded.
-  void LaunchBrowser(const base::CommandLine& command_line,
+  bool LaunchBrowser(const base::CommandLine& command_line,
                      Profile* profile,
                      const base::FilePath& cur_dir,
-                     chrome::startup::IsProcessStartup process_startup,
+                     chrome::startup::IsProcessStartup is_process_startup,
                      chrome::startup::IsFirstRun is_first_run,
                      std::unique_ptr<LaunchModeRecorder> launch_mode_recorder);
 
   // Launch browser for `last_opened_profiles` if it's not empty. Otherwise,
-  // launch browser for `last_used_profile`.
-  void LaunchBrowserForLastProfiles(
-      const base::CommandLine& command_line,
-      const base::FilePath& cur_dir,
-      chrome::startup::IsProcessStartup process_startup,
-      chrome::startup::IsFirstRun is_first_run,
-      Profile* last_used_profile,
-      const Profiles& last_opened_profiles);
+  // launch browser for `last_used_profile`. Return false if any browser is
+  // failed to be launched. Otherwise, return true.
+  bool LaunchBrowserForLastProfiles(const base::CommandLine& command_line,
+                                    const base::FilePath& cur_dir,
+                                    bool process_startup,
+                                    Profile* last_used_profile,
+                                    const Profiles& last_opened_profiles);
 
   // If Incognito or Guest mode are requested by policy or command line returns
   // the appropriate private browsing profile. Otherwise returns |profile|.
@@ -177,16 +174,10 @@ class StartupBrowserCreator {
       base::OnceClosure on_urls_unhandled_cb);
 #endif
 
-  // Returns true if Chrome is intended to load a profile and launch without any
-  // window.
-  static bool ShouldLoadProfileWithoutWindow(
-      const base::CommandLine& command_line);
-
  private:
   friend class CloudPrintProxyPolicyTest;
   friend class CloudPrintProxyPolicyStartupTest;
   friend class StartupBrowserCreatorImpl;
-  friend class StartupBrowserCreatorInfobarsWithoutStartupWindowTest;
   // TODO(crbug.com/642442): Remove this when first_run_tabs gets refactored.
   friend class StartupTabProviderImpl;
   FRIEND_TEST_ALL_PREFIXES(BrowserTest, AppIdSwitch);
@@ -200,8 +191,6 @@ class StartupBrowserCreator {
                            ValidNotificationLaunchId);
   FRIEND_TEST_ALL_PREFIXES(StartupBrowserCreatorTest,
                            InvalidNotificationLaunchId);
-  FRIEND_TEST_ALL_PREFIXES(StartupBrowserCreatorTest, ListAppsForAllProfiles);
-  FRIEND_TEST_ALL_PREFIXES(StartupBrowserCreatorTest, ListAppsForGivenProfile);
   FRIEND_TEST_ALL_PREFIXES(StartupBrowserCreatorChromeAppShortcutTest,
                            OpenAppShortcutNoPref);
   FRIEND_TEST_ALL_PREFIXES(StartupBrowserCreatorChromeAppShortcutTest,
@@ -226,16 +215,18 @@ class StartupBrowserCreator {
 
   bool ProcessCmdLineImpl(const base::CommandLine& command_line,
                           const base::FilePath& cur_dir,
-                          chrome::startup::IsProcessStartup process_startup,
+                          bool process_startup,
                           Profile* last_used_profile,
                           const Profiles& last_opened_profiles);
 
   // Launch the |last_used_profile| with the full command line, and the other
-  // |last_opened_profiles| without the URLs to launch.
-  void ProcessLastOpenedProfiles(
+  // |last_opened_profiles| without the URLs to launch. Return false if any
+  // browser is failed to be launched. Otherwise, return true.
+
+  bool ProcessLastOpenedProfiles(
       const base::CommandLine& command_line,
       const base::FilePath& cur_dir,
-      chrome::startup::IsProcessStartup process_startup,
+      chrome::startup::IsProcessStartup is_process_startup,
       chrome::startup::IsFirstRun is_first_run,
       Profile* last_used_profile,
       const Profiles& last_opened_profiles);

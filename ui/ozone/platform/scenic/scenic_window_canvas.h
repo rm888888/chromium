@@ -8,6 +8,7 @@
 #include <lib/ui/scenic/cpp/resources.h>
 #include <memory>
 
+#include "base/macros.h"
 #include "base/memory/shared_memory_mapping.h"
 #include "third_party/skia/include/core/SkRegion.h"
 #include "third_party/skia/include/core/SkSurface.h"

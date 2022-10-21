@@ -5,7 +5,6 @@
 #include "components/performance_manager/graph/page_node_impl.h"
 
 #include "base/containers/contains.h"
-#include "base/memory/raw_ptr.h"
 #include "components/performance_manager/graph/frame_node_impl.h"
 #include "components/performance_manager/graph/graph_impl_operations.h"
 #include "components/performance_manager/graph/process_node_impl.h"
@@ -229,8 +228,7 @@ class LenientMockObserver : public PageNodeImpl::Observer {
                void(const PageNode*, const FrameNode*, EmbeddingType));
   MOCK_METHOD1(OnIsVisibleChanged, void(const PageNode*));
   MOCK_METHOD1(OnIsAudibleChanged, void(const PageNode*));
-  MOCK_METHOD2(OnLoadingStateChanged,
-               void(const PageNode*, PageNode::LoadingState));
+  MOCK_METHOD1(OnLoadingStateChanged, void(const PageNode*));
   MOCK_METHOD1(OnUkmSourceIdChanged, void(const PageNode*));
   MOCK_METHOD1(OnPageLifecycleStateChanged, void(const PageNode*));
   MOCK_METHOD1(OnPageIsHoldingWebLockChanged, void(const PageNode*));
@@ -255,7 +253,7 @@ class LenientMockObserver : public PageNodeImpl::Observer {
   }
 
  private:
-  raw_ptr<const PageNode> notified_page_node_ = nullptr;
+  const PageNode* notified_page_node_ = nullptr;
 };
 
 using MockObserver = ::testing::StrictMock<LenientMockObserver>;
@@ -288,9 +286,8 @@ TEST_F(PageNodeImplTest, ObserverWorks) {
   page_node->SetIsAudible(true);
   EXPECT_EQ(raw_page_node, obs.TakeNotifiedPageNode());
 
-  EXPECT_CALL(obs, OnLoadingStateChanged(_, _))
-      .WillOnce(testing::WithArg<0>(
-          Invoke(&obs, &MockObserver::SetNotifiedPageNode)));
+  EXPECT_CALL(obs, OnLoadingStateChanged(_))
+      .WillOnce(Invoke(&obs, &MockObserver::SetNotifiedPageNode));
   page_node->SetLoadingState(PageNode::LoadingState::kLoading);
   EXPECT_EQ(raw_page_node, obs.TakeNotifiedPageNode());
 

@@ -86,14 +86,12 @@ class method, there is a single-line declaration available, as shown in these
 examples:
 ``` cpp
 // This declares a module-local identifier. The anonymous namespace is optional
-// (though recommended) as kModuleLocalIdentifier will also be marked 'static'
-// and the identifier's name will contain the file and line.
+// (though recommended) as kModuleLocalIdentifier will also be marked 'static'.
 namespace {
 DEFINE_LOCAL_ELEMENT_IDENTIFIER_VALUE(kModuleLocalIdentifier);
 }
 
-// This declares a method-local identifier. Again, the use of the local
-// identifier will cause the generated name to include file and line number.
+// This declares a method-local identifier.
 /* static */ ui::ElementIdentifier MyClass::GetIdentifier() {
   DEFINE_LOCAL_ELEMENT_IDENTIFIER_VALUE(kMethodLocalIdentifier);
   return kMethodLocalIdentifier;

@@ -12,8 +12,6 @@
 #include <string>
 #include <vector>
 
-#include "base/compiler_specific.h"
-#include "base/memory/raw_ptr.h"
 #include "base/memory/scoped_refptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
@@ -448,7 +446,7 @@ class COMPOSITOR_EXPORT Layer : public LayerAnimationDelegate,
   // Invoked when scrolling performed by the cc::InputHandler is committed. This
   // will only occur if the Layer has set scroll container bounds.
   void SetDidScrollCallback(
-      base::RepeatingCallback<void(const gfx::PointF&, const cc::ElementId&)>
+      base::RepeatingCallback<void(const gfx::Vector2dF&, const cc::ElementId&)>
           callback);
 
   cc::ElementId element_id() const { return cc_layer_->element_id(); }
@@ -459,8 +457,8 @@ class COMPOSITOR_EXPORT Layer : public LayerAnimationDelegate,
   void SetScrollable(const gfx::Size& container_bounds);
 
   // Gets and sets the current scroll offset of the layer.
-  gfx::PointF CurrentScrollOffset() const;
-  void SetScrollOffset(const gfx::PointF& offset);
+  gfx::Vector2dF CurrentScrollOffset() const;
+  void SetScrollOffset(const gfx::Vector2dF& offset);
 
   // ContentLayerClient implementation.
   gfx::Rect PaintableRegion() const override;
@@ -650,9 +648,9 @@ class COMPOSITOR_EXPORT Layer : public LayerAnimationDelegate,
 
   const LayerType type_;
 
-  raw_ptr<Compositor> compositor_;
+  Compositor* compositor_;
 
-  raw_ptr<Layer> parent_;
+  Layer* parent_;
 
   // This layer's children, in bottom-to-top stacking order.
   std::vector<Layer*> children_;
@@ -660,7 +658,7 @@ class COMPOSITOR_EXPORT Layer : public LayerAnimationDelegate,
   std::vector<std::unique_ptr<LayerMirror>> mirrors_;
 
   // The layer being reflected with its subtree by this one, if any.
-  raw_ptr<Layer> subtree_reflected_layer_ = nullptr;
+  Layer* subtree_reflected_layer_ = nullptr;
 
   // List of layers reflecting this layer and its subtree, if any.
   base::flat_set<Layer*> subtree_reflecting_layers_;
@@ -709,11 +707,11 @@ class COMPOSITOR_EXPORT Layer : public LayerAnimationDelegate,
   float layer_blur_sigma_;
 
   // The associated mask layer with this layer.
-  raw_ptr<Layer> layer_mask_;
+  Layer* layer_mask_;
   // The back link from the mask layer to it's associated masked layer.
   // We keep this reference for the case that if the mask layer gets deleted
   // while attached to the main layer before the main layer is deleted.
-  raw_ptr<Layer> layer_mask_back_link_;
+  Layer* layer_mask_back_link_;
 
   // The zoom factor to scale the layer by.  Zooming is disabled when this is
   // set to 1.
@@ -727,11 +725,11 @@ class COMPOSITOR_EXPORT Layer : public LayerAnimationDelegate,
 
   std::string name_;
 
-  raw_ptr<LayerDelegate> delegate_;
+  LayerDelegate* delegate_;
 
   base::ObserverList<LayerObserver>::Unchecked observer_list_;
 
-  raw_ptr<LayerOwner> owner_;
+  LayerOwner* owner_;
 
   scoped_refptr<LayerAnimator> animator_;
 
@@ -743,7 +741,7 @@ class COMPOSITOR_EXPORT Layer : public LayerAnimationDelegate,
   scoped_refptr<cc::TextureLayer> texture_layer_;
   scoped_refptr<cc::SolidColorLayer> solid_color_layer_;
   scoped_refptr<cc::SurfaceLayer> surface_layer_;
-  raw_ptr<cc::Layer> cc_layer_;
+  cc::Layer* cc_layer_;
 
   // A cached copy of |Compositor::device_scale_factor()|.
   float device_scale_factor_;

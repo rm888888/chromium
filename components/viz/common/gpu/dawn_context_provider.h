@@ -7,6 +7,7 @@
 
 #include <memory>
 
+#include "base/macros.h"
 #include "components/viz/common/viz_dawn_context_provider_export.h"
 #include "third_party/dawn/src/include/dawn_native/DawnNative.h"
 #include "third_party/skia/include/gpu/GrDirectContext.h"
@@ -31,7 +32,7 @@ class VIZ_DAWN_CONTEXT_PROVIDER_EXPORT DawnContextProvider {
  private:
   DawnContextProvider();
 
-  wgpu::Device CreateDevice(wgpu::BackendType type);
+  wgpu::Device CreateDevice(dawn_native::BackendType type);
 
   dawn_native::Instance instance_;
   wgpu::Device device_;

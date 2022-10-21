@@ -38,9 +38,6 @@
 #if BUILDFLAG(IS_CHROMEOS_ASH)
 #include "chrome/browser/ash/crosapi/crosapi_manager.h"
 #include "chrome/browser/ash/crosapi/idle_service_ash.h"
-#include "components/user_manager/fake_user_manager.h"
-#include "components/user_manager/scoped_user_manager.h"
-#include "components/user_manager/user_manager.h"
 #endif
 
 #if BUILDFLAG(IS_CHROMEOS_LACROS)
@@ -58,10 +55,6 @@ BrowserWithTestWindowTest::~BrowserWithTestWindowTest() {}
 void BrowserWithTestWindowTest::SetUp() {
   testing::Test::SetUp();
 #if BUILDFLAG(IS_CHROMEOS_ASH)
-  if (!user_manager::UserManager::IsInitialized()) {
-    scoped_user_manager_ = std::make_unique<user_manager::ScopedUserManager>(
-        std::make_unique<user_manager::FakeUserManager>());
-  }
   ash_test_helper_.SetUp();
 #endif
 
@@ -116,6 +109,9 @@ void BrowserWithTestWindowTest::TearDown() {
   constrained_window::SetConstrainedWindowViewsClient(nullptr);
 #endif
 
+  profile_manager_->DeleteAllTestingProfiles();
+  profile_ = nullptr;
+
   // Depends on LocalState owned by |profile_manager_|.
   if (SystemNetworkContextManager::GetInstance()) {
     SystemNetworkContextManager::DeleteInstance();
@@ -125,10 +121,7 @@ void BrowserWithTestWindowTest::TearDown() {
   manager_.reset();
 #endif
 
-  // Calling DeleteAllTestingProfiles() first can cause issues in some tests, if
-  // they're still holding a ScopedProfileKeepAlive.
   profile_manager_.reset();
-  profile_ = nullptr;
 
 #if BUILDFLAG(IS_CHROMEOS_LACROS)
   tablet_state_.reset();

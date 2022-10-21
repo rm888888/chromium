@@ -27,6 +27,7 @@
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/profiles/profile.h"
 #include "chrome/browser/web_applications/external_install_options.h"
+#include "chrome/browser/web_applications/os_integration_manager.h"
 #include "chrome/browser/web_applications/policy/web_app_policy_manager.h"
 #include "chrome/browser/web_applications/system_web_apps/system_web_app_delegate.h"
 #include "chrome/browser/web_applications/web_app.h"
@@ -93,6 +94,7 @@
 #if !defined(OFFICIAL_BUILD)
 #include "chrome/browser/ash/web_applications/demo_mode_web_app_info.h"
 #include "chrome/browser/ash/web_applications/sample_system_web_app_info.h"
+#include "chrome/browser/ash/web_applications/telemetry_extension_web_app_info.h"
 #endif  // !defined(OFFICIAL_BUILD)
 
 #endif  // BUILDFLAG(IS_CHROMEOS_ASH)
@@ -100,6 +102,10 @@
 namespace web_app {
 
 namespace {
+
+// Copy the origin trial name from runtime_enabled_features.json5, to avoid
+// complex dependencies.
+const char kFileHandlingOriginTrial[] = "FileHandling";
 
 // Number of attempts to install a given version & locale of the SWAs before
 // bailing out.
@@ -144,6 +150,7 @@ SystemAppDelegateMap CreateSystemWebApps(Profile* profile) {
   info_vec.emplace_back(std::make_unique<OsFlagsSystemWebAppDelegate>(profile));
 
 #if !defined(OFFICIAL_BUILD)
+  info_vec.emplace_back(std::make_unique<TelemetrySystemAppDelegate>(profile));
   info_vec.emplace_back(std::make_unique<DemoModeSystemAppDelegate>(profile));
   info_vec.emplace_back(std::make_unique<SampleSystemAppDelegate>(profile));
 #endif  // !defined(OFFICIAL_BUILD)
@@ -197,8 +204,6 @@ ExternalInstallOptions CreateInstallOptionsForSystemApp(
   install_options.uninstall_and_replace =
       delegate.GetAppIdsToUninstallAndReplace();
   install_options.system_app_type = app_type;
-  install_options.handles_file_open_intents =
-      delegate.ShouldHandleFileOpenIntents();
 
   const auto& search_terms = delegate.GetAdditionalSearchTerms();
   std::transform(search_terms.begin(), search_terms.end(),
@@ -272,11 +277,13 @@ void SystemWebAppManager::SetSubsystems(
     WebAppRegistrar* registrar,
     WebAppSyncBridge* sync_bridge,
     WebAppUiManager* ui_manager,
+    OsIntegrationManager* os_integration_manager,
     WebAppPolicyManager* web_app_policy_manager) {
   externally_managed_app_manager_ = externally_managed_app_manager;
   registrar_ = registrar;
   sync_bridge_ = sync_bridge;
   ui_manager_ = ui_manager;
+  os_integration_manager_ = os_integration_manager;
   web_app_policy_manager_ = web_app_policy_manager;
 }
 
@@ -316,18 +323,14 @@ void SystemWebAppManager::Start() {
   }
 
   const bool exceeded_retries = CheckAndIncrementRetryAttempts();
-  if (exceeded_retries) {
-    LOG(ERROR)
-        << "Exceeded SWA install retry attempts.  Skipping installation, will "
-           "retry on next OS update or when locale changes.";
-    return;
+  if (!exceeded_retries) {
+    externally_managed_app_manager_->SynchronizeInstalledApps(
+        std::move(install_options_list),
+        ExternalInstallSource::kSystemInstalled,
+        base::BindOnce(&SystemWebAppManager::OnAppsSynchronized,
+                       weak_ptr_factory_.GetWeakPtr(),
+                       should_force_install_apps, install_start_time));
   }
-
-  externally_managed_app_manager_->SynchronizeInstalledApps(
-      std::move(install_options_list), ExternalInstallSource::kSystemInstalled,
-      base::BindOnce(&SystemWebAppManager::OnAppsSynchronized,
-                     weak_ptr_factory_.GetWeakPtr(), should_force_install_apps,
-                     install_start_time));
 }
 
 void SystemWebAppManager::InstallSystemAppsForTesting() {
@@ -414,6 +417,13 @@ const std::vector<std::string>* SystemWebAppManager::GetEnabledOriginTrials(
     return nullptr;
 
   return &iter_trials->second;
+}
+
+bool SystemWebAppManager::AppHasFileHandlingOriginTrial(
+    const SystemWebAppDelegate* system_app) {
+  const std::vector<std::string>* trials =
+      GetEnabledOriginTrials(system_app, system_app->GetInstallUrl());
+  return trials && base::Contains(*trials, kFileHandlingOriginTrial);
 }
 
 void SystemWebAppManager::OnReadyToCommitNavigation(
@@ -576,6 +586,24 @@ void SystemWebAppManager::OnAppsSynchronized(
     const base::TimeTicks& install_start_time,
     std::map<GURL, ExternallyManagedAppManager::InstallResult> install_results,
     std::map<GURL, bool> uninstall_results) {
+  // TODO(crbug.com/1053371): Clean up File Handler install. We install SWA file
+  // handlers here, because the code that registers file handlers for regular
+  // Web Apps, does not run when for apps installed in the background.
+  for (const auto& it : system_app_delegates_) {
+    const SystemAppType& type = it.first;
+    absl::optional<AppId> app_id = GetAppIdForSystemApp(type);
+    if (!app_id)
+      continue;
+
+    if (AppHasFileHandlingOriginTrial(it.second.get())) {
+      os_integration_manager_->ForceEnableFileHandlingOriginTrial(
+          app_id.value());
+    } else {
+      os_integration_manager_->DisableForceEnabledFileHandlingOriginTrial(
+          app_id.value());
+    }
+  }
+
   const base::TimeDelta install_duration =
       base::TimeTicks::Now() - install_start_time;
 

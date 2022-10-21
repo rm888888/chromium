@@ -7,8 +7,9 @@
 
 #include <memory>
 
-#include "ash/components/arc/arc_export.h"
+#include "base/macros.h"
 #include "base/scoped_observation.h"
+#include "components/arc/arc_export.h"
 #include "ui/aura/window.h"
 #include "ui/aura/window_observer.h"
 #include "ui/gfx/native_widget_types.h"

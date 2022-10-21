@@ -20,7 +20,7 @@ source_set("cpp") {
 
   deps = [
     "//base",
-    "//chromeos/printing",
+    "//chromeos",
   ]
 
   public_deps = [
@@ -35,7 +35,7 @@ source_set("unit_tests") {
   deps = [
     ":cpp",
     "//base",
-    "//chromeos/printing",
+    "//chromeos",
     "//testing/gmock",
     "//testing/gtest",
   ]

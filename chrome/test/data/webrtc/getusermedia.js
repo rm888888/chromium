@@ -196,5 +196,5 @@ function openDesktopMediaStream() {
     }
   });
 
-  window.postMessage({desktopSourceTypes: ['window', 'screen', 'tab']}, '*');
+  window.postMessage({desktopSourceTypes: ['window', 'screen']}, '*');
 }

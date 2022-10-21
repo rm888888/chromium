@@ -5,7 +5,6 @@
 #ifndef COMPONENTS_SAFE_BROWSING_CONTENT_BROWSER_SAFE_BROWSING_NAVIGATION_THROTTLE_H_
 #define COMPONENTS_SAFE_BROWSING_CONTENT_BROWSER_SAFE_BROWSING_NAVIGATION_THROTTLE_H_
 
-#include "base/memory/raw_ptr.h"
 #include "content/public/browser/navigation_throttle.h"
 
 namespace content {
@@ -42,7 +41,7 @@ class SafeBrowsingNavigationThrottle : public content::NavigationThrottle {
   SafeBrowsingNavigationThrottle(content::NavigationHandle* handle,
                                  SafeBrowsingUIManager* ui_manager);
 
-  raw_ptr<SafeBrowsingUIManager> manager_;
+  SafeBrowsingUIManager* manager_;
 };
 
 }  // namespace safe_browsing

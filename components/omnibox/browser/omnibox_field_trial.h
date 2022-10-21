@@ -13,6 +13,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/macros.h"
 #include "base/metrics/field_trial_params.h"
 #include "components/omnibox/browser/autocomplete_input.h"
 #include "components/omnibox/browser/autocomplete_match_type.h"
@@ -356,9 +357,6 @@ int KeywordScoreForSufficientlyCompleteMatch();
 // Returns true if the tab switch suggestions flag is enabled.
 bool IsTabSwitchSuggestionsEnabled();
 
-// Returns true if the first batch of Pedals on Android is enabled.
-bool IsPedalsAndroidBatch1Enabled();
-
 // Returns true if the second batch of Pedals is enabled for non-English
 // locales. This is only meaningful if batch 2 is enabled.
 bool IsPedalsBatch2NonEnglishEnabled();
@@ -550,23 +548,6 @@ extern const base::FeatureParam<bool>
     kShortBookmarkSuggestionsByTotalInputLengthCounterfactual;
 extern const base::FeatureParam<int>
     kShortBookmarkSuggestionsByTotalInputLengthThreshold;
-
-// Zero Suggest
-// Indicates whether the user is in the counterfactual group in the experiment
-// for prefetching zero prefix suggestions on the NTP. Users in the
-// counterfactual group issue a follow-up non-cacheable request if the response
-// is loaded from the HTTP cache in order to determine HTTP cache validity.
-// This param is tied to omnibox::kZeroSuggestPrefetching and is to be used when
-// a valid HTTP cache duration is provided via kZeroSuggestCacheDurationSec.
-extern const base::FeatureParam<bool> kZeroSuggestCacheCounterfactual;
-// Specifies the HTTP cache duration for the zero prefix suggest responses. If
-// the provided value is a positive number, the cache duration will be sent as a
-// query string parameter in the zero suggest requests and relayed back in the
-// response cache control headers.
-// This param is tied to omnibox::kZeroSuggestPrefetching which controls
-// prefetching and theoretically works with any caching mechanism. If no valid
-// HTTP cache duration is provided the existing caching mechanism is used.
-extern const base::FeatureParam<int> kZeroSuggestCacheDurationSec;
 
 // New params should be inserted above this comment and formatted as:
 // - Short comment categorizing the relevant features & params.

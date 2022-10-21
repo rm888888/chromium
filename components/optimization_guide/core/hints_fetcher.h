@@ -11,7 +11,7 @@
 
 #include "base/callback.h"
 #include "base/containers/flat_set.h"
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/memory/scoped_refptr.h"
 #include "base/sequence_checker.h"
 #include "base/time/clock.h"
@@ -142,11 +142,6 @@ class HintsFetcher {
   // in the pref.
   void UpdateHostsSuccessfullyFetched(base::TimeDelta valid_duration);
 
-  // Returns the subset of URLs from |urls| for which the URL is considered
-  // valid and can be included in a hints fetch.
-  std::vector<GURL> GetSizeLimitedURLsForFetching(
-      const std::vector<GURL>& urls) const;
-
   // Returns the subset of hosts from |hosts| for which the hints should be
   // refreshed. The count of returned hosts is limited to
   // features::MaxHostsForOptimizationGuideServiceHintsFetch().
@@ -168,17 +163,17 @@ class HintsFetcher {
   optimization_guide::proto::RequestContext request_context_;
 
   // A reference to the PrefService for this profile. Not owned.
-  raw_ptr<PrefService> pref_service_ = nullptr;
+  PrefService* pref_service_ = nullptr;
 
   // Listens to changes around the network connection. Not owned. Guaranteed to
   // outlive |this|.
-  raw_ptr<network::NetworkConnectionTracker> network_connection_tracker_;
+  network::NetworkConnectionTracker* network_connection_tracker_;
 
   // Holds the hosts being requested by the hints fetcher.
   std::vector<std::string> hosts_fetched_;
 
   // Clock used for recording time that the hints fetch occurred.
-  raw_ptr<const base::Clock> time_clock_;
+  const base::Clock* time_clock_;
 
   // Used for creating an |active_url_loader_| when needed for request hints.
   scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory_;

@@ -14,7 +14,6 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/test/scoped_feature_list.h"
 #include "base/test/test_timeouts.h"
-#include "base/threading/platform_thread.h"
 #include "base/values.h"
 #include "build/build_config.h"
 #include "build/chromeos_buildflags.h"
@@ -944,7 +943,7 @@ TEST_F(TranslatePrefsTest, MigrateNeverPromptSites) {
                 .size(),
             2u);
   // Also put one of those sites on the new pref but migrated incorrectly.
-  DictionaryPrefUpdateDeprecated never_prompt_list_update(
+  DictionaryPrefUpdate never_prompt_list_update(
       &prefs_, TranslatePrefs::kPrefNeverPromptSitesWithTime);
   base::Value* never_prompt_list = never_prompt_list_update.Get();
   never_prompt_list->SetKey("migratedWrong.com", base::Value(0));

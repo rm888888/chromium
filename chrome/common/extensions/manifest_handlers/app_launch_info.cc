@@ -8,6 +8,7 @@
 
 #include "base/command_line.h"
 #include "base/lazy_instance.h"
+#include "base/macros.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
 #include "chrome/common/chrome_switches.h"
@@ -32,7 +33,8 @@ bool ReadLaunchDimension(const extensions::Manifest* manifest,
                          int* target,
                          bool is_valid_container,
                          std::u16string* error) {
-  if (const base::Value* temp = manifest->FindPath(key)) {
+  const base::Value* temp = nullptr;
+  if (manifest->Get(key, &temp)) {
     if (!is_valid_container) {
       *error = ErrorUtils::FormatErrorMessageUTF16(
           errors::kInvalidLaunchValueContainer,
@@ -49,6 +51,24 @@ bool ReadLaunchDimension(const extensions::Manifest* manifest,
     *target = temp->GetInt();
   }
   return true;
+}
+
+bool HasValidComponentBookmarkAppURL(const GURL& url) {
+  // For component Bookmark Apps we additionally accept chrome:// and
+  // chrome-untrusted://.
+  //
+  // Making chrome-untrusted:// work with URLPattern has many side-effects e.g.
+  // it makes chrome-untrusted:// URLs scriptable. Given that
+  // chrome-untrusted:// support is only needed temporarily until Bookmark Apps
+  // are deprecated, we simply check the parsed URL scheme, rather than adding
+  // chrome-untrusted:// to URLPattern and dealing with all the side-effects.
+  if (url.SchemeIs(content::kChromeUIScheme))
+    return true;
+  if (url.SchemeIs(content::kChromeUIUntrustedScheme))
+    return true;
+
+  URLPattern pattern(Extension::kValidBookmarkAppSchemes);
+  return pattern.IsValidScheme(url.scheme());
 }
 
 static base::LazyInstance<AppLaunchInfo>::DestructorAtExit
@@ -114,17 +134,18 @@ bool AppLaunchInfo::Parse(Extension* extension, std::u16string* error) {
 }
 
 bool AppLaunchInfo::LoadLaunchURL(Extension* extension, std::u16string* error) {
+  const base::Value* temp = NULL;
+
   // Launch URL can be either local (to chrome-extension:// root) or an absolute
   // web URL.
-  if (const base::Value* temp =
-          extension->manifest()->FindPath(keys::kLaunchLocalPath)) {
-    if (extension->manifest()->FindPath(keys::kLaunchWebURL)) {
-      *error = errors::kLaunchPathAndURLAreExclusive;
+  if (extension->manifest()->Get(keys::kLaunchLocalPath, &temp)) {
+    if (extension->manifest()->Get(keys::kLaunchWebURL, NULL)) {
+      *error = base::ASCIIToUTF16(errors::kLaunchPathAndURLAreExclusive);
       return false;
     }
 
-    if (extension->manifest()->FindPath(keys::kWebURLs)) {
-      *error = errors::kLaunchPathAndExtentAreExclusive;
+    if (extension->manifest()->Get(keys::kWebURLs, NULL)) {
+      *error = base::ASCIIToUTF16(errors::kLaunchPathAndExtentAreExclusive);
       return false;
     }
 
@@ -147,8 +168,7 @@ bool AppLaunchInfo::LoadLaunchURL(Extension* extension, std::u16string* error) {
     }
 
     launch_local_path_ = launch_path;
-  } else if (const base::Value* temp =
-                 extension->manifest()->FindPath(keys::kLaunchWebURL)) {
+  } else if (extension->manifest()->Get(keys::kLaunchWebURL, &temp)) {
     if (!temp->is_string()) {
       *error = ErrorUtils::FormatErrorMessageUTF16(
           errors::kInvalidLaunchValue,
@@ -167,15 +187,32 @@ bool AppLaunchInfo::LoadLaunchURL(Extension* extension, std::u16string* error) {
       return false;
     }
 
-    URLPattern pattern(Extension::kValidWebExtentSchemes);
-    if (!pattern.IsValidScheme(url.scheme())) {
-      set_launch_web_url_error();
-      return false;
+    if (!extension->from_bookmark()) {
+      URLPattern pattern(Extension::kValidWebExtentSchemes);
+      // For non-Bookmark Apps, we only accept kValidWebExtentSchemes.
+      if (!pattern.IsValidScheme(url.scheme())) {
+        set_launch_web_url_error();
+        return false;
+      }
+    } else if (extension->location() !=
+               mojom::ManifestLocation::kExternalComponent) {
+      // For non-component Bookmark Apps we only accept
+      // kValidBookmarkAppSchemes.
+      URLPattern pattern(Extension::kValidBookmarkAppSchemes);
+      if (!pattern.IsValidScheme(url.scheme())) {
+        set_launch_web_url_error();
+        return false;
+      }
+    } else {
+      if (!HasValidComponentBookmarkAppURL(url)) {
+        set_launch_web_url_error();
+        return false;
+      }
     }
 
     launch_web_url_ = url;
   } else if (extension->is_legacy_packaged_app()) {
-    *error = errors::kLaunchURLRequired;
+    *error = base::ASCIIToUTF16(errors::kLaunchURLRequired);
     return false;
   }
 
@@ -186,7 +223,10 @@ bool AppLaunchInfo::LoadLaunchURL(Extension* extension, std::u16string* error) {
   }
 
   // If there is no extent, we default the extent based on the launch URL.
-  if (extension->web_extent().is_empty() && !launch_web_url_.is_empty()) {
+  // Skip this step if the extension is from a bookmark app, as they are
+  // permissionless.
+  if (extension->web_extent().is_empty() && !launch_web_url_.is_empty() &&
+      !extension->from_bookmark()) {
     URLPattern pattern(Extension::kValidWebExtentSchemes);
     if (!pattern.SetScheme("*")) {
       *error = ErrorUtils::FormatErrorMessageUTF16(
@@ -227,13 +267,13 @@ bool AppLaunchInfo::LoadLaunchURL(Extension* extension, std::u16string* error) {
 
 bool AppLaunchInfo::LoadLaunchContainer(Extension* extension,
                                         std::u16string* error) {
-  const base::Value* tmp_launcher_container =
-      extension->manifest()->FindPath(keys::kLaunchContainer);
-  if (tmp_launcher_container == nullptr)
+  const base::Value* tmp_launcher_container = NULL;
+  if (!extension->manifest()->Get(keys::kLaunchContainer,
+                                  &tmp_launcher_container))
     return true;
 
   if (!tmp_launcher_container->is_string()) {
-    *error = errors::kInvalidLaunchContainer;
+    *error = base::ASCIIToUTF16(errors::kInvalidLaunchContainer);
     return false;
   }
   const std::string launch_container_string =
@@ -244,7 +284,7 @@ bool AppLaunchInfo::LoadLaunchContainer(Extension* extension,
   } else if (launch_container_string == values::kLaunchContainerTab) {
     launch_container_ = LaunchContainer::kLaunchContainerTab;
   } else {
-    *error = errors::kInvalidLaunchContainer;
+    *error = base::ASCIIToUTF16(errors::kInvalidLaunchContainer);
     return false;
   }
 

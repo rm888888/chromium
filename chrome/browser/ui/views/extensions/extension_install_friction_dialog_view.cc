@@ -20,6 +20,7 @@
 #include "components/vector_icons/vector_icons.h"
 #include "content/public/browser/page_navigator.h"
 #include "content/public/browser/web_contents.h"
+#include "content/public/browser/web_contents_observer.h"
 #include "content/public/common/referrer.h"
 #include "extensions/browser/extension_dialog_auto_confirm.h"
 #include "extensions/common/constants.h"
@@ -96,11 +97,36 @@ void ReportExtensionInstallFrictionDialogAction(
 
 }  // namespace
 
+class ExtensionInstallFrictionDialogView::WebContentsDestructionObserver
+    : public content::WebContentsObserver {
+ public:
+  WebContentsDestructionObserver(const WebContentsDestructionObserver&) =
+      delete;
+  WebContentsDestructionObserver(WebContentsDestructionObserver&&) = delete;
+
+  explicit WebContentsDestructionObserver(
+      ExtensionInstallFrictionDialogView* parent_view)
+      : content::WebContentsObserver(parent_view->parent_web_contents()),
+        parent_view_(parent_view) {}
+
+  ~WebContentsDestructionObserver() override = default;
+
+  void WebContentsDestroyed() override {
+    parent_view_->parent_web_contents_ = nullptr;
+  }
+
+ private:
+  // Not owned.
+  ExtensionInstallFrictionDialogView* parent_view_;
+};
+
 ExtensionInstallFrictionDialogView::ExtensionInstallFrictionDialogView(
     content::WebContents* web_contents,
     base::OnceCallback<void(bool)> callback)
     : profile_(Profile::FromBrowserContext(web_contents->GetBrowserContext())),
-      parent_web_contents_(web_contents->GetWeakPtr()),
+      parent_web_contents_(web_contents),
+      web_contents_destruction_observer_(
+          std::make_unique<WebContentsDestructionObserver>(this)),
       callback_(std::move(callback)) {
   SetModalType(ui::MODAL_TYPE_WINDOW);
   set_fixed_width(views::LayoutProvider::Get()->GetDistanceMetric(

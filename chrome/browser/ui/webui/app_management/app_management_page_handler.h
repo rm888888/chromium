@@ -5,9 +5,10 @@
 #ifndef CHROME_BROWSER_UI_WEBUI_APP_MANAGEMENT_APP_MANAGEMENT_PAGE_HANDLER_H_
 #define CHROME_BROWSER_UI_WEBUI_APP_MANAGEMENT_APP_MANAGEMENT_PAGE_HANDLER_H_
 
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/scoped_observation.h"
 #include "build/chromeos_buildflags.h"
+#include "chrome/browser/ui/webui/app_management/app_management.mojom-forward.h"
 #include "chrome/browser/ui/webui/app_management/app_management_shelf_delegate_chromeos.h"
 #include "components/services/app_service/public/cpp/app_registry_cache.h"
 #include "components/services/app_service/public/cpp/preferred_apps_list_handle.h"
@@ -15,7 +16,6 @@
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "mojo/public/cpp/bindings/receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
-#include "ui/webui/resources/cr_components/app_management/app_management.mojom-forward.h"
 
 class Profile;
 
@@ -53,8 +53,6 @@ class AppManagementPageHandler
   void GetOverlappingPreferredApps(
       const std::string& app_id,
       GetOverlappingPreferredAppsCallback callback) override;
-  void SetWindowMode(const std::string& app_id,
-                     apps::mojom::WindowMode window_mode) override;
 
  private:
   app_management::mojom::AppPtr CreateUIAppPtr(const apps::AppUpdate& update);
@@ -74,7 +72,7 @@ class AppManagementPageHandler
 
   mojo::Remote<app_management::mojom::Page> page_;
 
-  raw_ptr<Profile> profile_;
+  Profile* profile_;
 
 #if BUILDFLAG(IS_CHROMEOS_ASH)
   AppManagementShelfDelegate shelf_delegate_;

@@ -62,13 +62,14 @@ source_set("scenic") {
     "//third_party/fuchsia-sdk/sdk/pkg/sys_cpp",
     "//ui/base",
     "//ui/base/cursor",
+    "//ui/base/cursor:cursor_base",
     "//ui/base/ime/fuchsia",
     "//ui/display/fake",
     "//ui/events:dom_keycode_converter",
     "//ui/events/ozone/layout",
     "//ui/ozone:ozone_base",
     "//ui/ozone/common",
-    "//ui/ozone/platform/scenic/mojom",
+    "//ui/ozone/public/mojom",
   ]
 
   public_deps = [

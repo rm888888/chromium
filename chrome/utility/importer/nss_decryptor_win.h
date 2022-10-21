@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+#include "base/macros.h"
 #include "base/native_library.h"
 
 // The following declarations of functions and types are from Firefox

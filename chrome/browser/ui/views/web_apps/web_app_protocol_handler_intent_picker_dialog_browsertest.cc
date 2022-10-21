@@ -28,7 +28,7 @@ namespace {
 
 AppId InstallTestWebApp(Profile* profile) {
   const GURL example_url = GURL("http://example.org/");
-  auto app_info = std::make_unique<WebAppInstallInfo>();
+  auto app_info = std::make_unique<WebApplicationInfo>();
   app_info->title = u"Test app";
   app_info->start_url = example_url;
   app_info->scope = example_url;

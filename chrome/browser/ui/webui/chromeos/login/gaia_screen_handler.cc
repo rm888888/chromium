@@ -7,14 +7,8 @@
 #include <memory>
 #include <string>
 
-#include "ash/components/login/auth/challenge_response/cert_utils.h"
-#include "ash/components/login/auth/cryptohome_key_constants.h"
-#include "ash/components/login/auth/saml_password_attributes.h"
-#include "ash/components/login/auth/sync_trusted_vault_keys.h"
-#include "ash/components/login/auth/user_context.h"
 #include "ash/components/security_token_pin/constants.h"
 #include "ash/components/security_token_pin/error_generator.h"
-#include "ash/components/settings/cros_settings_names.h"
 #include "ash/constants/ash_features.h"
 #include "ash/constants/ash_switches.h"
 #include "ash/constants/devicetype.h"
@@ -22,7 +16,6 @@
 #include "base/bind.h"
 #include "base/callback.h"
 #include "base/callback_helpers.h"
-#include "base/containers/contains.h"
 #include "base/containers/flat_set.h"
 #include "base/feature_list.h"
 #include "base/guid.h"
@@ -81,8 +74,14 @@
 #include "chrome/common/pref_names.h"
 #include "chrome/grit/generated_resources.h"
 #include "chrome/installer/util/google_update_settings.h"
-#include "chromeos/components/onc/certificate_scope.h"
 #include "chromeos/dbus/util/version_loader.h"
+#include "chromeos/login/auth/challenge_response/cert_utils.h"
+#include "chromeos/login/auth/cryptohome_key_constants.h"
+#include "chromeos/login/auth/saml_password_attributes.h"
+#include "chromeos/login/auth/sync_trusted_vault_keys.h"
+#include "chromeos/login/auth/user_context.h"
+#include "chromeos/network/onc/certificate_scope.h"
+#include "chromeos/settings/cros_settings_names.h"
 #include "chromeos/strings/grit/chromeos_strings.h"
 #include "components/login/localized_values_builder.h"
 #include "components/policy/proto/chrome_device_policy.pb.h"
@@ -303,25 +302,6 @@ base::Value MakeSecurityTokenPinDialogParameters(
                              attempts_left, true));
   }
   return params;
-}
-
-bool ShouldPrepareForRecovery(const AccountId& account_id) {
-  if (!account_id.is_valid())
-    return false;
-  int reauth_reason;
-  // Cryptohome recovery is probably needed when password is entered incorrectly
-  // for many times or password changed.
-  // TODO(b/197615068): Add metric to record the number of times we prepared for
-  // recovery and the number of times recovery is actually required.
-  static const ash::ReauthReason kPossibleReasons[] = {
-      ash::ReauthReason::INCORRECT_PASSWORD_ENTERED,
-      ash::ReauthReason::INVALID_TOKEN_HANDLE,
-      ash::ReauthReason::SYNC_FAILED,
-      ash::ReauthReason::PASSWORD_UPDATE_SKIPPED,
-  };
-  user_manager::KnownUser known_user(g_browser_process->local_state());
-  return known_user.FindReauthReason(account_id, &reauth_reason) &&
-         base::Contains(kPossibleReasons, reauth_reason);
 }
 
 }  // namespace
@@ -566,9 +546,11 @@ void GaiaScreenHandler::LoadGaiaWithPartitionAndVersionAndConsent(
     }
   }
 
-  if (ash::features::IsCryptohomeRecoveryFlowEnabled() &&
-      !gaia_reauth_request_token_.empty()) {
-    params.SetStringKey("rart", gaia_reauth_request_token_);
+  if (base::CommandLine::ForCurrentProcess()->HasSwitch(
+          switches::kGaiaReauthRequestToken)) {
+    params.SetStringKey(
+        "rart", base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
+                    switches::kGaiaReauthRequestToken));
   }
 
   was_security_token_pin_canceled_ = false;
@@ -1377,19 +1359,7 @@ void GaiaScreenHandler::LoadAuthExtension(bool force) {
         AccountId::FromUserEmail(gaia::CanonicalizeEmail(context.email)));
   }
 
-  if (ash::features::IsCryptohomeRecoveryFlowEnabled() &&
-      ShouldPrepareForRecovery(populated_account_id_)) {
-    auto callback = base::BindOnce(&GaiaScreenHandler::OnGaiaReauthTokenFetched,
-                                   weak_factory_.GetWeakPtr(), context);
-    gaia_reauth_token_fetcher_ =
-        std::make_unique<ash::GaiaReauthTokenFetcher>(std::move(callback));
-    gaia_reauth_token_fetcher_->Fetch();
-    return;
-  }
-
   populated_account_id_.clear();
-  gaia_reauth_token_fetcher_.reset();
-  gaia_reauth_request_token_.clear();
 
   LoadGaia(context);
 }
@@ -1402,14 +1372,6 @@ void GaiaScreenHandler::UpdateState(NetworkError::ErrorReason reason) {
 bool GaiaScreenHandler::IsRestrictiveProxy() const {
   return !disable_restrictive_proxy_check_for_test_ &&
          !IsOnline(captive_portal_status_);
-}
-
-void GaiaScreenHandler::OnGaiaReauthTokenFetched(
-    const login::GaiaContext& context,
-    const std::string& token) {
-  gaia_reauth_request_token_ = token;
-  gaia_reauth_token_fetcher_.reset();
-  LoadGaia(context);
 }
 
 }  // namespace chromeos

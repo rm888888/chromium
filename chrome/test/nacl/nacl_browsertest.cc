@@ -45,6 +45,14 @@ NACL_BROWSER_TEST_F(NaClBrowserTest, SimpleLoad, {
   RunLoadTest(FILE_PATH_LITERAL("nacl_load_test.html"));
 })
 
+IN_PROC_BROWSER_TEST_F(NaClBrowserTestNonSfiMode, MAYBE_NONSFI(Messaging)) {
+  RunLoadTest(FILE_PATH_LITERAL("libc_free.html"));
+}
+
+IN_PROC_BROWSER_TEST_F(NaClBrowserTestNonSfiMode, MAYBE_NONSFI(Irt)) {
+  RunNaClIntegrationTest(FILE_PATH_LITERAL("irt_test.html"));
+}
+
 NACL_BROWSER_TEST_F(NaClBrowserTest, ExitStatus0, {
   RunNaClIntegrationTest(FILE_PATH_LITERAL(
       "pm_exit_status_test.html?trigger=exit0&expected_exit=0"));
@@ -174,6 +182,15 @@ NACL_BROWSER_TEST_F(NaClBrowserTest, MAYBE_CrashPPAPIOffMainThread, {
 IN_PROC_BROWSER_TEST_F(NaClBrowserTestNewlib, IrtManifestFile) {
   RunNaClIntegrationTest(FILE_PATH_LITERAL("irt_manifest_file_test.html"));
 }
+#if defined(OS_LINUX) || defined(OS_CHROMEOS)
+// http://crbug.com/579804
+#define MAYBE_IrtManifestFile DISABLED_IrtManifestFile
+#else
+#define MAYBE_IrtManifestFile MAYBE_PNACL_NONSFI(IrtManifestFile)
+#endif
+IN_PROC_BROWSER_TEST_F(NaClBrowserTestPnaclNonSfi, MAYBE_IrtManifestFile) {
+  RunNaClIntegrationTest(FILE_PATH_LITERAL("irt_manifest_file_test.html"));
+}
 
 #if defined(OS_WIN)
 // http://crbug.com/416272
@@ -182,6 +199,15 @@ IN_PROC_BROWSER_TEST_F(NaClBrowserTestNewlib, IrtManifestFile) {
 #define MAYBE_IrtException IrtException
 #endif
 IN_PROC_BROWSER_TEST_F(NaClBrowserTestNewlib, MAYBE_IrtException) {
+  RunNaClIntegrationTest(FILE_PATH_LITERAL("irt_exception_test.html"));
+}
+#if defined(OS_LINUX) || defined(OS_CHROMEOS)
+// http://crbug.com/579804
+#define MAYBE_IrtException2 DISABLED_IrtException
+#else
+#define MAYBE_IrtException2 MAYBE_PNACL_NONSFI(IrtException)
+#endif
+IN_PROC_BROWSER_TEST_F(NaClBrowserTestPnaclNonSfi, MAYBE_IrtException2) {
   RunNaClIntegrationTest(FILE_PATH_LITERAL("irt_exception_test.html"));
 }
 

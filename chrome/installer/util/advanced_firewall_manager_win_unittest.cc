@@ -7,6 +7,7 @@
 #include <stddef.h>
 
 #include "base/logging.h"
+#include "base/macros.h"
 #include "base/path_service.h"
 #include "base/process/process_info.h"
 #include "base/win/scoped_bstr.h"

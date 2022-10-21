@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+#include "base/macros.h"
 #include "components/download/public/common/download_create_info.h"
 #include "components/download/public/common/download_file.h"
 #include "components/download/public/common/download_item_impl.h"

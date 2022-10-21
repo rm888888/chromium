@@ -5,6 +5,7 @@
 #ifndef CHROME_BROWSER_UI_WEBUI_THEME_HANDLER_H_
 #define CHROME_BROWSER_UI_WEBUI_THEME_HANDLER_H_
 
+#include "base/macros.h"
 #include "base/scoped_observation.h"
 #include "chrome/browser/themes/theme_service_observer.h"
 #include "content/public/browser/web_ui_message_handler.h"

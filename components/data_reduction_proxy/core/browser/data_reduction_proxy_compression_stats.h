@@ -13,7 +13,7 @@
 #include <string>
 #include <unordered_map>
 
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/memory/ref_counted.h"
 #include "base/memory/weak_ptr.h"
 #include "base/threading/thread_checker.h"
@@ -28,6 +28,7 @@
 class PrefService;
 
 namespace base {
+class ListValue;
 class Value;
 }
 
@@ -168,7 +169,7 @@ class DataReductionProxyCompressionStats {
   friend class DataReductionProxyCompressionStatsTest;
 
   typedef std::map<const char*, int64_t> DataReductionProxyPrefMap;
-  typedef std::unordered_map<const char*, base::Value>
+  typedef std::unordered_map<const char*, std::unique_ptr<base::ListValue>>
       DataReductionProxyListPrefMap;
 
   class DailyContentLengthUpdate;
@@ -200,7 +201,7 @@ class DataReductionProxyCompressionStats {
   void IncreaseInt64Pref(const char* pref_path, int64_t delta);
 
   // Gets the pref list at |pref_path| from the |DataReductionProxyPrefMap|.
-  base::Value* GetList(const char* pref_path);
+  base::ListValue* GetList(const char* pref_path);
 
   // Writes the prefs stored in |DataReductionProxyPrefMap| and
   // |DataReductionProxyListPrefMap| to |pref_service|.
@@ -271,8 +272,8 @@ class DataReductionProxyCompressionStats {
   // Example: "http://www.finance.google.com" -> "www.finance.google.com"
   static std::string NormalizeHostname(const std::string& host);
 
-  raw_ptr<DataReductionProxyService> service_;
-  raw_ptr<PrefService> pref_service_;
+  DataReductionProxyService* service_;
+  PrefService* pref_service_;
   const base::TimeDelta delay_;
   DataReductionProxyPrefMap pref_map_;
   DataReductionProxyListPrefMap list_pref_map_;

@@ -29,11 +29,9 @@
 #include "ui/gfx/geometry/rect.h"
 #include "ui/ozone/platform/wayland/host/wayland_buffer_manager_host.h"
 #include "ui/ozone/platform/wayland/host/wayland_connection.h"
-#include "ui/ozone/platform/wayland/host/wayland_event_source.h"
 #include "ui/ozone/platform/wayland/host/wayland_output_manager.h"
 #include "ui/ozone/platform/wayland/host/wayland_window.h"
 #include "ui/ozone/platform/wayland/test/test_wayland_server_thread.h"
-#include "ui/ozone/platform/wayland/test/test_zwp_linux_buffer_params.h"
 #include "ui/platform_window/platform_window_delegate.h"
 #include "ui/platform_window/platform_window_init_properties.h"
 
@@ -94,25 +92,6 @@ struct Environment {
   bool terminated = false;
 };
 
-// Given the server runs on a different thread, but some of its parameters shall
-// be accessed from the thread where the buffer fuzzer runs, we need to resume
-// and pause the server to avoid race conditions.
-void SyncServer(wl::TestWaylandServerThread* server,
-                base::test::TaskEnvironment* task_env) {
-  DCHECK(server);
-  DCHECK(task_env);
-
-  // Resume the server, flushing its pending events.
-  server->Resume();
-
-  // Wait for the client to finish processing these events.
-  task_env->RunUntilIdle();
-
-  // Pause the server, after it has finished processing any follow-up requests
-  // from the client.
-  server->Pause();
-}
-
 }  // namespace
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
@@ -141,15 +120,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
       std::make_unique<ui::WaylandConnection>();
   CHECK(connection->Initialize());
 
-  // See |use_dedicated_polling_thread| in WaylandEventWatcher.
-  connection->event_source()->UseSingleThreadedPollingForTesting();
-
-  // Wait until everything is initialised.
-  env.task_environment.RunUntilIdle();
-
-  // Pause the server after it has responded to all incoming events.
-  server.Pause();
-
   auto screen = connection->wayland_output_manager()->CreateWaylandScreen();
   connection->wayland_output_manager()->InitWaylandScreen(screen.get());
 
@@ -166,8 +136,8 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
 
   CHECK_NE(widget, gfx::kNullAcceleratedWidget);
 
-  // Let the server process the events and wait until everything is initialised.
-  SyncServer(&server, &env.task_environment);
+  // Wait until everything is initialised.
+  env.task_environment.RunUntilIdle();
 
   base::FilePath temp_dir, temp_path;
   base::ScopedFD fd =
@@ -207,28 +177,19 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
       modifiers, kFormat, kPlaneCount, kBufferId);
 
   // Wait until the buffers are created.
-  SyncServer(&server, &env.task_environment);
+  env.task_environment.RunUntilIdle();
 
-  if (!env.terminated) {
-    // The server must notify the buffers are created so that the client is able
-    // to free the resources (destroy the params).
-    auto params_vector = server.zwp_linux_dmabuf_v1()->buffer_params();
-    // To ensure, no other buffers are created, test the size of the vector.
-    for (auto* mock_params : params_vector) {
-      zwp_linux_buffer_params_v1_send_created(mock_params->resource(),
-                                              mock_params->buffer_resource());
-    }
-    SyncServer(&server, &env.task_environment);
-  } else {
-    // If the |manager_host| fires the terminate gpu callback, we need to set
-    // the callback again.
+  // If the |manager_host| fires the terminate gpu callback, we need to set the
+  // callback again.
+  if (env.terminated)
     env.SetTerminateGpuCallback(manager_host);
-  }
 
   manager_host->DestroyBuffer(widget, kBufferId);
-
   // Wait until the buffers are destroyed.
-  SyncServer(&server, &env.task_environment);
+  env.task_environment.RunUntilIdle();
+
+  // Pause the server so it is not running when mock expectations are validated.
+  server.Pause();
 
   // Reset the value as |env| is a static object.
   env.terminated = false;

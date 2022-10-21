@@ -20,6 +20,8 @@ async function test() {
   // There may be a number of inherent races between the page and the DevTools
   // during the navigation. Let's do a number of eval in a hope of catching some
   // of them.
+  const evalCount = 1000;
+  let callbackCount = 0;
   const evaluateCallback = (result, exception) => {
     if (!exception || !exception.isError) {
       output(`FAIL: ${result || exception.value}`);
@@ -29,16 +31,10 @@ async function test() {
       output(`FAIL: ${exception.code}`);
       return;
     }
-    output('PASS');
+    if (++callbackCount === evalCount)
+      output('PASS');
   };
-  for (let i = 0; i < 10; i++) {
-    let increasingTimeout = 10;
-    for (let j = 0; j < i; j++) {
-      increasingTimeout *= 2;
-    }
-    await new Promise(resolve => {
-      setTimeout(resolve, increasingTimeout);
-    });
+  for (let i = 0; i < evalCount; ++i) {
     chrome.devtools.inspectedWindow.eval('location.href', {}, evaluateCallback);
   }
 }

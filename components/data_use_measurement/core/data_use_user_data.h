@@ -5,6 +5,7 @@
 #ifndef COMPONENTS_DATA_USE_MEASUREMENT_CORE_DATA_USE_USER_DATA_H_
 #define COMPONENTS_DATA_USE_MEASUREMENT_CORE_DATA_USE_USER_DATA_H_
 
+#include "base/macros.h"
 #include "base/supports_user_data.h"
 
 namespace data_use_measurement {

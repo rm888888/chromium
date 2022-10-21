@@ -92,7 +92,8 @@ std::unique_ptr<base::DictionaryValue> SegregatedPrefStore::GetValues() const {
   auto values = default_pref_store_->GetValues();
   auto selected_pref_store_values = selected_pref_store_->GetValues();
   for (const auto& key : selected_preference_names_) {
-    if (const base::Value* value = selected_pref_store_values->FindPath(key)) {
+    const base::Value* value = nullptr;
+    if (selected_pref_store_values->Get(key, &value)) {
       values->SetPath(key, value->Clone());
     } else {
       values->RemoveKey(key);

@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "base/lazy_instance.h"
+#include "base/macros.h"
 #include "base/observer_list.h"
 #include "components/sessions/core/session_id.h"
 

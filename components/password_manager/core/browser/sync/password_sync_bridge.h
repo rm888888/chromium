@@ -6,7 +6,7 @@
 #define COMPONENTS_PASSWORD_MANAGER_CORE_BROWSER_SYNC_PASSWORD_SYNC_BRIDGE_H_
 
 #include "base/callback_forward.h"
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/sequence_checker.h"
 #include "components/password_manager/core/browser/password_store_change.h"
 #include "components/password_manager/core/browser/password_store_sync.h"
@@ -68,18 +68,18 @@ class PasswordSyncBridge : public syncer::ModelTypeSyncBridge {
       const sync_pb::PasswordSpecificsData& password_data);
 
  private:
-  // On MacOS or Linux it may happen that some passwords cannot be decrypted due
-  // to modification of encryption key in Keychain or Keyring
-  // (https://crbug.com/730625). This method deletes those logins from the
-  // store. So during merge, the data in sync will be added to the password
-  // store. This should be called during MergeSyncData().
+  // On MacOS it may happen that some passwords cannot be decrypted due to
+  // modification of encryption key in Keychain (https://crbug.com/730625). This
+  // method deletes those logins from the store. So during merge, the data in
+  // sync will be added to the password store. This should be called during
+  // MergeSyncData().
   absl::optional<syncer::ModelError> CleanupPasswordStore();
 
   // Retrieves the storage keys of all unsynced passwords in the store.
   std::set<FormPrimaryKey> GetUnsyncedPasswordsStorageKeys();
 
   // Password store responsible for persistence.
-  const raw_ptr<PasswordStoreSync> password_store_sync_;
+  PasswordStoreSync* const password_store_sync_;
 
   base::RepeatingClosure sync_enabled_or_disabled_cb_;
 

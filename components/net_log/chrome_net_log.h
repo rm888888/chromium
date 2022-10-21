@@ -9,6 +9,7 @@
 #include <string>
 
 #include "base/command_line.h"
+#include "base/macros.h"
 
 namespace base {
 class DictionaryValue;

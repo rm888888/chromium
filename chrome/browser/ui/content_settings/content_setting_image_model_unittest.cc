@@ -6,7 +6,7 @@
 
 #include "base/bind.h"
 #include "base/command_line.h"
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/run_loop.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/test/scoped_feature_list.h"
@@ -119,7 +119,8 @@ class ContentSettingImageModelTest : public BrowserWithTestWindowTest {
   }
 
   void WaitForBubbleToBeShown() {
-    manager_->DocumentOnLoadCompletedInPrimaryMainFrame();
+    manager_->DocumentOnLoadCompletedInMainFrame(
+        web_contents()->GetMainFrame());
     base::RunLoop().RunUntilIdle();
   }
 
@@ -144,8 +145,8 @@ class ContentSettingImageModelTest : public BrowserWithTestWindowTest {
 
  protected:
   permissions::MockPermissionRequest request_;
-  raw_ptr<permissions::PermissionRequestManager> manager_ = nullptr;
-  raw_ptr<content::NavigationController> controller_ = nullptr;
+  permissions::PermissionRequestManager* manager_ = nullptr;
+  content::NavigationController* controller_ = nullptr;
 };
 
 TEST_F(ContentSettingImageModelTest, Update) {
@@ -325,23 +326,20 @@ TEST_F(ContentSettingImageModelTest, GeolocationAccessPermissionsChanged) {
   content_settings->OnContentAllowed(ContentSettingsType::GEOLOCATION);
   UpdateModelAndVerifyStates(
       content_setting_image_model.get(), /* is_visible = */ true,
-      /* tooltip_empty = */ false, IDS_ALLOWED_GEOLOCATION_MESSAGE,
-      IDS_ALLOWED_GEOLOCATION_MESSAGE);
+      /* tooltip_empty = */ false, IDS_ALLOWED_GEOLOCATION_MESSAGE, 0);
 
   settings_map->SetDefaultContentSetting(ContentSettingsType::GEOLOCATION,
                                          CONTENT_SETTING_BLOCK);
   content_settings->OnContentBlocked(ContentSettingsType::GEOLOCATION);
   UpdateModelAndVerifyStates(
       content_setting_image_model.get(), /* is_visible = */ true,
-      /* tooltip_empty = */ false, IDS_BLOCKED_GEOLOCATION_MESSAGE,
-      IDS_BLOCKED_GEOLOCATION_MESSAGE);
+      /* tooltip_empty = */ false, IDS_BLOCKED_GEOLOCATION_MESSAGE, 0);
 
   geolocation_manager->SetSystemPermission(
       device::LocationSystemPermissionStatus::kDenied);
   UpdateModelAndVerifyStates(
       content_setting_image_model.get(), /* is_visible = */ true,
-      /* tooltip_empty = */ false, IDS_BLOCKED_GEOLOCATION_MESSAGE,
-      IDS_BLOCKED_GEOLOCATION_MESSAGE);
+      /* tooltip_empty = */ false, IDS_BLOCKED_GEOLOCATION_MESSAGE, 0);
 
   content_settings->OnContentAllowed(ContentSettingsType::GEOLOCATION);
   UpdateModelAndVerifyStates(
@@ -394,8 +392,7 @@ TEST_F(ContentSettingImageModelTest, GeolocationAccessPermissionsUndetermined) {
   content_settings->OnContentBlocked(ContentSettingsType::GEOLOCATION);
   UpdateModelAndVerifyStates(
       content_setting_image_model.get(), /* is_visible = */ true,
-      /* tooltip_empty = */ false, IDS_BLOCKED_GEOLOCATION_MESSAGE,
-      IDS_BLOCKED_GEOLOCATION_MESSAGE);
+      /* tooltip_empty = */ false, IDS_BLOCKED_GEOLOCATION_MESSAGE, 0);
 }
 
 TEST_F(ContentSettingImageModelTest, GeolocationAccessDeniedExperiment) {
@@ -554,9 +551,8 @@ TEST_F(ContentSettingImageModelTest, SensorAccessPermissionsChanged) {
     settings_map->SetDefaultContentSetting(ContentSettingsType::SENSORS,
                                            CONTENT_SETTING_BLOCK);
     settings_map->SetContentSettingDefaultScope(
-        web_contents()->GetLastCommittedURL(),
-        web_contents()->GetLastCommittedURL(), ContentSettingsType::SENSORS,
-        CONTENT_SETTING_ALLOW);
+        web_contents()->GetURL(), web_contents()->GetURL(),
+        ContentSettingsType::SENSORS, CONTENT_SETTING_ALLOW);
     content_settings->OnContentAllowed(ContentSettingsType::SENSORS);
 
     UpdateModelAndVerifyStates(
@@ -575,9 +571,8 @@ TEST_F(ContentSettingImageModelTest, SensorAccessPermissionsChanged) {
     settings_map->SetDefaultContentSetting(ContentSettingsType::SENSORS,
                                            CONTENT_SETTING_ALLOW);
     settings_map->SetContentSettingDefaultScope(
-        web_contents()->GetLastCommittedURL(),
-        web_contents()->GetLastCommittedURL(), ContentSettingsType::SENSORS,
-        CONTENT_SETTING_BLOCK);
+        web_contents()->GetURL(), web_contents()->GetURL(),
+        ContentSettingsType::SENSORS, CONTENT_SETTING_BLOCK);
     content_settings->OnContentBlocked(ContentSettingsType::SENSORS);
 
     UpdateModelAndVerifyStates(

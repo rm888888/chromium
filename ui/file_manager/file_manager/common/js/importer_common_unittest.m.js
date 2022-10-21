@@ -120,6 +120,28 @@ export function testGetMachineId_Persisted(callback) {
   reportPromise(promise, callback);
 }
 
+export function testPhotosApp_DefaultDisabled(callback) {
+  const promise = importer.isPhotosAppImportEnabled().then(assertFalse);
+
+  reportPromise(promise, callback);
+}
+
+export function testPhotosApp_ImportEnabled(callback) {
+  const promise = importer.handlePhotosAppMessage(true).then(() => {
+    return importer.isPhotosAppImportEnabled().then(assertTrue);
+  });
+
+  reportPromise(promise, callback);
+}
+
+export function testPhotosApp_ImportDisabled(callback) {
+  const promise = importer.handlePhotosAppMessage(false).then(() => {
+    return importer.isPhotosAppImportEnabled().then(assertFalse);
+  });
+
+  reportPromise(promise, callback);
+}
+
 export function testHistoryFilename(callback) {
   const promise = importer.getHistoryFilename().then(firstName => {
     assertTrue(!!firstName && firstName.length > 10);
@@ -224,13 +246,12 @@ export function testDeflateAppUrl() {
       'Deflated then inflated URLs must match original URL.');
 }
 
-export async function testHasMediaDirectory(done) {
+export function testHasMediaDirectory(callback) {
   const dir = createDirectoryEntry(sdVolume, '/DCIM');
-  const mediaDir = await importer.getMediaDirectory(sdVolume.fileSystem.root);
+  const promise = importer.hasMediaDirectory(sdVolume.fileSystem.root)
+                      .then(assertTrue.bind(null));
 
-  assertTrue(!!mediaDir);
-
-  done();
+  reportPromise(promise, callback);
 }
 
 /** @param {string} path */

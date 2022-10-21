@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include "base/macros.h"
 #include "chrome/browser/ui/views/frame/browser_view.h"
 #include "chrome/browser/ui/views/frame/toolbar_button_provider.h"
 #include "chrome/browser/ui/web_applications/web_app_controller_browsertest.h"
@@ -20,7 +21,7 @@ class WebAppMinimalUITest : public WebAppControllerBrowserTest {
   WebAppMinimalUITest& operator=(const WebAppMinimalUITest&) = delete;
 
   BrowserView* CreateBrowserView(blink::mojom::DisplayMode display_mode) {
-    auto web_app_info = std::make_unique<WebAppInstallInfo>();
+    auto web_app_info = std::make_unique<WebApplicationInfo>();
     web_app_info->start_url = GURL("https://example.org");
     web_app_info->display_mode = display_mode;
     web_app_info->user_display_mode = blink::mojom::DisplayMode::kStandalone;

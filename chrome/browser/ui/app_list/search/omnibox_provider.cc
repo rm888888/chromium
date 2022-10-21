@@ -14,7 +14,6 @@
 #include "chrome/browser/profiles/profile.h"
 #include "chrome/browser/search_engines/template_url_service_factory.h"
 #include "chrome/browser/ui/app_list/app_list_controller_delegate.h"
-#include "chrome/browser/ui/app_list/search/omnibox_answer_result.h"
 #include "chrome/browser/ui/app_list/search/omnibox_result.h"
 #include "chrome/browser/ui/app_list/search/ranking/util.h"
 #include "components/favicon/core/favicon_service.h"
@@ -31,12 +30,6 @@ bool IsDriveUrl(const GURL& url) {
   // Returns true if the |url| points to a Drive Web host.
   const std::string& host = url.host();
   return host == "drive.google.com" || host == "docs.google.com";
-}
-
-// Returns true if the match is an answer, including calculator answers.
-bool IsAnswer(const AutocompleteMatch& match) {
-  return match.answer.has_value() ||
-         match.type == AutocompleteMatchType::CALCULATOR;
 }
 
 int ProviderTypes() {
@@ -63,13 +56,23 @@ OmniboxProvider::OmniboxProvider(Profile* profile,
                          profile,
                          ServiceAccessType::EXPLICIT_ACCESS)) {
   controller_->AddObserver(this);
+
+  // Normalize scores if the launcher search normalization experiment is
+  // enabled, but don't if the categorical search experiment is also enabled.
+  // This is because categorical search normalizes scores from all providers
+  // during ranking, and we don't want to do it twice.
+  if (base::FeatureList::IsEnabled(
+          app_list_features::kEnableLauncherSearchNormalization) &&
+      !app_list_features::IsCategoricalSearchEnabled()) {
+    auto path =
+        RankerStateDirectory(profile).AppendASCII("score_norm_omnibox.pb");
+    normalizer_.emplace(path, ScoreNormalizer::Params());
+  }
 }
 
 OmniboxProvider::~OmniboxProvider() {}
 
 void OmniboxProvider::Start(const std::u16string& query) {
-  ClearResultsSilently();
-
   controller_->Stop(false);
   // The new page classification value(CHROMEOS_APP_LIST) is introduced
   // to differentiate the suggest requests initiated by ChromeOS app_list from
@@ -91,13 +94,7 @@ void OmniboxProvider::Start(const std::u16string& query) {
   controller_->Start(input);
 }
 
-void OmniboxProvider::StartZeroState() {
-  // TODO(crbug.com/1258415): Remove zero-state once productivity launcher
-  // launched.
-  Start(std::u16string());
-}
-
-ash::AppListSearchResultType OmniboxProvider::ResultType() const {
+ash::AppListSearchResultType OmniboxProvider::ResultType() {
   return ash::AppListSearchResultType::kOmnibox;
 }
 
@@ -118,15 +115,15 @@ void OmniboxProvider::PopulateFromACResult(const AutocompleteResult& result) {
       continue;
     }
 
-    std::unique_ptr<ChromeSearchResult> result;
-    if (!is_zero_state_input_ && IsAnswer(match)) {
-      result = std::make_unique<OmniboxAnswerResult>(profile_, list_controller_,
-                                                     controller_.get(), match);
-    } else {
-      result = std::make_unique<OmniboxResult>(
-          profile_, list_controller_, controller_.get(), &favicon_cache_, match,
-          is_zero_state_input_);
+    auto result = std::make_unique<OmniboxResult>(
+        profile_, list_controller_, controller_.get(), &favicon_cache_, match,
+        is_zero_state_input_);
+
+    if (normalizer_.has_value()) {
+      result->set_relevance(
+          normalizer_->UpdateAndNormalize("results", result->relevance()));
     }
+
     new_results.emplace_back(std::move(result));
   }
 

@@ -42,10 +42,6 @@ InlineLoginHandler::InlineLoginHandler() = default;
 
 InlineLoginHandler::~InlineLoginHandler() = default;
 
-InlineLoginHandler::CompleteLoginParams::CompleteLoginParams() = default;
-
-InlineLoginHandler::CompleteLoginParams::~CompleteLoginParams() = default;
-
 void InlineLoginHandler::RegisterMessages() {
   web_ui()->RegisterDeprecatedMessageCallback(
       "initialize",
@@ -78,7 +74,7 @@ void InlineLoginHandler::HandleInitializeMessage(const base::ListValue* args) {
   content::StoragePartition* partition =
       signin::GetSigninPartition(contents->GetBrowserContext());
   if (partition) {
-    const GURL& current_url = web_ui()->GetWebContents()->GetLastCommittedURL();
+    const GURL& current_url = web_ui()->GetWebContents()->GetURL();
 
     // If the kSignInPromoQueryKeyForceKeepData param is missing, or if it is
     // present and its value is zero, this means we don't want to keep the
@@ -109,7 +105,7 @@ void InlineLoginHandler::ContinueHandleInitializeMessage() {
   params.SetString("gaiaUrl", gaiaUrls->gaia_url().spec());
   params.SetInteger("authMode", InlineLoginHandler::kDesktopAuthMode);
 
-  const GURL& current_url = web_ui()->GetWebContents()->GetLastCommittedURL();
+  const GURL& current_url = web_ui()->GetWebContents()->GetURL();
   signin_metrics::AccessPoint access_point =
       signin::GetAccessPointForEmbeddedPromoURL(current_url);
   signin_metrics::Reason reason =
@@ -166,7 +162,7 @@ void InlineLoginHandler::HandleCompleteLoginMessage(
   partition->GetCookieManagerForBrowserProcess()->GetCookieList(
       GaiaUrls::GetInstance()->gaia_url(),
       net::CookieOptions::MakeAllInclusive(),
-      net::CookiePartitionKeyCollection::Todo(),
+      net::CookiePartitionKeychain::Todo(),
       base::BindOnce(&InlineLoginHandler::HandleCompleteLoginMessageWithCookies,
                      weak_ptr_factory_.GetWeakPtr(),
                      base::ListValue(args->GetList())));
@@ -178,25 +174,32 @@ void InlineLoginHandler::HandleCompleteLoginMessageWithCookies(
     const net::CookieAccessResultList& excluded_cookies) {
   const base::Value& dict = args.GetList()[0];
 
-  CompleteLoginParams params;
-  params.email = dict.FindKey("email")->GetString();
-  params.password = dict.FindKey("password")->GetString();
-  params.gaia_id = dict.FindKey("gaiaId")->GetString();
+  const std::string& email = dict.FindKey("email")->GetString();
+  const std::string& password = dict.FindKey("password")->GetString();
+  const std::string& gaia_id = dict.FindKey("gaiaId")->GetString();
 
+  std::string auth_code;
   for (const auto& cookie_with_access_result : cookies) {
     if (cookie_with_access_result.cookie.Name() == "oauth_code")
-      params.auth_code = cookie_with_access_result.cookie.Value();
+      auth_code = cookie_with_access_result.cookie.Value();
   }
 
-  params.skip_for_now = dict.FindBoolKey("skipForNow").value_or(false);
+  bool skip_for_now = dict.FindBoolKey("skipForNow").value_or(false);
   absl::optional<bool> trusted = dict.FindBoolKey("trusted");
-  params.trusted_value = trusted.value_or(false);
-  params.trusted_found = trusted.has_value();
+  bool trusted_value = trusted.value_or(false);
+  bool trusted_found = trusted.has_value();
 
-  params.choose_what_to_sync =
+  bool choose_what_to_sync =
       dict.FindBoolKey("chooseWhatToSync").value_or(false);
 
-  CompleteLogin(params);
+  base::Value edu_login_params;
+  if (args.GetList().size() > 1) {
+    edu_login_params = args.GetList()[1].Clone();
+  }
+
+  CompleteLogin(email, password, gaia_id, auth_code, skip_for_now,
+                trusted_value, trusted_found, choose_what_to_sync,
+                std::move(edu_login_params));
 }
 
 void InlineLoginHandler::HandleSwitchToFullTabMessage(
@@ -208,12 +211,11 @@ void InlineLoginHandler::HandleSwitchToFullTabMessage(
     return;
   }
 
-  // Note: URL string is expected to be in the first argument,
-  // but it is not used.
-  CHECK(args->GetList()[0].is_string());
+  std::string url_str;
+  CHECK(args->GetString(0, &url_str));
 
   Profile* profile = Profile::FromWebUI(web_ui());
-  GURL main_frame_url(web_ui()->GetWebContents()->GetLastCommittedURL());
+  GURL main_frame_url(web_ui()->GetWebContents()->GetURL());
 
   // Adds extra parameters to the signin URL so that Chrome will close the tab
   // and show the account management view of the avatar menu upon completion.

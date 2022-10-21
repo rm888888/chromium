@@ -80,9 +80,6 @@ class SESSIONS_EXPORT TabRestoreService : public KeyedService {
     // creation.
     base::Time timestamp;
 
-    // Used for storing arbitrary key/value pairs.
-    std::map<std::string, std::string> extra_data;
-
     // Estimates memory usage. By default returns 0.
     virtual size_t EstimateMemoryUsage() const;
 

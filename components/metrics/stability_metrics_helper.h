@@ -7,13 +7,8 @@
 
 #include <string>
 
-#include "base/memory/raw_ptr.h"
+#include "base/macros.h"
 #include "base/process/kill.h"
-#include "build/build_config.h"
-
-#if defined(OS_WIN)
-#include "base/win/windows_types.h"
-#endif
 
 class PrefRegistrySimple;
 class PrefService;
@@ -32,15 +27,13 @@ enum class StabilityEventType {
   kChildProcessCrash = 6,
   kLaunch = 15,
   kBrowserCrash = 16,
-  // kIncompleteShutdown = 17,  // Removed due to disuse and correctness issues.
-  kPluginCrash = 22,
+  kIncompleteShutdown = 17,
   kRendererFailedLaunch = 24,
   kExtensionRendererFailedLaunch = 25,
   kRendererLaunch = 26,
   kExtensionRendererLaunch = 27,
   kGpuCrash = 31,
-  kUtilityCrash = 32,
-  kMaxValue = kUtilityCrash
+  kMaxValue = kGpuCrash
 };
 
 class SystemProfileProto;
@@ -68,17 +61,6 @@ class StabilityMetricsHelper {
   // Records a utility process crash with name |metrics_name|.
   void BrowserUtilityProcessCrashed(const std::string& metrics_name,
                                     int exit_code);
-
-  // Records that a utility process with name |metrics_name| failed to launch.
-  // The |launch_error_code| is a platform-specific error code. On Windows, a
-  // |last_error| is also supplied to help diagnose the launch failure.
-  void BrowserUtilityProcessLaunchFailed(const std::string& metrics_name,
-                                         int launch_error_code
-#if defined(OS_WIN)
-                                         ,
-                                         DWORD last_error
-#endif
-  );
 
   // Records a browser child process crash.
   void BrowserChildProcessCrashed();
@@ -119,7 +101,7 @@ class StabilityMetricsHelper {
   // Records that a renderer launch failed.
   void LogRendererLaunchFailed(bool was_extension_process);
 
-  raw_ptr<PrefService> local_state_;
+  PrefService* local_state_;
 };
 
 }  // namespace metrics

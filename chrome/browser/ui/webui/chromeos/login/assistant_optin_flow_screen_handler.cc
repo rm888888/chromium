@@ -197,7 +197,8 @@ void AssistantOptInFlowScreenHandler::GetAdditionalParameters(
     base::DictionaryValue* dict) {
   dict->SetBoolean("voiceMatchDisabled",
                    chromeos::assistant::features::IsVoiceMatchDisabled());
-  dict->SetString("assistantLocale", g_browser_process->GetApplicationLocale());
+  dict->SetBoolean("shouldSkipVoiceMatch",
+                   !ash::AssistantState::Get()->HasAudioInputDevice());
   BaseScreenHandler::GetAdditionalParameters(dict);
 }
 
@@ -508,9 +509,6 @@ void AssistantOptInFlowScreenHandler::OnGetSettingsResponse(
   dictionary.SetKey(
       "voiceMatchEnforcedOff",
       base::Value(IsVoiceMatchEnforcedOff(prefs, is_oobe_in_progress)));
-  dictionary.SetKey(
-      "shouldSkipVoiceMatch",
-      base::Value(!ash::AssistantState::Get()->HasAudioInputDevice()));
   dictionary.SetKey("childName", base::Value(GetGivenNameIfIsChild()));
   ReloadContent(dictionary);
 

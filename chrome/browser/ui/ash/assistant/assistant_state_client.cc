@@ -7,7 +7,6 @@
 #include <memory>
 #include <string>
 
-#include "ash/components/arc/arc_util.h"
 #include "ash/public/cpp/assistant/assistant_state.h"
 #include "base/bind.h"
 #include "chrome/browser/ash/arc/arc_util.h"
@@ -16,6 +15,7 @@
 #include "chrome/browser/ash/profiles/profile_helper.h"
 #include "chrome/browser/profiles/profile.h"
 #include "chromeos/services/assistant/public/cpp/assistant_prefs.h"
+#include "components/arc/arc_util.h"
 #include "components/language/core/browser/pref_names.h"
 #include "components/prefs/pref_change_registrar.h"
 #include "components/prefs/pref_service.h"

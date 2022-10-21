@@ -606,10 +606,6 @@ bool OmniboxFieldTrial::IsTabSwitchSuggestionsEnabled() {
   return base::FeatureList::IsEnabled(omnibox::kOmniboxTabSwitchSuggestions);
 }
 
-bool OmniboxFieldTrial::IsPedalsAndroidBatch1Enabled() {
-  return base::FeatureList::IsEnabled(omnibox::kOmniboxPedalsAndroidBatch1);
-}
-
 bool OmniboxFieldTrial::IsPedalsBatch2NonEnglishEnabled() {
   return base::FeatureList::IsEnabled(omnibox::kOmniboxPedalsBatch2NonEnglish);
 }
@@ -680,7 +676,12 @@ int OmniboxFieldTrial::OnDeviceHeadSuggestMaxScoreForNonUrlInput(
 
 int OmniboxFieldTrial::OnDeviceHeadSuggestDelaySuggestRequestMs(
     bool is_incognito) {
-  const int kDefaultDelayNonIncognito = 0;
+  const int kDefaultDelayNonIncognito =
+#if defined(OS_IOS)
+      100;
+#else
+      0;
+#endif  // defined(OS_IOS)
   return is_incognito ? 0
                       : base::GetFieldTrialParamByFeatureAsInt(
                             omnibox::kOnDeviceHeadProviderNonIncognito,
@@ -961,16 +962,6 @@ const base::FeatureParam<int>
         &omnibox::kShortBookmarkSuggestionsByTotalInputLength,
         "ShortBookmarkSuggestionsByTotalInputLengthThreshold",
         3);
-
-// Zero Suggest
-const base::FeatureParam<bool> kZeroSuggestCacheCounterfactual(
-    &omnibox::kZeroSuggestPrefetching,
-    "ZeroSuggestCacheCounterfactual",
-    false);
-const base::FeatureParam<int> kZeroSuggestCacheDurationSec(
-    &omnibox::kZeroSuggestPrefetching,
-    "ZeroSuggestCacheDurationSec",
-    0);
 
 }  // namespace OmniboxFieldTrial
 

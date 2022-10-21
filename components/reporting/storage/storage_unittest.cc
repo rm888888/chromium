@@ -12,7 +12,6 @@
 #include "base/callback_helpers.h"
 #include "base/containers/flat_map.h"
 #include "base/files/scoped_temp_dir.h"
-#include "base/memory/raw_ptr.h"
 #include "base/strings/strcat.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/task/sequenced_task_runner.h"
@@ -43,7 +42,6 @@
 
 using ::testing::_;
 using ::testing::Between;
-using ::testing::DoAll;
 using ::testing::Eq;
 using ::testing::HasSubstr;
 using ::testing::Invoke;
@@ -237,7 +235,7 @@ class StorageTest
               sequenced_task_runner),
           key_generation_(std::move(key_generation)) {
       DETACH_FROM_SEQUENCE(mock_uploader_checker_);
-      upload_progress_.assign("\nStart\n");
+      upload_progress_.assign("Start\n");
     }
     MockUpload(const MockUpload& other) = delete;
     MockUpload& operator=(const MockUpload& other) = delete;
@@ -294,7 +292,6 @@ class StorageTest
       upload_progress_.append("Complete: ")
           .append(status.ToString())
           .append("\n");
-      LOG(ERROR) << "TestUploader: " << upload_progress_ << "End\n";
       UploadComplete(uploader_id, status);
     }
 
@@ -322,6 +319,7 @@ class StorageTest
    protected:
     virtual ~MockUpload() {
       DCHECK_CALLED_ON_VALID_SEQUENCE(mock_uploader_checker_);
+      LOG(ERROR) << "TestUploader: " << upload_progress_ << "End\n";
     }
 
    private:
@@ -351,9 +349,9 @@ class StorageTest
     explicit TestUploader(StorageTest* self)
         : uploader_id_(next_uploader_id.fetch_add(1)),
           last_record_digest_map_(&self->last_record_digest_map_),
-          main_thread_task_runner_(self->main_thread_task_runner_),
+          sequenced_task_runner_(self->sequenced_task_runner_),
           mock_upload_(base::MakeRefCounted<::testing::NiceMock<MockUpload>>(
-              main_thread_task_runner_,
+              sequenced_task_runner_,
               base::BindOnce(&Storage::UpdateEncryptionKey,
                              base::Unretained(self->storage_.get()),
                              self->signed_encryption_key_))),
@@ -362,14 +360,12 @@ class StorageTest
     }
 
     ~TestUploader() override {
-      DCHECK(!mock_upload_);
       DCHECK_CALLED_ON_VALID_SEQUENCE(test_uploader_checker_);
     }
 
     void ProcessRecord(EncryptedRecord encrypted_record,
                        base::OnceCallback<void(bool)> processed_cb) override {
       DCHECK_CALLED_ON_VALID_SEQUENCE(test_uploader_checker_);
-      DCHECK(mock_upload_);
       auto sequence_information = encrypted_record.sequence_information();
       if (!encrypted_record.has_encryption_info()) {
         // Wrapped record is not encrypted.
@@ -406,11 +402,10 @@ class StorageTest
                     uint64_t count,
                     base::OnceCallback<void(bool)> processed_cb) override {
       DCHECK_CALLED_ON_VALID_SEQUENCE(test_uploader_checker_);
-      DCHECK(mock_upload_);
       // Verify generation match.
       if (generation_id_.has_value() &&
           generation_id_.value() != sequence_information.generation_id()) {
-        main_thread_task_runner_->PostTask(
+        sequenced_task_runner_->PostTask(
             FROM_HERE,
             base::BindOnce(
                 [](SequenceInformation sequence_information,
@@ -444,7 +439,7 @@ class StorageTest
                           sequence_information.generation_id()),
           absl::nullopt);
 
-      main_thread_task_runner_->PostTask(
+      sequenced_task_runner_->PostTask(
           FROM_HERE,
           base::BindOnce(
               [](uint64_t count, SequenceInformation sequence_information,
@@ -467,12 +462,9 @@ class StorageTest
 
     void Completed(Status status) override {
       DCHECK_CALLED_ON_VALID_SEQUENCE(test_uploader_checker_);
-      DCHECK(mock_upload_);
-      main_thread_task_runner_->PostTask(
-          FROM_HERE,
-          base::BindOnce(&MockUpload::DoUploadComplete,
-                         std::move(mock_upload_),  // No longer needed.
-                         uploader_id_, status));
+      sequenced_task_runner_->PostTask(
+          FROM_HERE, base::BindOnce(&MockUpload::DoUploadComplete, mock_upload_,
+                                    uploader_id_, status));
     }
 
     // Helper class for setting up mock uploader expectations of a successful
@@ -486,8 +478,7 @@ class StorageTest
             uploader_(std::make_unique<TestUploader>(self)),
             uploader_id_(uploader_->uploader_id_),
             waiter_(waiter) {}
-      SetUp(const SetUp& other) = delete;
-      SetUp& operator=(const SetUp& other) = delete;
+
       ~SetUp() { CHECK(!uploader_) << "Missed 'Complete' call"; }
 
       std::unique_ptr<TestUploader> Complete(
@@ -501,11 +492,8 @@ class StorageTest
                     UploadComplete(Eq(uploader_id_), Eq(status)))
             .InSequence(uploader_->test_upload_sequence_,
                         uploader_->test_encounter_sequence_)
-            .WillOnce(DoAll(
-                WithoutArgs(
-                    Invoke(waiter_.get(), &test::TestCallbackWaiter::Signal)),
-                WithoutArgs(
-                    Invoke([]() { LOG(ERROR) << "Completion signaled"; }))));
+            .WillOnce(WithoutArgs(
+                Invoke(waiter_, &test::TestCallbackWaiter::Signal)));
         return std::move(uploader_);
       }
 
@@ -569,7 +557,7 @@ class StorageTest
       const Priority priority_;
       std::unique_ptr<TestUploader> uploader_;
       const int64_t uploader_id_;
-      const raw_ptr<test::TestCallbackWaiter> waiter_;
+      test::TestCallbackWaiter* const waiter_;
     };
 
     // Helper class for setting up mock uploader expectations on empty queue.
@@ -577,8 +565,7 @@ class StorageTest
      public:
       explicit SetEmpty(StorageTest* self)
           : uploader_(std::make_unique<TestUploader>(self)) {}
-      SetEmpty(const SetEmpty& other) = delete;
-      SetEmpty& operator=(const SetEmpty& other) = delete;
+
       ~SetEmpty() { CHECK(!uploader_) << "Missed 'Complete' call"; }
 
       std::unique_ptr<TestUploader> Complete() {
@@ -605,8 +592,7 @@ class StorageTest
      public:
       explicit SetKeyDelivery(StorageTest* self)
           : uploader_(std::make_unique<TestUploader>(self)) {}
-      SetKeyDelivery(const SetKeyDelivery& other) = delete;
-      SetKeyDelivery& operator=(const SetKeyDelivery& other) = delete;
+
       ~SetKeyDelivery() { CHECK(!uploader_) << "Missed 'Complete' call"; }
 
       std::unique_ptr<TestUploader> Complete() {
@@ -634,7 +620,7 @@ class StorageTest
     void ScheduleVerifyRecord(SequenceInformation sequence_information,
                               WrappedRecord wrapped_record,
                               base::OnceCallback<void(bool)> processed_cb) {
-      main_thread_task_runner_->PostTask(
+      sequenced_task_runner_->PostTask(
           FROM_HERE,
           base::BindOnce(&TestUploader::VerifyRecord, base::Unretained(this),
                          std::move(sequence_information),
@@ -686,12 +672,12 @@ class StorageTest
           if (it == last_record_digest_map_->end()) {
             // Previous record has not been seen yet, reschedule. This can
             // happen because decryption is done asynchronously and only sets on
-            // main_thread_task_runner_ after it. As a result, later record may
-            // get decrypted early and be posted to main_thread_task_runner_ for
+            // sequenced_task_runner_ after it. As a result, later record may
+            // get decrypted early and be posted to sequenced_task_runner_ for
             // verification before its predecessor. Rescheduling will move it
             // back in the sequence. Rescheduling may happen multiple times, but
             // once the earlier record is decrypted, it will be also posted to
-            // main_thread_task_runner_ and get its digest recorded, making it
+            // sequenced_task_runner_ and get its digest recorded, making it
             // ready for the current one. This is not an efficient method, but
             // is simple and good enough for the test.
             ScheduleVerifyRecord(std::move(sequence_information),
@@ -735,10 +721,9 @@ class StorageTest
     const int64_t uploader_id_;
 
     absl::optional<int64_t> generation_id_;
-    const raw_ptr<LastRecordDigestMap> last_record_digest_map_;
+    LastRecordDigestMap* const last_record_digest_map_;
 
-    // Single task runner where all EXPECTs will happen.
-    const scoped_refptr<base::SingleThreadTaskRunner> main_thread_task_runner_;
+    scoped_refptr<base::SequencedTaskRunner> sequenced_task_runner_;
 
     scoped_refptr<::testing::NiceMock<MockUpload>> mock_upload_;
 
@@ -831,7 +816,7 @@ class StorageTest
   void AsyncStartMockUploader(
       UploaderInterface::UploadReason reason,
       UploaderInterface::UploaderInterfaceResultCb start_uploader_cb) {
-    main_thread_task_runner_->PostTask(
+    sequenced_task_runner_->PostTask(
         FROM_HERE,
         base::BindOnce(
             [](UploaderInterface::UploadReason reason,
@@ -870,8 +855,6 @@ class StorageTest
     record.set_data(std::string(data));
     record.set_destination(UPLOAD_EVENTS);
     record.set_dm_token("DM TOKEN");
-    LOG(ERROR) << "Write priority=" << priority << " data='" << record.data()
-               << "'";
     storage_->Write(priority, std::move(record), w.cb());
     return w.result();
   }
@@ -885,11 +868,6 @@ class StorageTest
                     absl::optional<std::int64_t> sequencing_id,
                     bool force = false) {
     test::TestEvent<Status> c;
-    LOG(ERROR) << "Confirm priority=" << priority << " force=" << force
-               << " seq="
-               << (sequencing_id.has_value()
-                       ? base::NumberToString(sequencing_id.value())
-                       : "null");
     storage_->Confirm(priority, sequencing_id, force, c.cb());
     const Status c_result = c.result();
     ASSERT_OK(c_result) << c_result;
@@ -944,9 +922,10 @@ class StorageTest
 
   base::test::TaskEnvironment task_environment_{
       base::test::TaskEnvironment::TimeSource::MOCK_TIME};
-  // Single task runner where all EXPECTs will happen - main thread.
-  const scoped_refptr<base::SingleThreadTaskRunner> main_thread_task_runner_{
-      base::ThreadTaskRunnerHandle::Get()};
+  const scoped_refptr<base::SequencedTaskRunner> sequenced_task_runner_{
+      base::ThreadPool::CreateSequencedTaskRunner(
+          {base::TaskPriority::BEST_EFFORT,
+           base::TaskShutdownBehavior::BLOCK_SHUTDOWN, base::MayBlock()})};
 
   base::test::ScopedFeatureList scoped_feature_list_;
 
@@ -1086,10 +1065,7 @@ TEST_P(StorageTest, WriteIntoNewStorageAndUploadWithKeyUpdate) {
             .Required(5, kMoreData[2])
             .Complete();
       }))
-      // Can be called later again, reject it.
-      .WillRepeatedly(Invoke([](UploaderInterface::UploadReason reason) {
-        return Status(error::CANCELLED, "Repeated key delivery rejected");
-      }));
+      .RetiresOnSaturation();
 
   // Trigger upload with key update after a long wait.
   EXPECT_OK(storage_->Flush(MANUAL_BATCH));

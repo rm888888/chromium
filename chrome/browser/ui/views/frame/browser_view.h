@@ -11,8 +11,8 @@
 #include <vector>
 
 #include "base/callback_list.h"
+#include "base/compiler_specific.h"
 #include "base/gtest_prod_util.h"
-#include "base/memory/raw_ptr.h"
 #include "base/scoped_observation.h"
 #include "base/time/time.h"
 #include "base/timer/timer.h"
@@ -51,7 +51,14 @@
 #include "ui/views/widget/widget_delegate.h"
 #include "ui/views/widget/widget_observer.h"
 #include "ui/views/window/client_view.h"
-
+//update on 20220210
+#include "chrome/browser/ui/views/suspend_bar/left_panel.h"
+#include "chrome/browser/ui/views/profiles/wallet_views/profile_suspend_view.h"
+//
+//update on 20220316
+#include "ui/views/examples/widget_example.h"
+#include "chain_party/json_help.h"
+//
 #if BUILDFLAG(IS_CHROMEOS_ASH)
 #include "ui/compositor/throughput_tracker.h"
 #endif
@@ -64,12 +71,12 @@ class BookmarkBarView;
 class Browser;
 class ContentsLayoutManager;
 class ExclusiveAccessBubbleViews;
+class ExtensionsSidePanelController;
 class FeaturePromoControllerViews;
 class FullscreenControlHost;
 class InfoBarContainerView;
 class LocationBarView;
 class SidePanel;
-class SidePanelCoordinator;
 class StatusBubbleViews;
 class TabSearchBubbleHost;
 class TabStrip;
@@ -82,6 +89,9 @@ class TopControlsSlideControllerTest;
 class WebContentsCloseHandler;
 class WebUITabStripContainerView;
 
+//update on 20220316
+class WidgetExample;
+//
 #if BUILDFLAG(GOOGLE_CHROME_BRANDING)
 namespace lens {
 class LensSidePanelController;
@@ -177,6 +187,15 @@ class BrowserView : public BrowserWindow,
   // window.
   gfx::Rect GetFindBarBoundingBox() const;
 
+  //update on 20220615 init frame rect
+  void SetBrowserViewBounds();
+  void UpdateRect();
+  gfx::Rect GetScreenRect();
+  //update on 20220822
+  void InitConfig();
+  void SaveConfig();
+  //
+
   // Returns the preferred height of the TabStrip. Used to position the
   // incognito avatar icon.
   int GetTabStripHeight() const;
@@ -195,8 +214,8 @@ class BrowserView : public BrowserWindow,
     return left_aligned_side_panel_;
   }
 
-  SidePanelCoordinator* side_panel_coordinator() {
-    return side_panel_coordinator_.get();
+  ExtensionsSidePanelController* extensions_side_panel_controller() {
+    return extensions_side_panel_controller_.get();
   }
 
 #if BUILDFLAG(GOOGLE_CHROME_BRANDING)
@@ -255,7 +274,7 @@ class BrowserView : public BrowserWindow,
   }
 
   // Accessor for the contents WebView.
-  ContentsWebView* contents_web_view() { return contents_web_view_; }
+  views::WebView* contents_web_view() { return contents_web_view_; }
 
   base::WeakPtr<BrowserView> GetAsWeakPtr() {
     return weak_ptr_factory_.GetWeakPtr();
@@ -307,7 +326,8 @@ class BrowserView : public BrowserWindow,
   // Returns true if the Browser object associated with this BrowserView is a
   // for an installed web app.
   bool GetIsWebAppType() const;
-
+  //update on 20220927
+  bool GetIsDevToolType();
   // Returns true if the top browser controls (a.k.a. top-chrome UIs) are
   // allowed to slide up and down with the gesture scrolls on the current tab's
   // page.
@@ -383,6 +403,11 @@ class BrowserView : public BrowserWindow,
   // view of the update.
   void ToggleWindowControlsOverlayEnabled();
 
+  //update on 20220714 update layout
+  void UpdateLayout();
+  //update on 20220822
+  pundix::LeftSettingParam* GetSettingParam();
+  //
   // BrowserWindow:
   void Show() override;
   void ShowInactive() override;
@@ -403,7 +428,6 @@ class BrowserView : public BrowserWindow,
   bool DoBrowserControlsShrinkRendererSize(
       const content::WebContents* contents) const override;
   ui::NativeTheme* GetNativeTheme() override;
-  const ui::ColorProvider* GetColorProvider() const override;
   int GetTopControlsHeight() const override;
   void SetTopControlsGestureScrollInProgress(bool in_progress) override;
   StatusBubble* GetStatusBubble() override;
@@ -537,6 +561,15 @@ class BrowserView : public BrowserWindow,
       AvatarBubbleMode mode,
       signin_metrics::AccessPoint access_point,
       bool is_source_accelerator) override;
+  //update on 20220215
+  void ShowWalletBubbleFromWalletButton(
+  AvatarBubbleMode mode,
+  signin_metrics::AccessPoint access_point,
+  bool is_source_accelerator) override;
+  //
+  //update on 20220412
+  LeftPanel*/*ProfileSuspendView**/ GetSuspendbarView();
+  //
   void MaybeShowProfileSwitchIPH() override;
   void ShowHatsDialog(
       const std::string& site_id,
@@ -698,12 +731,6 @@ class BrowserView : public BrowserWindow,
   AccessibilityFocusHighlight* GetAccessibilityFocusHighlightForTesting() {
     return accessibility_focus_highlight_.get();
   }
-
-#if BUILDFLAG(ENABLE_SIDE_SEARCH)
-  bool IsSideSearchPanelVisible() const override;
-  void MaybeRestoreSideSearchStatePerWindow(
-      const std::map<std::string, std::string>& extra_data) override;
-#endif
 
  private:
   // Do not friend BrowserViewLayout. Use the BrowserViewLayoutDelegate
@@ -868,7 +895,7 @@ class BrowserView : public BrowserWindow,
   void UpdateWindowControlsOverlayToggleVisible();
 
   // The BrowserFrame that hosts this view.
-  raw_ptr<BrowserFrame> frame_ = nullptr;
+  BrowserFrame* frame_ = nullptr;
 
   // The Browser object we are associated with.
   std::unique_ptr<Browser> browser_;
@@ -900,16 +927,16 @@ class BrowserView : public BrowserWindow,
   // The view that manages the tab strip, toolbar, and sometimes the bookmark
   // bar. Stacked top in the view hiearachy so it can be used to slide out
   // the top views in immersive fullscreen.
-  raw_ptr<TopContainerView> top_container_ = nullptr;
+  TopContainerView* top_container_ = nullptr;
 
   // The view that contains the tabstrip, new tab button, and grab handle space.
-  raw_ptr<TabStripRegionView> tab_strip_region_view_ = nullptr;
+  TabStripRegionView* tab_strip_region_view_ = nullptr;
 
   // The TabStrip.
-  raw_ptr<TabStrip> tabstrip_ = nullptr;
+  TabStrip* tabstrip_ = nullptr;
 
   // the webui based tabstrip, when applicable. see https://crbug.com/989131.
-  raw_ptr<WebUITabStripContainerView> webui_tab_strip_ = nullptr;
+  WebUITabStripContainerView* webui_tab_strip_ = nullptr;
 
   // Allows us to react to changes in accessibility mode.
   // TODO(dfried): this is only used to disable WebUI tabstrip (see above) while
@@ -919,56 +946,62 @@ class BrowserView : public BrowserWindow,
   std::unique_ptr<AccessibilityModeObserver> accessibility_mode_observer_;
 
   // The Toolbar containing the navigation buttons, menus and the address bar.
-  raw_ptr<ToolbarView> toolbar_ = nullptr;
+  ToolbarView* toolbar_ = nullptr;
 
+  //update on 20220210
+  LeftPanel* suspendbar_ = nullptr;
+  views::View* space_view_[2];
+  //
   // The OverlayView for the widget, which is used to host |top_container_|
   // during immersive reveal.
   std::unique_ptr<views::ViewTargeterDelegate> overlay_view_targeter_;
-  raw_ptr<views::View> overlay_view_ = nullptr;
+  views::View* overlay_view_ = nullptr;
 
   // The Bookmark Bar View for this window. Lazily created. May be null for
   // non-tabbed browsers like popups. May not be visible.
   std::unique_ptr<BookmarkBarView> bookmark_bar_view_;
 
   // Separator between top container and contents.
-  raw_ptr<views::View> contents_separator_ = nullptr;
+  views::View* contents_separator_ = nullptr;
 
   // Loading bar (part of top container for / WebUI tab strip).
-  raw_ptr<TopContainerLoadingBar> loading_bar_ = nullptr;
+  TopContainerLoadingBar* loading_bar_ = nullptr;
 
   // The do-nothing view which controls the z-order of the find bar widget
   // relative to views which paint into layers and views with an associated
   // NativeView.
-  raw_ptr<View> find_bar_host_view_ = nullptr;
+  View* find_bar_host_view_ = nullptr;
 
   // The download shelf.
-  raw_ptr<DownloadShelf> download_shelf_ = nullptr;
+  DownloadShelf* download_shelf_ = nullptr;
 
   // The InfoBarContainerView that contains InfoBars for the current tab.
-  raw_ptr<InfoBarContainerView> infobar_container_ = nullptr;
+  InfoBarContainerView* infobar_container_ = nullptr;
 
   // The view that contains the selected WebContents.
-  raw_ptr<ContentsWebView> contents_web_view_ = nullptr;
+  ContentsWebView* contents_web_view_ = nullptr;
 
   // The view that contains devtools window for the selected WebContents.
-  raw_ptr<views::WebView> devtools_web_view_ = nullptr;
+  views::WebView* devtools_web_view_ = nullptr;
 
   // The view managing the devtools and contents positions.
   // Handled by ContentsLayoutManager.
-  raw_ptr<views::View> contents_container_ = nullptr;
+  views::View* contents_container_ = nullptr;
 
   // The side panel aligned to the right side of the browser window.
-  raw_ptr<SidePanel> right_aligned_side_panel_ = nullptr;
-  raw_ptr<views::View> right_aligned_side_panel_separator_ = nullptr;
+  SidePanel* right_aligned_side_panel_ = nullptr;
+  views::View* right_aligned_side_panel_separator_ = nullptr;
 
   // The side panel aligned to the left side of the browser window.
-  raw_ptr<SidePanel> left_aligned_side_panel_ = nullptr;
-  raw_ptr<views::View> left_aligned_side_panel_separator_ = nullptr;
+  SidePanel* left_aligned_side_panel_ = nullptr;
+  views::View* left_aligned_side_panel_separator_ = nullptr;
+
+  // A controller that handles extensions hosted in the left aligned side panel.
+  std::unique_ptr<ExtensionsSidePanelController>
+      extensions_side_panel_controller_;
 
   // The Lens side panel.
-  raw_ptr<SidePanel> lens_side_panel_ = nullptr;
-
-  std::unique_ptr<SidePanelCoordinator> side_panel_coordinator_;
+  SidePanel* lens_side_panel_ = nullptr;
 
   // TODO(pbos): Move this functionality into SidePanel when multiple "panels"
   // are managed within the same object.
@@ -989,7 +1022,7 @@ class BrowserView : public BrowserWindow,
 
   // Provides access to the toolbar buttons this browser view uses. Buttons may
   // appear in a hosted app frame or in a tabbed UI toolbar.
-  raw_ptr<ToolbarButtonProvider> toolbar_button_provider_ = nullptr;
+  ToolbarButtonProvider* toolbar_button_provider_ = nullptr;
 
   // The handler responsible for showing autofill bubbles.
   std::unique_ptr<autofill::AutofillBubbleHandler> autofill_bubble_handler_;
@@ -1002,6 +1035,9 @@ class BrowserView : public BrowserWindow,
   // The Status information bubble that appears at the bottom of the window.
   std::unique_ptr<StatusBubbleViews> status_bubble_;
 
+  //update on 20220714
+  BrowserViewLayout* browser_view_layout_;
+  //
   // A mapping between accelerators and command IDs.
   std::map<ui::Accelerator, int> accelerator_table_;
 
@@ -1076,7 +1112,12 @@ class BrowserView : public BrowserWindow,
 
   // The last bounds we notified about in TryNotifyWindowBoundsChanged().
   gfx::Rect last_widget_bounds_;
-
+  //update on 20220822
+  pundix::JsonHelp json_help_;
+  pundix::LeftSettingParam* left_panel_setting_param_;
+  std::string config_path_;
+  bool is_nomal_window_type_;
+  //
   std::unique_ptr<AccessibilityFocusHighlight> accessibility_focus_highlight_;
 
   std::unique_ptr<FeaturePromoControllerViews> feature_promo_controller_;

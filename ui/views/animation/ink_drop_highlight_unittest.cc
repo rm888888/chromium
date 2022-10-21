@@ -8,6 +8,7 @@
 #include <memory>
 #include <utility>
 
+#include "base/macros.h"
 #include "base/time/time.h"
 #include "testing/gtest/include/gtest/gtest.h"
 #include "ui/compositor/layer.h"

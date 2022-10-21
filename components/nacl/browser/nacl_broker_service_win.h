@@ -9,6 +9,7 @@
 
 #include <map>
 
+#include "base/macros.h"
 #include "base/memory/singleton.h"
 #include "base/memory/weak_ptr.h"
 #include "base/process/process.h"

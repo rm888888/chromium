@@ -4,6 +4,7 @@
 
 #include "components/password_manager/core/browser/password_manager_metrics_util.h"
 
+#include "base/macros.h"
 #include "base/metrics/histogram_functions.h"
 #include "base/strings/strcat.h"
 #include "components/autofill/core/common/password_generation_util.h"
@@ -123,8 +124,6 @@ void LogLeakDialogTypeAndDismissalReason(LeakDialogType type,
         return "Change";
       case LeakDialogType::kCheckupAndChange:
         return "CheckupAndChange";
-      case LeakDialogType::kChangeAutomatically:
-        return "ChangeAutomatically";
     }
   };
 
@@ -367,14 +366,6 @@ void LogPasswordEditResult(IsUsernameChanged username_changed,
   }
   base::UmaHistogramEnumeration("PasswordManager.PasswordEditUpdatedValues",
                                 values);
-}
-
-void LogUserInteractionsWhenAddingCredentialFromSettings(
-    AddCredentialFromSettingsUserInteractions
-        add_credential_from_settings_user_interaction) {
-  base::UmaHistogramEnumeration(
-      "PasswordManager.AddCredentialFromSettings.UserAction",
-      add_credential_from_settings_user_interaction);
 }
 
 }  // namespace metrics_util

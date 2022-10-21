@@ -7,6 +7,8 @@
 
 #include <string>
 
+#include "base/macros.h"
+
 namespace update_client {
 
 class UpdateQueryParamsDelegate;

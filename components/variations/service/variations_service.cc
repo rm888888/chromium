@@ -953,11 +953,13 @@ bool VariationsService::SetUpFieldTrials(
     const std::vector<std::string>& variation_ids,
     const std::vector<base::FeatureList::FeatureOverrideInfo>& extra_overrides,
     std::unique_ptr<base::FeatureList> feature_list,
-    variations::PlatformFieldTrials* platform_field_trials) {
+    variations::PlatformFieldTrials* platform_field_trials,
+    bool extend_variations_safe_mode) {
   return field_trial_creator_.SetUpFieldTrials(
       variation_ids, extra_overrides, CreateLowEntropyProvider(),
       std::move(feature_list), state_manager_, platform_field_trials,
-      &safe_seed_manager_, state_manager_->GetLowEntropySource());
+      &safe_seed_manager_, state_manager_->GetLowEntropySource(),
+      extend_variations_safe_mode);
 }
 
 void VariationsService::OverrideCachedUIStrings() {
@@ -990,13 +992,12 @@ std::string VariationsService::GetStoredPermanentCountry() {
   if (!variations_overridden_country.empty())
     return variations_overridden_country;
 
-  const base::Value* list_value =
+  const base::ListValue* list_value =
       local_state_->GetList(prefs::kVariationsPermanentConsistencyCountry);
   std::string stored_country;
 
-  base::Value::ConstListView list_view = list_value->GetList();
-  if (list_view.size() == 2 && list_view[1].is_string()) {
-    stored_country = list_view[1].GetString();
+  if (list_value->GetList().size() == 2) {
+    list_value->GetString(1, &stored_country);
   }
 
   return stored_country;

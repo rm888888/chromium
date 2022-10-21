@@ -7,10 +7,6 @@
 #include <iterator>
 #include <utility>
 
-#include "ash/components/arc/arc_browser_context_keyed_service_factory_base.h"
-#include "ash/components/arc/audio/arc_audio_bridge.h"
-#include "ash/components/arc/session/arc_bridge_service.h"
-#include "ash/components/arc/session/arc_service_manager.h"
 #include "ash/public/cpp/new_window_delegate.h"
 #include "ash/public/cpp/wallpaper/wallpaper_controller.h"
 #include "base/json/json_writer.h"
@@ -20,10 +16,13 @@
 #include "base/metrics/histogram_macros.h"
 #include "base/strings/string_util.h"
 #include "base/values.h"
-#include "components/arc/common/intent_helper/link_handler_model.h"
+#include "components/arc/arc_browser_context_keyed_service_factory_base.h"
+#include "components/arc/audio/arc_audio_bridge.h"
 #include "components/arc/intent_helper/control_camera_app_delegate.h"
 #include "components/arc/intent_helper/intent_constants.h"
 #include "components/arc/intent_helper/open_url_delegate.h"
+#include "components/arc/session/arc_bridge_service.h"
+#include "components/arc/session/arc_service_manager.h"
 #include "components/url_formatter/url_fixer.h"
 #include "net/base/url_util.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
@@ -161,22 +160,16 @@ ArcIntentHelperBridge::ArcIntentHelperBridge(content::BrowserContext* context,
       arc_bridge_service_(bridge_service),
       allowed_arc_schemes_(std::cbegin(kArcSchemes), std::cend(kArcSchemes)) {
   arc_bridge_service_->intent_helper()->SetHost(this);
-  LinkHandlerModel::SetDelegate(this);
 }
 
 ArcIntentHelperBridge::~ArcIntentHelperBridge() {
   DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
   arc_bridge_service_->intent_helper()->SetHost(nullptr);
-  LinkHandlerModel::SetDelegate(nullptr);
-  for (auto& observer : observer_list_)
-    observer.OnArcIntentHelperBridgeDestruction();
 }
 
 void ArcIntentHelperBridge::OnIconInvalidated(const std::string& package_name) {
   DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
   icon_loader_.InvalidateIcons(package_name);
-  for (auto& observer : observer_list_)
-    observer.OnIconInvalidated(package_name);
 }
 
 void ArcIntentHelperBridge::OnIntentFiltersUpdated(
@@ -324,13 +317,20 @@ void ArcIntentHelperBridge::IsChromeAppEnabled(
   std::move(callback).Run(false);
 }
 
+void ArcIntentHelperBridge::OnPreferredAppsChangedDeprecated(
+    std::vector<IntentFilter> added,
+    std::vector<IntentFilter> deleted) {
+  added_preferred_apps_ = std::move(added);
+  deleted_preferred_apps_ = std::move(deleted);
+  for (auto& observer : observer_list_)
+    observer.OnPreferredAppsChanged();
+}
+
 void ArcIntentHelperBridge::OnSupportedLinksChanged(
     std::vector<arc::mojom::SupportedLinksPtr> added_packages,
-    std::vector<arc::mojom::SupportedLinksPtr> removed_packages,
-    arc::mojom::SupportedLinkChangeSource source) {
+    std::vector<arc::mojom::SupportedLinksPtr> removed_packages) {
   for (auto& observer : observer_list_)
-    observer.OnArcSupportedLinksChanged(added_packages, removed_packages,
-                                        source);
+    observer.OnArcSupportedLinksChanged(added_packages, removed_packages);
 }
 
 void ArcIntentHelperBridge::OnDownloadAdded(
@@ -368,57 +368,6 @@ ArcIntentHelperBridge::GetResult ArcIntentHelperBridge::GetActivityIcons(
     OnIconsReadyCallback callback) {
   DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
   return icon_loader_.GetActivityIcons(activities, std::move(callback));
-}
-
-bool ArcIntentHelperBridge::RequestUrlHandlerList(
-    const std::string& url,
-    RequestUrlHandlerListCallback callback) {
-  auto* arc_service_manager = ArcServiceManager::Get();
-  arc::mojom::IntentHelperInstance* instance = nullptr;
-
-  if (arc_service_manager) {
-    instance = ARC_GET_INSTANCE_FOR_METHOD(
-        arc_service_manager->arc_bridge_service()->intent_helper(),
-        RequestUrlHandlerList);
-  }
-  if (!instance) {
-    LOG(ERROR) << "Failed to get instance for RequestUrlHandlerList().";
-    return false;
-  }
-
-  instance->RequestUrlHandlerList(
-      url, base::BindOnce(&ArcIntentHelperBridge::OnRequestUrlHandlerList,
-                          weak_ptr_factory_.GetWeakPtr(), std::move(callback)));
-  return true;
-}
-
-void ArcIntentHelperBridge::OnRequestUrlHandlerList(
-    RequestUrlHandlerListCallback callback,
-    std::vector<mojom::IntentHandlerInfoPtr> handlers) {
-  std::vector<IntentHandlerInfo> converted_handlers;
-  for (auto const& handler : handlers) {
-    converted_handlers.push_back(IntentHandlerInfo(
-        handler->name, handler->package_name, handler->activity_name));
-  }
-  std::move(callback).Run(std::move(converted_handlers));
-}
-
-bool ArcIntentHelperBridge::HandleUrl(const std::string& url,
-                                      const std::string& package_name) {
-  auto* arc_service_manager = ArcServiceManager::Get();
-  arc::mojom::IntentHelperInstance* instance = nullptr;
-
-  if (arc_service_manager) {
-    instance = ARC_GET_INSTANCE_FOR_METHOD(
-        arc_service_manager->arc_bridge_service()->intent_helper(), HandleUrl);
-  }
-  if (!instance) {
-    LOG(ERROR) << "Failed to get instance for HandleUrl().";
-    return false;
-  }
-
-  instance->HandleUrl(url, package_name);
-  return true;
 }
 
 bool ArcIntentHelperBridge::ShouldChromeHandleUrl(const GURL& url) {
@@ -531,6 +480,16 @@ const std::vector<IntentFilter>&
 ArcIntentHelperBridge::GetIntentFilterForPackage(
     const std::string& package_name) {
   return intent_filters_[package_name];
+}
+
+const std::vector<IntentFilter>&
+ArcIntentHelperBridge::GetAddedPreferredApps() {
+  return added_preferred_apps_;
+}
+
+const std::vector<IntentFilter>&
+ArcIntentHelperBridge::GetDeletedPreferredApps() {
+  return deleted_preferred_apps_;
 }
 
 }  // namespace arc

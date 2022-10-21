@@ -33,8 +33,6 @@
 
 namespace ui {
 
-// When adding a new KeyboardCode, be sure to also update the associated mojom
-// file at ash/public/mojom/accelerator_keys.mojom.
 enum KeyboardCode {
   VKEY_CANCEL = 0x03,
   VKEY_BACK = 0x08,
@@ -226,7 +224,6 @@ enum KeyboardCode {
   VKEY_MICROPHONE_MUTE_TOGGLE = 0x9F,
   VKEY_BRIGHTNESS_DOWN = 0xD8,
   VKEY_BRIGHTNESS_UP = 0xD9,
-  VKEY_KBD_BACKLIGHT_TOGGLE = 0xB8,
   VKEY_KBD_BRIGHTNESS_DOWN = 0xDA,
   VKEY_KBD_BRIGHTNESS_UP = 0xE8,
 

@@ -4,8 +4,6 @@
 
 #include "components/reporting/client/empty_dm_token_retriever.h"
 
-#include <string>
-
 #include "base/bind.h"
 #include "base/test/task_environment.h"
 #include "components/reporting/util/statusor.h"

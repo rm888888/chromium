@@ -65,8 +65,8 @@ class NetworkFetcher : public update_client::NetworkFetcher {
  private:
   SEQUENCE_CHECKER(sequence_checker_);
 
-  void PostRequestComplete(int response_code);
-  void DownloadToFileComplete(int response_code);
+  void PostRequestComplete();
+  void DownloadToFileComplete();
 
   scoped_refptr<winhttp::NetworkFetcher> winhttp_network_fetcher_;
   scoped_refptr<base::SingleThreadTaskRunner> main_thread_task_runner_;

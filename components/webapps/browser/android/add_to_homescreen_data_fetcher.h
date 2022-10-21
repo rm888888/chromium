@@ -7,7 +7,6 @@
 
 #include <string>
 
-#include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/task/cancelable_task_tracker.h"
 #include "base/time/time.h"
@@ -50,7 +49,7 @@ class AddToHomescreenDataFetcher {
 
   // Initialize the fetcher by requesting the information about the page from
   // the renderer process. The initialization is asynchronous and
-  // OnDidGetWebAppInstallInfo is expected to be called when finished.
+  // OnDidGetWebApplicationInfo is expected to be called when finished.
   // |observer| must outlive AddToHomescreenDataFetcher.
   AddToHomescreenDataFetcher(content::WebContents* web_contents,
                              int data_timeout_ms,
@@ -102,8 +101,8 @@ class AddToHomescreenDataFetcher {
 
   base::WeakPtr<content::WebContents> web_contents_;
 
-  raw_ptr<InstallableManager> installable_manager_;
-  raw_ptr<Observer> observer_;
+  InstallableManager* installable_manager_;
+  Observer* observer_;
 
   // The icons must only be set on the UI thread for thread safety.
   SkBitmap raw_primary_icon_;

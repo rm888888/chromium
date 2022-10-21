@@ -4,8 +4,6 @@
 
 #include "ui/events/gesture_detection/gesture_event_data.h"
 
-#include <ostream>
-
 #include "base/check_op.h"
 #include "base/notreached.h"
 

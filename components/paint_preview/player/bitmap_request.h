@@ -22,8 +22,7 @@ struct BitmapRequest {
   BitmapRequest(const absl::optional<base::UnguessableToken>& frame_guid,
                 const gfx::Rect& clip_rect,
                 float scale_factor,
-                BitmapRequestCallback callback,
-                bool run_callback_on_default_task_runner);
+                BitmapRequestCallback callback);
   ~BitmapRequest();
 
   BitmapRequest& operator=(BitmapRequest&& other) noexcept;
@@ -33,7 +32,6 @@ struct BitmapRequest {
   gfx::Rect clip_rect;
   float scale_factor;
   BitmapRequestCallback callback;
-  bool run_callback_on_default_task_runner;
 };
 
 }  // namespace paint_preview

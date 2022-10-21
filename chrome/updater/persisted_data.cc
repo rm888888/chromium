@@ -23,7 +23,6 @@ constexpr char kPV[] = "pv";    // Key for storing product version.
 constexpr char kFP[] = "fp";    // Key for storing fingerprint.
 constexpr char kECP[] = "ecp";  // Key for storing existence checker path.
 constexpr char kBC[] = "bc";    // Key for storing brand code.
-constexpr char kBP[] = "bp";    // Key for storing brand path.
 constexpr char kAP[] = "ap";    // Key for storing ap.
 
 }  // namespace
@@ -66,7 +65,14 @@ void PersistedData::SetFingerprint(const std::string& id,
 base::FilePath PersistedData::GetExistenceCheckerPath(
     const std::string& id) const {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-  return base::FilePath::FromUTF8Unsafe(GetString(id, kECP));
+#if defined(OS_WIN)
+  base::FilePath::StringType ecp;
+  const std::string str = GetString(id, kECP);
+  return base::UTF8ToWide(str.c_str(), str.size(), &ecp) ? base::FilePath(ecp)
+                                                         : base::FilePath();
+#else
+  return base::FilePath(GetString(id, kECP));
+#endif  // OS_WIN
 }
 
 void PersistedData::SetExistenceCheckerPath(const std::string& id,
@@ -85,17 +91,6 @@ void PersistedData::SetBrandCode(const std::string& id, const std::string& bc) {
   SetString(id, kBC, bc);
 }
 
-base::FilePath PersistedData::GetBrandPath(const std::string& id) const {
-  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-  return base::FilePath::FromUTF8Unsafe(GetString(id, kBP));
-}
-
-void PersistedData::SetBrandPath(const std::string& id,
-                                 const base::FilePath& bp) {
-  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-  SetString(id, kBP, bp.AsUTF8Unsafe());
-}
-
 std::string PersistedData::GetAP(const std::string& id) const {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   return GetString(id, kAP);
@@ -110,7 +105,6 @@ void PersistedData::RegisterApp(const RegistrationRequest& rq) {
   SetProductVersion(rq.app_id, rq.version);
   SetExistenceCheckerPath(rq.app_id, rq.existence_checker_path);
   SetBrandCode(rq.app_id, rq.brand_code);
-  SetBrandPath(rq.app_id, rq.brand_path);
   SetAP(rq.app_id, rq.ap);
 }
 
@@ -119,8 +113,7 @@ bool PersistedData::RemoveApp(const std::string& id) {
   if (!pref_service_)
     return false;
 
-  DictionaryPrefUpdateDeprecated update(pref_service_,
-                                        kPersistedDataPreference);
+  DictionaryPrefUpdate update(pref_service_, kPersistedDataPreference);
   base::Value* apps = update->FindDictKey("apps");
 
   return apps ? apps->RemoveKey(id) : false;
@@ -152,7 +145,7 @@ const base::Value* PersistedData::GetAppKey(const std::string& id) const {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   if (!pref_service_)
     return nullptr;
-  const base::Value* dict =
+  const base::DictionaryValue* dict =
       pref_service_->GetDictionary(kPersistedDataPreference);
   if (!dict)
     return nullptr;
@@ -192,8 +185,7 @@ void PersistedData::SetString(const std::string& id,
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   if (!pref_service_)
     return;
-  DictionaryPrefUpdateDeprecated update(pref_service_,
-                                        kPersistedDataPreference);
+  DictionaryPrefUpdate update(pref_service_, kPersistedDataPreference);
   GetOrCreateAppKey(id, update.Get())->SetStringKey(key, value);
 }
 

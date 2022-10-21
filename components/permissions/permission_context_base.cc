@@ -81,14 +81,10 @@ const char kPermissionBlockedPortalsMessage[] =
     "%s permission has been blocked because it was requested inside a portal. "
     "Portals don't currently support permission requests.";
 
-const char kPermissionBlockedFencedFrameMessage[] =
-    "%s permission has been blocked because it was requested inside a fenced "
-    "frame. Fenced frames don't currently support permission requests.";
-
-void LogPermissionBlockedMessage(content::RenderFrameHost* rfh,
+void LogPermissionBlockedMessage(content::WebContents* web_contents,
                                  const char* message,
                                  ContentSettingsType type) {
-  rfh->GetOutermostMainFrame()->AddMessageToConsole(
+  web_contents->GetMainFrame()->AddMessageToConsole(
       blink::mojom::ConsoleMessageLevel::kWarning,
       base::StringPrintf(message,
                          PermissionUtil::GetPermissionString(type).c_str()));
@@ -156,31 +152,29 @@ void PermissionContextBase::RequestPermission(
     switch (result.source) {
       case PermissionStatusSource::KILL_SWITCH:
         // Block the request and log to the developer console.
-        LogPermissionBlockedMessage(rfh, kPermissionBlockedKillSwitchMessage,
+        LogPermissionBlockedMessage(web_contents,
+                                    kPermissionBlockedKillSwitchMessage,
                                     content_settings_type_);
         std::move(callback).Run(CONTENT_SETTING_BLOCK);
         return;
       case PermissionStatusSource::MULTIPLE_DISMISSALS:
-        LogPermissionBlockedMessage(rfh,
+        LogPermissionBlockedMessage(web_contents,
                                     kPermissionBlockedRepeatedDismissalsMessage,
                                     content_settings_type_);
         break;
       case PermissionStatusSource::MULTIPLE_IGNORES:
-        LogPermissionBlockedMessage(rfh,
+        LogPermissionBlockedMessage(web_contents,
                                     kPermissionBlockedRepeatedIgnoresMessage,
                                     content_settings_type_);
         break;
       case PermissionStatusSource::FEATURE_POLICY:
-        LogPermissionBlockedMessage(rfh,
+        LogPermissionBlockedMessage(web_contents,
                                     kPermissionBlockedPermissionsPolicyMessage,
                                     content_settings_type_);
         break;
       case PermissionStatusSource::PORTAL:
-        LogPermissionBlockedMessage(rfh, kPermissionBlockedPortalsMessage,
-                                    content_settings_type_);
-        break;
-      case PermissionStatusSource::FENCED_FRAME:
-        LogPermissionBlockedMessage(rfh, kPermissionBlockedFencedFrameMessage,
+        LogPermissionBlockedMessage(web_contents,
+                                    kPermissionBlockedPortalsMessage,
                                     content_settings_type_);
         break;
       case PermissionStatusSource::INSECURE_ORIGIN:
@@ -273,12 +267,6 @@ PermissionResult PermissionContextBase::GetPermissionStatus(
     if (web_contents && web_contents->IsPortal()) {
       return PermissionResult(CONTENT_SETTING_BLOCK,
                               PermissionStatusSource::PORTAL);
-    }
-
-    // Permissions are denied for fenced frames.
-    if (render_frame_host->IsNestedWithinFencedFrame()) {
-      return PermissionResult(CONTENT_SETTING_BLOCK,
-                              PermissionStatusSource::FENCED_FRAME);
     }
 
     // Automatically deny all HTTP or HTTPS requests where the virtual URL and

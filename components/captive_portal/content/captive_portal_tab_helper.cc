@@ -25,7 +25,7 @@ CaptivePortalTabHelper::CaptivePortalTabHelper(
         open_login_tab_callback)
 
     : content::WebContentsObserver(web_contents),
-      content::WebContentsUserData<CaptivePortalTabHelper>(*web_contents),
+      navigation_handle_(nullptr),
       tab_reloader_(new CaptivePortalTabReloader(captive_portal_service,
                                                  web_contents,
                                                  open_login_tab_callback)),

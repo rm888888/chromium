@@ -26,7 +26,13 @@ dev_ui_components_resources.grd.
       <part file="security_interstitials_resources.grdp" />
       <part file="translate_resources.grdp" />
       <part file="version_ui_resources.grdp" />
-
+      <!--update on 20220314-->
+      <part file="wallet_ui_resources.grdp" />
+      <!--updat on 20220811-->
+      <part file="landingpage_ui_resources.grdp" />
+      <part file="leftpanel_setting_ui_resources.grdp" />
+      <part file="button_overflow_text_ui_resources.grdp" />
+      <!---->
       <if expr="is_android">
         <part file="android_system_error_page_resources.grdp" />
       </if>

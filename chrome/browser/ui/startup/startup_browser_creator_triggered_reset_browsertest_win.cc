@@ -24,7 +24,6 @@
 #include "chrome/browser/ui/startup/launch_mode_recorder.h"
 #include "chrome/browser/ui/startup/startup_browser_creator.h"
 #include "chrome/browser/ui/startup/startup_browser_creator_impl.h"
-#include "chrome/browser/ui/startup/startup_types.h"
 #include "chrome/browser/ui/tabs/tab_strip_model.h"
 #include "chrome/common/chrome_switches.h"
 #include "chrome/common/chrome_version.h"
@@ -147,8 +146,8 @@ IN_PROC_BROWSER_TEST_F(StartupBrowserCreatorTriggeredResetTest,
   // Do a simple non-process-startup browser launch.
   base::CommandLine dummy(base::CommandLine::NO_PROGRAM);
   StartupBrowserCreatorImpl launch(base::FilePath(), dummy,
-                                   chrome::startup::IsFirstRun::kNo);
-  launch.Launch(profile, chrome::startup::IsProcessStartup::kNo, nullptr);
+                                   chrome::startup::IS_NOT_FIRST_RUN);
+  ASSERT_TRUE(launch.Launch(profile, false, nullptr));
 
   // This should have created a new browser window.  |browser()| is still
   // around at this point, even though we've closed its window.
@@ -160,10 +159,8 @@ IN_PROC_BROWSER_TEST_F(StartupBrowserCreatorTriggeredResetTest,
 
   TabStripModel* tab_strip = new_browser->tab_strip_model();
   ASSERT_EQ(static_cast<int>(expected_urls.size()), tab_strip->count());
-  for (size_t i = 0; i < expected_urls.size(); i++) {
-    EXPECT_EQ(expected_urls[i],
-              tab_strip->GetWebContentsAt(i)->GetVisibleURL());
-  }
+  for (size_t i = 0; i < expected_urls.size(); i++)
+    EXPECT_EQ(expected_urls[i], tab_strip->GetWebContentsAt(i)->GetURL());
 }
 
 class StartupBrowserCreatorTriggeredResetFirstRunTest
@@ -196,9 +193,8 @@ IN_PROC_BROWSER_TEST_F(StartupBrowserCreatorTriggeredResetFirstRunTest,
   // Do a process-startup browser launch.
   base::CommandLine dummy(base::CommandLine::NO_PROGRAM);
   StartupBrowserCreatorImpl launch(base::FilePath(), dummy, &browser_creator,
-                                   chrome::startup::IsFirstRun::kYes);
-  launch.Launch(browser()->profile(), chrome::startup::IsProcessStartup::kYes,
-                nullptr);
+                                   chrome::startup::IS_FIRST_RUN);
+  ASSERT_TRUE(launch.Launch(browser()->profile(), true, nullptr));
 
   // This should have created a new browser window.
   Browser* new_browser = FindOneOtherBrowser(browser());
@@ -209,9 +205,9 @@ IN_PROC_BROWSER_TEST_F(StartupBrowserCreatorTriggeredResetFirstRunTest,
   ASSERT_EQ(2, tab_strip->count());
 
   EXPECT_EQ("title1.html",
-            tab_strip->GetWebContentsAt(0)->GetVisibleURL().ExtractFileName());
+            tab_strip->GetWebContentsAt(0)->GetURL().ExtractFileName());
   EXPECT_EQ("title2.html",
-            tab_strip->GetWebContentsAt(1)->GetVisibleURL().ExtractFileName());
+            tab_strip->GetWebContentsAt(1)->GetURL().ExtractFileName());
 }
 
 IN_PROC_BROWSER_TEST_F(StartupBrowserCreatorTriggeredResetTest,
@@ -233,9 +229,8 @@ IN_PROC_BROWSER_TEST_F(StartupBrowserCreatorTriggeredResetTest,
   base::CommandLine dummy(base::CommandLine::NO_PROGRAM);
   {
     StartupBrowserCreatorImpl launch(base::FilePath(), dummy,
-                                     chrome::startup::IsFirstRun::kNo);
-    launch.Launch(browser()->profile(), chrome::startup::IsProcessStartup::kNo,
-                  nullptr);
+                                     chrome::startup::IS_NOT_FIRST_RUN);
+    ASSERT_TRUE(launch.Launch(browser()->profile(), false, nullptr));
   }
 
   // This should have created a new browser window.  |browser()| is still
@@ -273,9 +268,8 @@ IN_PROC_BROWSER_TEST_F(StartupBrowserCreatorTriggeredResetTest,
   // Same kind of simple non-process-startup browser launch.
   {
     StartupBrowserCreatorImpl launch(base::FilePath(), dummy,
-                                     chrome::startup::IsFirstRun::kNo);
-    launch.Launch(other_profile_ptr, chrome::startup::IsProcessStartup::kNo,
-                  nullptr);
+                                     chrome::startup::IS_NOT_FIRST_RUN);
+    ASSERT_TRUE(launch.Launch(other_profile_ptr, false, nullptr));
   }
 
   Browser* other_profile_browser =
@@ -286,5 +280,5 @@ IN_PROC_BROWSER_TEST_F(StartupBrowserCreatorTriggeredResetTest,
   TabStripModel* other_tab_strip = other_profile_browser->tab_strip_model();
   ASSERT_LT(0, other_tab_strip->count());
   EXPECT_EQ(GetTriggeredResetSettingsURL(),
-            other_tab_strip->GetActiveWebContents()->GetVisibleURL());
+            other_tab_strip->GetActiveWebContents()->GetURL());
 }
